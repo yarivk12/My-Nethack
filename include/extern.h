@@ -887,12 +887,12 @@ extern branch *Is_branchlev(d_level *) NONNULLARG1;
 extern boolean builds_up(d_level *) NONNULLARG1;
 extern xint16 ledger_no(d_level *) NONNULLARG1;
 extern xint16 maxledgerno(void);
-extern schar depth(d_level *) NONNULLARG1;
+extern int depth(d_level *) NONNULLARG1;
 extern xint16 dunlev(d_level *) NONNULLARG1;
 extern xint16 dunlevs_in_dungeon(d_level *) NONNULLARG1;
 extern xint16 ledger_to_dnum(xint16);
 extern xint16 ledger_to_dlev(xint16);
-extern xint16 deepest_lev_reached(boolean);
+extern int deepest_lev_reached(boolean);
 extern boolean on_level(d_level *, d_level *) NONNULLARG12;
 extern void next_level(boolean);
 extern void prev_level(boolean);
@@ -922,9 +922,9 @@ extern void assign_level(d_level *, d_level *) NONNULLPTRS;
 extern void assign_rnd_level(d_level *, d_level *, int) NONNULLARG12;
 extern unsigned int induced_align(int);
 extern boolean Invocation_lev(d_level *) NONNULLARG1;
-extern xint16 level_difficulty(void);
-extern schar lev_by_name(const char *);
-extern schar print_dungeon(boolean, schar *, xint16 *);
+extern int level_difficulty(void);
+extern int lev_by_name(const char *);
+extern int print_dungeon(boolean, xint16 *, xint16 *);
 extern void print_level_annotation(void);
 extern int donamelevel(void);
 extern void free_exclusions(void);
@@ -2746,7 +2746,7 @@ extern void inven_inuse(boolean);
 extern int dorecover(NHFILE *) NONNULLARG1;
 extern void restcemetery(NHFILE *, struct cemetery **) NONNULLARG12;
 extern void trickery(char *) NO_NNARGS;
-extern void getlev(NHFILE *, int, xint8) NONNULLARG1;
+extern void getlev(NHFILE *, int, xint16) NONNULLARG1;
 extern void get_plname_from_file(NHFILE *, char *, boolean) NONNULLARG12;
 #ifdef SELECTSAVED
 extern int restore_menu(winid);
@@ -2857,7 +2857,7 @@ extern boolean tricked_fileremoved(NHFILE *, char *) NONNULLARG2;
 #ifdef INSURANCE
 extern void savestateinlock(void);
 #endif
-extern void savelev(NHFILE *, xint8) NONNULLARG1;
+extern void savelev(NHFILE *, xint16) NONNULLARG1;
 /* extern genericptr_t mon_to_buffer(struct monst *, int *); */
 extern void savecemetery(NHFILE *, struct cemetery **) NONNULLARG12;
 extern void savefruitchn(NHFILE *) NONNULLARG1;

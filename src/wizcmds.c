@@ -220,7 +220,7 @@ int
 wiz_where(void)
 {
     if (wizard)
-        (void) print_dungeon(FALSE, (schar *) 0, (xint16 *) 0);
+        (void) print_dungeon(FALSE, (xint16 *) 0, (xint16 *) 0);
     else
         pline(unavailcmd, ecname_from_fn(wiz_where));
     return ECMD_OK;

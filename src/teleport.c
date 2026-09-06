@@ -1219,13 +1219,13 @@ level_tele(void)
                 return;
             }
             if (wizard && !strcmp(buf, "?")) {
-                schar destlev;
+                xint16 destlev;
                 xint16 destdnum;
 
  levTport_menu:
                 destlev = 0;
                 destdnum = 0;
-                newlev = (int) print_dungeon(TRUE, &destlev, &destdnum);
+                newlev = print_dungeon(TRUE, &destlev, &destdnum);
                 if (!newlev)
                     return;
 

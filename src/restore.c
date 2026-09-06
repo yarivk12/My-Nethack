@@ -26,7 +26,7 @@ staticfn void rest_stairs(NHFILE *);
 staticfn void ghostfruit(struct obj *);
 staticfn boolean restgamestate(NHFILE *);
 staticfn void restlevelstate(void);
-staticfn int restlevelfile(xint8);
+staticfn int restlevelfile(xint16);
 staticfn void rest_bubbles(NHFILE *);
 staticfn void restore_gamelog(NHFILE *);
 staticfn void reset_oattached_mids(boolean);
@@ -769,7 +769,7 @@ restlevelstate(void)
    essential when splitting a save file into individual level files */
 /*ARGSUSED*/
 staticfn int
-restlevelfile(xint8 ltmp)
+restlevelfile(xint16 ltmp)
 {
     char whynot[BUFSZ];
     NHFILE *nhfp = (NHFILE *) 0;
@@ -805,7 +805,7 @@ restlevelfile(xint8 ltmp)
 int
 dorecover(NHFILE *nhfp)
 {
-    xint8 ltmp = 0;
+    xint16 ltmp = 0;
     int rtmp;
     char plname[PL_NSIZ_PLUS];
 
@@ -827,7 +827,7 @@ dorecover(NHFILE *nhfp)
      *     (non-level-based) game state
      *     other levels
      */
-    getlev(nhfp, 0, (xint8) 0);
+    getlev(nhfp, 0, (xint16) 0);
     if (!restgamestate(nhfp)) {
         NHFILE *tnhfp = get_freeing_nhfile();
 
@@ -883,7 +883,7 @@ dorecover(NHFILE *nhfp)
 #endif
     restoreinfo.mread_flags = 1; /* return despite error */
     while (1) {
-        Sfi_xint8(nhfp, &ltmp, "gamestate-level_number");
+        Sfi_xint16(nhfp, &ltmp, "gamestate-level_number");
         if (nhfp->eof)
             break;
         getlev(nhfp, 0, ltmp);
@@ -912,7 +912,7 @@ dorecover(NHFILE *nhfp)
     /* not 0 nor REST_GSTATE nor REST_LEVELS */
     program_state.restoring = REST_CURRENT_LEVEL;
 
-    getlev(nhfp, 0, (xint8) 0);
+    getlev(nhfp, 0, (xint16) 0);
     close_nhfile(nhfp);
     restlevelstate();
     program_state.something_worth_saving = 1; /* useful data now exists */
@@ -1071,7 +1071,7 @@ trickery(char *reason)
 #endif /* !SFCTOOL */
 
 void
-getlev(NHFILE *nhfp, int pid, xint8 lev)
+getlev(NHFILE *nhfp, int pid, xint16 lev)
 {
     struct trap *trap;
 #ifndef SFCTOOL
@@ -1081,7 +1081,7 @@ getlev(NHFILE *nhfp, int pid, xint8 lev)
 #endif
     long elapsed = 0L;
     int hpid = 0;
-    xint8 dlvl = 0;
+    xint16 dlvl = 0;
     int i, c, r;
     boolean ghostly = (nhfp->ftype == NHF_BONESFILE);
     coord *tmpc = 0;
@@ -1114,7 +1114,7 @@ getlev(NHFILE *nhfp, int pid, xint8 lev)
     /* First some sanity checks */
     Sfi_int(nhfp, &hpid, "gamestate-hackpid");
 /* CHECK:  This may prevent restoration */
-    Sfi_xint8(nhfp, &dlvl, "gamestate-dlvl");
+    Sfi_xint16(nhfp, &dlvl, "gamestate-dlvl");
 #ifndef SFCTOOL
     if ((pid && pid != hpid) || (lev && dlvl != lev)) {
         char trickbuf[BUFSZ];
@@ -1412,13 +1412,13 @@ staticfn
 void
 rest_bubbles(NHFILE *nhfp)
 {
-    xint8 bbubbly;
+    xint16 bbubbly;
 
     /* whether or not the Plane of Water's air bubbles or Plane of Air's
        clouds are present is recorded during save so that we don't have to
        know what level is being restored */
     bbubbly = 0;
-    Sfi_xint8(nhfp, &bbubbly, "bubbles-bbubbly");
+    Sfi_xint16(nhfp, &bbubbly, "bubbles-bbubbly");
 #if 0
     if (nhfp->structlevel)
         xxread(nhfp->fd, &bbubbly, sizeof bbubbly);

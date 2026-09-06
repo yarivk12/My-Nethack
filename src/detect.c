@@ -1141,7 +1141,7 @@ furniture_detect(void)
 const char *
 level_distance(d_level *where)
 {
-    schar ll = depth(&u.uz) - depth(where);
+    int ll = depth(&u.uz) - depth(where);
     boolean indun = (u.uz.dnum == where->dnum);
     const char *res = ""; /* always replaced by some other non-Null value */
 

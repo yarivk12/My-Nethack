@@ -42,8 +42,27 @@ void set_levelfile_name(int);
 int open_levelfile(int);
 int create_savefile(void);
 
+static boolean checkpoint_version_compatible(struct version_info *);
+
 extern int get_critical_size_count(void);
 extern uchar cscbuf[];
+
+static boolean
+checkpoint_version_compatible(struct version_info *version_data)
+{
+    unsigned long current_version =
+        ((unsigned long) VERSION_MAJOR << 24)
+        | ((unsigned long) VERSION_MINOR << 16)
+        | ((unsigned long) PATCHLEVEL << 8)
+        | (unsigned long) EDITLEVEL;
+
+#ifdef VERSION_COMPATIBILITY
+    return (boolean) (version_data->incarnation >= VERSION_COMPATIBILITY
+                      && version_data->incarnation <= current_version);
+#else
+    return (boolean) (version_data->incarnation == current_version);
+#endif
+}
 
 #ifndef WIN_CE
 #define Fprintf (void) fprintf
@@ -211,7 +230,7 @@ restore_savefile(char *basename)
 {
     int gfd, lfd, sfd;
     int res = 0, lev, savelev, hpid, pltmpsiz;
-    xint8 levc;
+    xint16 levc;
     struct version_info version_data;
     char plbuf[PL_NSIZ_PLUS], indicator, cscsize;
 
@@ -247,11 +266,19 @@ restore_savefile(char *basename)
         Close(gfd);
         return -1;
     }
+
     if (read(gfd, (genericptr_t) &savelev, sizeof(savelev))
         != sizeof(savelev)) {
         Fprintf(stderr, "Checkpointing was not in effect for %s -- recovery "
                         "impossible.\n",
                 basename);
+        Close(gfd);
+        return -1;
+    }
+    /* Slot 0 is the checkpoint; playable ledgers index level_info[]. */
+    if (savelev <= 0 || savelev >= MAXLINFO) {
+        Fprintf(stderr, "Invalid checkpoint level %d for %s -- can't recover.\n",
+                savelev, basename);
         Close(gfd);
         return -1;
     }
@@ -269,6 +296,14 @@ restore_savefile(char *basename)
             != sizeof pltmpsiz) || (pltmpsiz > PL_NSIZ_PLUS)
         || (read(gfd, (genericptr_t) plbuf, pltmpsiz) != pltmpsiz)) {
         Fprintf(stderr, "Error reading %s -- can't recover.\n", lock);
+        Close(gfd);
+        return -1;
+    }
+
+    if (!checkpoint_version_compatible(&version_data)) {
+        Fprintf(stderr,
+                "Checkpoint version mismatch for %s -- can't recover.\n",
+                basename);
         Close(gfd);
         return -1;
     }
@@ -370,15 +405,13 @@ restore_savefile(char *basename)
     set_levelfile_name(0);
     (void) unlink(lock);
 
-    for (lev = 1; lev < 256 && res == 0; lev++) {
-        /* level numbers are kept in 'xint8's in save.c, so the
-         * maximum level number (for the endlevel) must be < 256
-         */
+    for (lev = 1; lev < MAXLINFO && res == 0; lev++) {
+        /* Match the game's level_info[] capacity without restoring it. */
         if (lev != savelev) {
             lfd = open_levelfile(lev);
             if (lfd >= 0) {
                 /* any or all of these may not exist */
-                levc = (xint8) lev;
+                levc = (xint16) lev;
                 if (write(sfd, (genericptr_t) &levc, sizeof levc)
                     != sizeof levc) {
                     res = -1;

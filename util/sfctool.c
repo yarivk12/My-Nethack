@@ -309,7 +309,7 @@ process_savefile(const char *srcfnam, enum saveformats srcstyle,
 
     if ((nhfp[srcidx] = open_srcfile(srcfnam, srcstyle)) == 0)
         return 0;
-    sfstatus = validate(nhfp[srcidx], srcfnam, FALSE);
+    sfstatus = validate(nhfp[srcidx], srcfnam, FALSE, 0);
     dmfile = what_datamodel_is_this(0,
                                     cscbuf[1],  /* short */
                                     cscbuf[2],  /* int */
@@ -429,12 +429,12 @@ process_savefile(const char *srcfnam, enum saveformats srcstyle,
         /********************
          * Do all levels    *
          ********************/
-        xint8 ltmp;
+        xint16 ltmp;
 
         restoreinfo.mread_flags = 1; /* return despite error */
         while (1) {
             ltmp = -1;
-            Sfi_xint8(nhfp[srcidx], &ltmp, "gamestate-level_number");
+            Sfi_xint16(nhfp[srcidx], &ltmp, "gamestate-level_number");
             if (nhfp[srcidx]->eof || ltmp == -1)
                 break;
 

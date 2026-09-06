@@ -19,7 +19,7 @@ int dotcnt, dotrow; /* also used in restore */
 staticfn void savelevchn(NHFILE *);
 staticfn void savelevl(NHFILE *);
 staticfn void savedamage(NHFILE *);
-staticfn void save_bubbles(NHFILE *, xint8);
+staticfn void save_bubbles(NHFILE *, xint16);
 staticfn void save_stairs(NHFILE *);
 staticfn void save_bc(NHFILE *);
 staticfn void saveobj(NHFILE *, struct obj *);
@@ -29,7 +29,7 @@ staticfn void savemonchn(NHFILE *, struct monst *) NO_NNARGS;
 staticfn void savetrapchn(NHFILE *, struct trap *) NO_NNARGS;
 staticfn void save_gamelog(NHFILE *);
 staticfn void savegamestate(NHFILE *);
-staticfn void savelev_core(NHFILE *, xint8);
+staticfn void savelev_core(NHFILE *, xint16);
 staticfn void save_msghistory(NHFILE *);
 staticfn void save_adjust_levelflags(void);
 #if defined(HANGUPHANDLING)
@@ -74,7 +74,7 @@ int
 dosave0(void)
 {
     const char *fq_save;
-    xint8 ltmp;
+    xint16 ltmp;
     char whynot[BUFSZ];
     NHFILE *nhfp, *onhfp;
     int res = 0;
@@ -182,7 +182,7 @@ dosave0(void)
     set_ustuck((struct monst *) 0); /* also clears u.uswallow */
     u.usteed = (struct monst *) 0;
 
-    for (ltmp = (xint8) 1; ltmp <= maxledgerno(); ltmp++) {
+    for (ltmp = (xint16) 1; ltmp <= maxledgerno(); ltmp++) {
         if (ltmp == ledger_no(&gu.uz_save))
             continue;
         if (!(svl.level_info[ltmp].flags & LFILE_EXISTS))
@@ -209,7 +209,7 @@ dosave0(void)
         }
         getlev(onhfp, svh.hackpid, ltmp);
         close_nhfile(onhfp);
-        Sfo_xint8(nhfp, &ltmp, "gamestate-level_number");
+        Sfo_xint16(nhfp, &ltmp, "gamestate-level_number");
         savelev(nhfp, ltmp);     /* actual level*/
         delete_levelfile(ltmp);
     }
@@ -455,7 +455,7 @@ savestateinlock(void)
 #endif
 
 void
-savelev(NHFILE *nhfp, xint8 lev)
+savelev(NHFILE *nhfp, xint16 lev)
 {
     boolean set_uz_save = (gu.uz_save.dnum == 0 && gu.uz_save.dlevel == 0);
 
@@ -478,7 +478,7 @@ savelev(NHFILE *nhfp, xint8 lev)
 }
 
 staticfn void
-savelev_core(NHFILE *nhfp, xint8 lev)
+savelev_core(NHFILE *nhfp, xint16 lev)
 {
 #ifdef TOS
     short tlev;
@@ -522,7 +522,7 @@ savelev_core(NHFILE *nhfp, xint8 lev)
         if (lev >= 0 && lev <= maxledgerno())
             svl.level_info[lev].flags |= VISITED;
         Sfo_int(nhfp, &svh.hackpid, "gamestate-hackpid");
-        Sfo_xint8(nhfp, &lev, "gamestate-dlvl");
+        Sfo_xint16(nhfp, &lev, "gamestate-dlvl");
     }
 
     /* bones info comes before level data; the intent is for an external
@@ -617,9 +617,9 @@ savelevl(NHFILE *nhfp)
 
 /* save Plane of Water's air bubbles and Plane of Air's clouds */
 staticfn void
-save_bubbles(NHFILE *nhfp, xint8 lev)
+save_bubbles(NHFILE *nhfp, xint16 lev)
 {
-    xint8 bbubbly;
+    xint16 bbubbly;
 
     /* air bubbles and clouds used to be saved as part of game state
        because restoring them needs dungeon data that isn't available
@@ -631,7 +631,7 @@ save_bubbles(NHFILE *nhfp, xint8 lev)
     if (lev == ledger_no(&water_level) || lev == ledger_no(&air_level))
         bbubbly = lev; /* non-zero */
     if (update_file(nhfp))
-        Sfo_xint8(nhfp, &bbubbly, "bubbles-bbubbly");
+        Sfo_xint16(nhfp, &bbubbly, "bubbles-bbubbly");
 #if 0
     if (nhfp->structlevel)
         xxwrite(nhfp->fd, (genericptr_t) &bbubbly, sizeof bbubbly);

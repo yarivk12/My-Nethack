@@ -2629,7 +2629,7 @@ mk_knox_portal(coordxy x, coordxy y)
 {
     d_level *source;
     branch *br;
-    schar u_depth;
+    int u_depth;
 
     br = dungeon_branch("Fort Ludios");
     /* dungeon_branch() panics (so never returns) if result would be Null */

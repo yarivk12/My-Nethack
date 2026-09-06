@@ -26,8 +26,8 @@ struct proto_dungeon {
 
 struct lchoice {
     int idx;
-    schar lev[MAXLINFO];
-    schar playerlev[MAXLINFO];
+    xint16 lev[MAXLINFO];
+    int playerlev[MAXLINFO];
     xint16 dgn[MAXLINFO];
     char menuletter;
 };
@@ -39,7 +39,7 @@ static mapseen *load_mapseen(NHFILE *);
 staticfn void Fread(genericptr_t, int, int, dlb *);
 #endif
 staticfn xint16 dname_to_dnum(const char *);
-staticfn int find_branch(const char *, struct proto_dungeon *);
+staticfn long find_branch(const char *, struct proto_dungeon *);
 staticfn xint16 parent_dnum(const char *, struct proto_dungeon *);
 staticfn int level_range(xint16, int, int, int, struct proto_dungeon *,
                          int *);
@@ -307,12 +307,12 @@ find_level(const char *s)
 }
 
 /* Find the branch that links the named dungeon. */
-staticfn int
+staticfn long
 find_branch(
     const char *s, /* dungeon name */
     struct proto_dungeon *pd)
 {
-    int i;
+    long i;
 
     if (pd) {
         for (i = 0; i < pd->n_brs; i++)
@@ -331,7 +331,10 @@ find_branch(
                 || (!strncmpi(dnam, "The ", 4) && !strcmpi(dnam + 4, s)))
                 break;
         }
-        i = br ? ((ledger_no(&br->end1) << 8) | ledger_no(&br->end2)) : -1;
+        /* Positive xint16 ledgers occupy 16 bits each.  The largest pair
+           is 0x7fff7fffL, so signed long also preserves the -1 sentinel. */
+        i = br ? (((long) ledger_no(&br->end1) << 16)
+                  | (long) ledger_no(&br->end2)) : -1L;
     }
     return i;
 }
@@ -350,7 +353,7 @@ parent_dnum(
     int i;
     xint16 pdnum;
 
-    i = find_branch(s, pd);
+    i = (int) find_branch(s, pd); /* prototype branch index, not a pair */
     /*
      * Got branch, now find parent dungeon.  Stop if we have reached
      * "this" dungeon (if we haven't found it by now it is an error).
@@ -417,7 +420,7 @@ parent_dlevel(const char *s, struct proto_dungeon *pd)
     int i, j, num, base, dnum = parent_dnum(s, pd);
     branch *curr;
 
-    i = find_branch(s, pd);
+    i = (int) find_branch(s, pd); /* prototype branch index, not a pair */
     num = level_range(dnum, pd->tmpbranch[i].lev.base,
                       pd->tmpbranch[i].lev.rand, pd->tmpbranch[i].chain, pd,
                       &base);
@@ -519,7 +522,7 @@ add_branch(
     int branch_num;
     branch *new_branch;
 
-    branch_num = find_branch(svd.dungeons[dgn].dname, pd);
+    branch_num = (int) find_branch(svd.dungeons[dgn].dname, pd);
     new_branch = (branch *) alloc(sizeof(branch));
     (void) memset((genericptr_t) new_branch, 0, sizeof(branch));
     new_branch->next = (branch *) 0;
@@ -960,7 +963,7 @@ staticfn void
 init_dungeon_set_depth(struct proto_dungeon *pd, int dngidx)
 {
     branch *br;
-    schar from_depth;
+    int from_depth;
     boolean from_up;
 
     br = add_branch(dngidx, svd.dungeons[dngidx].entry_lev, pd);
@@ -1346,7 +1349,7 @@ dunlevs_in_dungeon(d_level *lev)
 }
 
 /* return the lowest level explored in the game*/
-xint16
+int
 deepest_lev_reached(boolean noquest)
 {
     /* this function is used for three purposes: to provide a factor
@@ -1366,7 +1369,7 @@ deepest_lev_reached(boolean noquest)
      */
     int i;
     d_level tmp;
-    xint16 ret = 0;
+    int ret = 0;
 
     for (i = 0; i < svn.n_dgns; i++) {
         if (noquest && i == quest_dnum)
@@ -1438,10 +1441,10 @@ ledger_to_dlev(xint16 ledgerno)
 
 /* returns the depth of a level, in floors below the surface
    (note levels in different dungeons can have the same depth) */
-schar
+int
 depth(d_level *lev)
 {
-    return (schar) (svd.dungeons[lev->dnum].depth_start + lev->dlevel - 1);
+    return svd.dungeons[lev->dnum].depth_start + lev->dlevel - 1;
 }
 #endif /* !SFCTOOL */
 
@@ -2034,10 +2037,10 @@ Invocation_lev(d_level *lev)
 /* use instead of depth() wherever a degree of difficulty is made
  * dependent on the location in the dungeon (eg. monster creation).
  */
-xint16
+int
 level_difficulty(void)
 {
-    xint16 res;
+    int res;
 
     if (In_endgame(&u.uz)) {
         res = depth(&sanctum_level) + u.ulevel / 2;
@@ -2105,14 +2108,15 @@ level_difficulty(void)
 /* Take one word and try to match it to a level.
  * Recognized levels are as shown by print_dungeon().
  */
-schar
+int
 lev_by_name(const char *nam)
 {
-    schar lev = 0;
+    int lev = 0;
     s_level *slev = (s_level *) 0;
     d_level dlev;
     const char *p;
-    int idx, idxtoo;
+    xint16 idx, idxtoo;
+    long branchkey;
     char buf[BUFSZ];
     mapseen *mseen;
 
@@ -2155,14 +2159,14 @@ lev_by_name(const char *nam)
             lev = depth(&dlev);
         }
     } else { /* not a specific level; try branch names */
-        idx = find_branch(nam, (struct proto_dungeon *) 0);
+        branchkey = find_branch(nam, (struct proto_dungeon *) 0);
         /* "<branch> to Xyzzy" */
-        if (idx < 0 && (p = strstri(nam, " to ")) != 0)
-            idx = find_branch(p + 4, (struct proto_dungeon *) 0);
+        if (branchkey < 0 && (p = strstri(nam, " to ")) != 0)
+            branchkey = find_branch(p + 4, (struct proto_dungeon *) 0);
 
-        if (idx >= 0) {
-            idxtoo = (idx >> 8) & 0x00FF;
-            idx &= 0x00FF;
+        if (branchkey >= 0) {
+            idxtoo = (xint16) ((branchkey >> 16) & 0xFFFFL);
+            idx = (xint16) (branchkey & 0xFFFFL);
             /* either wizard mode, or else _both_ sides of branch seen; */
             /* (flags & VISITED)==VISITED: see comment about amnesia above */
             if (wizard || (((svl.level_info[idx].flags & VISITED) == VISITED)
@@ -2297,8 +2301,8 @@ print_branch(
 }
 
 /* Print available dungeon information. */
-schar
-print_dungeon(boolean bymenu, schar *rlev, xint16 *rdgn)
+int
+print_dungeon(boolean bymenu, xint16 *rlev, xint16 *rdgn)
 {
     int i, last_level, nlev;
     char buf[BUFSZ];

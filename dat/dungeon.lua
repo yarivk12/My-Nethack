@@ -7,8 +7,7 @@ dungeon = {
    {
       name = "The Dungeons of Doom",
       bonetag = "D",
-      base = 25,
-      range = 5,
+      base = 200,
       alignment = "unaligned",
       themerooms = "themerms.lua",
       branches = {

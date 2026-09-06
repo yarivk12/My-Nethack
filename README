@@ -8,6 +8,64 @@ NetHack 5.0.0 is a release of NetHack. As a .0 version, there may be some
 bugs encountered. Constructive suggestions, GitHub pull requests, and bug
 reports are all welcome and encouraged.
 
+Private expansion project status
+---------------------------------
+
+This checkout contains a private NetHack 5.0 expansion project. The project
+uses the upstream NetHack 5.0 code as its base and records each completed
+milestone in git. The following status describes the intentional state of this
+checkout; it is separate from the upstream release notes below.
+
+Frozen structural baseline
+
+The expanded dungeon structure is complete and frozen at baseline commit
+64db689a1, tagged expanded-dod-200-baseline. That baseline includes:
+
+ * 200-level Dungeons of Doom, with the Castle at Dungeons of Doom level 200.
+ * Widened deep-level depth, ledger, save, and restore handling.
+ * Removal of the former ledger-255 runtime limitation; audited runtime
+   capacity is 3199.
+ * Validated x86 and x64 builds and regression tests.
+
+No later milestone may change dungeon length, topology, ledger capacity, save
+format, or other frozen structural behavior unless explicitly authorized.
+
+Step 5: shop optimization
+
+Step 5 is the completed shop-only content milestone. Its intended behavior is:
+
+ * Shop-room creation keeps every existing eligibility guard. The vanilla
+   3/depth roll is preserved through depth 20, with a 15% floor from depth 21
+   onward. This gives 100% at depths 2 and 3, 75% at depth 4, 60% at depth 5,
+   30% at depth 10, 20% at depth 15, and 15% at depth 20 and deeper.
+ * Random shop types use these weights: general 30, armor 5, scroll 1,
+   potion 1, weapon 1, food 1, ring 15, wand 10, tool 10, spellbook 25,
+   and health-food 1. The unique special-level shop types remain zero-weight.
+ * General-store stock uses the requested weighted mixture: food 1, potions 9,
+   scrolls 9, armor 5, weapons 1, tools 8, gems 1, spellbooks 20, wands 10,
+   rings 20, and amulets 16.
+ * The specialized shop stock distributions are: armor 95/5 armor/weapons;
+   scroll 50/50 scrolls/spellbooks; potion 100 potions; weapon 50/50
+   weapons/armor; food unchanged; ring 65/35 rings/amulets; wand 100 wands;
+   tool 100 tools; spellbook 95/5 spellbooks/scrolls; and health-food unchanged.
+ * Shop-stock mimic creation is capped at 10% while retaining the existing
+   mimic-generation mechanics.
+
+Global RANDOM_CLASS object-generation distributions are intentionally unchanged.
+No dungeon, save, ledger, topology, or unrelated content changes are included
+in this milestone. The completed change is recorded as
+shops--optimization-step5-complete.
+
+Step 5 validation
+
+ * Source-level probability and inventory-table audit passed; all requested
+   weighted tables sum to 100.
+ * Release x64 and Win32 builds completed successfully with zero errors,
+   including NetHack, NetHackW, recover, and Windows package generation.
+ * Frozen structural files and the global object-generation tables are unchanged.
+ * git diff --check passed; the remaining compiler warnings are pre-existing
+   unrelated warnings.
+
 The file doc/fixes5-0-0.txt in the source distribution contains a full list
 of fixes and changes as they were committed. The text in there was written
 for the development team's own use and is provided  "as is", so please do

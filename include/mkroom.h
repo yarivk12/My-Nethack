@@ -36,7 +36,7 @@ struct shclass {
     struct itp {
         int iprob;    /* probability of an item type */
         int itype;    /* item type: if >=0 a class, if < 0 a specific item */
-    } iprobs[9];
+    } iprobs[11]; /* widest shop distribution is the general store */
     const char *const *shknms; /* list of shopkeeper names for this type */
 };
 

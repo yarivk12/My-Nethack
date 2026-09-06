@@ -1350,7 +1350,9 @@ makelevel(void)
         if (wizard && nh_getenv("SHOPTYPE"))
             do_mkroom(SHOPBASE);
         else if (u_depth > 1 && u_depth < depth(&medusa_level)
-                 && svn.nroom >= room_threshold && rn2(u_depth) < 3)
+                 && svn.nroom >= room_threshold
+                 && ((u_depth <= 20 && rn2(u_depth) < 3)
+                     || (u_depth > 20 && rn2(100) < 15)))
             do_mkroom(SHOPBASE);
         else if (u_depth > 4 && !rn2(6))
             do_mkroom(COURT);

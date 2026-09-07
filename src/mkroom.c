@@ -21,7 +21,8 @@
 staticfn boolean isbig(struct mkroom *);
 staticfn struct mkroom *pick_room(boolean);
 staticfn void mkshop(void), mkzoo(int), mkswamp(void);
-staticfn void mk_zoo_thronemon(coordxy, coordxy);
+staticfn void mk_zoo_thronemon(coordxy, coordxy, boolean);
+staticfn struct permonst *realzoomon(void);
 staticfn void mktemple(void);
 staticfn coord *shrine_pos(int);
 staticfn struct permonst *morguemon(void);
@@ -245,19 +246,41 @@ mkzoo(int type)
 {
     struct mkroom *sroom;
 
+    /* Imported Step 6B rooms must be present on their selected floor.  Keep
+     * vanilla pick_room() behavior first, then use the same room eligibility
+     * with a deterministic fallback when its preference rolls all fail. */
     if ((sroom = pick_room(FALSE)) != 0) {
         sroom->rtype = type;
         /* room does not get stocked at this time - it will get stocked at the
          * end of makelevel() */
         sroom->needfill = FILL_NORMAL;
+    } else if (step6b_room_type(&u.uz) != STEP6B_ROOM_NONE) {
+        int i;
+
+        for (i = 0; i < svn.nroom; i++) {
+            sroom = &svr.rooms[i];
+            if (sroom->rtype == OROOM && !has_upstairs(sroom)
+                && !has_dnstairs(sroom))
+                break;
+        }
+        if (i == svn.nroom)
+            for (i = 0; i < svn.nroom; i++) {
+                sroom = &svr.rooms[i];
+                if (sroom->rtype == OROOM)
+                    break;
+            }
+        if (i < svn.nroom) {
+            sroom->rtype = type;
+            sroom->needfill = FILL_NORMAL;
+        }
     }
 }
 
 staticfn void
-mk_zoo_thronemon(coordxy x, coordxy y)
+mk_zoo_thronemon(coordxy x, coordxy y, boolean giantcourt)
 {
     int i = rnd(level_difficulty());
-    int pm = (i > 9) ? PM_OGRE_TYRANT
+    int pm = giantcourt ? PM_TITAN : (i > 9) ? PM_OGRE_TYRANT
         : (i > 5) ? PM_ELVEN_MONARCH
         : (i > 2) ? PM_DWARF_RULER
         : PM_GNOME_RULER;
@@ -272,12 +295,35 @@ mk_zoo_thronemon(coordxy x, coordxy y)
     }
 }
 
+/* Step 6B, 2026-09-06: population/rewards adapted from NerfHack dev
+ * 0cb8781b0929b4617590a3b9fe78f972ef42c25f, src/mkroom.c.
+ * Reuse vanilla COURT/ZOO room types and their persistence; the selected
+ * room marker identifies which approved imported population to use. */
+staticfn struct permonst *
+realzoomon(void)
+{
+    int i = rn2(60) + rn2(3 * level_difficulty());
+    int pm = (i > 115) ? PM_MASTODON : (i > 85) ? PM_PYTHON
+        : (i > 70) ? PM_MUMAK : (i > 55) ? PM_TIGER
+        : (i > 45) ? PM_PANTHER : (i > 25) ? PM_JAGUAR
+        : (i > 15) ? PM_APE : PM_MONKEY;
+
+    return (svm.mvitals[pm].mvflags & G_GONE) ? NULL : &mons[pm];
+}
+
 void
 fill_zoo(struct mkroom *sroom)
 {
     struct monst *mon;
     int sx, sy, i;
     int sh, goldlim = 0, type = sroom->rtype;
+    int step6b_type = step6b_room_type(&u.uz);
+    boolean giantcourt = (type == COURT
+                          && step6b_type == STEP6B_ROOM_GIANTCOURT);
+    boolean realzoo = (type == ZOO
+                      && step6b_type == STEP6B_ROOM_REALZOO);
+    boolean dragonlair = (type == ZOO
+                          && step6b_type == STEP6B_ROOM_DRAGONLAIR);
     coordxy tx = 0, ty = 0;
     int rmno = (int) ((sroom - svr.rooms) + ROOMOFFSET);
     coord mm;
@@ -300,7 +346,7 @@ fill_zoo(struct mkroom *sroom)
             ty = mm.y;
         } while (occupied(tx, ty) && --i > 0);
  throne_placed:
-        mk_zoo_thronemon(tx, ty);
+        mk_zoo_thronemon(tx, ty, giantcourt);
         break;
     case BEEHIVE:
         tx = sroom->lx + (sroom->hx - sroom->lx + 1) / 2;
@@ -316,7 +362,7 @@ fill_zoo(struct mkroom *sroom)
         break;
     case ZOO:
     case LEPREHALL:
-        goldlim = 500 * level_difficulty();
+        goldlim = (dragonlair ? 1500 : 500) * level_difficulty();
         break;
     }
 
@@ -341,6 +387,13 @@ fill_zoo(struct mkroom *sroom)
             /* don't place monster on explicitly placed throne */
             if (type == COURT && IS_THRONE(levl[sx][sy].typ))
                 continue;
+            /* Do not turn an exhausted imported population into random
+             * monsters via makemon(NULL). Vanilla filling stays unchanged. */
+            if (giantcourt || realzoo || dragonlair) {
+                struct permonst *pm = giantcourt ? mkclass(S_GIANT, 0)
+                    : dragonlair ? mkclass(S_DRAGON, 0) : realzoomon();
+                mon = pm ? makemon(pm, sx, sy, MM_ASLEEP | MM_NOGRP) : NULL;
+            } else
             mon = makemon((type == COURT)
                            ? courtmon()
                            : (type == BARRACKS)
@@ -361,11 +414,17 @@ fill_zoo(struct mkroom *sroom)
                           sx, sy, MM_ASLEEP | MM_NOGRP);
             if (mon) {
                 mon->msleeping = 1;
-                if (type == COURT && mon->mpeaceful) {
+                if ((type == COURT || realzoo) && mon->mpeaceful) {
                     mon->mpeaceful = 0;
                     set_malign(mon);
                 }
             }
+            if (giantcourt && !rn2(111))
+                (void) mksobj_at(TINNING_KIT, sx, sy, TRUE, FALSE);
+            if (dragonlair && !rn2(20))
+                (void) mksobj_at(
+                    rnd_class(GRAY_DRAGON_SCALES, YELLOW_DRAGON_SCALES),
+                    sx, sy, FALSE, FALSE);
             switch (type) {
             case ZOO:
             case LEPREHALL:

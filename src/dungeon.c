@@ -13,6 +13,10 @@
 #define X_LOCATE "x-loca"
 #define X_GOAL "x-goal"
 
+#define STEP6B_ROOM_PREFIX "x6b-"
+#define STEP6B_MIN_LEVEL 30
+#define STEP6B_MAX_LEVEL 199
+
 struct proto_dungeon {
     struct tmpdungeon tmpdungeon[MAXDUNGEON];
     struct tmplevel tmplevel[LEV_LIMIT];
@@ -60,6 +64,11 @@ staticfn void init_dungeon_set_depth(struct proto_dungeon *, int);
 staticfn void init_castle_tune(void);
 staticfn void fixup_level_locations(void);
 staticfn void free_proto_dungeon(struct proto_dungeon *);
+staticfn void step6b_schedule(void);
+staticfn boolean step6b_room_marker(const s_level *);
+staticfn boolean step6b_depth_used(int);
+staticfn int step6b_pick_depth(boolean *, boolean);
+staticfn void step6b_add_level(const char *, int, char, uchar);
 staticfn void earth_sense(void);
 staticfn boolean init_dungeon_dungeons(lua_State *, struct proto_dungeon *,
                                       int);
@@ -540,9 +549,9 @@ add_branch(
 
 /*
  * Add new level to special level chain.  Insert it in level order with the
- * other levels in this dungeon.  This assumes that we are never given a
- * level that has a dungeon number less than the dungeon number of the
- * last entry.
+ * other levels in the dungeon.  The original loader presents levels in
+ * dungeon order; Step 6B also adds persisted room markers after all of the
+ * Lua definitions have been read, so compare both coordinates here.
  */
 staticfn void
 add_level(s_level *new_lev)
@@ -551,8 +560,9 @@ add_level(s_level *new_lev)
 
     prev = (s_level *) 0;
     for (curr = svs.sp_levchn; curr; curr = curr->next) {
-        if (curr->dlevel.dnum == new_lev->dlevel.dnum
-            && curr->dlevel.dlevel > new_lev->dlevel.dlevel)
+        if (curr->dlevel.dnum > new_lev->dlevel.dnum
+            || (curr->dlevel.dnum == new_lev->dlevel.dnum
+                && curr->dlevel.dlevel > new_lev->dlevel.dlevel))
             break;
         prev = curr;
     }
@@ -1323,6 +1333,7 @@ init_dungeons(void)
     debugpline2("init_dungeon lua DONE (n_levs=%i, n_brs=%i)",
                 pd.n_levs, pd.n_brs);
 
+    step6b_schedule();
     init_castle_tune();
     fixup_level_locations();
     nhl_done(L);
@@ -1446,6 +1457,182 @@ depth(d_level *lev)
 {
     return svd.dungeons[lev->dnum].depth_start + lev->dlevel - 1;
 }
+
+staticfn boolean
+step6b_room_marker(const s_level *lev)
+{
+    return (boolean) (lev && !strncmp(lev->proto, STEP6B_ROOM_PREFIX,
+                                      sizeof STEP6B_ROOM_PREFIX - 1));
+}
+
+/* Return the imported room to place on an otherwise ordinary level.  Room
+ * markers live in the normal special-level chain so their locations are
+ * saved and restored with the rest of the dungeon topology; Is_special()
+ * filters them out before map loading. */
+int
+step6b_room_type(d_level *lev)
+{
+    s_level *curr;
+
+    for (curr = svs.sp_levchn; curr; curr = curr->next) {
+        if (!step6b_room_marker(curr) || !on_level(lev, &curr->dlevel))
+            continue;
+        if (!strcmp(curr->proto, "x6b-giant"))
+            return STEP6B_ROOM_GIANTCOURT;
+        if (!strcmp(curr->proto, "x6b-realzoo"))
+            return STEP6B_ROOM_REALZOO;
+        if (!strcmp(curr->proto, "x6b-dragon"))
+            return STEP6B_ROOM_DRAGONLAIR;
+    }
+    return STEP6B_ROOM_NONE;
+}
+
+boolean
+is_bigroom_level(d_level *lev)
+{
+    s_level *curr;
+
+    for (curr = svs.sp_levchn; curr; curr = curr->next)
+        if (!step6b_room_marker(curr) && !strcmp(curr->proto, "bigrm")
+            && on_level(lev, &curr->dlevel))
+            return TRUE;
+    return FALSE;
+}
+
+staticfn boolean
+step6b_depth_used(int dlevel)
+{
+    const int dod = dname_to_dnum("The Dungeons of Doom");
+    s_level *slev;
+    branch *br;
+
+    for (slev = svs.sp_levchn; slev; slev = slev->next)
+        if (slev->dlevel.dnum == dod && slev->dlevel.dlevel == dlevel)
+            return TRUE;
+    for (br = svb.branches; br; br = br->next)
+        if ((br->end1.dnum == dod && br->end1.dlevel == dlevel)
+            || (br->end2.dnum == dod && br->end2.dlevel == dlevel))
+            return TRUE;
+    return FALSE;
+}
+
+DISABLE_WARNING_UNREACHABLE_CODE
+
+staticfn int
+step6b_pick_depth(boolean *used, boolean ordinary)
+{
+    int dlevel, choices = 0, nth;
+    s_level *medusa = find_level("medusa");
+
+    for (dlevel = STEP6B_MIN_LEVEL; dlevel <= STEP6B_MAX_LEVEL; dlevel++)
+        if (!used[dlevel] && !step6b_depth_used(dlevel)
+            && (!ordinary || !medusa
+                || dlevel <= medusa->dlevel.dlevel))
+            choices++;
+    if (!choices)
+        panic("Step 6B ran out of eligible DoD levels");
+
+    nth = rn2(choices);
+    for (dlevel = STEP6B_MIN_LEVEL; dlevel <= STEP6B_MAX_LEVEL; dlevel++)
+        if (!used[dlevel] && !step6b_depth_used(dlevel)
+            && (!ordinary || !medusa
+                || dlevel <= medusa->dlevel.dlevel)
+            && !nth--)
+            return dlevel;
+    panic("Step 6B failed to select a DoD level");
+    return STEP6B_MIN_LEVEL;
+}
+
+RESTORE_WARNING_UNREACHABLE_CODE
+
+staticfn void
+step6b_add_level(const char *proto, int dlevel, char boneid, uchar rndlevs)
+{
+    s_level *new_level = (s_level *) alloc(sizeof *new_level);
+
+    (void) memset((genericptr_t) new_level, 0, sizeof *new_level);
+    Strcpy(new_level->proto, proto);
+    new_level->boneid = boneid;
+    new_level->rndlevs = rndlevs;
+    new_level->dlevel.dnum = dname_to_dnum("The Dungeons of Doom");
+    new_level->dlevel.dlevel = dlevel;
+    add_level(new_level);
+}
+
+/* Choose all Step 6B locations once during new-game dungeon initialization.
+ * The resulting level-chain entries and Temple branch are part of the normal
+ * saved dungeon state, so revisits and save/reload never reroll them. */
+staticfn void
+step6b_schedule(void)
+{
+    boolean used[MAXLEVEL + 1] = { FALSE };
+    branch *temple = (branch *) 0, *br;
+    s_level *slev;
+    int dod = dname_to_dnum("The Dungeons of Doom");
+    int temple_dnum = dname_to_dnum("The Temple of Moloch");
+    int dlevel, bigrooms = 0, target_bigrooms;
+
+    for (slev = svs.sp_levchn; slev; slev = slev->next)
+        if (slev->dlevel.dnum == dod
+            && slev->dlevel.dlevel >= STEP6B_MIN_LEVEL
+            && slev->dlevel.dlevel <= STEP6B_MAX_LEVEL)
+            used[slev->dlevel.dlevel] = TRUE;
+
+    for (br = svb.branches; br; br = br->next) {
+        if (br->end2.dnum == temple_dnum && br->end1.dnum == dod)
+            temple = br;
+        else if (br->end1.dnum == dod
+                 && br->end1.dlevel >= STEP6B_MIN_LEVEL
+                 && br->end1.dlevel <= STEP6B_MAX_LEVEL)
+            used[br->end1.dlevel] = TRUE;
+        if (br->end2.dnum == dod
+            && br->end2.dlevel >= STEP6B_MIN_LEVEL
+            && br->end2.dlevel <= STEP6B_MAX_LEVEL)
+            used[br->end2.dlevel] = TRUE;
+    }
+
+    /* Always choose the Temple entrance from the same free pool. */
+    if (temple) {
+        dlevel = step6b_pick_depth(used, TRUE);
+        temple->end1.dlevel = (xint16) dlevel;
+        used[dlevel] = TRUE;
+        insert_branch(temple, TRUE);
+        /* init_dungeon_set_depth() ran before this final parent endpoint was
+         * selected.  Rebase the one-level Temple so its depth and Dlvl
+         * accounting continue to follow the ordinary branch rules. */
+        svd.dungeons[temple_dnum].depth_start =
+            depth(&temple->end1)
+            + (temple->type == BR_PORTAL
+                   ? 0
+                   : (temple->end1_up ? -1 : 1))
+            - (svd.dungeons[temple_dnum].entry_lev - 1);
+    }
+
+    for (slev = svs.sp_levchn; slev; slev = slev->next)
+        if (slev->dlevel.dnum == dod && !strcmp(slev->proto, "bigrm"))
+            bigrooms++;
+    target_bigrooms = rn1(3, 3); /* exactly 3, 4, or 5 total */
+    while (bigrooms < target_bigrooms) {
+        dlevel = step6b_pick_depth(used, FALSE);
+        used[dlevel] = TRUE;
+        step6b_add_level("bigrm", dlevel, 'B', 14);
+        bigrooms++;
+    }
+
+    dlevel = step6b_pick_depth(used, TRUE);
+    used[dlevel] = TRUE;
+    step6b_add_level("x6b-giant", dlevel, 'I', 0);
+
+    for (target_bigrooms = rn1(2, 2); target_bigrooms; target_bigrooms--) {
+        dlevel = step6b_pick_depth(used, TRUE);
+        used[dlevel] = TRUE;
+        step6b_add_level("x6b-realzoo", dlevel, 'I', 0);
+    }
+
+    dlevel = step6b_pick_depth(used, TRUE);
+    used[dlevel] = TRUE;
+    step6b_add_level("x6b-dragon", dlevel, 'I', 0);
+}
 #endif /* !SFCTOOL */
 
 /* are "lev1" and "lev2" actually the same? */
@@ -1464,7 +1651,8 @@ Is_special(d_level *lev)
     s_level *levtmp;
 
     for (levtmp = svs.sp_levchn; levtmp; levtmp = levtmp->next)
-        if (on_level(lev, &levtmp->dlevel))
+        if (!step6b_room_marker(levtmp)
+            && on_level(lev, &levtmp->dlevel))
             return levtmp;
 
     return (s_level *) 0;
@@ -2352,6 +2540,8 @@ print_dungeon(boolean bymenu, xint16 *rlev, xint16 *rdgn)
          * this dungeon.
          */
         for (slev = svs.sp_levchn, last_level = 0; slev; slev = slev->next) {
+            if (step6b_room_marker(slev))
+                continue;
             if (slev->dlevel.dnum != i)
                 continue;
 

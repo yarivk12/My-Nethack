@@ -2,6 +2,7 @@
 -- Copyright (c) 1990-95 by M. Stephenson
 -- NetHack may be freely redistributed.  See license for details.
 --
+-- Step 6B modified 2026-09-06: randomized imported room/branch placement.
 -- The dungeon description file.
 dungeon = {
    {
@@ -46,6 +47,12 @@ dungeon = {
             base = 1,
             branchtype = "no_down",
             direction = "up"
+         },
+         {
+            name = "The Temple of Moloch",
+            base = 30,
+            range = 170,
+            direction = "down"
          }
       },
       levels = {
@@ -69,7 +76,7 @@ dungeon = {
             base = 10,
             range = 3,
             chance = 40,
-            nlevels = 13
+            nlevels = 14
          },
          {
             name = "medusa",
@@ -81,7 +88,7 @@ dungeon = {
          {
             name = "castle",
             base = -1
-         }
+         },
       }
    },
    {
@@ -328,5 +335,13 @@ dungeon = {
             base = 2,
          },
       }
+   },
+   -- Appended to preserve existing dungeon numbers and ledger ranges.
+   {
+      name = "The Temple of Moloch",
+      base = 1,
+      flags = { "mazelike" },
+      alignment = "chaotic",
+      levels = { { name = "moloch", base = 1 } }
    },
 }

@@ -66,6 +66,15 @@ Step 5 validation
  * git diff --check passed; the remaining compiler warnings are pre-existing
    unrelated warnings.
 
+Step 6: NerfHack dungeon enrichment
+
+Step 6A/6B is the approved NerfHack `dev` donor integration. It adds NerfHack
+Big Room 18 as local Big Room slot 14, with 3--5 total Big Rooms per game and
+a hard maximum of 5; exactly 1 Giant Court; 2--3 Real Zoos; exactly 1 Dragon
+Lair; and exactly 1 optional Temple of Moloch branch. These features use
+randomized placement through the extended Dungeons of Doom. The deterministic
+DL101--105 test placement was removed after validation.
+
 The file doc/fixes5-0-0.txt in the source distribution contains a full list
 of fixes and changes as they were committed. The text in there was written
 for the development team's own use and is provided  "as is", so please do

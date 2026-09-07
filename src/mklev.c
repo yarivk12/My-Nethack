@@ -1255,6 +1255,7 @@ makelevel(void)
     stairway *prevstairs;
     int room_threshold;
     s_level *slev;
+    int step6b_type;
     int i;
 
     if (wiz1_level.dlevel == 0) {
@@ -1268,6 +1269,7 @@ makelevel(void)
     clear_level_structures();
 
     slev = Is_special(&u.uz);
+    step6b_type = step6b_room_type(&u.uz);
     /* check for special levels */
     if (slev && !Is_rogue_level(&u.uz)) {
         makemaz(slev->proto);
@@ -1347,7 +1349,12 @@ makelevel(void)
         /* make up to 1 special room, with type dependent on depth;
            note that mkroom doesn't guarantee a room gets created, and that
            this step only sets the room's rtype - it doesn't fill it yet. */
-        if (wizard && nh_getenv("SHOPTYPE"))
+        if (step6b_type == STEP6B_ROOM_GIANTCOURT)
+            do_mkroom(COURT);
+        else if (step6b_type == STEP6B_ROOM_REALZOO
+                 || step6b_type == STEP6B_ROOM_DRAGONLAIR)
+            do_mkroom(ZOO);
+        else if (wizard && nh_getenv("SHOPTYPE"))
             do_mkroom(SHOPBASE);
         else if (u_depth > 1 && u_depth < depth(&medusa_level)
                  && svn.nroom >= room_threshold

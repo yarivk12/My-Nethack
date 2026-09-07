@@ -10,9 +10,10 @@ kept current with every project commit.
 ## Current state
 
 The completed project includes the frozen dungeon-depth foundation, the Step 5
-shop milestone, and the Step 6/7 NerfHack dungeon enrichment. The current
-working milestone is committed as `a3b0ec624` (`Add classic NerfHack Lost Tomb`)
-and tagged `step7-classic-lost-tomb`.
+shop milestone, and the Step 6/7 NerfHack dungeon enrichment. The Step 7
+implementation is committed as `a3b0ec624` (`Add classic NerfHack Lost Tomb`)
+and tagged `step7-classic-lost-tomb`; later documentation commits keep this
+summary current.
 
 ## Frozen structural baseline
 
@@ -26,8 +27,10 @@ Commit `64db689a1` (`Expand dungeon depth and harden ledger capacity`), tagged
 - Deep-level save/restore, recovery, Castle, Gehennom, and Vlad's Tower paths
   were validated on Windows x86 and x64.
 
-This structural baseline is frozen. Later milestones do not alter dungeon
-length, ledger capacity, save format, or ordinary depth semantics.
+This structural baseline is frozen. Later milestones do not change dungeon
+length, ledger capacity, or ordinary depth semantics. Step 7 adds no
+save-format fields; its `EDITLEVEL` advance to 2 is required because stored
+monster, object, and dungeon IDs changed.
 
 ## Step 5: shop optimization
 
@@ -35,7 +38,7 @@ Commit `4ce6bff74` (`shops--optimization-step5-complete`) completed the shop
 milestone:
 
 - Shop creation keeps its existing eligibility rules and uses a 15% minimum
-  shop-attempt chance from depth 21 onward.
+  shop-attempt chance from depth 20 onward.
 - Random shop-type weights are general 30, armor 5, scroll 1, potion 1,
   weapon 1, food 1, ring 15, wand 10, tool 10, spellbook 25, and health-food 1.
 - General and specialized shop-stock distributions were updated to the
@@ -110,7 +113,7 @@ topology smoke tests, and packaging checks. Validation included:
 - `git diff --check` and final source audits with no generated artifacts.
 
 Detailed provenance, compatibility notes, test commands, and the complete
-changed-file inventory are in [doc/step7.md](doc/step7.md).
+changed-file inventory are in [doc/step7.md](https://github.com/yarivk12/My-Nethack/blob/phase0/dod-length/doc/step7.md).
 
 ## Milestone policy
 

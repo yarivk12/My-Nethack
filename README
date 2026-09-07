@@ -27,15 +27,17 @@ The expanded dungeon structure is complete and frozen at baseline commit
    capacity is 3199.
  * Validated x86 and x64 builds and regression tests.
 
-No later milestone may change dungeon length, topology, ledger capacity, save
-format, or other frozen structural behavior unless explicitly authorized.
+No later milestone may change dungeon length, topology, ledger capacity, or
+ordinary depth semantics unless explicitly authorized. Step 7 added no
+save-format fields; its `EDITLEVEL` advance to 2 was required because stored
+monster, object, and dungeon IDs changed.
 
 Step 5: shop optimization
 
 Step 5 is the completed shop-only content milestone. Its intended behavior is:
 
  * Shop-room creation keeps every existing eligibility guard. The vanilla
-   3/depth roll is preserved through depth 20, with a 15% floor from depth 21
+   3/depth roll is preserved through depth 20, with a 15% floor from depth 20
    onward. This gives 100% at depths 2 and 3, 75% at depth 4, 60% at depth 5,
    30% at depth 10, 20% at depth 15, and 15% at depth 20 and deeper.
  * Random shop types use these weights: general 30, armor 5, scroll 1,
@@ -90,7 +92,8 @@ map donor undead/Shadow flags to local behavior, and reuse ghost/wax tile art.
 Object, monster and dungeon index changes require the normal EDITLEVEL 2 save
 epoch; start fresh games with this build. Step 6 counts and Castle DL200 remain
 unchanged. A four-newline Moloch map repair restores its intended geometry.
-See doc/step7.md for provenance, compatibility details and validation results.
+See https://github.com/yarivk12/My-Nethack/blob/phase0/dod-length/doc/step7.md
+for provenance, compatibility details and validation results.
 
 The file doc/fixes5-0-0.txt in the source distribution contains a full list
 of fixes and changes as they were committed. The text in there was written

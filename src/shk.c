@@ -4055,7 +4055,8 @@ sellobj(
         || obj->oclass == BALL_CLASS || obj->oclass == CHAIN_CLASS
         || offer == 0L || (obj->oclass == FOOD_CLASS && obj->oeaten)
         || (Is_candle(obj)
-            && obj->age < 20L * (long) objects[obj->otyp].oc_cost)) {
+            && obj->age < 20L * (long) objects[obj->otyp].oc_cost
+            && obj->otyp != MAGIC_CANDLE)) {
         pline("%s seems uninterested%s.", Shknam(shkp),
               cgold ? " in the rest" : "");
         if (container)
@@ -5659,7 +5660,9 @@ cost_per_charge(
     /* The idea is to make the exhaustive use of an unpaid item
      * more expensive than buying it outright.
      */
-    if (otmp->otyp == MAGIC_LAMP) { /* 1 */
+    if (otmp->otyp == MAGIC_CANDLE) {
+        tmp = (long) objects[WAX_CANDLE].oc_cost;
+    } else if (otmp->otyp == MAGIC_LAMP) { /* 1 */
         /* normal use (ie, as light source) of a magic lamp never
            degrades its value, but not charging anything would make
            identification too easy; charge an amount comparable to

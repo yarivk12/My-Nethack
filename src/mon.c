@@ -852,7 +852,7 @@ make_corpse(struct monst *mtmp, unsigned int corpseflags)
     case PM_WATCH_CAPTAIN:
 
     case PM_MEDUSA: case PM_WIZARD_OF_YENDOR: case PM_CROESUS:
-    case PM_GHOST: case PM_SHADE: case PM_WATER_DEMON:
+    case PM_SHADOW: case PM_GHOST: case PM_SHADE: case PM_WATER_DEMON:
     case PM_AMOROUS_DEMON: case PM_HORNED_DEVIL:
     case PM_ERINYS: case PM_BARBED_DEVIL: case PM_MARILITH: case PM_VROCK:
     case PM_HEZROU: case PM_BONE_DEVIL: case PM_ICE_DEVIL: case PM_NALFESHNEE:

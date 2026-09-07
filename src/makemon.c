@@ -1300,6 +1300,9 @@ makemon(
     if ((mmflags & MM_MINVIS) != 0) /* for ^G */
         mon_set_minvis(mtmp, FALSE); /* call after place_monster() */
 
+    if (is_shadow(ptr))
+        mtmp->perminvis = mtmp->minvis = TRUE;
+
     switch (ptr->mlet) {
     case S_MIMIC:
         set_mimic_sym(mtmp);

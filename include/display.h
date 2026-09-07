@@ -41,7 +41,7 @@
 #define _tp_sensemon(mon) \
     (/* The hero can always sense a monster IF:        */  \
      /* 1. the monster has a brain to sense            */  \
-     (!mindless(mon->data))                                \
+     (!mindless(mon->data) && !is_shadow(mon->data))         \
      /* AND     2a. hero is blind and telepathic       */  \
       && ((Blind && Blind_telepat)                         \
           /* OR 2b. hero is using a telepathy inducing */  \
@@ -62,7 +62,8 @@
  * vicinity, and a glyph representing the warning level is displayed.
  */
 #define _mon_warning(mon) \
-    (Warning && !(mon)->mpeaceful && (mdistu(mon) < 100)     \
+    (Warning && !(mon)->mpeaceful && !is_shadow(mon->data) \
+     && (mdistu(mon) < 100)                               \
      && (((int) ((mon)->m_lev / 4)) >= svc.context.warnlevel))
 
 /*

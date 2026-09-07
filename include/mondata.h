@@ -212,7 +212,10 @@
 
 #define is_vampire(ptr) ((ptr)->mlet == S_VAMPIRE)
 
-#define hates_light(ptr) ((ptr) == &mons[PM_GREMLIN])
+/* NerfHack classic Tomb: only the Shadow is imported. */
+#define is_shadow(ptr) ((ptr) == &mons[PM_SHADOW])
+#define shadelike(ptr) ((ptr) == &mons[PM_SHADE] || is_shadow(ptr))
+#define hates_light(ptr) ((ptr) == &mons[PM_GREMLIN] || is_shadow(ptr))
 
 /* used to vary a few messages */
 #define weirdnonliving(ptr) (is_golem(ptr) || (ptr)->mlet == S_VORTEX)

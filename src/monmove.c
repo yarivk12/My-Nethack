@@ -448,7 +448,7 @@ gelcube_digests(struct monst *mtmp)
 /* FIXME: gremlins don't flee from monsters wielding Sunsword or wearing
    gold dragon scales/mail, nor from gold dragons, only from the hero */
 #define flees_light(mon) \
-    ((mon)->data == &mons[PM_GREMLIN]                                     \
+    (hates_light((mon)->data)                                            \
      && ((uwep && uwep->lamplit && artifact_light(uwep))                  \
          || (uarm && uarm->lamplit && artifact_light(uarm)))              \
      /* not applicable if mon can't see or hero isn't in line of sight */ \
@@ -680,6 +680,10 @@ m_postmove_effect(struct monst *mtmp)
         create_gas_cloud(x, y, 1, 8);
     else if (mtmp->data == &mons[PM_STEAM_VORTEX] && !mtmp->mcan)
         create_gas_cloud(x, y, 1, 0); /* harmless vapor */
+
+    /* Donor Shadow darkens the square it leaves, unless cancelled. */
+    if (is_shadow(mtmp->data) && !mtmp->mcan)
+        levl[x][y].lit = 0;
 }
 
 /* returns 1 if monster died moving, 0 otherwise */

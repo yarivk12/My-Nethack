@@ -380,7 +380,8 @@ struct obj {
 
 /* Light sources */
 #define Is_candle(otmp) \
-    (otmp->otyp == TALLOW_CANDLE || otmp->otyp == WAX_CANDLE)
+    (otmp->otyp == TALLOW_CANDLE || otmp->otyp == WAX_CANDLE \
+     || otmp->otyp == MAGIC_CANDLE)
 #define MAX_OIL_IN_FLASK 400 /* maximum amount of oil in a potion of oil */
 
 /* age field of this is relative age rather than absolute; does not include
@@ -396,6 +397,7 @@ struct obj {
    so include it; brass lantern can be lit but not by fire */
 #define ignitable(otmp) \
     ((otmp)->otyp == BRASS_LANTERN || (otmp)->otyp == OIL_LAMP      \
+     || (otmp)->otyp == MAGIC_CANDLE                              \
      || ((otmp)->otyp == MAGIC_LAMP && (otmp)->spe > 0)             \
      || (otmp)->otyp == CANDELABRUM_OF_INVOCATION                   \
      || (otmp)->otyp == TALLOW_CANDLE || (otmp)->otyp == WAX_CANDLE \

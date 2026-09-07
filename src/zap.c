@@ -1322,6 +1322,7 @@ cancel_item(struct obj *obj)
         if (obj->spe != cancelled_spe
             && otyp != WAN_CANCELLATION /* can't cancel cancellation */
             && otyp != MAGIC_LAMP /* cancelling doesn't remove djinni */
+            && otyp != MAGIC_CANDLE /* permanent magical light */
             && otyp != CANDELABRUM_OF_INVOCATION) {
             costly_alteration(obj, COST_CANCEL);
             obj->spe = cancelled_spe;
@@ -1852,6 +1853,9 @@ poly_obj(struct obj *obj, int id)
         if (otmp->otyp == MAGIC_LAMP) {
             otmp->otyp = OIL_LAMP;
             otmp->age = 1500L; /* "best" oil lamp possible */
+        } else if (otmp->otyp == MAGIC_CANDLE) {
+            otmp->otyp = WAX_CANDLE;
+            otmp->age = 400L;
         } else if (otmp->otyp == MAGIC_MARKER) {
             otmp->recharged = 1; /* degraded quality */
         }

@@ -839,7 +839,7 @@ hmon_hitmon_barehands(struct _hitmon_data *hmd, struct monst *mon)
 {
     long spcdmgflg, silverhit = 0L; /* worn masks */
 
-    if (hmd->mdat == &mons[PM_SHADE]) {
+    if (shadelike(hmd->mdat)) {
         hmd->dmg = 0;
     } else {
         /* note: 1..2 or 1..4 can be substantially increased by
@@ -889,7 +889,7 @@ hmon_hitmon_weapon_ranged(
 {
     /* then do only 1-2 points of damage and don't use or
        train weapon's skill */
-    if (hmd->mdat == &mons[PM_SHADE] && !shade_glare(obj))
+    if (shadelike(hmd->mdat) && !shade_glare(obj))
         hmd->dmg = 0;
     else
         hmd->dmg = rnd(2);
@@ -911,7 +911,7 @@ hmon_hitmon_weapon_ranged(
         if (!more_than_1)
             obj = (struct obj *) 0;
         hmd->hittxt = TRUE;
-        if (hmd->mdat != &mons[PM_SHADE])
+        if (!shadelike(hmd->mdat))
             hmd->dmg++;
     }
 }
@@ -1112,7 +1112,7 @@ hmon_hitmon_potion(
     hmd->hittxt = TRUE;
     /* in case potion effect causes transformation */
     hmd->mdat = mon->data;
-    hmd->dmg = (hmd->mdat == &mons[PM_SHADE]) ? 0 : 1;
+    hmd->dmg = (shadelike(hmd->mdat)) ? 0 : 1;
 }
 
 staticfn void
@@ -1423,7 +1423,7 @@ hmon_hitmon_do_hit(
             if (hmd->doreturn)
                 return;
         } else {
-            if (hmd->mdat == &mons[PM_SHADE] && !shade_aware(obj)) {
+            if (shadelike(hmd->mdat) && !shade_aware(obj)) {
                 hmd->dmg = 0;
             } else {
                 hmon_hitmon_misc_obj(hmd, mon, obj);
@@ -1810,7 +1810,7 @@ hmon_hitmon(
         hmon_hitmon_poison(&hmd, mon, obj);
 
     if (hmd.dmg < 1) {
-        boolean mon_is_shade = (mon->data == &mons[PM_SHADE]);
+        boolean mon_is_shade = (shadelike(mon->data));
 
         /* make sure that negative damage adjustment can't result
            in inadvertently boosting the victim's hit points */
@@ -2024,7 +2024,7 @@ shade_miss(
     boolean youagr = (magr == &gy.youmonst), youdef = (mdef == &gy.youmonst);
 
     /* we're using dmgval() for zero/not-zero, not for actual damage amount */
-    if (mdef->data != &mons[PM_SHADE] || (obj && dmgval(obj, mdef)))
+    if (!shadelike(mdef->data) || (obj && dmgval(obj, mdef)))
         return FALSE;
 
     if (verbose
@@ -3987,7 +3987,7 @@ mhitm_ad_phys(
 
     if (magr == &gy.youmonst) {
         /* uhitm */
-        if (pd == &mons[PM_SHADE]) {
+        if (shadelike(pd)) {
             mhm->damage = 0;
             if (!mhm->specialdmg)
                 impossible("bad shade attack function flow?");
@@ -5640,7 +5640,7 @@ hmonas(struct monst *mon)
                     verb = "hit";
                     break;
                 }
-                if (mon->data == &mons[PM_SHADE] && !specialdmg) {
+                if (shadelike(mon->data) && !specialdmg) {
                     if (!strcmp(verb, "hit")
                         || (mattk->aatyp == AT_CLAW && humanoid(mon->data)))
                         verb = "attack";
@@ -5714,7 +5714,7 @@ hmonas(struct monst *mon)
                     || mon->mhp <= 1 + max(u.udaminc, 1))
                     unconcerned = FALSE;
             }
-            if (mon->data == &mons[PM_SHADE]) {
+            if (shadelike(mon->data)) {
                 const char *verb = byhand ? "grasp" : "hug";
 
                 /* hugging a shade; successful if blessed outermost armor
@@ -5773,7 +5773,7 @@ hmonas(struct monst *mon)
             if ((dhit = (tmp > rnd(20 + i)))) {
                 wakeup(mon, TRUE);
                 /* can't engulf unsolid creatures */
-                if (mon->data == &mons[PM_SHADE]) {
+                if (shadelike(mon->data)) {
                     /* no specialdmg check needed */
                     Your("attempt to surround %s is harmless.", mon_nam(mon));
                 } else if (failed_grab(&gy.youmonst, mon, mattk)) {

@@ -49,6 +49,12 @@ dungeon = {
             direction = "up"
          },
          {
+            name = "The Lost Tomb",
+            base = 30,
+            range = 170,
+            direction = "down"
+         },
+         {
             name = "The Temple of Moloch",
             base = 30,
             range = 170,
@@ -336,7 +342,15 @@ dungeon = {
          },
       }
    },
-   -- Appended to preserve existing dungeon numbers and ledger ranges.
+   -- Enrichment branches follow vanilla dungeons. Step 7 uses a new save epoch.
+   {
+      name = "The Lost Tomb",
+      base = 1,
+      bonetag = "Z",
+      flags = { "mazelike" },
+      alignment = "chaotic",
+      levels = { { name = "tomb-1", bonetag = "Z", base = 1 } }
+   },
    {
       name = "The Temple of Moloch",
       base = 1,

@@ -75,6 +75,23 @@ Lair; and exactly 1 optional Temple of Moloch branch. These features use
 randomized placement through the extended Dungeons of Doom. The deterministic
 DL101--105 test placement was removed after validation.
 
+Step 7: classic Lost Tomb
+
+Imports only NerfHack dev's classic dat/tomb-1.lua from pinned commit
+0cb8781b0929b4617590a3b9fe78f972ef42c25f; tomb-2 is not imported. Exactly one
+optional, one-level Lost Tomb branch is placed at DoD DL30--199 through the
+existing persistent enrichment scheduler, avoiding its reserved depths.
+Shadow is a genuine G_NOGEN monster. Magic Candle joins the normal tool
+population and provides permanent light, with finite ordinary candles when
+attached to the Candelabrum. Vanilla magic lamp and wishing remain unchanged.
+
+Local adaptations preserve the donor map bytes while using one return stair,
+map donor undead/Shadow flags to local behavior, and reuse ghost/wax tile art.
+Object, monster and dungeon index changes require the normal EDITLEVEL 2 save
+epoch; start fresh games with this build. Step 6 counts and Castle DL200 remain
+unchanged. A four-newline Moloch map repair restores its intended geometry.
+See doc/step7.md for provenance, compatibility details and validation results.
+
 The file doc/fixes5-0-0.txt in the source distribution contains a full list
 of fixes and changes as they were committed. The text in there was written
 for the development team's own use and is provided  "as is", so please do

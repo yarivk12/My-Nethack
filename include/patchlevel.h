@@ -17,7 +17,8 @@
  * Incrementing EDITLEVEL can be used to force invalidation of old bones
  * and save files.
  */
-#define EDITLEVEL 1
+/* Step 7 adds monster/object IDs and a dungeon: invalidate older saves. */
+#define EDITLEVEL 2
 
 /*
  * Development status possibilities.

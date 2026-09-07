@@ -1566,10 +1566,11 @@ staticfn void
 step6b_schedule(void)
 {
     boolean used[MAXLEVEL + 1] = { FALSE };
-    branch *temple = (branch *) 0, *br;
+    branch *temple = (branch *) 0, *tomb = (branch *) 0, *br;
     s_level *slev;
     int dod = dname_to_dnum("The Dungeons of Doom");
     int temple_dnum = dname_to_dnum("The Temple of Moloch");
+    int tomb_dnum = dname_to_dnum("The Lost Tomb");
     int dlevel, bigrooms = 0, target_bigrooms;
 
     for (slev = svs.sp_levchn; slev; slev = slev->next)
@@ -1581,6 +1582,8 @@ step6b_schedule(void)
     for (br = svb.branches; br; br = br->next) {
         if (br->end2.dnum == temple_dnum && br->end1.dnum == dod)
             temple = br;
+        else if (br->end2.dnum == tomb_dnum && br->end1.dnum == dod)
+            tomb = br;
         else if (br->end1.dnum == dod
                  && br->end1.dlevel >= STEP6B_MIN_LEVEL
                  && br->end1.dlevel <= STEP6B_MAX_LEVEL)
@@ -1632,6 +1635,17 @@ step6b_schedule(void)
     dlevel = step6b_pick_depth(used, TRUE);
     used[dlevel] = TRUE;
     step6b_add_level("x6b-dragon", dlevel, 'I', 0);
+
+    /* Step 7: reserve the Tomb after all Step 6 features, using the same
+     * free pool and ordinary branch persistence/depth semantics. */
+    if (!tomb)
+        panic("Missing Lost Tomb branch");
+    dlevel = step6b_pick_depth(used, FALSE);
+    tomb->end1.dlevel = (xint16) dlevel;
+    insert_branch(tomb, TRUE);
+    svd.dungeons[tomb_dnum].depth_start = depth(&tomb->end1)
+        + (tomb->type == BR_PORTAL ? 0 : (tomb->end1_up ? -1 : 1))
+        - (svd.dungeons[tomb_dnum].entry_lev - 1);
 }
 #endif /* !SFCTOOL */
 

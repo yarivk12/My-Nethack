@@ -898,6 +898,8 @@ const char *terrain_descr[] = {
        "Bridge",        /* drawbridge_down, span across moat/ice/lava/floor */
        "Air",           /* open air on Air level or bubble on Water level */
        "Cloud",         /* [part of] a cloud or Air level */
+       "Dead-tree",
+       "Bog",
        /*
         */
 /*37*/ "",              /* MAX_TYPE; skipped ratther than overloaded */

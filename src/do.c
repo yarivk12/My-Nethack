@@ -21,6 +21,34 @@ staticfn void familiar_level_msg(void);
 staticfn void final_level(void);
 staticfn void temperature_change_msg(schar);
 staticfn boolean better_not_try_to_drop_that(struct obj *);
+staticfn boolean moria_keep_level(void);
+
+/* Unlike the legacy shallow scan, include contained and buried invocation
+ * items too: regenerating must not destroy a required ascension object. */
+staticfn boolean
+moria_unique_chain(struct obj *obj)
+{
+    for (; obj; obj = obj->nobj)
+        if (obj->otyp == AMULET_OF_YENDOR || obj->otyp == BELL_OF_OPENING
+            || obj->otyp == CANDELABRUM_OF_INVOCATION
+            || obj->otyp == SPE_BOOK_OF_THE_DEAD
+            || moria_unique_chain(obj->cobj))
+            return TRUE;
+    return FALSE;
+}
+
+staticfn boolean
+moria_keep_level(void)
+{
+    struct monst *mon;
+
+    if (moria_unique_chain(fobj) || moria_unique_chain(svl.level.buriedobjlist))
+        return TRUE;
+    for (mon = fmon; mon; mon = mon->nmon)
+        if (moria_unique_chain(mon->minvent))
+            return TRUE;
+    return FALSE;
+}
 
     /* static boolean badspot(coordxy,coordxy); */
 
@@ -54,7 +82,7 @@ boulder_hits_pool(
 {
     if (!otmp || otmp->otyp != BOULDER) {
         impossible("Not a boulder?");
-    } else if (is_pool_or_lava(rx, ry)) {
+    } else if (is_pool_or_lava(rx, ry) || IS_BOG(levl[rx][ry].typ)) {
         boolean lava = is_lava(rx, ry), fills_up;
         const char *what = waterbody_name(rx, ry);
         schar ltyp = levl[rx][ry].typ;
@@ -63,7 +91,7 @@ boulder_hits_pool(
 
         /* chance for boulder to fill pool:  Plane of Water==0%,
            lava 10%, wall of water==50%, other water==90% */
-        fills_up = Is_waterlevel(&u.uz) ? FALSE
+        fills_up = IS_BOG(ltyp) ? TRUE : Is_waterlevel(&u.uz) ? FALSE
                    : IS_WATERWALL(ltyp) ? (chance < 5)
                      : lava ? (chance == 0) : (chance != 0);
 
@@ -1492,7 +1520,7 @@ goto_level(
     int l_idx, save_mode;
     NHFILE *nhfp;
     xint16 new_ledger;
-    boolean cant_go_back, great_effort,
+    boolean cant_go_back, great_effort, regenerate_moria = FALSE,
             up = (depth(newlevel) < depth(&u.uz)),
             newdungeon = (u.uz.dnum != newlevel->dnum),
             leaving_tutorial = FALSE,
@@ -1637,6 +1665,22 @@ goto_level(
      */
     vision_recalc(2);
 
+    /* The donor's barren tribute level is intentionally nonpersistent.
+     * Keep it when an invocation item would otherwise become unreachable. */
+    if (moria_level(&u.uz) == 3 && !moria_keep_level()) {
+        struct monst *next;
+        d_level dest;
+
+        regenerate_moria = TRUE;
+        for (mtmp = fmon; mtmp; mtmp = next) {
+            next = mtmp->nmon;
+            if (DEADMONSTER(mtmp))
+                continue;
+            get_level(&dest, random_teleport_level());
+            migrate_to_level(mtmp, ledger_no(&dest), MIGR_RANDOM, (coord *) 0);
+        }
+    }
+
     /*
      * Save the level we're leaving.  If we're entering the endgame,
      * we can get rid of all existing levels because they cannot be
@@ -1668,6 +1712,12 @@ goto_level(
                 remdun_mapseen(l_idx);
         /* get rid of mons & objs scheduled to migrate to discarded levels */
         discard_migrations();
+    }
+
+    if (regenerate_moria) {
+        l_idx = ledger_no(&u.uz);
+        delete_levelfile(l_idx);
+        svl.level_info[l_idx].flags = 0;
     }
 
     if (Is_rogue_level(newlevel) || Is_rogue_level(&u.uz))

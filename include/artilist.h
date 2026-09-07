@@ -306,6 +306,11 @@ static NEARDATA struct artifact artilist[] = {
       NON_PM,
       0, 12, 4000L, NO_COLOR, EYE_OF_THE_AETHIOPICA),
 
+    /* Balin's grave, pinned UnNetHack Moria. */
+    A("The Earthstone", SAPPHIRE, SPFX_NOGEN, 0, 0,
+      NO_ATTK, NO_DFNS, NO_CARY, MORIA_PORTAL, A_NEUTRAL, NON_PM, NON_PM,
+      0, 0, 7000L, NO_COLOR, EARTHSTONE),
+
 #if !defined(ARTI_ENUM) && !defined(DUMP_ARTI_ENUM)
     /*
      *  terminator; otyp must be zero

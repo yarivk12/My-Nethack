@@ -650,6 +650,11 @@ really_kick_object(coordxy x, coordxy y)
     if (Is_box(gk.kickedobj)) {
         boolean otrp = gk.kickedobj->otrapped;
 
+        if (gk.kickedobj->otyp == IRON_SAFE) {
+            pline("CLANG!");
+            return 1;
+        }
+
         if (range < 2)
             pline("THUD!");
         container_impact_dmg(gk.kickedobj, x, y);
@@ -1130,6 +1135,45 @@ kick_nondoor(coordxy x, coordxy y, int avrg_attrib)
     }
     if (gm.maploc->typ == IRONBARS) {
         kick_ouch(x, y, "");
+        return ECMD_TIME;
+    }
+    if (gm.maploc->typ == DEADTREE) {
+        int result;
+        coord cc;
+
+        if (Levitation) {
+            kick_dumb(x, y);
+            return ECMD_TIME;
+        }
+        You("kick the dead tree.");
+        result = rn2((gm.maploc->looted & TREE_FLOCK) ? 4 : 5);
+        switch (result) {
+        case 0:
+            kick_ouch(x, y, "");
+            break;
+        case 1:
+            pline_The("tree is tottering...");
+            break;
+        case 2:
+            pline("Some branches are swinging...");
+            break;
+        case 3:
+            if (!may_dig(x, y)) {
+                kick_ouch(x, y, "");
+                break;
+            }
+            pline_The("dead tree falls down.");
+            gm.maploc->typ = ROOM;
+            gm.maploc->flags = 0;
+            unblock_point(x, y);
+            newsym(x, y);
+            break;
+        case 4:
+            if (enexto(&cc, x, y, &mons[PM_RAVEN]))
+                (void) makemon(&mons[PM_RAVEN], cc.x, cc.y, MM_ANGRY);
+            gm.maploc->looted |= TREE_FLOCK;
+            break;
+        }
         return ECMD_TIME;
     }
     if (IS_TREE(gm.maploc->typ)) {

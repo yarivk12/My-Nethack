@@ -126,6 +126,7 @@ typedef struct nhl_user_data {
     uint32_t flags;     /* from nhl_sandbox_info */
 
     uint32_t memlimit;
+    size_t meminuse; /* allocator accounting, also valid during finalizers */
 
     uint32_t steps;     /* current counter */
     uint32_t osteps;    /* original steps value */
@@ -379,6 +380,8 @@ static const struct {
                 { 'I', ICE },
                 { 'W', WATER },
                 { 'T', TREE },
+                { 't', DEADTREE },
+                { 'M', BOG },
                 { 'F', IRONBARS }, /* Fe = iron */
                 { 'x', MAX_TYPE }, /* "see-through" */
                 { 'B', CROSSWALL }, /* hack: boundary location */
@@ -925,6 +928,13 @@ nhl_an(lua_State *L)
     else
         nhl_error(L, "Wrong args");
 
+    return 1;
+}
+
+staticfn int
+nhl_night(lua_State *L)
+{
+    lua_pushboolean(L, night());
     return 1;
 }
 
@@ -1886,6 +1896,7 @@ static const struct luaL_Reg nhl_functions[] = {
     { "ing_suffix", nhl_ing_suffix },
     { "an", nhl_an },
     { "rn2", nhl_rn2 },
+    { "night", nhl_night },
     { "random", nhl_random },
     { "level_difficulty", nhl_level_difficulty },
     { "is_genocided", nhl_is_genocided },
@@ -2976,24 +2987,35 @@ UNSAFEIO:
 RESTORE_WARNING_CONDEXPR_IS_CONSTANT
 
 staticfn void *
-nhl_alloc(void *ud, void *ptr, size_t osize UNUSED, size_t nsize)
+nhl_alloc(void *ud, void *ptr, size_t osize, size_t nsize)
 {
     nhl_user_data *nud = ud;
+    void *result;
 
-    if (nsize == 0) {
-        if (ptr != NULL) {
-            free(ptr);
-        }
+    /* For a new block Lua passes its object type as osize, not a byte count. */
+    if (!ptr)
+        osize = 0;
+    if (!nsize) {
+        if (nud)
+            nud->meminuse -= osize;
+        free(ptr);
         return NULL;
     }
 
-    /* Check nud->L because it will be NULL during state init. */
-    if (nud && nud->L && nud->memlimit) { /* this state is size limited */
-        if (nhl_getmeminuse(nud->L) > nud->memlimit)
+    /* lua_gc(COUNT) returns -1 inside a finalizer. Querying it here turns
+       that into a huge unsigned count and falsely rejects GC allocations.
+       Track bytes directly; shrinking/freeing must always remain possible. */
+    if (nud && nud->memlimit && nsize > osize) {
+        size_t growth = nsize - osize;
+
+        if (growth > nud->memlimit
+            || nud->meminuse > nud->memlimit - growth)
             return NULL;
     }
-
-    return re_alloc(ptr, (unsigned) nsize);
+    result = re_alloc(ptr, (unsigned) nsize);
+    if (result && nud)
+        nud->meminuse = nud->meminuse - osize + nsize;
+    return result;
 }
 
 DISABLE_WARNING_UNREACHABLE_CODE
@@ -3061,6 +3083,7 @@ nhlL_newstate(nhl_sandbox_info *sbi, const char *name)
             return 0;
         nud->L = NULL;
         nud->memlimit = sbi->memlimit;
+        nud->meminuse = 0;
         nud->perpcall = 0; /* set up below, if needed */
         nud->steps = 0;
         nud->osteps = 0;

@@ -59,6 +59,12 @@ dungeon = {
             base = 30,
             range = 170,
             direction = "down"
+         },
+         {
+            name = "The Ruins of Moria",
+            base = 30,
+            range = 170,
+            direction = "up"
          }
       },
       levels = {
@@ -357,5 +363,22 @@ dungeon = {
       flags = { "mazelike" },
       alignment = "chaotic",
       levels = { { name = "moloch", base = 1 } }
+   },
+   {
+      name = "The Ruins of Moria",
+      base = 6,
+      entry = -1,
+      flags = { "mazelike" },
+      alignment = "unaligned",
+      -- Choose equal-weight variants once; exact names survive in sp_levchn.
+      -- This also identifies each variant's runtime monster-generation rule.
+      levels = {
+         { name = "moria6-" .. math.random(1,2), base = 1 },
+         { name = "moria5-1", bonetag = "5", base = 2 },
+         { name = "moria4-" .. math.random(1,4), bonetag = "4", base = 3 },
+         { name = "moria3-1", bonetag = "3", base = 4 },
+         { name = "moria2-1", bonetag = "2", base = 5 },
+         { name = "moria1-1", bonetag = "1", base = 6 }
+      }
    },
 }

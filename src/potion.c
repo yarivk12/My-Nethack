@@ -2271,7 +2271,8 @@ dodip(void)
     char qbuf[QBUFSZ], obuf[QBUFSZ];
     const char *shortestname; /* last resort obj name for prompt */
     uchar here = levl[u.ux][u.uy].typ;
-    boolean is_hands, at_pool = is_pool(u.ux, u.uy),
+    boolean is_hands, at_pool = (is_pool(u.ux, u.uy)
+                                || IS_BOG(levl[u.ux][u.uy].typ)),
             at_fountain = IS_FOUNTAIN(here), at_sink = IS_SINK(here),
             at_here = (!iflags.menu_requested
                        && (at_pool || at_fountain || at_sink));

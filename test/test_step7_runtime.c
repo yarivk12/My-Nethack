@@ -15,7 +15,7 @@ struct instance_globals_saved_s svs;
 struct instance_globals_saved_m svm;
 static unsigned rng_state;
 static int light_count, timer_count, light_radius;
-static branch temple, tomb;
+static branch temple, tomb, moria;
 
 void panic(const char *fmt, ...) { fprintf(stderr, "%s\n", fmt); abort(); }
 void impossible(const char *fmt, ...) { fprintf(stderr, "%s\n", fmt); abort(); }
@@ -24,7 +24,8 @@ int rn2(int n) { rng_state = rng_state * 1664525U + 1013904223U;
     return (int) ((rng_state >> 1) % (unsigned) n); }
 int dname_to_dnum(const char *s) {
     return !strcmp(s,"The Dungeons of Doom") ? 0
-        : !strcmp(s,"The Temple of Moloch") ? 1 : 2;
+        : !strcmp(s,"The Temple of Moloch") ? 1
+        : !strcmp(s,"The Lost Tomb") ? 2 : 3;
 }
 s_level *find_level(const char *s) {
     s_level *p; for (p=svs.sp_levchn; p; p=p->next)
@@ -63,7 +64,7 @@ long stop_timer(short fn, anything *a) {
 #include "step7_functions.h"
 
 static void topology(void) {
-    int sample, level, seen[201]={0}, variations=0;
+    int sample, level, seen[201]={0}, moria_seen[201]={0}, variations=0;
     for (sample=1; sample<=2000; sample++) {
         int used[201]={0}, big=0, giant=0, zoo=0, dragon=0;
         s_level *p, *next;
@@ -74,7 +75,11 @@ static void topology(void) {
         svd.dungeons[1].entry_lev=svd.dungeons[2].entry_lev=1;
         temple.end1.dlevel=30; temple.end2.dnum=1; temple.end2.dlevel=1;
         tomb.end1.dlevel=31; tomb.end2.dnum=2; tomb.end2.dlevel=1;
-        temple.next=&tomb; svb.branches=&temple;
+        memset(&moria, 0, sizeof moria);
+        moria.end1.dlevel=45; moria.end1_up=TRUE;
+        moria.end2.dnum=3; moria.end2.dlevel=6;
+        svd.dungeons[3].entry_lev=6;
+        temple.next=&tomb; tomb.next=&moria; svb.branches=&temple;
         step6b_add_level("medusa",196,'M',0);
         step6b_add_level("castle",200,'C',0);
         if (sample%2) step6b_add_level("bigrm",12,'B',14);
@@ -85,6 +90,11 @@ static void topology(void) {
         assert(svd.dungeons[2].depth_start==tomb.end1.dlevel+1);
         assert(svd.dungeons[1].depth_start==temple.end1.dlevel+1);
         used[tomb.end1.dlevel]++; used[temple.end1.dlevel]++;
+        assert(moria.end1.dlevel>=30 && moria.end1.dlevel<=199
+               && moria.end1_up && moria.end2.dlevel==6);
+        assert(!used[moria.end1.dlevel]++);
+        assert(svd.dungeons[3].depth_start == moria.end1.dlevel - 6);
+        moria_seen[moria.end1.dlevel]++;
         seen[tomb.end1.dlevel]++;
         for (p=svs.sp_levchn;p;p=p->next) {
             level=p->dlevel.dlevel;
@@ -99,9 +109,9 @@ static void topology(void) {
         for (p=svs.sp_levchn;p;p=next) { next=p->next; free(p); }
         svs.sp_levchn=NULL;
     }
-    for (level=30;level<=199;level++) variations+=(seen[level]>0);
+    for (level=30;level<=199;level++) variations+=(moria_seen[level]>0);
     assert(variations>100);
-    printf("PASS: 2000 production scheduler samples; %d distinct Tomb depths; Step 6 counts/collisions/depth semantics\n",variations);
+    printf("PASS: 2000 production scheduler samples; %d distinct Moria depths; Step 6 counts/collisions/depth semantics\n",variations);
 }
 
 static void database(void) {

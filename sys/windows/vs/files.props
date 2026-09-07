@@ -74,6 +74,16 @@
     <Luafiles Include = "minefill.lua"/>
     <Luafiles Include = "moloch.lua"/>
     <Luafiles Include = "tomb-1.lua"/>
+    <Luafiles Include = "moria1-1.lua"/>
+    <Luafiles Include = "moria2-1.lua"/>
+    <Luafiles Include = "moria3-1.lua"/>
+    <Luafiles Include = "moria4-1.lua"/>
+    <Luafiles Include = "moria4-2.lua"/>
+    <Luafiles Include = "moria4-3.lua"/>
+    <Luafiles Include = "moria4-4.lua"/>
+    <Luafiles Include = "moria5-1.lua"/>
+    <Luafiles Include = "moria6-1.lua"/>
+    <Luafiles Include = "moria6-2.lua"/>
     <Luafiles Include = "minend-1.lua"/>
     <Luafiles Include = "minend-2.lua"/>
     <Luafiles Include = "minend-3.lua"/>

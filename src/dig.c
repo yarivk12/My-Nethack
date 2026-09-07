@@ -10,7 +10,7 @@ staticfn void mkcavepos(coordxy, coordxy, int, boolean, boolean);
 staticfn void mkcavearea(boolean);
 staticfn boolean pick_can_reach(struct obj *, coordxy, coordxy) NONNULLARG1;
 staticfn int dig(void);
-staticfn void dig_up_grave(coord *);
+staticfn void dig_up_grave(coord *, int);
 staticfn boolean watchman_canseeu(struct monst *) NONNULLARG1;
 staticfn int adj_pit_checks(coord *, char *) NONNULLARG2;
 staticfn void pit_flow(struct trap *, schar);
@@ -366,6 +366,8 @@ dig(void)
         10 + rn2(5) + abon() + uwep->spe - greatest_erosion(uwep) + u.udaminc;
     if (Race_if(PM_DWARF))
         svc.context.digging.effort *= 2;
+    if (lev->typ == DEADTREE)
+        svc.context.digging.effort *= 2;
     if (svc.context.digging.down) {
         struct trap *ttmp = t_at(dpx, dpy);
 
@@ -609,7 +611,7 @@ fillholetyp(coordxy x, coordxy y,
     coordxy x1, y1;
     coordxy lo_x = max(1, x - 1), hi_x = min(x + 1, COLNO - 1),
             lo_y = max(0, y - 1), hi_y = min(y + 1, ROWNO - 1);
-    int pool_cnt = 0, moat_cnt = 0, lava_cnt = 0;
+    int pool_cnt = 0, moat_cnt = 0, lava_cnt = 0, bog_cnt = 0;
 
     for (x1 = lo_x; x1 <= hi_x; x1++)
         for (y1 = lo_y; y1 <= hi_y; y1++)
@@ -621,6 +623,8 @@ fillholetyp(coordxy x, coordxy y,
                 pool_cnt++;
             else if (is_lava(x1, y1))
                 lava_cnt++;
+            else if (IS_BOG(levl[x1][y1].typ))
+                bog_cnt++;
 
     if (!fill_if_any)
         pool_cnt /= 3; /* not as much liquid as the others */
@@ -632,6 +636,8 @@ fillholetyp(coordxy x, coordxy y,
         return MOAT;
     else if ((pool_cnt > 0 && rn2(pool_cnt + 1)) || (pool_cnt && fill_if_any))
         return POOL;
+    else if ((bog_cnt > 0 && rn2(bog_cnt + 1)) || (bog_cnt && fill_if_any))
+        return BOG;
     else
         return ROOM;
 }
@@ -845,8 +851,8 @@ liquid_flow(
     struct monst *mon;
     boolean u_spot = u_at(x, y);
 
-    /* caller should have changed levl[x][y].typ to POOL, MOAT, or LAVA */
-    if (!is_pool_or_lava(x, y)) {
+    /* Caller has changed the terrain to water, lava, or shallow bog. */
+    if (!is_pool_or_lava(x, y) && !IS_BOG(levl[x][y].typ)) {
         if (iflags.sanity_check) {
             impossible("Insane liquid_flow(%d,%d,%s,%s).", x, y,
                        ttmp ? trapname(ttmp->ttyp, TRUE) : "no trap",
@@ -957,8 +963,19 @@ dighole(boolean pit_only, boolean by_magic, coord *cc)
         }
         delobj(boulder_here);
     } else if (IS_GRAVE(old_typ)) {
+        struct engr *ep = engr_at(dig_x, dig_y);
+        int moria_grave = 0;
+
+        /* Creating the pit calls unearth_objs(), which removes the headstone.
+           Remember its identity before that happens; no persistent state. */
+        if (moria_level(&u.uz) == 6 && ep && ep->engr_type == HEADSTONE) {
+            if (!strncmp(ep->engr_txt[actual_text], "Balin,", 6))
+                moria_grave = 1;
+            else if (!strncmp(ep->engr_txt[actual_text], "Guest41,", 8))
+                moria_grave = 2;
+        }
         digactualhole(dig_x, dig_y, BY_YOU, PIT);
-        dig_up_grave(cc);
+        dig_up_grave(cc, moria_grave);
         retval = TRUE;
     } else if (old_typ == DRAWBRIDGE_UP) {
         /* must be floor or ice, other cases handled above */
@@ -1024,7 +1041,7 @@ dighole(boolean pit_only, boolean by_magic, coord *cc)
 }
 
 staticfn void
-dig_up_grave(coord *cc)
+dig_up_grave(coord *cc, int moria_grave)
 {
     struct obj *otmp;
     int what_happens;
@@ -1054,6 +1071,28 @@ dig_up_grave(coord *cc)
         You("have violated the sanctity of this grave!");
     }
 
+    if (moria_grave) {
+        if (moria_grave == 1) {
+            otmp = mksobj_at(CORPSE, dig_x, dig_y, FALSE, FALSE);
+            if (otmp) {
+                set_corpsenm(otmp, PM_DWARF_LEADER);
+                otmp->age -= 100;
+                otmp = oname(otmp, "Balin", ONAME_NO_FLAGS);
+                otmp = mksobj_at(BATTLE_AXE, dig_x, dig_y, FALSE, FALSE);
+                if (otmp)
+                    curse(otmp);
+                otmp = mksobj_at(SAPPHIRE, dig_x, dig_y, FALSE, FALSE);
+                if (otmp)
+                    (void) oname(otmp, artiname(ART_EARTHSTONE), ONAME_NO_FLAGS);
+                You("unearth a corpse.");
+            }
+            goto grave_emptied;
+        } else if (moria_grave == 2) {
+            pline_The("grave seems unused. You have a hopeful feeling...");
+            goto grave_emptied;
+        }
+    }
+
     /* -1: force default case for empty grave */
     what_happens = levl[dig_x][dig_y].emptygrave ? -1 : rn2(5);
     switch (what_happens) {
@@ -1080,6 +1119,8 @@ dig_up_grave(coord *cc)
         pline_The("grave is unoccupied.  Strange...");
         break;
     }
+    levl[dig_x][dig_y].typ = ROOM;
+grave_emptied:
     levl[dig_x][dig_y].typ = ROOM;
     levl[dig_x][dig_y].emptygrave = 0; /* clear 'flags' */
     levl[dig_x][dig_y].disturbed = 0; /* clear 'horizontal' */

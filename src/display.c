@@ -2379,6 +2379,12 @@ back_to_glyph(coordxy x, coordxy y)
     case TREE:
         idx = S_tree;
         break;
+    case DEADTREE:
+        idx = S_deadtree;
+        break;
+    case BOG:
+        idx = S_bog;
+        break;
     case POOL:
     case MOAT:
         idx = S_pool;
@@ -2692,6 +2698,13 @@ map_glyphinfo(
         glyphinfo->gm.sym.symidx = mons[glyph_to_mon(glyph)].mlet + SYM_OFF_M;
     }
     glyphinfo->ttychar = gs.showsyms[glyphinfo->gm.sym.symidx];
+    if (moria_level(&u.uz) == 3 && glyph_is_cmap(glyph)) {
+        int sym = glyph_to_cmap(glyph);
+
+        if ((sym >= S_vwall && sym <= S_trwall)
+            || sym == S_corr || sym == S_litcorr)
+            glyphinfo->ttychar = '#';
+    }
     glyphinfo->glyph = glyph;
 }
 

@@ -730,6 +730,9 @@ HACKINCL = \
 LUA_FILES = $(DAT)asmodeus.lua $(DAT)baalz.lua $(DAT)bigrm-1.lua \
 	$(DAT)bigrm-10.lua $(DAT)bigrm-11.lua $(DAT)bigrm-12.lua \
 	$(DAT)bigrm-13.lua $(DAT)bigrm-14.lua $(DAT)moloch.lua $(DAT)tomb-1.lua \
+	$(DAT)moria1-1.lua $(DAT)moria2-1.lua $(DAT)moria3-1.lua \
+	$(DAT)moria4-1.lua $(DAT)moria4-2.lua $(DAT)moria4-3.lua $(DAT)moria4-4.lua \
+	$(DAT)moria5-1.lua $(DAT)moria6-1.lua $(DAT)moria6-2.lua \
 	$(DAT)bigrm-2.lua $(DAT)bigrm-3.lua $(DAT)bigrm-4.lua \
 	$(DAT)bigrm-5.lua $(DAT)bigrm-6.lua $(DAT)bigrm-7.lua \
 	$(DAT)bigrm-8.lua $(DAT)bigrm-9.lua $(DAT)castle.lua \
@@ -774,7 +777,7 @@ LUA_FILES = $(DAT)asmodeus.lua $(DAT)baalz.lua $(DAT)bigrm-1.lua \
 	$(DAT)quest.lua
 
 luawildcards = asmodeus.lua baalz.lua bigrm-*.lua castle.lua fakewiz?.lua \
-	moloch.lua tomb-1.lua \
+	moloch.lua tomb-1.lua moria?-?.lua \
 	juiblex.lua knox.lua medusa-?.lua minend-?.lua minefill.lua \
 	minetn-?.lua oracle.lua orcus.lua sanctum.lua soko?-?.lua tower?.lua \
 	valley.lua wizard?.lua nhcore.lua nhlib.lua themerms.lua astral.lua \

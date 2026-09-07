@@ -1462,6 +1462,14 @@ domagicportal(struct trap *ttmp)
 
     You("activated a magic portal!");
 
+    /* The Moria Earthstone is the sole portal stone imported. Preserve the
+     * donor's unpaired-portal behavior using the existing destination field. */
+    if (ttmp->dst.dnum == -1 && ttmp->dst.dlevel == -1) {
+        pline_The("magic portal is malfunctioning!");
+        tele();
+        return;
+    }
+
     /* prevent the poor shnook, whose amulet was stolen while in
      * the endgame, from accidently triggering the portal to the
      * next level, and thus losing the game
@@ -2031,6 +2039,11 @@ mlevel_tele_trap(
                 (void) clamp_hole_destination(&tolevel);
             }
         } else if (tt == MAGIC_PORTAL) {
+            if (trap->dst.dnum == -1 && trap->dst.dlevel == -1) {
+                if (in_sight)
+                    pline("%s seems to shimmer for a moment.", Monnam(mtmp));
+                return Trap_Effect_Finished;
+            }
             if (In_endgame(&u.uz) && (mon_has_amulet(mtmp)
                                       || is_home_elemental(mtmp->data)
                                       || rn2(7))) {

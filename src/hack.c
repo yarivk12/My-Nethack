@@ -1628,6 +1628,10 @@ trapmove(
         }
         u.umoved = TRUE;
         break;
+    case TT_SWAMP:
+        if (--u.utrap)
+            You("are stuck in the mud.");
+        break;
     case TT_INFLOOR:
     case TT_BURIEDBALL:
         anchored = (u.utraptype == TT_BURIEDBALL);
@@ -3266,6 +3270,19 @@ pooleffects(
                 gv.vision_full_recalc = 1;
             }
         }
+    }
+
+    if (u.utraptype == TT_SWAMP
+        && (!IS_BOG(levl[u.ux][u.uy].typ) || Levitation || Flying || Wwalking))
+        reset_utrap(TRUE);
+    if (IS_BOG(levl[u.ux][u.uy].typ) && !u.ustuck && !Levitation && !Flying) {
+        if (u.usteed && !grounded(u.usteed->data))
+            return FALSE;
+        if (u.usteed) {
+            dismount_steed(DISMOUNT_GENERIC);
+            return TRUE;
+        }
+        return swamp_effects();
     }
 
     /* check for entering water or lava */

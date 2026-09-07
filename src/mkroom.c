@@ -447,6 +447,17 @@ fill_zoo(struct mkroom *sroom)
                                      TRUE, FALSE);
                 if (!rn2(5))
                     make_grave(sx, sy, (char *) 0);
+                else if (moria_level(&u.uz) == 6 && !rn2(1000)) {
+                    struct engr *ep;
+                    boolean exists = FALSE;
+
+                    for (ep = head_engr; ep; ep = ep->nxt_engr)
+                        if (!strncmp(ep->engr_txt[actual_text], "Guest41,", 8))
+                            exists = TRUE;
+                    if (!exists)
+                        make_grave(sx, sy,
+                            "Guest41, Wherever you are, I hope you're doing fine");
+                }
                 break;
             case BEEHIVE:
                 if (!rn2(3))

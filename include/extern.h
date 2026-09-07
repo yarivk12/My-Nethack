@@ -876,6 +876,10 @@ extern int def_char_to_monclass(char);
 extern int def_char_is_furniture(char);
 
 /* ### dungeon.c ### */
+extern int moria_level(const d_level *);
+extern boolean moria_sky(const d_level *);
+extern struct permonst *moria_rndmonst(void);
+extern boolean swamp_effects(void);
 
 extern void save_dungeon(NHFILE *, boolean, boolean) NONNULLARG1;
 extern void restore_dungeon(NHFILE *) NONNULLARG1;

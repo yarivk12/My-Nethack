@@ -330,6 +330,15 @@
         M1_FLY | M1_BREATHLESS | M1_NOLIMBS | M1_NOHEAD | M1_MINDLESS,
         M2_HOSTILE | M2_NEUTER, 0,
         2, CLR_GRAY, GAS_SPORE),
+    /* Moria: pinned UnNetHack 439b8d63, swamp fern life cycle. */
+    MON(NAM("swamp fern spore"), S_EYE,
+        LVL(1, 3, 5, 0, 0), (G_NOCORPSE | G_NOGEN),
+        A(ATTK(AT_EXPL, AD_PHYS, 2, 4), ATTK(AT_BOOM, AD_PHYS, 2, 4),
+          NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(10, 10, MS_SILENT, MZ_SMALL), MR_POISON, 0,
+        M1_FLY | M1_BREATHLESS | M1_NOLIMBS | M1_NOHEAD | M1_MINDLESS,
+        M2_HOSTILE | M2_NEUTER | M2_NOPOLY, 0,
+        2, CLR_YELLOW, SWAMP_FERN_SPORE),
     MON(NAM("floating eye"), S_EYE,
         LVL(2, 1, 9, 10, 0), (G_GENO | 5),
         A(ATTK(AT_NONE, AD_PLYS, 0, 70),
@@ -794,6 +803,15 @@
         M2_ORC | M2_STRONG | M2_GREEDY | M2_JEWELS | M2_COLLECT,
         M3_INFRAVISIBLE | M3_INFRAVISION,
         7, HI_LORD, ORC_CAPTAIN),
+    MON(NAM("deep orc"), S_ORC,
+        LVL(7, 9, 4, 0, -5), (G_GENO | G_NOGEN | 1),
+        A(ATTK(AT_WEAP, AD_PHYS, 2, 6), ATTK(AT_WEAP, AD_PHYS, 2, 6),
+          NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(1350, 350, MS_ORC, MZ_HUMAN), 0, 0,
+        M1_HUMANOID | M1_OMNIVORE,
+        M2_ORC | M2_STRONG | M2_GREEDY | M2_JEWELS | M2_COLLECT,
+        M3_INFRAVISIBLE | M3_INFRAVISION,
+        9, CLR_GREEN, DEEP_ORC),
     /*
      * piercers
      */
@@ -1674,6 +1692,24 @@
             | M1_NOTAKE,
         M2_HOSTILE | M2_NEUTER, 0,
         5, CLR_MAGENTA, VIOLET_FUNGUS),
+    MON(NAM("swamp fern sprout"), S_FUNGUS,
+        LVL(6, 2, 10, 0, 0), (G_GENO | G_NOCORPSE | G_NOGEN),
+        A(ATTK(AT_GAZE, AD_SPOR, 0, 0), NO_ATTK,
+          NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(20, 200, MS_SILENT, MZ_SMALL), 0, 0,
+        M1_BREATHLESS | M1_NOEYES | M1_NOLIMBS | M1_NOHEAD | M1_MINDLESS
+            | M1_NOTAKE,
+        M2_HOSTILE | M2_NEUTER | M2_NOPOLY, M3_STATIONARY,
+        8, CLR_CYAN, SWAMP_FERN_SPROUT),
+    MON(NAM("swamp fern"), S_FUNGUS,
+        LVL(12, 2, 10, 0, 0), (G_NOHELL | G_GENO | G_NOCORPSE | 1),
+        A(ATTK(AT_GAZE, AD_SPOR, 0, 0), NO_ATTK,
+          NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(20, 200, MS_SILENT, MZ_SMALL), 0, 0,
+        M1_BREATHLESS | M1_NOEYES | M1_NOLIMBS | M1_NOHEAD | M1_MINDLESS
+            | M1_NOTAKE,
+        M2_HOSTILE | M2_NEUTER | M2_NOPOLY, M3_STATIONARY,
+        14, CLR_CYAN, SWAMP_FERN),
     /*
      * Gnomes
      *  Unlike plain human|elf|orc, plain "gnome" is an ordinary monster.
@@ -3062,6 +3098,16 @@
         M2_DEMON | M2_STALK | M2_HOSTILE | M2_STRONG | M2_NASTY | M2_COLLECT,
         M3_INFRAVISIBLE | M3_INFRAVISION,
         20, CLR_RED, BALROG),
+    MON(NAM("Durin's Bane"), S_DEMON,
+        LVL(16, 7, -2, 80, -14), (G_NOCORPSE | G_NOGEN | G_UNIQ | 1),
+        A(ATTK(AT_WEAP, AD_PHYS, 8, 4), ATTK(AT_WEAP, AD_PHYS, 4, 6),
+          NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(WT_HUMAN, 400, MS_SILENT, MZ_LARGE), MR_FIRE | MR_POISON, 0,
+        M1_FLY | M1_SEE_INVIS | M1_POIS,
+        M2_DEMON | M2_STALK | M2_HOSTILE | M2_PNAME | M2_STRONG | M2_NASTY
+            | M2_NEUTER | M2_COLLECT,
+        M3_INFRAVISIBLE | M3_INFRAVISION,
+        20, CLR_RED, DURINS_BANE),
     /* Named demon lords & princes plus Arch-Devils.
      * (their order matters; see minion.c)
      */
@@ -3267,6 +3313,16 @@
         M1_SWIM | M1_AMPHIBIOUS | M1_ANIMAL | M1_NOHANDS | M1_CARNIVORE,
         M2_NOPOLY | M2_HOSTILE | M2_STRONG, M3_INFRAVISIBLE,
         22, CLR_RED, KRAKEN),
+    MON(NAM("Watcher in the Water"), S_EEL,
+        LVL(24, 9, -2, 30, -3), (G_NOGEN | G_UNIQ),
+        A(ATTK(AT_CLAW, AD_PHYS, 2, 6), ATTK(AT_CLAW, AD_PHYS, 2, 6),
+          ATTK(AT_HUGS, AD_WRAP, 2, 6), ATTK(AT_BITE, AD_PHYS, 5, 6),
+          NO_ATTK, NO_ATTK),
+        SIZ(2000, 1000, MS_SILENT, MZ_HUGE), MR_POISON | MR_SLEEP, MR_SLEEP,
+        M1_SWIM | M1_AMPHIBIOUS | M1_ANIMAL | M1_NOHANDS | M1_CARNIVORE,
+        M2_NOPOLY | M2_HOSTILE | M2_STRONG,
+        M3_INFRAVISIBLE | M3_INFRAVISION,
+        28, HI_LORD, WATCHER_IN_THE_WATER),
     /*
      * lizards, &c
      */

@@ -1566,11 +1566,13 @@ staticfn void
 step6b_schedule(void)
 {
     boolean used[MAXLEVEL + 1] = { FALSE };
-    branch *temple = (branch *) 0, *tomb = (branch *) 0, *br;
+    branch *temple = (branch *) 0, *tomb = (branch *) 0,
+           *moria = (branch *) 0, *br;
     s_level *slev;
     int dod = dname_to_dnum("The Dungeons of Doom");
     int temple_dnum = dname_to_dnum("The Temple of Moloch");
     int tomb_dnum = dname_to_dnum("The Lost Tomb");
+    int moria_dnum = dname_to_dnum("The Ruins of Moria");
     int dlevel, bigrooms = 0, target_bigrooms;
 
     for (slev = svs.sp_levchn; slev; slev = slev->next)
@@ -1584,6 +1586,8 @@ step6b_schedule(void)
             temple = br;
         else if (br->end2.dnum == tomb_dnum && br->end1.dnum == dod)
             tomb = br;
+        else if (br->end2.dnum == moria_dnum && br->end1.dnum == dod)
+            moria = br;
         else if (br->end1.dnum == dod
                  && br->end1.dlevel >= STEP6B_MIN_LEVEL
                  && br->end1.dlevel <= STEP6B_MAX_LEVEL)
@@ -1610,6 +1614,21 @@ step6b_schedule(void)
                    : (temple->end1_up ? -1 : 1))
             - (svd.dungeons[temple_dnum].entry_lev - 1);
     }
+
+    /* Choose Moria's upward DoD entrance from the same persistent free pool.
+     * Its initial Lua branch endpoint is provisional; replacing it here keeps
+     * this branch coordinated with all Step 6/7 reservations. */
+    if (!moria)
+        panic("Missing Ruins of Moria branch");
+    dlevel = step6b_pick_depth(used, FALSE);
+    moria->end1.dlevel = (xint16) dlevel;
+    used[dlevel] = TRUE;
+    insert_branch(moria, TRUE);
+    svd.dungeons[moria_dnum].depth_start =
+        depth(&moria->end1)
+        + (moria->type == BR_PORTAL ? 0
+                                    : (moria->end1_up ? -1 : 1))
+        - (svd.dungeons[moria_dnum].entry_lev - 1);
 
     for (slev = svs.sp_levchn; slev; slev = slev->next)
         if (slev->dlevel.dnum == dod && !strcmp(slev->proto, "bigrm"))
@@ -1908,7 +1927,7 @@ has_ceiling(d_level *lev)
     /* FIXME: some (most? all?) of the quest home levels are conceptually
        above ground and don't have ceilings outside of their buildings
        but we don't presently check for that */
-    if (In_endgame(lev) && !Is_earthlevel(lev))
+    if ((In_endgame(lev) && !Is_earthlevel(lev)) || moria_sky(lev))
         return FALSE;
     return TRUE;
 }
@@ -1944,7 +1963,7 @@ ceiling(coordxy x, coordxy y)
     else if (Is_waterlevel(&u.uz))
         /* water plane has no surface; its air bubbles aren't below sky */
         what = "water above";
-    else if (IS_AIR(lev->typ))
+    else if (IS_AIR(lev->typ) || moria_sky(&u.uz))
         what = "sky";
     else if (Is_firelevel(&u.uz))
         what = "flames above";
@@ -1979,6 +1998,8 @@ surface(coordxy x, coordxy y)
     else if (is_pool(x, y))
         return (Underwater && !Is_waterlevel(&u.uz))
             ? "bottom" : hliquid("water");
+    else if (IS_BOG(levtyp))
+        return "muddy swamp";
     else if (is_ice(x, y))
         return "ice";
     else if (is_lava(x, y))
@@ -3949,5 +3970,52 @@ print_mapseen(
 #undef OF_INTEREST
 #undef ADDNTOBUF
 #undef ADDTOBUF
+
+/* UnNetHack Moria identity is entirely in the existing saved special-level
+ * chain. Numbering here follows the donor resource names, not branch depth. */
+int
+moria_level(const d_level *lev)
+{
+    s_level *sp;
+
+    for (sp = svs.sp_levchn; sp; sp = sp->next)
+        if (sp->dlevel.dnum == lev->dnum && sp->dlevel.dlevel == lev->dlevel
+            && !strncmp(sp->proto, "moria", 5)
+            && sp->proto[5] >= '1' && sp->proto[5] <= '6'
+            && sp->proto[6] == '-')
+            return sp->proto[5] - '0';
+    return 0;
+}
+
+boolean
+moria_sky(const d_level *lev)
+{
+    return moria_level(lev) >= 5;
+}
+
+struct permonst *
+moria_rndmonst(void)
+{
+    static const int chance[] = { 0, 50, 60, 70, 90, 10, 40 };
+    int n = moria_level(&u.uz), pct, weight;
+    s_level *sp;
+
+    if (!n)
+        return (struct permonst *) 0;
+    pct = chance[n];
+    if (n == 6) {
+        sp = Is_special(&u.uz);
+        if (sp && !strcmp(sp->proto, "moria6-2"))
+            pct = 60;
+    }
+    if (rn2(100) >= pct)
+        return (struct permonst *) 0;
+    weight = n == 6 ? 8 : 7;
+    if (rn2(10) >= weight)
+        return mkclass(S_ORC, 0);
+    if (!(svm.mvitals[PM_DEEP_ORC].mvflags & G_GENOD))
+        return &mons[PM_DEEP_ORC];
+    return (struct permonst *) 0;
+}
 
 /*dungeon.c*/

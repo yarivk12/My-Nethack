@@ -960,7 +960,7 @@ minliquid(struct monst *mtmp)
 staticfn int
 minliquid_core(struct monst *mtmp)
 {
-    boolean inpool, inlava, infountain;
+    boolean inpool, inlava, infountain, inbog;
     boolean waterwall = is_waterwall(mtmp->mx,mtmp->my);
 
     /* [ceiling clingers are handled below] */
@@ -971,6 +971,8 @@ minliquid_core(struct monst *mtmp)
     inlava = (is_lava(mtmp->mx, mtmp->my)
               && !(is_flyer(mtmp->data) || is_floater(mtmp->data)));
     infountain = IS_FOUNTAIN(levl[mtmp->mx][mtmp->my].typ);
+    inbog = IS_BOG(levl[mtmp->mx][mtmp->my].typ)
+            && !is_flyer(mtmp->data) && !is_floater(mtmp->data);
 
     /* Flying and levitation keeps our steed out of the liquid
        (but not water-walking or swimming; note: if hero is in a
@@ -984,13 +986,13 @@ minliquid_core(struct monst *mtmp)
      * keep going down, and when it gets to 1 hit point the clone
      * function will fail.
      */
-    if (mtmp->data == &mons[PM_GREMLIN] && (inpool || infountain) && rn2(3)) {
+    if (mtmp->data == &mons[PM_GREMLIN] && (inpool || infountain || inbog) && rn2(3)) {
         if (split_mon(mtmp, (struct monst *) 0))
             dryup(mtmp->mx, mtmp->my, FALSE);
         if (inpool)
             water_damage_chain(mtmp->minvent, FALSE);
         return 0;
-    } else if (mtmp->data == &mons[PM_IRON_GOLEM] && inpool && !rn2(5)) {
+    } else if (mtmp->data == &mons[PM_IRON_GOLEM] && (inpool || inbog) && !rn2(5)) {
         int dam = d(2, 6);
 
         if (cansee(mtmp->mx, mtmp->my))
@@ -2392,6 +2394,16 @@ mfndpos(
 staticfn long
 mm_2way_aggression(struct monst *magr, struct monst *mdef)
 {
+    /* The Moria captors and their dwarf prisoners are mortal enemies. */
+    if (magr->data == &mons[PM_DEEP_ORC] && is_dwarf(mdef->data))
+        return ALLOW_M | ALLOW_TM;
+    /* Spores attack other creatures, which retaliate; plants and other
+     * spores are exempt. mm_aggression calls this in both directions. */
+    if (magr->data == &mons[PM_SWAMP_FERN_SPORE]
+        && mdef->data != &mons[PM_SWAMP_FERN_SPORE]
+        && !is_swamp_fern(mdef->data))
+        return ALLOW_M | ALLOW_TM;
+
     if (On_W_tower_level(&u.uz)) {
         /* treat inside the Wizard's tower as if it were a separate level
            from outside so when hero is inside Wizard's tower, both monsters
@@ -3082,6 +3094,17 @@ anger_quest_guardians(struct monst *mtmp)
 
 /* monster 'mtmp' has died; maybe life-save, otherwise unshapeshift and
    update vanquished stats and update map */
+staticfn void
+swamp_spore_dies(struct monst *mtmp)
+{
+    NhRegion *cloud = create_gas_cloud(mtmp->mx, mtmp->my, rn1(2, 1), rnd(8));
+
+    cloud->ttl = rn1(3, 2);
+    if (IS_BOG(levl[mtmp->mx][mtmp->my].typ) && !rn2(3))
+        (void) makemon(&mons[rn2(6) ? PM_SWAMP_FERN_SPROUT : PM_SWAMP_FERN],
+                       mtmp->mx, mtmp->my, NO_MM_FLAGS);
+}
+
 void
 mondead(struct monst *mtmp)
 {
@@ -3178,6 +3201,10 @@ mondead(struct monst *mtmp)
     /* remove 'mtmp' from play; it will stay on the fmon list until end of
        current move, then dmonsfree() will get rid of it */
     m_detach(mtmp, mptr, TRUE);
+    /* After life-saving and detachment, the spore's square can grow a plant.
+     * Regions and their lifetime use the existing region save machinery. */
+    if (mptr == &mons[PM_SWAMP_FERN_SPORE])
+        swamp_spore_dies(mtmp);
     return;
 }
 

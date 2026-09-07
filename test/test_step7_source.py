@@ -17,7 +17,32 @@ def now(path):
 for path in ["src/mklev.c","src/mkroom.c","src/shknam.c","include/dungeon.h",
              "include/global.h","src/save.c","src/restore.c","src/bones.c",
              "dat/bigrm-14.lua"]:
-    assert now(path)==old(path),path
+    current = now(path)
+    if path == "src/mklev.c":
+        # Only the new bog's trap exclusion differs; all shop generation,
+        # probabilities, room scheduling and other bytes remain protected.
+        before = "    if (tm && is_pool_or_lava(tm->x, tm->y))"
+        after = "    if (tm && (is_pool_or_lava(tm->x, tm->y)\n               || IS_BOG(levl[tm->x][tm->y].typ)))"
+        assert current.count(after) == 1
+        current = current.replace(after, before)
+    if path == "src/mkroom.c":
+        # Step 8 adds this exact, Moria-only memorial block. Keep the original
+        # whole-file protection for every other byte, including Step 6 rooms.
+        memorial = '''                else if (moria_level(&u.uz) == 6 && !rn2(1000)) {
+                    struct engr *ep;
+                    boolean exists = FALSE;
+
+                    for (ep = head_engr; ep; ep = ep->nxt_engr)
+                        if (!strncmp(ep->engr_txt[actual_text], "Guest41,", 8))
+                            exists = TRUE;
+                    if (!exists)
+                        make_grave(sx, sy,
+                            "Guest41, Wherever you are, I hope you're doing fine");
+                }
+'''
+        assert current.count(memorial) == 1
+        current = current.replace(memorial, "")
+    assert current==old(path),path
 def function(text,name):
     matches=re.findall(r"(?m)^(?:staticfn )?(?:const )?\w+(?: \*)?\n"
                        +name+r"\([\s\S]*?^\}",text)
@@ -27,7 +52,9 @@ for path,name in [("src/apply.c","dorub"),("src/potion.c","djinni_from_bottle"),
                   ("src/zap.c","makewish")]:
     assert function(now(path),name)==function(old(path),name),name
 for path,pattern,expected in [
-    ("include/monsters.h",r'MON\(NAM\("([^"\n]+)"\)',{"shadow"}),
+    ("include/monsters.h",r'MON\(NAM\("([^"\n]+)"\)',
+     {"shadow", "deep orc", "swamp fern", "swamp fern sprout",
+      "swamp fern spore", "Durin's Bane", "Watcher in the Water"}),
     ("include/objects.h",r'TOOL\("([^"\n]+)"',{"magic candle"})]:
     before=set(re.findall(pattern,old(path))); after=set(re.findall(pattern,now(path)))
     assert after-before==expected and before<=after,path
@@ -39,8 +66,8 @@ assert 'tomb-2' not in dungeon
 assert 'base = 200' in dungeon
 for path in ["sys/unix/Makefile.top","sys/windows/Makefile.nmake","sys/windows/vs/files.props"]:
     assert "tomb-1.lua" in now(path) and "tomb-2" not in now(path)
-assert "#define EDITLEVEL 2" in now("include/patchlevel.h")
-print("PASS source: protected Step 5/6, vanilla wishing/lamp rub, only Shadow/Magic Candle added, classic one-level Tomb/manifests, save epoch")
+assert "#define EDITLEVEL 3" in now("include/patchlevel.h")
+print("PASS source: protected Step 5/6, vanilla wishing/lamp rub, exact Step 7/8 additions, classic one-level Tomb/manifests, Step 8 save epoch")
 
 for arg in sys.argv[1:]:
     data=Path(arg).read_bytes(); stream=io.BytesIO(data)

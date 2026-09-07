@@ -205,8 +205,14 @@ dosounds(void)
     int hallu, vx, vy;
     struct monst *mtmp;
 
+    if (moria_level(&u.uz) == 3 && !u.uswallow && !rn2(200))
+        You_feel("the dungeon suddenly center itself around you!");
+
     if (Deaf || !flags.acoustics || u.uswallow || Underwater)
         return;
+
+    if (moria_level(&u.uz) == 6 && !rn2(200))
+        You_hear("the sound of restless waters.");
 
     hallu = Hallucination ? 1 : 0;
 

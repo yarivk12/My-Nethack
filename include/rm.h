@@ -91,20 +91,22 @@ enum levl_typ_types {
     AIR       = 35,
     CLOUD     = 36,
 
-    MAX_TYPE  = 37,
+    DEADTREE  = 37, /* Moria: dead wood, distinct from living trees */
+    BOG       = 38, /* Moria: shallow muddy water, not a drowning pool */
+    MAX_TYPE  = 39,
     /* for special levels */
-    MATCH_WALL = 38,
+    MATCH_WALL = 40,
 
     /* these aren't levl[][].typ values, they're additional indices
        into terrain_descr[] for status feedback */
-    xFLOOR     = 39,
-    xGROUND    = 40,
-    xOPENDOOR  = 41,
-    xSHUTDOOR  = 42,
-    xSWAMP     = 43,
-    xSUBMERGED = 44,
-    xSEA       = 45,
-    xWATERWALL = 46,
+    xFLOOR     = 41,
+    xGROUND    = 42,
+    xOPENDOOR  = 43,
+    xSHUTDOOR  = 44,
+    xSWAMP     = 45,
+    xSUBMERGED = 46,
+    xSEA       = 47,
+    xWATERWALL = 48,
 
     INVALID_TYPE = 127
 };
@@ -116,16 +118,18 @@ enum levl_typ_types {
  */
 #define IS_WALL(typ) ((typ) && (typ) <= DBWALL)
 #define IS_STWALL(typ) ((typ) <= DBWALL) /* STONE <= (typ) <= DBWALL */
-#define IS_OBSTRUCTED(typ) ((typ) < POOL)      /* absolutely nonaccessible */
+#define IS_OBSTRUCTED(typ) ((typ) < POOL || (typ) == DEADTREE)
 #define IS_SDOOR(typ) ((typ) == SDOOR)
 #define IS_DOOR(typ) ((typ) == DOOR)
 #define IS_DOORJOIN(typ) (IS_OBSTRUCTED(typ) || (typ) == IRONBARS)
 #define IS_TREE(typ)                                            \
-    ((typ) == TREE || (svl.level.flags.arboreal && (typ) == STONE))
-#define ACCESSIBLE(typ) ((typ) >= DOOR) /* good position */
-#define IS_ROOM(typ) ((typ) >= ROOM)    /* ROOM, STAIRS, furniture.. */
-#define ZAP_POS(typ) ((typ) >= POOL)
-#define SPACE_POS(typ) ((typ) > DOOR)
+    ((typ) == TREE || (typ) == DEADTREE \
+     || (svl.level.flags.arboreal && (typ) == STONE))
+#define IS_BOG(typ) ((typ) == BOG)
+#define ACCESSIBLE(typ) ((typ) >= DOOR && (typ) != DEADTREE)
+#define IS_ROOM(typ) ((typ) >= ROOM && (typ) != DEADTREE)
+#define ZAP_POS(typ) ((typ) >= POOL && (typ) != DEADTREE)
+#define SPACE_POS(typ) ((typ) > DOOR && (typ) != DEADTREE)
 #define IS_POOL(typ) ((typ) >= POOL && (typ) <= DRAWBRIDGE_UP)
 #define IS_LAVA(typ) ((typ) == LAVAPOOL || (typ) == LAVAWALL)
 #define IS_THRONE(typ) ((typ) == THRONE)
@@ -137,7 +141,7 @@ enum levl_typ_types {
     ((typ) == DRAWBRIDGE_UP || (typ) == DRAWBRIDGE_DOWN)
 #define IS_FURNITURE(typ) ((typ) >= STAIRS && (typ) <= ALTAR)
 #define IS_AIR(typ) ((typ) == AIR || (typ) == CLOUD)
-#define IS_SOFT(typ) ((typ) == AIR || (typ) == CLOUD || IS_POOL(typ))
+#define IS_SOFT(typ) ((typ) == AIR || (typ) == CLOUD || IS_POOL(typ) || IS_BOG(typ))
 #define IS_WATERWALL(typ) ((typ) == WATER)
 /* for surface checks when it's unknown whether a drawbridge is involved;
    drawbridge_up is the spot in front of a closed drawbridge and not the
@@ -249,6 +253,7 @@ struct rm {
  */
 #define TREE_LOOTED 1
 #define TREE_SWARM 2
+#define TREE_FLOCK 4 /* dead-tree raven already disturbed */
 
 /*
  * Fountains have limits, and special warnings.
@@ -312,6 +317,7 @@ struct rm {
  */
 #define ICED_POOL 8
 #define ICED_MOAT 16
+#define ICED_BOG 24 /* existing five-bit flags field; preserves thaw terrain */
 
 /* light states for terrain replacements, for set_levltyp_lit */
 #define SET_LIT_RANDOM -1

@@ -312,6 +312,9 @@ mkbox_cnts(struct obj *box)
     case ICE_BOX:
         n = 20;
         break;
+    case IRON_SAFE:
+        n = 10;
+        break;
     case CHEST:
         n = box->olocked ? 7 : 5;
         break;
@@ -1008,9 +1011,10 @@ mksobj_init(struct obj **obj, boolean artif)
             otmp->lamplit = 0;
             blessorcurse(otmp, 2);
             break;
+        case IRON_SAFE:
         case CHEST:
         case LARGE_BOX:
-            otmp->olocked = !!(rn2(5));
+            otmp->olocked = (otmp->otyp == IRON_SAFE) || !!(rn2(5));
             otmp->otrapped = !(rn2(10));
             otmp->tknown = otmp->otrapped && !rn2(100); /* obvious trap */
             FALLTHROUGH;

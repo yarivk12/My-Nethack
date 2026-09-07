@@ -3946,6 +3946,9 @@ float_up(void)
             You("float up, out of the %s!", trapname(PIT, FALSE));
             gv.vision_full_recalc = 1; /* vision limits change */
             fill_pit(u.ux, u.uy);
+        } else if (u.utraptype == TT_SWAMP) {
+            reset_utrap(FALSE);
+            You("float up, out of the mud!");
         } else if (u.utraptype == TT_LAVA /* molten lava */
                    || u.utraptype == TT_INFLOOR) { /* solidified lava */
             Your("body pulls upward, but your %s are still stuck.",
@@ -4473,6 +4476,7 @@ fire_damage(
         switch (obj->otyp) {
         case STATUE:
         case ICE_BOX:
+        case IRON_SAFE:
             return FALSE; /* Immune */
         case CHEST:
             chance = 40;
@@ -4751,7 +4755,7 @@ water_damage(
             }
         }
         return ER_GREASED;
-    } else if (Is_container(obj)
+    } else if (Is_container(obj) && obj->otyp != IRON_SAFE
                && (!Waterproof_container(obj) || (obj->cursed && !rn2(3)))) {
         if (in_invent) {
             pline("Some %s gets into your %s!", hliquid("water"), ostr);
@@ -7209,6 +7213,42 @@ trap_sanity_check(void)
             impossible("trap sanity: type (%i)", ttmp->ttyp);
         ttmp = ttmp->ntrap;
     }
+}
+
+/* Shallow Moria bogs impede movement and wet equipment, but never drown.
+ * "mud boots" is an appearance, just as in the pinned UnNetHack donor. */
+boolean
+swamp_effects(void)
+{
+    const char *boots = uarmf ? OBJ_DESCR(objects[uarmf->otyp]) : (char *) 0;
+    boolean safe = Wwalking || (boots && !strncmp(boots, "mud ", 4));
+
+    if (!safe) {
+        if (u.utraptype != TT_SWAMP && !Swimming && !Amphibious) {
+            You("step into muddy swamp.");
+            u.utrap = rnd(3);
+            u.utraptype = TT_SWAMP;
+        } else if (Swimming || Amphibious) {
+            Norep("You are swimming in the muddy water.");
+        }
+        if (!rn2(5)) {
+            Your("baggage gets wet.");
+            water_damage_chain(gi.invent, FALSE);
+        } else if (uarmf) {
+            (void) water_damage(uarmf, "boots", TRUE);
+        }
+    }
+    if (u.umonnum == PM_GREMLIN && rn2(3)) {
+        (void) split_mon(&gy.youmonst, (struct monst *) 0);
+    } else if (u.umonnum == PM_IRON_GOLEM) {
+        int damage = rnd(6);
+
+        You("rust!");
+        if (u.mhmax > damage)
+            u.mhmax -= damage;
+        losehp(damage, "rusting away", KILLED_BY);
+    }
+    return TRUE;
 }
 
 /*trap.c*/

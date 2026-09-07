@@ -18,7 +18,7 @@
  * and save files.
  */
 /* Step 7 adds monster/object IDs and a dungeon: invalidate older saves. */
-#define EDITLEVEL 2
+#define EDITLEVEL 3
 
 /*
  * Development status possibilities.

@@ -349,7 +349,8 @@ enum utraptypes {
     TT_WEB        = 3,
     TT_LAVA       = 4,
     TT_INFLOOR    = 5,
-    TT_BURIEDBALL = 6
+    TT_BURIEDBALL = 6,
+    TT_SWAMP      = 7
 };
 
 enum utotypes {

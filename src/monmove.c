@@ -249,7 +249,9 @@ onscary(coordxy x, coordxy y, struct monst *mtmp)
     /* creatures who are directly resistant to any type of scaring:
      * Rodney, lawful minions, Angels, the Riders */
     if (mtmp->iswiz || is_lminion(mtmp) || mtmp->data == &mons[PM_ANGEL]
-        || is_rider(mtmp->data))
+        || is_rider(mtmp->data)
+        || mtmp->data == &mons[PM_DURINS_BANE]
+        || mtmp->data == &mons[PM_WATCHER_IN_THE_WATER])
         return FALSE;
 
     /* creatures who are directly resistant to magical scaring
@@ -485,7 +487,8 @@ monflee(
         }
         if (!mtmp->mflee && fleemsg && canseemon(mtmp)
             && M_AP_TYPE(mtmp) != M_AP_FURNITURE
-            && M_AP_TYPE(mtmp) != M_AP_OBJECT) {
+            && M_AP_TYPE(mtmp) != M_AP_OBJECT
+            && !is_swamp_fern(mtmp->data)) {
             /* unfortunately we can't distinguish between temporary
                sleep and temporary paralysis, so both conditions
                receive the same alternate message */
@@ -1735,6 +1738,14 @@ m_move(struct monst *mtmp, int after)
     struct mfndposdata mfp;
     long flag;
     coordxy omx = mtmp->mx, omy = mtmp->my;
+
+    if (mtmp->data->mflags3 & M3_STATIONARY)
+        return MMOVE_NOTHING;
+    if (IS_BOG(levl[omx][omy].typ) && rn2(3)
+        && !is_flyer(mtmp->data) && !is_floater(mtmp->data)
+        && !is_clinger(mtmp->data) && !is_swimmer(mtmp->data)
+        && !amphibious(mtmp->data))
+        return MMOVE_NOTHING;
 
     if (mtmp->mtrapped) {
         int i = mintrap(mtmp, NO_TRAP_FLAGS);

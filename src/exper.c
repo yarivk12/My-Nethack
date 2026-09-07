@@ -87,6 +87,10 @@ experience(struct monst *mtmp, int nk)
     struct permonst *ptr = mtmp->data;
     int i, tmp, tmp2;
 
+    /* Reproducing fern spores must not become an experience farm. */
+    if (ptr == &mons[PM_SWAMP_FERN_SPORE])
+        return 0;
+
     tmp = 1 + mtmp->m_lev * mtmp->m_lev;
 
     /*  For higher ac values, give extra experience */

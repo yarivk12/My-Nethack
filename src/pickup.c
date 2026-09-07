@@ -2123,7 +2123,8 @@ do_loot_cont(
                attempt will be performed first but we need to set up
                unlocktool in case "check for trap?" is declined */
             if (((flags.autounlock & AUTOUNLOCK_APPLY_KEY) != 0
-                 && (unlocktool = autokey(TRUE)) != 0)
+                  && (unlocktool = cobj->otyp == IRON_SAFE
+                                   ? carrying(STETHOSCOPE) : autokey(TRUE)) != 0)
                 || (flags.autounlock & AUTOUNLOCK_UNTRAP) != 0) {
                 /* pass ox and oy to avoid direction prompt */
                 if (pick_lock(unlocktool, ox, oy, cobj))

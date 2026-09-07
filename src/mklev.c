@@ -2073,7 +2073,8 @@ mktrap(
     m.x = m.y = 0;
 
     /* no traps in pools */
-    if (tm && is_pool_or_lava(tm->x, tm->y))
+    if (tm && (is_pool_or_lava(tm->x, tm->y)
+               || IS_BOG(levl[tm->x][tm->y].typ)))
         return;
 
     if (num > NO_TRAP && num < TRAPNUM) {

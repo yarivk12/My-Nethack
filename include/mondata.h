@@ -11,6 +11,10 @@
 #define verysmall(ptr) ((ptr)->msize < MZ_SMALL)
 #define bigmonst(ptr) ((ptr)->msize >= MZ_LARGE)
 
+/* Only the Moria-dependent fern family is imported from UnNetHack. */
+#define is_swamp_fern(ptr) ((ptr) == &mons[PM_SWAMP_FERN] \
+                            || (ptr) == &mons[PM_SWAMP_FERN_SPROUT])
+
 #define pm_resistance(ptr, typ) (((ptr)->mresists & (typ)) != 0)
 
 #define immune_poisongas(ptr) ((ptr) == &mons[PM_HEZROU]        \

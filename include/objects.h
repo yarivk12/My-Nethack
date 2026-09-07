@@ -896,12 +896,14 @@ MARKER(LAST_AMULET, AMULET_OF_YENDOR)
            0, TOOL_CLASS, prob, 0, wt, cost, sdam, ldam, hitbon, 0, wt, \
            clr, sn)
 /* containers */
-CONTAINER("large box",       NoDes, 1, 0, 0, 40, 350,   8, WOOD, HI_WOOD,
+CONTAINER("large box",       NoDes, 1, 0, 0, 30, 350,   8, WOOD, HI_WOOD,
                                                                 LARGE_BOX),
 CONTAINER("chest",           NoDes, 1, 0, 0, 35, 600,  16, WOOD, HI_WOOD,
                                                                 CHEST),
 CONTAINER("ice box",         NoDes, 1, 0, 0,  5, 900,  42, PLASTIC, CLR_WHITE,
                                                                 ICE_BOX),
+CONTAINER("iron safe",       NoDes, 1, 0, 0, 10, 900,  50, IRON, HI_METAL,
+                                                                IRON_SAFE),
 CONTAINER("sack",           "bag", 0, 0, 0, 35,  15,   2, CLOTH, HI_CLOTH,
                                                                 SACK),
 CONTAINER("oilskin sack",   "bag", 0, 0, 0,  5,  15, 100, CLOTH, HI_CLOTH,
@@ -1605,6 +1607,9 @@ ROCK("touchstone", "gray", 0,   8,  10, 45, 3, 3, 1, 10, 6, MINERAL, CLR_GRAY,
                                                                   TOUCHSTONE),
 ROCK("flint", "gray",      0,  10,  10,  1, 6, 6, 0, 10, 7, MINERAL, CLR_GRAY,
                                                                     FLINT),
+ROCK("small piece of unrefined mithril", "silvery metal",
+                           0, 0, 1, 10000, 3, 3, 0, 0, 5, MINERAL, HI_SILVER,
+                                                                UNREFINED_MITHRIL),
 ROCK("rock", NoDes,         1, 100,  10,  0, 3, 3, 0, 10, 7, MINERAL, CLR_GRAY,
                                                                     ROCK),
 #undef GEM

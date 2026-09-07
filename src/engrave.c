@@ -518,7 +518,7 @@ u_can_engrave(void)
     } else if (is_lava(u.ux, u.uy)) {
         You_cant("write on the %s!", surface(u.ux, u.uy));
         return FALSE;
-    } else if (is_pool(u.ux, u.uy) || IS_FOUNTAIN(levtyp)) {
+    } else if (is_pool(u.ux, u.uy) || IS_FOUNTAIN(levtyp) || IS_BOG(levtyp)) {
         You_cant("write on the %s!", surface(u.ux, u.uy));
         return FALSE;
     } else if (IS_AIR(levtyp)) {

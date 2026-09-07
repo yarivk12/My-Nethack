@@ -485,7 +485,9 @@ explode(
                 mtmp = m_at(xx, yy);
                 if (!mtmp && u_at(xx, yy))
                     mtmp = u.usteed;
-                if (!mtmp)
+                /* Donor vegetation survives explosions, including its own
+                 * spores. Restrict that rule to the imported fern family. */
+                if (!mtmp || is_swamp_fern(mtmp->data))
                     continue;
                 if (do_hallu) {
                     int tryct = 0;

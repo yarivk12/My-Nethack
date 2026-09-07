@@ -568,6 +568,9 @@ waterbody_name(coordxy x, coordxy y)
         return "drink"; /* should never happen */
     ltyp = SURFACE_AT(x, y);
 
+    if (IS_BOG(ltyp))
+        return "muddy swamp";
+
     if (ltyp == LAVAPOOL) {
         Snprintf(pooltype, sizeof pooltype, "molten %s", hliquid("lava"));
         return pooltype;

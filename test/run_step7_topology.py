@@ -61,22 +61,34 @@ for sample in range(count):
         (game / "topology.txt").write_text(text)
         tombs = re.findall(r"Stair to The Lost Tomb: (\d+)", text)
         temples = re.findall(r"Stair to The Temple of Moloch: (\d+)", text)
+        morias = re.findall(r"Stair to The Ruins of Moria: (\d+)", text)
         big = [int(n) for n in re.findall(r"bigrm: (\d+)", text)]
-        assert len(tombs)==len(temples)==1
-        tomb, temple = int(tombs[0]), int(temples[0])
-        assert 30<=tomb<=199 and 30<=temple<=199
-        assert tomb!=temple and tomb not in big and temple not in big
+        assert len(tombs)==len(temples)==len(morias)==1
+        tomb, temple, moria = (int(tombs[0]), int(temples[0]), int(morias[0]))
+        assert all(30<=d<=199 for d in (tomb, temple, moria))
+        assert len({tomb, temple, moria}.intersection(big)) == 0
+        assert len({tomb, temple, moria}) == 3
         assert 3<=len(big)<=5 and len(big)==len(set(big))
         assert "castle: 200" in text and "tomb-2" not in text
         assert re.search(r"The Lost Tomb: (?:level|depth) " + str(tomb+1)+r"\s", text)
+        assert 'The Ruins of Moria: levels' in text
+        maps = re.findall(r'moria([1-6])-([1-4]): (\d+)', text)
+        assert len(maps) == 6 and len({n for n, _, _ in maps}) == 6
+        # The DoD branch stair is one level below the first Moria map;
+        # moria1 is entrance-1 and moria6 is entrance-6.
+        expected = {n: moria - int(n) for n, _, _ in maps}
+        for n, variant, depth in maps:
+            assert int(depth) == expected[n]
+            assert int(variant) <= ({'4': 4, '6': 2}.get(n, 1))
         if (game / "paniclog").exists():
             assert not (game / "paniclog").read_text().strip()
-        results.append(dict(tomb=tomb, temple=temple, bigrooms=big))
+        results.append(dict(tomb=tomb, temple=temple, moria=moria, bigrooms=big))
         print("PASS fresh game", sample, results[-1], flush=True)
     finally:
         p.terminate(force=True)
         thread.join(timeout=3)
         (game / "terminal.txt").write_text("".join(raw), encoding="utf-8")
 assert len({r["tomb"] for r in results})>1
+assert len({r["moria"] for r in results})>1
 (output / "results.json").write_text(json.dumps(results, indent=2))
-print("PASS: fresh packaged topology varies; one Tomb, one Temple, 3-5 Big Rooms, Castle200")
+print("PASS: fresh packaged topology varies; one Tomb, Temple and Moria, 3-5 Big Rooms, Castle200")

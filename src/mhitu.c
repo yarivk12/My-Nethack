@@ -1613,6 +1613,17 @@ explmu(
     }
 
     switch (mattk->adtyp) {
+    case AD_PHYS: /* Moria spores: donor contact blast, then death cloud. */
+        if (ufound && !not_affected) {
+            if (ACURR(A_DEX) > rnd(20)) {
+                You("duck some of the blast.");
+                tmp = (tmp + 1) / 2;
+            } else if (flags.verbose) {
+                You("get blasted!");
+            }
+            mdamageu(mtmp, Maybe_Half_Phys(tmp));
+        }
+        break;
     case AD_COLD:
     case AD_FIRE:
     case AD_ELEC:
@@ -1664,6 +1675,19 @@ explmu(
 }
 
 /* monster gazes at you */
+/* Spore release is biological rather than a visual gaze. */
+staticfn boolean
+fern_release(struct monst *mtmp)
+{
+    coord cc;
+    boolean sprout = (mtmp->data == &mons[PM_SWAMP_FERN_SPROUT]);
+
+    return !mtmp->mcan && distu(mtmp->mx, mtmp->my) <= 96
+           && (sprout ? !rn2(4) : !rn2(2))
+           && enexto(&cc, mtmp->mx, mtmp->my, &mons[PM_SWAMP_FERN_SPORE])
+           && makemon(&mons[PM_SWAMP_FERN_SPORE], cc.x, cc.y, NO_MM_FLAGS);
+}
+
 int
 gazemu(struct monst *mtmp, struct attack *mattk)
 {
@@ -1680,6 +1704,14 @@ gazemu(struct monst *mtmp, struct attack *mattk)
             cancelled = (mtmp->mcan != 0), already = FALSE,
             mcanseeu = (canseemon(mtmp) && couldsee(mtmp->mx, mtmp->my)
                         && mtmp->mcansee);
+
+    /* A fern emits spores; this does not require eyes or a perceived gaze.
+     * Parenthesize the donor's intended adult/sprout probability explicitly. */
+    if (mattk->adtyp == AD_SPOR) {
+        if (fern_release(mtmp) && canseemon(mtmp))
+            pline("%s releases a spore!", Monnam(mtmp));
+        return 0;
+    }
 
     if (m_seenres(mtmp, cvt_adtyp_to_mseenres(mattk->adtyp)))
         return M_ATTK_MISS;

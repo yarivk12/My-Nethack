@@ -57,6 +57,8 @@ lock_action(void)
         return actions[3]; /* same as lock_pick */
     else if (gx.xlock.door)
         return actions[0]; /* "unlocking the door" */
+    else if (gx.xlock.box && gx.xlock.box->otyp == IRON_SAFE)
+        return "cracking the safe";
     else if (gx.xlock.box)
         return gx.xlock.box->otyp == CHEST ? actions[1] : actions[2];
     else
@@ -69,7 +71,10 @@ picklock(void)
 {
     if (gx.xlock.box) {
         if (gx.xlock.box->where != OBJ_FLOOR
-            || gx.xlock.box->ox != u.ux || gx.xlock.box->oy != u.uy) {
+            || (gx.xlock.box->otyp == IRON_SAFE
+                ? (abs(gx.xlock.box->ox - u.ux) > 1
+                   || abs(gx.xlock.box->oy - u.uy) > 1)
+                : (gx.xlock.box->ox != u.ux || gx.xlock.box->oy != u.uy))) {
             return ((gx.xlock.usedtime = 0)); /* you or it moved */
         }
     } else { /* door */
@@ -412,7 +417,8 @@ pick_lock(
     }
 
     if (pick != &dummypick && picktyp != SKELETON_KEY
-        && picktyp != LOCK_PICK && picktyp != CREDIT_CARD) {
+        && picktyp != LOCK_PICK && picktyp != CREDIT_CARD
+        && picktyp != STETHOSCOPE) {
         impossible("picking lock with object %d?", picktyp);
         return PICKLOCK_DID_NOTHING;
     }
@@ -426,7 +432,8 @@ pick_lock(
         return PICKLOCK_DID_NOTHING;
     }
 
-    if (u_at(cc.x, cc.y)) { /* pick lock on a container */
+    if (u_at(cc.x, cc.y)
+        || (picktyp == STETHOSCOPE && sobj_at(IRON_SAFE, cc.x, cc.y))) {
         const char *verb;
         char qsfx[QBUFSZ];
         boolean it;
@@ -453,6 +460,16 @@ pick_lock(
             if (autounlock && otmp != container)
                 continue;
             if (Is_box(otmp)) {
+                if (otmp->otyp == IRON_SAFE && picktyp != STETHOSCOPE) {
+                    You("aren't sure how to open the safe that way.");
+                    return PICKLOCK_LEARNED_SOMETHING;
+                }
+                if (picktyp == STETHOSCOPE && otmp->otyp != IRON_SAFE)
+                    continue;
+                if (otmp->otyp == IRON_SAFE && !otmp->olocked) {
+                    You_cant("change the combination.");
+                    return PICKLOCK_LEARNED_SOMETHING;
+                }
                 ++count;
                 if (!can_reach_floor(TRUE)) {
                     You_cant("reach %s from up here.", the(xname(otmp)));
@@ -461,6 +478,8 @@ pick_lock(
                 it = 0;
                 if (otmp->obroken)
                     verb = "fix";
+                else if (otmp->otyp == IRON_SAFE)
+                    verb = "crack", it = 1;
                 else if (!otmp->olocked)
                     verb = "lock", it = 1;
                 else if (picktyp != LOCK_PICK)
@@ -526,6 +545,9 @@ pick_lock(
                     break;
                 case SKELETON_KEY:
                     ch = 75 + ACURR(A_DEX);
+                    break;
+                case STETHOSCOPE:
+                    ch = 5 + 2 * ACURR(A_DEX) * Role_if(PM_ROGUE);
                     break;
                 default:
                     ch = 0;
@@ -715,6 +737,10 @@ doforce(void)
     gx.xlock.box = (struct obj *) 0;
     for (otmp = svl.level.objects[u.ux][u.uy]; otmp; otmp = otmp->nexthere)
         if (Is_box(otmp)) {
+            if (otmp->otyp == IRON_SAFE) {
+                You("would need dynamite to force %s.", the(xname(otmp)));
+                continue;
+            }
             if (otmp->obroken || !otmp->olocked) {
                 /* force doname() to omit known "broken" or "unlocked"
                    prefix so that the message isn't worded redundantly;

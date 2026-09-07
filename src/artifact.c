@@ -2159,6 +2159,40 @@ arti_invoke(struct obj *obj)
         case CHARGE_OBJ: res = invoke_charge_obj(obj); break;
         case LEV_TELE: level_tele(); res = ECMD_TIME; break;
         case CREATE_PORTAL: res = invoke_create_portal(obj); break;
+        case MORIA_PORTAL: {
+            coord places[8];
+            coordxy x, y;
+            int n = 0;
+            struct trap *portal;
+
+            if (svl.level.flags.noteleport) {
+                pline("Nothing happens.");
+                break;
+            }
+            for (x = u.ux - 1; x <= u.ux + 1; ++x)
+                for (y = u.uy - 1; y <= u.uy + 1; ++y)
+                    if (isok(x, y) && !u_at(x, y) && !t_at(x, y)
+                        && (levl[x][y].typ == ROOM || levl[x][y].typ == CORR)) {
+                        places[n].x = x;
+                        places[n++].y = y;
+                    }
+            if (!n) {
+                pline("%s grows hot!", Yname2(obj));
+                obj_extract_self(obj);
+                dropy(obj);
+                break;
+            }
+            n = rn2(n);
+            portal = maketrap(places[n].x, places[n].y, MAGIC_PORTAL);
+            if (!portal)
+                break;
+            pline("%s starts pulsating and transforms into a magic portal!",
+                  Yname2(obj));
+            portal->dst.dnum = portal->dst.dlevel = -1;
+            useup(obj);
+            seetrap(portal);
+            break;
+        }
         case ENLIGHTENING:
             enlightenment(MAGICENLIGHTENMENT, ENL_GAMEINPROGRESS);
             res = ECMD_TIME;

@@ -1666,6 +1666,9 @@ rndmonst_adj(int minadj, int maxadj)
     int weight, totalweight, selected_mndx, zlevel, minmlev, maxmlev;
     boolean elemlevel, upper;
 
+    if ((ptr = moria_rndmonst()) != 0)
+        return ptr;
+
     if (u.uz.dnum == quest_dnum && rn2(7) && (ptr = qt_montype()) != 0)
         return ptr;
 

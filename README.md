@@ -10,10 +10,10 @@ kept current with every project commit.
 ## Current state
 
 The completed project includes the frozen dungeon-depth foundation, the Step 5
-shop milestone, and the Step 6/7 NerfHack dungeon enrichment. The Step 7
-implementation is committed as `a3b0ec624` (`Add classic NerfHack Lost Tomb`)
-and tagged `step7-classic-lost-tomb`; later documentation commits keep this
-summary current.
+shop milestone, the Step 6/7 NerfHack dungeon enrichment, and the Step 8
+Ruins of Moria integration. Step 8 is committed as `Add Ruins of Moria` and
+tagged `step8-ruins-of-moria`; this README is updated with every project
+commit.
 
 ## Frozen structural baseline
 
@@ -28,17 +28,19 @@ Commit `64db689a1` (`Expand dungeon depth and harden ledger capacity`), tagged
   were validated on Windows x86 and x64.
 
 This structural baseline is frozen. Later milestones do not change dungeon
-length, ledger capacity, or ordinary depth semantics. Step 7 adds no
-save-format fields; its `EDITLEVEL` advance to 2 is required because stored
-monster, object, and dungeon IDs changed.
+length, ledger capacity, or ordinary depth semantics. Step 7 added no
+save-format fields; its `EDITLEVEL` advance to 2 was required because stored
+monster, object, and dungeon IDs changed. Step 8 also adds no save-format
+fields; `EDITLEVEL` advances to 3 because stored monster, object, artifact,
+dungeon and terrain IDs changed.
 
 ## Step 5: shop optimization
 
 Commit `4ce6bff74` (`shops--optimization-step5-complete`) completed the shop
 milestone:
 
-- Shop creation keeps its existing eligibility rules and uses a 15% minimum
-  shop-attempt chance from depth 20 onward.
+- Shop creation keeps its existing eligibility rules and uses
+  `max(vanilla 3/depth, 15%)`; the 15% minimum therefore starts at DL20.
 - Random shop-type weights are general 30, armor 5, scroll 1, potion 1,
   weapon 1, food 1, ring 15, wand 10, tool 10, spellbook 25, and health-food 1.
 - General and specialized shop-stock distributions were updated to the
@@ -94,9 +96,34 @@ older saves and bones are rejected by the normal version gate. A four-newline
 Moloch map repair restored the intended 56×9 evaluated map without changing its
 gameplay design.
 
+## Step 8: Ruins of Moria
+
+Step 8 imports the Ruins of Moria from the UnNetHack `dev` donor at pinned
+commit `439b8d63d3d1ca78fb08588dd43f61874114b21a`. It adds one six-level upward
+branch represented by ten Lua maps: the Endless Stair, broken bridge,
+regenerating seven-room floor, four orc halls, forest and barracks, and the
+intact or ruined Doors of Durin terminus.
+
+The import preserves the donor's monsters (including deep orcs, Durin's Bane,
+Watcher in the Water and the swamp fern lifecycle), objects (iron safes and
+unrefined mithril), terrain (dead trees, muddy bogs and outdoor sky), Balin's
+grave, the Earthstone artifact and portal, loot, engravings, sounds, map
+geometry and generation tables. Existing magic-lamp and wishing behavior is
+unchanged. No save-format fields were added; the new stored IDs advance
+`EDITLEVEL` to 3.
+
+Exactly one Moria branch is placed per game. Its DoD entrance is selected once
+by the persistent scheduler at a random legal depth from DL30 through DL199,
+with a distinct reservation that avoids all special levels, branch entrances,
+Big Rooms, Giant Court, Real Zoos, Dragon Lair, Temple of Moloch and Lost Tomb.
+The temporary deterministic DL107 placement used during Step 8A manual
+validation was removed before release, and no per-floor random roll remains.
+The six branch floors occupy the entrance depth minus one through minus six
+and return to the saved DoD entrance; Castle remains DL200.
+
 ## Validation
 
-The final Step 7 change set contains focused source/content/runtime tests,
+The final Step 8 change set contains focused source/content/runtime tests,
 topology smoke tests, and packaging checks. Validation included:
 
 - 2,000 scheduler samples on x64 and x86, with 168 distinct legal Tomb depths
@@ -110,10 +137,12 @@ topology smoke tests, and packaging checks. Validation included:
   cleanup checks;
 - x64 and Win32 Release builds and DLB verification;
 - x64/x86 depth-range and ledger/recovery regressions; and
+- Moria's ten-map content, source, runtime, randomized topology, traversal and
+  save/reload checks on x64 and Win32; and
 - `git diff --check` and final source audits with no generated artifacts.
 
 Detailed provenance, compatibility notes, test commands, and the complete
-changed-file inventory are in [doc/step7.md](https://github.com/yarivk12/My-Nethack/blob/phase0/dod-length/doc/step7.md).
+changed-file inventory are in [doc/step8b.md](https://github.com/yarivk12/My-Nethack/blob/phase0/dod-length/doc/step8b.md).
 
 ## Milestone policy
 

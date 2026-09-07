@@ -438,6 +438,11 @@ do_earthquake(int force)
                     pline_The("throne falls%s.", into_a_chasm);
                 do_pit(x, y, tu_pit);
                 break;
+            case DEADTREE:
+                if (cansee(x, y))
+                    pline_The("dead tree topples%s.", into_a_chasm);
+                do_pit(x, y, tu_pit);
+                break;
             case SCORR:
                 levl[x][y].typ = CORR;
                 unblock_point(x, y);

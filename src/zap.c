@@ -5066,7 +5066,8 @@ melt_ice(coordxy x, coordxy y, const char *msg)
     if (lev->typ == DRAWBRIDGE_UP || lev->typ == DRAWBRIDGE_DOWN) {
         lev->drawbridgemask &= ~DB_ICE; /* revert to DB_MOAT */
     } else { /* lev->typ == ICE */
-        lev->typ = (lev->icedpool == ICED_POOL ? POOL : MOAT);
+        lev->typ = (lev->icedpool == ICED_POOL ? POOL
+                    : lev->icedpool == ICED_BOG ? BOG : MOAT);
         lev->icedpool = 0;
     }
     spot_stop_timers(x, y, MELT_ICE_AWAY); /* no more ice to melt away */
@@ -5092,7 +5093,7 @@ melt_ice(coordxy x, coordxy y, const char *msg)
     }
     if (u_at(x, y))
         spoteffects(TRUE); /* possibly drown, notice objects */
-    else if (is_pool(x, y) && (mtmp = m_at(x, y)) != 0)
+    else if ((is_pool(x, y) || IS_BOG(lev->typ)) && (mtmp = m_at(x, y)) != 0)
         (void) minliquid(mtmp);
 }
 
@@ -5178,6 +5179,17 @@ zap_over_floor(
     }
 
     switch (damgtype) {
+    case ZT_DEATH:
+        if (lev->typ == TREE && abs(type) != ZT_BREATH(ZT_DEATH)) {
+            lev->typ = DEADTREE;
+            lev->flags = 0;
+            if (see_it) {
+                pline_The("tree withers!");
+                newsym(x, y);
+            }
+            return -1000;
+        }
+        break;
     case ZT_FIRE:
         t = t_at(x, y);
         if (t && t->ttyp == WEB) {
@@ -5188,7 +5200,25 @@ zap_over_floor(
             if (see_it)
                 newsym(x, y);
         }
-        if (is_ice(x, y)) {
+        if (IS_BOG(lev->typ)) {
+            lev->typ = ROOM;
+            if (fillholetyp(x, y, FALSE) != ROOM)
+                lev->typ = BOG;
+            else
+                lev->flags = 0;
+            if (see_it)
+                pline("%s water evaporates.", lev->typ == BOG ? "Some" : "The");
+            newsym(x, y);
+            return -3;
+        } else if (lev->typ == DEADTREE) {
+            lev->typ = ROOM;
+            lev->flags = 0;
+            if (see_it)
+                pline_The("dead tree burns away!");
+            unblock_point(x, y);
+            newsym(x, y);
+            return -3;
+        } else if (is_ice(x, y)) {
             melt_ice(x, y, (char *) 0);
         } else if (is_pool(x, y)) {
             boolean on_water_level = Is_waterlevel(&u.uz), msggiven = FALSE;
@@ -5254,7 +5284,7 @@ zap_over_floor(
         break; /* ZT_FIRE */
 
     case ZT_COLD:
-        if (is_pool(x, y) || is_lava(x, y) || lavawall) {
+        if (is_pool(x, y) || is_lava(x, y) || lavawall || IS_BOG(lev->typ)) {
             boolean lava = (is_lava(x, y) || lavawall),
                     moat = is_moat(x, y);
             int chance = max(2, 5 + svl.level.flags.temperature * 10);
@@ -5279,7 +5309,7 @@ zap_over_floor(
                 } else {
                     lev->icedpool = lava ? 0
                                          : (lev->typ == POOL) ? ICED_POOL
-                                                              : ICED_MOAT;
+                                         : IS_BOG(lev->typ) ? ICED_BOG : ICED_MOAT;
                     if (lavawall) {
                         if ((isok(x, y-1) && IS_WALL(levl[x][y-1].typ))
                             || (isok(x, y+1) && IS_WALL(levl[x][y+1].typ)))

@@ -337,6 +337,13 @@ use_stethoscope(struct obj *obj)
     if (!getdir((char *) 0))
         return ECMD_CANCEL;
 
+    if (!u.uswallow && u.dz >= 0
+        && sobj_at(IRON_SAFE, u.ux + u.dx, u.uy + u.dy)) {
+        (void) pick_lock(obj, u.ux + u.dx, u.uy + u.dy,
+                        sobj_at(IRON_SAFE, u.ux + u.dx, u.uy + u.dy));
+        return ECMD_TIME;
+    }
+
     res = (gh.hero_seq == svc.context.stethoscope_seq) ? ECMD_TIME : ECMD_OK;
     svc.context.stethoscope_seq = gh.hero_seq;
 
@@ -4282,6 +4289,7 @@ doapply(void)
         break;
     case LARGE_BOX:
     case CHEST:
+    case IRON_SAFE:
     case ICE_BOX:
     case SACK:
     case BAG_OF_HOLDING:

@@ -10,10 +10,10 @@ progress is committed.
 ## Current state
 
 The completed project includes the frozen dungeon-depth foundation, Step 5 shop
-optimization, and Step 6/7 NerfHack dungeon enrichment. The implementation is
-at commit [`f503cc957`](https://github.com/yarivk12/My-Nethack/commits/phase0/dod-length)
-(`Update README with project progress`); Step 7 is tagged
-`step7-classic-lost-tomb`.
+optimization, and Step 6/7 NerfHack dungeon enrichment. The Step 7
+implementation is committed as `a3b0ec624` (`Add classic NerfHack Lost Tomb`)
+and tagged `step7-classic-lost-tomb`; later documentation commits keep this
+summary current.
 
 ## Frozen structural baseline
 
@@ -27,8 +27,10 @@ Commit `64db689a1` (`Expand dungeon depth and harden ledger capacity`), tagged
 - Deep-level save/restore, recovery, Castle, Gehennom, and Vlad's Tower paths
   were validated on Windows x86 and x64.
 
-This structural baseline is frozen. Later milestones do not alter dungeon
-length, ledger capacity, save format, or ordinary depth semantics.
+This structural baseline is frozen. Later milestones do not change dungeon
+length, ledger capacity, or ordinary depth semantics. Step 7 adds no
+save-format fields; its `EDITLEVEL` advance to 2 is required because stored
+monster, object, and dungeon IDs changed.
 
 ## Step 5: shop optimization
 
@@ -36,7 +38,7 @@ Commit `4ce6bff74` (`shops--optimization-step5-complete`) completed the shop
 milestone:
 
 - Shop creation preserves its eligibility rules and uses a 15% minimum
-  shop-attempt chance from depth 21 onward.
+  shop-attempt chance from depth 20 onward.
 - Random shop-type weights are general 30, armor 5, scroll 1, potion 1,
   weapon 1, food 1, ring 15, wand 10, tool 10, spellbook 25, and health-food 1.
 - General and specialized shop-stock distributions use the approved weighted
@@ -101,8 +103,7 @@ Tomb traversal, save/reload with a lit Magic Candle, Candelabrum conversion,
 Shadow exclusion, and final DLB contents were also validated.
 
 Detailed provenance, compatibility notes, test commands, and the complete
-Step 7 changed-file inventory are in [doc/step7.md](doc/step7.md) on the
-`phase0/dod-length` branch.
+Step 7 changed-file inventory are in [doc/step7.md](https://github.com/yarivk12/My-Nethack/blob/phase0/dod-length/doc/step7.md).
 
 ## Milestone policy
 

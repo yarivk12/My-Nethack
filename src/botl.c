@@ -758,7 +758,7 @@ static const struct condmap condition_aliases[] = {
                         | BL_MASK_STRNGL | BL_MASK_STUN | BL_MASK_SUBMERGED
                         | BL_MASK_TERMILL | BL_MASK_TETHERED
                         | BL_MASK_TRAPPED | BL_MASK_UNCONSC
-                        | BL_MASK_WOUNDEDL | BL_MASK_HOLDING },
+                        | BL_MASK_WOUNDEDL | BL_MASK_HOLDING | BL_MASK_FROZEN },
     { "major_troubles", BL_MASK_FOODPOIS | BL_MASK_GRAB | BL_MASK_INLAVA
                         | BL_MASK_SLIME | BL_MASK_STONE | BL_MASK_STRNGL
                         | BL_MASK_TERMILL },
@@ -810,6 +810,7 @@ const struct conditions_t conditions[] = {
     { 20, BL_MASK_UNCONSC,   bl_unconsc,   { "Out",      "Out",   "KO"  } },
     { 20, BL_MASK_WOUNDEDL,  bl_woundedl,  { "WLegs",    "Leg",   "Lg"  } },
     { 20, BL_MASK_HOLDING,   bl_holding,   { "UHold",    "UHld",  "UHd" } },
+    {  8, BL_MASK_FROZEN,    bl_frozen,    { "Frozen",   "Froz",  "Frz" } },
 };
 
 /* [perhaps these should all be opt_out with default of 'in';
@@ -847,6 +848,7 @@ struct condtests_t condtests[CONDITION_COUNT] = {
     { bl_unconsc,   "unconscious", opt_in,  FALSE, FALSE, FALSE },
     { bl_woundedl,  "woundedlegs", opt_in,  FALSE, FALSE, FALSE },
     { bl_holding,   "holding",     opt_in,  FALSE, FALSE, FALSE },
+    { bl_frozen,    "frozen",      opt_out, TRUE,  FALSE, FALSE },
 };
 /* condition indexing */
 int cond_idx[CONDITION_COUNT] = { 0 };
@@ -900,15 +902,21 @@ const char *terrain_descr[] = {
        "Cloud",         /* [part of] a cloud or Air level */
        "Dead-tree",
        "Bog",
+       "Ice-wall",
+       "Crystal-ice-wall",
+       "Shallow-water",
+       "White-dust",
+       "Soil",
+       "Grass",
        /*
         */
-/*37*/ "",              /* MAX_TYPE; skipped ratther than overloaded */
-/*38*/ c_Wall,          /* MATCH_WALL for special levels; shouldn't happen */
+/*45*/ "",              /* MAX_TYPE; skipped rather than overloaded */
+/*46*/ c_Wall,          /* MATCH_WALL for special levels; shouldn't happen */
        /*
         * additional terrain names that aren't simple levl[][].typ values
         */
-/*39*/ "Floor",         /* substituted for room or corridor */
-/*40*/ "Ground",        /* 'room' on Earth level */
+/*47*/ "Floor",         /* substituted for room or corridor */
+/*48*/ "Ground",        /* 'room' on Earth level */
        "Open-door",     /* open (not broken or doorless) */
        "Shut-door",     /* closed or locked (or trapped) */
        "Swamp",         /* Juiblex level */
@@ -1190,6 +1198,7 @@ bot_via_windowport(void)
             test_if_enabled(bl_held) = !condtests[bl_grab].test;
         }
     }
+    condtests[bl_frozen].test    = Frozen_feet ? TRUE : FALSE;
     condtests[bl_blind].test     = (Blind) ? TRUE : FALSE;
     condtests[bl_conf].test      = (Confusion) ? TRUE : FALSE;
     condtests[bl_deaf].test      = (Deaf) ? TRUE : FALSE;

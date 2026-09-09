@@ -16,3 +16,15 @@ README NHSUBST
 .git* NH_header=no
 * NH_filestag=(file%s_in_top_directory)
 NetHack.dsw NH_filestag=(file%s_for_win32_that_are_moved_into_._at_compile_time)
+
+# Step 9 ASCII maps contain meaningful trailing stone cells. Preserve their
+# validated bytes; test_step9a_source.py checks whitespace outside map strings.
+dat/cat1.lua whitespace=-blank-at-eol
+dat/cat3.lua whitespace=-blank-at-eol
+dat/chalv2.lua whitespace=-blank-at-eol
+dat/drgnA.lua whitespace=-blank-at-eol
+dat/drgnB.lua whitespace=-blank-at-eol
+dat/drgnC.lua whitespace=-blank-at-eol
+dat/drgnD.lua whitespace=-blank-at-eol
+dat/palace_e.lua whitespace=-blank-at-eol
+dat/palace_f.lua whitespace=-blank-at-eol

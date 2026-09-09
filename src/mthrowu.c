@@ -23,7 +23,7 @@ staticfn void return_from_mtoss(struct monst *, struct obj *, boolean);
  */
 static NEARDATA const char *breathwep[] = {
     "fragments", "fire", "frost", "sleep gas", "a disintegration blast",
-    "lightning", "poison gas", "acid", "strange breath #8",
+    "lightning", "poison gas", "acid", "a jet of molten lava",
     "strange breath #9"
 };
 
@@ -147,7 +147,11 @@ thitu(
                 pline("It burns!");
                 monstunseesu(M_SEEN_ACID);
             }
-            losehp(dam, knm, kprefix); /* acid damage */
+            if (!is_acid)
+                dam = mith_physical_damage(&gy.youmonst, obj, AT_WEAP, dam);
+            if (obj && (obj->oclass == WEAPON_CLASS || is_weptool(obj)))
+                dam += mith_weapon_effects(obj, &gy.youmonst, dam);
+            losehp(dam, knm, kprefix); /* physical missile or acid damage */
             exercise(A_STR, FALSE);
         }
         return 1;
@@ -371,6 +375,8 @@ ohitmon(
         boolean harmless = (stone_missile(otmp) && passes_rocks(mtmp->data));
 
         damage = dmgval(otmp, mtmp);
+        if (otmp->otyp != ACID_VENOM)
+            damage = mith_physical_damage(mtmp, otmp, AT_WEAP, damage);
         if (otmp->otyp == ACID_VENOM && resists_acid(mtmp))
             damage = 0;
 #if 0 /* can't use this because we don't have the attacker */
@@ -450,6 +456,8 @@ ohitmon(
 
         /* might already be dead (if petrified) */
         if (!harmless && !DEADMONSTER(mtmp)) {
+            if (otmp->oclass == WEAPON_CLASS || is_weptool(otmp))
+                damage += mith_weapon_effects(otmp, mtmp, damage);
             mtmp->mhp -= damage;
             if (DEADMONSTER(mtmp)) {
                 if (vis || (verbose && !gm.mtarget))
@@ -713,6 +721,7 @@ m_throw(
                 /*FALLTHRU*/
             case CREAM_PIE:
             case BLINDING_VENOM:
+            case FREEZING_ICE:
                 hitu = thitu(8, 0, &singleobj, (char *) 0);
                 break;
             default:
@@ -742,6 +751,8 @@ m_throw(
                     hitu = thitu(hitv, dam, &singleobj, (char *) 0);
                 }
             }
+            if (hitu && singleobj->otyp == FREEZING_ICE)
+                sheol_freeze(&gy.youmonst, (int *) 0);
             if (hitu && singleobj->opoisoned && is_poisonable(singleobj)) {
                 char onmbuf[BUFSZ], knmbuf[BUFSZ];
 
@@ -1039,6 +1050,9 @@ spitmm(struct monst *mtmp, struct attack *mattk, struct monst *mtarg)
         case AD_DRST:
             otmp = mksobj(BLINDING_VENOM, TRUE, FALSE);
             break;
+        case AD_COLD:
+            otmp = mksobj(FREEZING_ICE, TRUE, FALSE);
+            break;
         default:
             impossible("bad attack type in spitmm");
             FALLTHROUGH;
@@ -1049,7 +1063,8 @@ spitmm(struct monst *mtmp, struct attack *mattk, struct monst *mtarg)
         }
         if (!rn2(BOLT_LIM-distmin(mtmp->mx,mtmp->my,tx,ty))) {
             if (canseemon(mtmp))
-                pline("%s spits venom!", Monnam(mtmp));
+                pline("%s spits %s!", Monnam(mtmp),
+                      mattk->adtyp == AD_COLD ? "ice" : "venom");
             if (!utarg)
                 gm.mtarget = mtarg;
             m_throw(mtmp, mtmp->mx, mtmp->my, sgn(gt.tbx), sgn(gt.tby),
@@ -1092,7 +1107,7 @@ breathwep_name(int typ)
 int
 breamm(struct monst *mtmp, struct attack *mattk, struct monst *mtarg)
 {
-    int typ = get_atkdam_type(mattk->adtyp);
+    int typ = cave_breath_type(mtmp->data, mattk->adtyp);
     boolean utarget = (mtarg == &gy.youmonst);
 
     if (m_lined_up(mtarg, mtmp)) {

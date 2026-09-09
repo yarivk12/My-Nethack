@@ -2109,7 +2109,8 @@ silly_thing(const char *word,
             s1 = "T", s2 = "take", s3 = " off";
     } else if ((ocls == RING_CLASS || otyp == MEAT_RING)
                || ocls == AMULET_CLASS
-               || (otyp == BLINDFOLD || otyp == TOWEL || otyp == LENSES)) {
+               || (otyp == BLINDFOLD || otyp == TOWEL || otyp == LENSES
+                   || otyp == LIVING_MASK || otyp == MASK)) {
         if (!strcmp(word, "wear"))
             s1 = "P", s2 = "put", s3 = " on";
         else if (!strcmp(word, "take off"))
@@ -4465,6 +4466,10 @@ mergable(
      * or don't inhibit their merger.
      */
 
+    if (obj->obranch_props != otmp->obranch_props
+        || obj->obranch_material != otmp->obranch_material
+        || obj->obranch_size != otmp->obranch_size)
+        return FALSE;
     if (obj->unpaid != otmp->unpaid || obj->spe != otmp->spe
         || obj->no_charge != otmp->no_charge || obj->obroken != otmp->obroken
         || obj->otrapped != otmp->otrapped || obj->lamplit != otmp->lamplit)

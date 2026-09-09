@@ -166,6 +166,19 @@ struct obj {
                                * boulders, 0 for first (top of pile),
                                * 1 for others (format as "next boulder") */
     int usecount;           /* overloaded for various things that tally */
+    /* Only imported branch equipment uses these overrides. Zero retains
+       native object behavior; size is donor size + 1, zero means native. */
+    unsigned long obranch_props;
+    uchar obranch_material;
+    uchar obranch_size;
+#define OBP_ANARCHIC 0x0001UL
+#define OBP_ACID     0x0002UL
+#define OBP_SLEEP    0x0004UL
+#define OBP_BLIND    0x0008UL
+#define OBP_PARALYZE 0x0010UL
+#define OBP_FILTH    0x0020UL
+#define OBP_FACELESS 0x0040UL /* statue presentation; no combat property */
+#define OBP_COATINGS (OBP_ACID | OBP_SLEEP | OBP_BLIND | OBP_PARALYZE | OBP_FILTH)
 #define spestudied usecount /* # of times a spellbook has been studied */
 #define wishedfor usecount  /* flag for hold_another_object() if from wish */
     unsigned oeaten;        /* nutrition left in food, if partly eaten */
@@ -345,11 +358,14 @@ struct obj {
     ((o)->otyp == OILSKIN_SACK || (o)->otyp == ICE_BOX || Is_box(o))
 
 /* dragon gear */
+#define Is_chromatic_armor(obj) \
+    ((obj)->otyp == CHROMATIC_DRAGON_SCALES \
+     || (obj)->otyp == CHROMATIC_DRAGON_SCALE_MAIL)
 #define Is_dragon_scales(obj) \
-    ((obj)->otyp >= GRAY_DRAGON_SCALES && (obj)->otyp <= YELLOW_DRAGON_SCALES)
+    ((obj)->otyp >= GRAY_DRAGON_SCALES && (obj)->otyp <= CHROMATIC_DRAGON_SCALES)
 #define Is_dragon_mail(obj)                \
     ((obj)->otyp >= GRAY_DRAGON_SCALE_MAIL \
-     && (obj)->otyp <= YELLOW_DRAGON_SCALE_MAIL)
+     && (obj)->otyp <= CHROMATIC_DRAGON_SCALE_MAIL)
 #define Is_dragon_armor(obj) (Is_dragon_scales(obj) || Is_dragon_mail(obj))
 #define Dragon_scales_to_pm(obj) \
     &mons[PM_GRAY_DRAGON + (obj)->otyp - GRAY_DRAGON_SCALES]
@@ -428,6 +444,10 @@ struct obj {
      || ((o)->oartifact == ART_EYES_OF_THE_OVERWORLD                    \
          && !undiscovered_artifact(ART_EYES_OF_THE_OVERWORLD)))
 #define pair_of(o) ((o)->otyp == LENSES || is_gloves(o) || is_boots(o))
+#define is_mith_mask(o) ((o)->otyp == LIVING_MASK || (o)->otyp == MASK)
+#define is_mith_syllable(o) ((o)->otyp >= SYLLABLE_OF_STRENGTH__AESH \
+                              && (o)->otyp <= SYLLABLE_OF_SPIRIT__VAUL)
+#define is_mith_slab(o) ((o)->otyp >= FIRST_WORD && (o)->otyp <= NURTURING_WORD)
 
 #define unpolyable(o) ((o)->otyp == WAN_POLYMORPH \
                        || (o)->otyp == SPE_POLYMORPH \

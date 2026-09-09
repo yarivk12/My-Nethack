@@ -13,6 +13,7 @@ struct instance_globals_saved_b svb;
 struct instance_globals_saved_d svd;
 struct instance_globals_saved_s svs;
 struct instance_globals_saved_m svm;
+struct instance_globals_saved_n svn;
 static unsigned rng_state;
 static int light_count, timer_count, light_radius;
 static branch temple, tomb, moria;
@@ -67,6 +68,9 @@ static void topology(void) {
     int sample, level, seen[201]={0}, moria_seen[201]={0}, variations=0;
     for (sample=1; sample<=2000; sample++) {
         int used[201]={0}, big=0, giant=0, zoo=0, dragon=0;
+        /* Step 9's temporary validation corridor is reserved before the
+           unchanged Step 6/7/8 scheduler. Keep all prior assertions below. */
+        used[108]=used[109]=used[110]=1;
         s_level *p, *next;
         rng_state=(unsigned)sample;
         memset(&svd,0,sizeof svd); memset(&temple,0,sizeof temple);
@@ -89,7 +93,8 @@ static void topology(void) {
         assert(tomb.end1.dlevel!=temple.end1.dlevel);
         assert(svd.dungeons[2].depth_start==tomb.end1.dlevel+1);
         assert(svd.dungeons[1].depth_start==temple.end1.dlevel+1);
-        used[tomb.end1.dlevel]++; used[temple.end1.dlevel]++;
+        assert(!used[tomb.end1.dlevel]++);
+        assert(!used[temple.end1.dlevel]++);
         assert(moria.end1.dlevel>=30 && moria.end1.dlevel<=199
                && moria.end1_up && moria.end2.dlevel==6);
         assert(!used[moria.end1.dlevel]++);
@@ -111,6 +116,8 @@ static void topology(void) {
     }
     for (level=30;level<=199;level++) variations+=(moria_seen[level]>0);
     assert(variations>100);
+    assert(seen[111]>0 && moria_seen[111]>0);
+    puts("PASS canceled Step9D parent DL111 is available to the existing scheduler");
     printf("PASS: 2000 production scheduler samples; %d distinct Moria depths; Step 6 counts/collisions/depth semantics\n",variations);
 }
 

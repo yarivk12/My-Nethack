@@ -96,7 +96,9 @@ LUA_VERSION = 5.4.8
 DATHELP = help hh cmdhelp keyhelp history opthelp optmenu usagehlp wizhelp
 
 SPEC_LEVS = asmodeus.lua baalz.lua bigrm-*.lua castle.lua fakewiz?.lua \
-	moloch.lua tomb-1.lua moria?-?.lua \
+	moloch.lua tomb-1.lua moria?-?.lua sheolfil.lua sheolmid.lua palace_f.lua palace_e.lua \
+	drgnA.lua drgnB.lua drgnC.lua drgnD.lua \
+	chalv2.lua ossa1.lua mith1.lua mith2.lua mith3.lua cat1.lua cat2.lua cat3.lua \
 	juiblex.lua knox.lua medusa-?.lua minend-?.lua minefill.lua \
 	minetn-?.lua oracle.lua orcus.lua sanctum.lua soko?-?.lua \
 	tower?.lua valley.lua wizard?.lua nhcore.lua nhlib.lua themerms.lua \

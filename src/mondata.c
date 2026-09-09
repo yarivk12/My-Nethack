@@ -4,6 +4,26 @@
 /* NetHack may be freely redistributed.  See license for details. */
 
 #include "hack.h"
+
+/* The selected dNetHack branches use moisture-sensitive attacks and dust.
+   Only bodies present locally are listed; unrelated donor species are not
+   silently imported through its global body-classification framework. */
+boolean
+mith_anhydrous(const struct permonst *ptr)
+{
+    return flaming(ptr) || ptr == &mons[PM_DUST_VORTEX]
+        || ptr == &mons[PM_EARTH_ELEMENTAL] || ptr == &mons[PM_STONE_GOLEM]
+        || ptr == &mons[PM_SENTINEL_OF_MITHARDIR]
+        || ptr == &mons[PM_GARGOYLE] || ptr == &mons[PM_WINGED_GARGOYLE]
+        || ptr == &mons[PM_XORN];
+}
+
+boolean
+mith_watery(const struct permonst *ptr)
+{
+    return ptr == &mons[PM_WATER_ELEMENTAL] || ptr == &mons[PM_WATER_DOLPHIN]
+        || ptr == &mons[PM_FOG_CLOUD] || ptr == &mons[PM_STEAM_VORTEX];
+}
 /*
  *      These routines provide basic data for any type of monster.
  */
@@ -81,6 +101,7 @@ poly_when_stoned(struct permonst *ptr)
 {
     /* non-stone golems turn into stone golems unless latter is genocided */
     return (boolean) (is_golem(ptr) && ptr != &mons[PM_STONE_GOLEM]
+                      && ptr != &mons[PM_SENTINEL_OF_MITHARDIR]
                       && !(svm.mvitals[PM_STONE_GOLEM].mvflags & G_GENOD));
     /* allow G_EXTINCT */
 }
@@ -205,9 +226,22 @@ resists_drli(struct monst *mon)
     if (is_undead(ptr) || is_demon(ptr) || is_were(ptr)
         /* is_were() doesn't handle hero in human form */
         || (mon == &gy.youmonst && u.ulycn >= LOW_PM)
-        || ptr == &mons[PM_DEATH] || is_vampshifter(mon))
+        || ptr == &mons[PM_DEATH] || is_vampshifter(mon)
+        || ptr == &mons[PM_WRAITHWORM]
+        || ptr == &mons[PM_FIRST_WRAITHWORM])
         return TRUE;
     return defended(mon, AD_DRLI);
+}
+
+/* Narrow substitute for donor monster DISPLACED, without a global property
+   array or changing native monster-versus-monster position swapping. */
+boolean
+mith_displaced(struct monst *mon)
+{
+    return mon->data == &mons[PM_WRAITHWORM]
+           || mon->data == &mons[PM_FIRST_WRAITHWORM]
+           || mon->data == &mons[PM_ASPECT_OF_THE_SILENCE]
+           || mith_mon_syllable(mon) == MITH_VAUL;
 }
 
 /* True if monster is magic-missile (actually, general magic) resistant */
@@ -237,7 +271,8 @@ resists_magm(struct monst *mon)
         slotmask |= W_SWAPWEP;
     for (; o; o = o->nobj)
         if (((o->owornmask & slotmask) != 0L
-             && objects[o->otyp].oc_oprop == ANTIMAGIC)
+             && (objects[o->otyp].oc_oprop == ANTIMAGIC
+                 || Is_chromatic_armor(o)))
             || (o->oartifact && defends_when_carried(AD_MAGM, o)))
             return TRUE;
     return FALSE;
@@ -727,6 +762,7 @@ max_passive_dmg(struct monst *mdef, struct monst *magr)
         switch (magr->data->mattk[i].aatyp) {
         case AT_CLAW:
         case AT_BITE:
+        case AT_REACH5:
         case AT_KICK:
         case AT_BUTT:
         case AT_TUCH:
@@ -1247,6 +1283,9 @@ static const short grownups[][2] = {
     { PM_MORDOR_ORC, PM_ORC_CAPTAIN },
     { PM_URUK_HAI, PM_ORC_CAPTAIN },
     { PM_SEWER_RAT, PM_GIANT_RAT },
+    { PM_DEEP_ONE, PM_DEEPER_ONE },
+    { PM_DEEPER_ONE, PM_DEEPEST_ONE },
+    { PM_ALABASTER_ELF, PM_ALABASTER_ELF_ELDER },
     { PM_CAVE_SPIDER, PM_GIANT_SPIDER },
     { PM_OGRE, PM_OGRE_LEADER },
     { PM_OGRE_LEADER, PM_OGRE_TYRANT },
@@ -1261,6 +1300,7 @@ static const short grownups[][2] = {
     { PM_VAMPIRE, PM_VAMPIRE_LEADER },
     { PM_BAT, PM_GIANT_BAT },
     { PM_SWAMP_FERN_SPROUT, PM_SWAMP_FERN },
+    { PM_ARCTIC_FERN_SPROUT, PM_ARCTIC_FERN },
     { PM_BABY_GRAY_DRAGON, PM_GRAY_DRAGON },
     { PM_BABY_GOLD_DRAGON, PM_GOLD_DRAGON },
     { PM_BABY_SILVER_DRAGON, PM_SILVER_DRAGON },
@@ -1274,10 +1314,12 @@ static const short grownups[][2] = {
     { PM_BABY_BLUE_DRAGON, PM_BLUE_DRAGON },
     { PM_BABY_GREEN_DRAGON, PM_GREEN_DRAGON },
     { PM_BABY_YELLOW_DRAGON, PM_YELLOW_DRAGON },
+    { PM_BABY_GLOWING_DRAGON, PM_GLOWING_DRAGON },
     { PM_RED_NAGA_HATCHLING, PM_RED_NAGA },
     { PM_BLACK_NAGA_HATCHLING, PM_BLACK_NAGA },
     { PM_GOLDEN_NAGA_HATCHLING, PM_GOLDEN_NAGA },
     { PM_GUARDIAN_NAGA_HATCHLING, PM_GUARDIAN_NAGA },
+    { PM_WHITE_NAGA_HATCHLING, PM_WHITE_NAGA },
     { PM_SMALL_MIMIC, PM_LARGE_MIMIC },
     { PM_LARGE_MIMIC, PM_GIANT_MIMIC },
     { PM_BABY_LONG_WORM, PM_LONG_WORM },
@@ -1524,6 +1566,7 @@ cvt_adtyp_to_mseenres(uchar adtyp)
 {
     switch (adtyp) {
     case AD_MAGM: return M_SEEN_MAGR;
+    case AD_LAVA:
     case AD_FIRE: return M_SEEN_FIRE;
     case AD_COLD: return M_SEEN_COLD;
     case AD_SLEE: return M_SEEN_SLEEP;
@@ -1667,6 +1710,23 @@ get_atkdam_type(int adtyp)
         return ROLL_FROM(rnd_breath_typ);
     }
     return adtyp;
+}
+
+/* Imported random breath includes the donor lava jet. Keep the native
+ * random-breath pool unchanged for all existing monsters. */
+int
+cave_breath_type(struct permonst *ptr, int adtyp)
+{
+    if (adtyp == AD_RBRE
+        && (ptr == &mons[PM_CAVE_CHROMATIC_DRAGON]
+            || ptr == &mons[PM_CRYSTAL_ICE_GOLEM])) {
+        static const int types[] = {
+            AD_MAGM, AD_FIRE, AD_COLD, AD_SLEE, AD_DISN,
+            AD_ELEC, AD_DRST, AD_LAVA, AD_ACID
+        };
+        return ROLL_FROM(types);
+    }
+    return get_atkdam_type(adtyp);
 }
 
 /*mondata.c*/

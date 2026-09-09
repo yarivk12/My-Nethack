@@ -24,6 +24,7 @@
 #define AT_BOOM 14  /* explodes when killed */
 #define AT_GAZE 15  /* gaze - ranged */
 #define AT_TENT 16  /* tentacles */
+#define AT_REACH5 17 /* Mithardir: First Wraithworm's five-square bite */
 
 #define AT_WEAP 254 /* uses weapon */
 #define AT_MAGC 255 /* uses magic spell(s) */
@@ -49,6 +50,7 @@
 #define AD_DRST 7   /* drains str (poison) */
 #define AD_ACID 8   /* acid damage */
 #define AD_SPC1 9   /* for extension of buzz() */
+#define AD_LAVA AD_SPC1 /* Step9B: lava jet uses the reserved ninth ray slot */
 #define AD_SPC2 10  /* for extension of buzz() */
 #define AD_BLND 11  /* blinds (yellow light) */
 #define AD_STUN 12  /* stuns */
@@ -85,6 +87,15 @@
 #define AD_POLY 43  /* polymorph the target (genetic engineer) */
 #define AD_SPOR 44  /* release a swamp fern spore */
 
+#define AD_FREZ 45  /* movement-only freezing (Sheol) */
+#define AD_PUNI 46  /* Punisher spell selection */
+#define AD_LUCK 47  /* evil-eye luck drain */
+#define AD_BLNK 48  /* weeping-angel mental invasion */
+#define AD_LVLT 49  /* weeping-angel level teleport */
+#define AD_DESC 50  /* Mithardir: desiccation, healing the attacker */
+#define AD_VAMP 51  /* Mithardir: blood and life-force drain */
+#define AD_SOUL 52  /* deep-one death strengthens its surviving kin */
+
 #define AD_CLRC 240 /* random clerical spell */
 #define AD_SPEL 241 /* random magic spell */
 #define AD_RBRE 242 /* random breath weapon */
@@ -93,6 +104,7 @@
 #define AD_CURS 253 /* random curse (ex. gremlin) */
 
 struct mhitm_data {
+    struct obj *weapon; /* current attack's weapon; transient, never saved */
     int damage;
     int hitflags; /* M_ATTK_DEF_DIED | M_ATTK_AGR_DIED | ... */
     boolean done;

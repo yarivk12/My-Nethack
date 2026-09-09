@@ -18,6 +18,47 @@ staticfn int slots_required(int);
 staticfn void skill_advance(int);
 staticfn void add_skills_to_menu(winid, boolean, boolean);
 
+/* The two living Alabaster species retain the pinned donor's 1d(level)
+   iron searing. No native species, silver rule or object ID is changed. */
+int
+mith_iron_damage(struct monst *mon, int material)
+{
+    int lev;
+
+    if (material != IRON || !mith_hates_iron(mon->data))
+        return 0;
+    lev = (mon == &gy.youmonst)
+              ? (Upolyd ? mons[u.umonnum].mlevel : u.ulevel)
+              : mon->m_lev;
+    return rnd(max(1, lev));
+}
+
+/* Non-hero contact attacks do not pass through special_dmgval(). Weapon
+   damage already includes searing, so only uncovered skin/worn contacts
+   reach this path. Donor attk_equip_slot supplies the three covering slots. */
+int
+mith_iron_contact(struct monst *magr, struct monst *mdef, int type,
+                  struct obj *weapon)
+{
+    struct obj *cover = 0;
+    long slot = 0L;
+
+    if (!mith_hates_iron(mdef->data) || weapon)
+        return 0;
+    switch (type) {
+    case AT_WEAP: case AT_CLAW: slot = W_ARMG; break;
+    case AT_KICK: slot = W_ARMF; break;
+    case AT_BUTT: slot = W_ARMH; break;
+    case AT_BITE: case AT_STNG: case AT_TUCH: case AT_HUGS: case AT_TENT:
+        break;
+    default: return 0; /* no searing from breath, gaze, explosions, etc. */
+    }
+    if (slot)
+        cover = which_armor(magr, slot);
+    return mith_iron_damage(mdef, cover ? obj_material(cover)
+                              : magr->data == &mons[PM_IRON_GOLEM] ? IRON : 0);
+}
+
 /* Categories whose names don't come from OBJ_NAME(objects[type])
  */
 #define PN_BARE_HANDED (-1) /* includes martial arts */
@@ -208,6 +249,93 @@ hitval(struct obj *otmp, struct monst *mon)
  * October 2000: It didn't.  Oh, well.
  */
 
+/* Only imported weapons and explicitly sized/materialized branch stock use
+ * dNetHack's die adjustment. Ordinary native weapons retain their own rules. */
+staticfn int
+mith_weapon_material_bonus(int material, int direction)
+{
+    switch (material) {
+    case LIQUID: case WAX: case VEGGY: case FLESH:
+    case PAPER: case CLOTH: case LEATHER:
+        return -1;
+    case GOLD:
+        return (direction & WHACK) != 0;
+    case GLASS:
+        return (direction & (SLASH | PIERCE)) != 0;
+    case DRAGON_HIDE:
+        return (direction & PIERCE) != 0;
+    default:
+        return 0;
+    }
+}
+
+staticfn int
+mith_weapon_dice(struct obj *otmp, boolean large)
+{
+    int otyp = otmp->otyp, count = 1, bonus_count = 0, bonus_sides = 0;
+    int flat = 0, delta = otmp->obranch_size
+                             ? (int) otmp->obranch_size - 1 - MZ_MEDIUM : 0;
+    int sides = large ? objects[otyp].oc_wldam : objects[otyp].oc_wsdam;
+    int direction = objects[otyp].oc_dir, material = obj_material(otmp);
+
+    if (material != (int) objects[otyp].oc_material)
+        delta += mith_weapon_material_bonus(material, direction)
+                 - mith_weapon_material_bonus(objects[otyp].oc_material,
+                                               direction);
+    sides = max(2, sides + 2 * delta);
+    if (otyp == MOON_AXE) {
+        int phase = min(4, max(0, otmp->usecount));
+
+        count = 2;
+        sides = (!large && !phase) ? 12 : 4 + 2 * phase;
+        sides = max(2, sides + 2 * delta);
+    }
+#define MITH_PLUS(n, s) \
+    do { bonus_count = (n); bonus_sides = max(2, (s) + 2 * delta); } while (0)
+#define MITH_ADD(n) do { flat += max(0, (n) + delta); } while (0)
+    switch (otyp) {
+    case CROSSBOW_BOLT: MITH_ADD(1); break;
+    case TRIDENT:
+        if (large) { MITH_PLUS(2, 4); } else { MITH_ADD(1); } break;
+    case BATTLE_AXE: case BARDICHE:
+        MITH_PLUS(large ? 2 : 1, 4); break;
+    case BROADSWORD: case RUNESWORD:
+        if (large) { MITH_ADD(1); } else { MITH_PLUS(1, 4); } break;
+    case ELVEN_BROADSWORD:
+        if (large) { MITH_ADD(2); } else { MITH_PLUS(1, 4); } break;
+    case CRYSTAL_SWORD:
+        MITH_PLUS(1, large ? 12 : 8); flat += otmp->spe / 3; break;
+    case TWO_HANDED_SWORD: case TSURUGI: case DWARVISH_MATTOCK:
+        if (large) { MITH_PLUS(2, 6); } break;
+    case PARTISAN:
+        if (large) { MITH_ADD(1); } break;
+    case RANSEUR: case VOULGE:
+        MITH_PLUS(1, 4); break;
+    case SPETUM:
+        if (large) { MITH_PLUS(1, 6); } else { MITH_ADD(1); } break;
+    case HALBERD:
+        if (large) { MITH_PLUS(1, 6); } break;
+    case GUISARME: case BILL_GUISARME: case LUCERN_HAMMER:
+        if (!large) { MITH_PLUS(1, 4); } break;
+    case MACE: case SILVER_MACE: case WAR_HAMMER:
+        if (!large) { MITH_ADD(1); } break;
+    case MORNING_STAR:
+        if (large) { MITH_ADD(1); } else { MITH_PLUS(1, 4); } break;
+    case FLAIL:
+        if (large) { MITH_PLUS(1, 4); } else { MITH_ADD(1); } break;
+    }
+#undef MITH_PLUS
+#undef MITH_ADD
+    if (bonus_count && sides == bonus_sides) {
+        count += bonus_count;
+        bonus_count = 0;
+    }
+    flat += d(count, sides);
+    if (bonus_count)
+        flat += d(bonus_count, bonus_sides);
+    return flat;
+}
+
 /*
  *      dmgval returns an integer representing the damage bonuses
  *      of "otmp" against the monster.
@@ -222,7 +350,10 @@ dmgval(struct obj *otmp, struct monst *mon)
     if (otyp == CREAM_PIE)
         return 0;
 
-    if (bigmonst(ptr)) {
+    if (otyp == MOON_AXE || otyp == CRYSTAL_SWORD
+        || (Is_weapon && (otmp->obranch_size || otmp->obranch_material))) {
+        tmp = mith_weapon_dice(otmp, bigmonst(ptr));
+    } else if (bigmonst(ptr)) {
         if (objects[otyp].oc_wldam)
             tmp = rnd(objects[otyp].oc_wldam);
         switch (otyp) {
@@ -301,7 +432,7 @@ dmgval(struct obj *otmp, struct monst *mon)
             tmp = 0;
     }
 
-    if (objects[otyp].oc_material <= LEATHER && thick_skinned(ptr))
+    if (obj_material(otmp) <= LEATHER && thick_skinned(ptr))
         /* thick-skinned or scaled creatures don't feel it */
         tmp = 0;
     if (shadelike(ptr) && !shade_glare(otmp))
@@ -328,8 +459,9 @@ dmgval(struct obj *otmp, struct monst *mon)
             bonus += rnd(4);
         if (is_axe(otmp) && is_wooden(ptr))
             bonus += rnd(4);
-        if (objects[otyp].oc_material == SILVER && mon_hates_silver(mon))
+        if (obj_material(otmp) == SILVER && mon_hates_silver(mon))
             bonus += rnd(20);
+        bonus += mith_iron_damage(mon, obj_material(otmp));
         if (artifact_light(otmp) && otmp->lamplit && hates_light(ptr))
             bonus += rnd(8);
 
@@ -392,13 +524,14 @@ special_dmgval(
     }
 
     if (obj) {
+        bonus += mith_iron_damage(mdef, obj_material(obj));
         if (obj->blessed && mon_hates_blessings(mdef))
             bonus += rnd(4);
         /* the only silver armor is shield of reflection (silver dragon
            scales refer to color, not material) and the only way to hit
            with one--aside from throwing--is to wield it and perform a
            weapon hit, but we include a general check here */
-        if (objects[obj->otyp].oc_material == SILVER
+        if (obj_material(obj) == SILVER
             && mon_hates_silver(mdef)) {
             bonus += rnd(20);
             silverhit |= armask;
@@ -407,14 +540,16 @@ special_dmgval(
     /* when no gloves we check for silver rings (blessed rings ignored) */
     } else if ((left_ring || right_ring) && magr == &gy.youmonst) {
         if (left_ring && uleft) {
-            if (objects[uleft->otyp].oc_material == SILVER
+            bonus += mith_iron_damage(mdef, obj_material(uleft));
+            if (obj_material(uleft) == SILVER
                 && mon_hates_silver(mdef)) {
                 bonus += rnd(20);
                 silverhit |= W_RINGL;
             }
         }
         if (right_ring && uright) {
-            if (objects[uright->otyp].oc_material == SILVER
+            bonus += mith_iron_damage(mdef, obj_material(uright));
+            if (obj_material(uright) == SILVER
                 && mon_hates_silver(mdef)) {
                 /* two silver rings don't give double silver damage
                    but 'silverhit' messages might be adjusted for them */
@@ -425,6 +560,8 @@ special_dmgval(
         }
     }
 
+    if (!obj && magr->data == &mons[PM_IRON_GOLEM])
+        bonus += mith_iron_damage(mdef, IRON);
     if (silverhit_p)
         *silverhit_p = silverhit;
     return bonus;
@@ -490,6 +627,10 @@ oselect(struct monst *mtmp, int type)
         if (!can_touch_safely(mtmp, otmp))
             continue;
 
+        if (otmp->obranch_size && mith_bimanual(otmp, mtmp->data)
+            && (!strongmonst(mtmp->data) || (mtmp->misc_worn_check & W_ARMS)))
+            continue;
+
         return otmp;
     }
     return (struct obj *) 0;
@@ -499,7 +640,7 @@ static NEARDATA const int rwep[] = {
     DWARVISH_SPEAR, SILVER_SPEAR, ELVEN_SPEAR, SPEAR, ORCISH_SPEAR, JAVELIN,
     SHURIKEN, YA, SILVER_ARROW, ELVEN_ARROW, ARROW, ORCISH_ARROW,
     CROSSBOW_BOLT, SILVER_DAGGER, ELVEN_DAGGER, DAGGER, ORCISH_DAGGER, KNIFE,
-    FLINT, ROCK, LOADSTONE, LUCKSTONE, DART, CREAM_PIE,
+    FLINT, ROCK, LOADSTONE, LUCKSTONE, SPIKE, DART, CREAM_PIE,
 };
 
 /* polearms */
@@ -690,12 +831,14 @@ monmightthrowwep(struct obj *obj)
 /* Weapons in order of preference */
 static const NEARDATA short hwep[] = {
     CORPSE, /* cockatrice corpse */
-    TSURUGI, RUNESWORD, DWARVISH_MATTOCK, TWO_HANDED_SWORD, BATTLE_AXE,
-    KATANA, UNICORN_HORN, CRYSKNIFE, TRIDENT, LONG_SWORD, ELVEN_BROADSWORD,
+    CRYSTAL_SWORD, TSURUGI, MOON_AXE, RUNESWORD,
+    DWARVISH_MATTOCK, TWO_HANDED_SWORD, BATTLE_AXE,
+    KATANA, HIGH_ELVEN_WARSWORD, UNICORN_HORN, CRYSKNIFE,
+    TRIDENT, LONG_SWORD, ELVEN_BROADSWORD,
     BROADSWORD, SCIMITAR, SILVER_SABER, MORNING_STAR, ELVEN_SHORT_SWORD,
-    DWARVISH_SHORT_SWORD, SHORT_SWORD, ORCISH_SHORT_SWORD, SILVER_MACE, MACE,
+    DWARVISH_SHORT_SWORD, SHORT_SWORD, RAPIER, ORCISH_SHORT_SWORD, SILVER_MACE, MACE,
     AXE, DWARVISH_SPEAR, SILVER_SPEAR, ELVEN_SPEAR, SPEAR, ORCISH_SPEAR, FLAIL,
-    BULLWHIP, QUARTERSTAFF, JAVELIN, AKLYS, CLUB, PICK_AXE, RUBBER_HOSE,
+    BULLWHIP, QUARTERSTAFF, JAVELIN, AKLYS, CLUB, PICK_AXE, ELVEN_SICKLE, RUBBER_HOSE,
     WAR_HAMMER, SILVER_DAGGER, ELVEN_DAGGER, DAGGER, ORCISH_DAGGER, ATHAME,
     SCALPEL, KNIFE, WORM_TOOTH
 };
@@ -712,9 +855,12 @@ select_hwep(struct monst *mtmp)
     /* prefer artifacts to everything else */
     for (otmp = mtmp->minvent; otmp; otmp = otmp->nobj) {
         if (otmp->oclass == WEAPON_CLASS && otmp->oartifact
+            && (!mith_hates_iron(mtmp->data)
+                || obj_material(otmp) != IRON
+                || (mtmp->misc_worn_check & W_ARMG))
             && touch_artifact(otmp, mtmp)
             && ((strong && !wearing_shield)
-                || !objects[otmp->otyp].oc_bimanual))
+                || !mith_bimanual(otmp, mtmp->data)))
             return otmp;
     }
 
@@ -737,6 +883,95 @@ select_hwep(struct monst *mtmp)
     }
 
     /* failure */
+    return (struct obj *) 0;
+}
+
+/* Donor AT_XWEP slots retain native AT_WEAP dispatch. Only these imported
+   species have a separate hand; native repeated weapon attacks are unchanged. */
+boolean
+mith_offhand_attack(const struct permonst *ptr, int slot)
+{
+    if (ptr == &mons[PM_ALABASTER_ELF])
+        return slot == 2;
+    if (ptr == &mons[PM_BRALANI_ELADRIN])
+        return slot == 1 || slot == 3;
+    return slot == 1
+           && (ptr == &mons[PM_COURE_ELADRIN]
+               || ptr == &mons[PM_DEEP_ONE]
+               || ptr == &mons[PM_DEEPER_ONE]
+               || ptr == &mons[PM_DEEPEST_ONE]);
+}
+
+/* Donor visible size plus half the weapon type's size offset. Restrict this
+   rule to explicitly sized branch gear; ordinary native objects keep their
+   existing handedness. Donor-only artifact/role exceptions are not imported. */
+boolean
+mith_bimanual(struct obj *otmp, const struct permonst *ptr)
+{
+    int size = objects[otmp->otyp].oc_bimanual ? MZ_HUGE : MZ_HUMAN;
+
+    if (!otmp->obranch_size)
+        return objects[otmp->otyp].oc_bimanual ? TRUE : FALSE;
+    switch (otmp->otyp) {
+    case ARROW: case ELVEN_ARROW: case ORCISH_ARROW: case SILVER_ARROW:
+    case YA: case CROSSBOW_BOLT: case DART: case SHURIKEN: case SPIKE:
+        size = MZ_TINY;
+        break;
+    case UNICORN_HORN:
+        size = MZ_HUMAN;
+        break;
+    case CRYSKNIFE: case ELVEN_SHORT_SWORD: case DWARVISH_SHORT_SWORD:
+    case SHORT_SWORD: case ORCISH_SHORT_SWORD: case ELVEN_SICKLE:
+    case SILVER_DAGGER: case ELVEN_DAGGER: case DAGGER: case ORCISH_DAGGER:
+    case ATHAME: case SCALPEL: case KNIFE: case WORM_TOOTH:
+        size = MZ_SMALL;
+        break;
+    case CRYSTAL_SWORD: case RUNESWORD: case TRIDENT:
+    case ELVEN_BROADSWORD: case BROADSWORD: case DWARVISH_SPEAR:
+    case SILVER_SPEAR: case ELVEN_SPEAR: case SPEAR: case ORCISH_SPEAR:
+    case JAVELIN:
+    case BOW: case ELVEN_BOW: case ORCISH_BOW: case YUMI: case CROSSBOW:
+    case PICK_AXE:
+        size = MZ_LARGE;
+        break;
+    default:
+        break;
+    }
+    size = (2 * (otmp->obranch_size - 1) + size - MZ_HUMAN) / 2;
+    size = max(MZ_TINY, min(size, MZ_GIGANTIC));
+    if (size > MZ_HUGE && size != MZ_GIGANTIC)
+        size = MZ_HUGE;
+    return size > ptr->msize;
+}
+
+/* Select from current inventory each time, so theft, death, polymorph and
+   save/restore need no second saved weapon pointer. Follow the donor's
+   offhand exclusions, using native weapon preference and touch safety. */
+struct obj *
+mith_select_offhand(struct monst *mtmp)
+{
+    struct obj *otmp;
+    int i;
+
+    if (mtmp->misc_worn_check & W_ARMS)
+        return (struct obj *) 0;
+    for (i = 0; i < SIZE(hwep); ++i) {
+        if (hwep[i] == CORPSE && !(mtmp->misc_worn_check & W_ARMG))
+            continue;
+        for (otmp = mtmp->minvent; otmp; otmp = otmp->nobj) {
+            if (otmp->otyp != hwep[i] || otmp == MON_WEP(mtmp)
+                || (otmp->owornmask & W_WEP) || otmp->oartifact
+                || otmp->cursed || mith_bimanual(otmp, mtmp->data)
+                || otmp->owt > (unsigned) (30 + (mtmp->m_lev / 5) * 5))
+                continue;
+            if (otmp->otyp == CORPSE
+                && (otmp->corpsenm == NON_PM
+                    || !touch_petrifies(&mons[otmp->corpsenm])))
+                continue;
+            if (can_touch_safely(mtmp, otmp))
+                return otmp;
+        }
+    }
     return (struct obj *) 0;
 }
 
@@ -1013,6 +1248,15 @@ dbon(void)
         return 5; /* up to 18/99 */
     else
         return 6;
+}
+
+int
+mith_aesh_bonus(void)
+{
+    int count = u.mith_syllables[MITH_AESH];
+
+    return (u.mith_timers[MITH_AESH] ? 10 : 0) + count / 3
+           + (count && rn2(3) < count % 3);
 }
 
 /* called when wet_a_towel() or dry_a_towel() is changing a towel's wetness */
@@ -1841,5 +2085,112 @@ setmnotwielded(struct monst *mon, struct obj *obj)
 #undef PN_ESCAPE_SPELL
 #undef PN_MATTER_SPELL
 #undef AKLYS_LIM
+
+/* Scoped dNetHack coatings: apply only after a real hit, never from dmgval(),
+   which is also called speculatively by weapon selection. Return extra damage;
+   the normal caller retains kill credit, lifesaving and corpse handling. */
+int
+mith_weapon_effects(struct obj *obj, struct monst *target, int base_damage)
+{
+    unsigned long bit, coatings;
+    boolean hero = target == &gy.youmonst, resisted, major;
+    int extra = 0;
+    struct obj *gear;
+    boolean freeact = hero ? Free_action : FALSE,
+            sickres = hero ? Sick_resistance
+                           : (target->data->mlet == S_FUNGUS
+                              || target->data == &mons[PM_GHOUL]);
+
+    if (!obj || !obj->obranch_props || base_damage <= 0)
+        return 0;
+    if ((obj->obranch_props & OBP_ANARCHIC)
+        && (hero ? u.ualign.type != A_CHAOTIC : target->data->maligntyp >= 0))
+        extra += base_damage;
+    if (!hero)
+        for (gear = target->minvent; gear; gear = gear->nobj)
+            if (gear->owornmask) {
+                if (objects[gear->otyp].oc_oprop == FREE_ACTION)
+                    freeact = TRUE;
+                if (objects[gear->otyp].oc_oprop == SICK_RES)
+                    sickres = TRUE;
+            }
+    coatings = obj->obranch_props & OBP_COATINGS;
+    for (bit = OBP_ACID; bit <= OBP_FILTH; bit <<= 1) {
+        if (!(coatings & bit))
+            continue;
+        resisted = FALSE;
+        switch (bit) {
+        case OBP_ACID:
+            resisted = hero ? Acid_resistance : resists_acid(target);
+            major = TRUE;
+            break;
+        case OBP_SLEEP:
+            resisted = hero ? Sleep_resistance : resists_sleep(target);
+            major = !rn2(5);
+            break;
+        case OBP_BLIND:
+            resisted = (hero ? Poison_resistance : resists_poison(target))
+                       || !haseyes(target->data);
+            major = !rn2(10);
+            break;
+        case OBP_PARALYZE:
+            major = !rn2(8) && !freeact;
+            break;
+        default: /* filth */
+            resisted = sickres;
+            major = !rn2(10);
+            break;
+        }
+        if (!rn2(20))
+            obj->obranch_props &= ~bit;
+        if (resisted)
+            continue;
+        switch (bit) {
+        case OBP_ACID:
+            extra += rnd(10);
+            break;
+        case OBP_SLEEP:
+            if (major) {
+                if (hero) {
+                    You("suddenly fall asleep!");
+                    fall_asleep(-rn1(2, 6), TRUE);
+                } else if (sleep_monst(target, rnd(12), POTION_CLASS)) {
+                    if (canseemon(target))
+                        pline("%s falls asleep.", Monnam(target));
+                    slept_monst(target);
+                }
+            }
+            break;
+        case OBP_BLIND:
+            extra += major ? 3 : rnd(3);
+            if (major) {
+                if (hero)
+                    make_blinded(rn1(20, 25), !Blind);
+                else {
+                    int duration = 64 + rn2(32)
+                        + rn2(32) * !resist(target, POTION_CLASS, 0, NOTELL);
+
+                    target->mblinded = min(127, target->mblinded + duration);
+                    target->mcansee = 0;
+                }
+            }
+            break;
+        case OBP_PARALYZE:
+            extra += major ? 6 : rnd(6);
+            if (major) {
+                if (hero) {
+                    nomul(-(25 - rnd(ACURR(A_CON))));
+                    gm.multi_reason = "immobilized by paralysis venom";
+                } else if (target->mcanmove)
+                    paralyze_monst(target, rnd(25));
+            }
+            break;
+        default:
+            extra += major ? 9999 : rnd(12);
+            break;
+        }
+    }
+    return extra;
+}
 
 /*weapon.c*/

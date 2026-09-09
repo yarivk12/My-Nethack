@@ -98,7 +98,7 @@ const char *expl_texts[] = {
 
 const char *zap_texts[] = {
     "missile", "fire",      "frost",      "sleep",
-    "death",   "lightning", "poison gas", "acid",
+    "death",   "lightning", "poison gas", "acid", "lava",
 };
 
 enum tilesrc { monsters_file, objects_file, other_file, generated, decals_file };
@@ -123,7 +123,9 @@ struct tiles_used {
     char tilenam[MAX_TILENAM];
     char references[1024];
 };
-struct tiles_used *tilelist[2500] = { 0 };
+/* Imported species also generate statue tiles. Size the tool's reference
+   table from the glyph universe instead of the old arbitrary 2500 limit. */
+struct tiles_used *tilelist[MAX_GLYPH] = { 0 };
 
 /* Some special tiles used for init of some things */
 int TILE_stone = 0,       /* will get set to correct tile later */
@@ -1545,6 +1547,11 @@ add_tileref(
     static const char ellipsis[] = "...";
     char buf[BUFSZ];
 
+    if (n < 0 || n >= SIZE(tilelist)) {
+        Fprintf(stderr, "tile reference %d exceeds capacity %d\n",
+                n, (int) SIZE(tilelist));
+        exit(EXIT_FAILURE);
+    }
     if (!tilelist[n]) {
         if ((tilelist[n] = malloc(sizeof temp)) != 0) {
             tilelist[n]->tilenum = n;

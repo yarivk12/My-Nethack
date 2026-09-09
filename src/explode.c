@@ -487,7 +487,8 @@ explode(
                     mtmp = u.usteed;
                 /* Donor vegetation survives explosions, including its own
                  * spores. Restrict that rule to the imported fern family. */
-                if (!mtmp || is_swamp_fern(mtmp->data))
+                if (!mtmp || is_swamp_fern(mtmp->data)
+                    || is_arctic_fern(mtmp->data))
                     continue;
                 if (do_hallu) {
                     int tryct = 0;
@@ -612,6 +613,8 @@ explode(
             You("are unharmed!");
         } else if (adtyp == AD_PHYS || adtyp == AD_ACID)
             damu = Maybe_Half_Phys(damu);
+        if (u.mith_timers[MITH_VAUL])
+            damu = (damu + 1) / 2;
         if (adtyp == AD_FIRE) {
             (void) burnarmor(&gy.youmonst);
             ignite_items(gi.invent);

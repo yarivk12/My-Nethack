@@ -485,6 +485,22 @@ struct you {
     int ublessed, ublesscnt; /* blessing/duration from #pray */
     long umoney0;
     long uspare1;
+    /* Step9C: independent persistent syllable effects and learned Words.
+       uspare1 remains exclusively the Sheol frozen-feet timer. */
+#define MITH_AESH 0
+#define MITH_KRAU 1
+#define MITH_HOON 2
+#define MITH_UUR 3
+#define MITH_NAEN 4
+#define MITH_VAUL 5
+#define MITH_FIRST 0x01U
+#define MITH_DIVIDING 0x02U
+#define MITH_NURTURING 0x04U
+    int mith_syllables[6];
+    int mith_timers[6];
+    long mith_word_timeout[3];
+    unsigned mith_words;
+    unsigned mith_slabs;
     long uexp, urexp;        /* exper pts for gaining levels and for score */
     long ucleansed;          /* to record moves when player was cleansed */
     long usleep;             /* sleeping; monstermove you last started */

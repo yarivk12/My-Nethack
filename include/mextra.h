@@ -145,6 +145,20 @@ struct eshk {
     char shknam[PL_NSIZ];
 };
 
+/* Mithardir merchant services reuse mspare1 bits 10..16. Lower bits belong
+   to imported freeze/revival/mummy state; the native eshk stays unchanged. */
+#define MITH_SHK_BASIC   0x01U
+#define MITH_SHK_PREMIUM 0x02U
+#define MITH_SHK_UNCURSE 0x04U
+#define MITH_SHK_APPRAISE 0x08U /* donor menu disables appraisal */
+#define MITH_SHK_PROOF   0x10U
+#define MITH_SHK_ENCHANT 0x20U
+#define MITH_SHK_COAT    0x40U
+#define MITH_SHK_SHIFT 10
+#define MITH_SHK_MASK (0x7fL << MITH_SHK_SHIFT)
+#define mith_shk_services(mon) \
+    ((unsigned) (((mon)->mspare1 & MITH_SHK_MASK) >> MITH_SHK_SHIFT))
+
 /***
  **     formerly emin.h -- minion extension
  */

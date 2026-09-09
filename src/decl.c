@@ -92,7 +92,7 @@ const char *materialnm[] = { "mysterious", "liquid",  "wax",        "organic",
                              "wooden",     "bone",    "dragonhide", "iron",
                              "metal",      "copper",  "silver",     "gold",
                              "platinum",   "mithril", "plastic",    "glass",
-                             "gemstone",   "stone" };
+                             "gemstone",   "stone", "shell" };
 const char quitchars[] = " \r\n\033";
 const int shield_static[SHIELD_COUNT] = {
     S_ss1, S_ss2, S_ss3, S_ss2, S_ss1, S_ss2, S_ss4, /* 7 per row */

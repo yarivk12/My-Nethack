@@ -5,6 +5,205 @@
 
 #include "hack.h"
 
+/* Pinned donor clothing-size rules, only for explicit imported metadata.
+   Native anatomy, layering and polymorph restrictions remain authoritative. */
+boolean
+mith_armor_size_fits(struct obj *obj, const struct permonst *ptr)
+{
+    int difference;
+
+    if (!obj->obranch_size || obj->oclass != ARMOR_CLASS || is_shield(obj)
+        || (is_helmet(obj) && obj_material(obj) <= LEATHER)
+        || Is_dragon_scales(obj))
+        return TRUE;
+    difference = abs((int) obj->obranch_size - 1 - (int) ptr->msize);
+    if (is_cloak(obj) || (is_suit(obj)
+                         && (is_elven_armor(obj) || obj->otyp == HIGH_ELVEN_PLATE
+                             || obj->otyp == ELVEN_TOGA)))
+        return difference <= 1;
+    return difference == 0;
+}
+
+/* Only imported equipment gets donor DR. Native armor keeps its native AC
+   rules, even when combined with one of these pieces. A negative base marks
+   an ordinary item, whereas zero-DR imported clothing can be enchanted. */
+staticfn int
+mith_armor_base(int typ)
+{
+    switch (typ) {
+    case LIVING_ARMOR: case WAR_HAT: case HIGH_ELVEN_HELM:
+    case ARCHAIC_HELM: case ARCHAIC_GAUNTLETS: case HIGH_ELVEN_GAUNTLETS:
+    case ARCHAIC_BOOTS: case VICTORIAN_UNDERWEAR: return 2;
+    case BARNACLE_ARMOR: return 3;
+    case ARCHAIC_PLATE_MAIL: return 4;
+    case HIGH_ELVEN_PLATE: return 6;
+    case ELVEN_TOGA: case GENTLEMAN_S_SUIT: case GENTLEWOMAN_S_DRESS:
+    case JACKET: return 1;
+    case BLACK_DRESS: case STILETTOS: return 0;
+    default: return -1; /* shields have no donor DR */
+    }
+}
+
+staticfn int
+mith_material_defense(int mat)
+{
+    switch (mat) {
+    case LIQUID: case WAX: case VEGGY: case PAPER: return 1;
+    case CLOTH: return 2;
+    case FLESH: case LEATHER: case GOLD: case PLASTIC: return 3;
+    case WOOD: case BONE: case PLATINUM: return 4;
+    case SHELL: case IRON: case METAL: case COPPER: case SILVER:
+    case GLASS: return 5;
+    case MITHRIL: case MINERAL: return 6;
+    case GEMSTONE: return 7;
+    case DRAGON_HIDE: return 8;
+    default: return 1;
+    }
+}
+
+staticfn int
+mith_armor_dr(struct obj *obj)
+{
+    int dr, base;
+    if (!obj || (dr = mith_armor_base(obj->otyp)) < 0)
+        return 0;
+    base = mith_material_defense(objects[obj->otyp].oc_material);
+    dr = (dr * mith_material_defense(obj_material(obj)) + base / 2) / base;
+    dr -= min((int) greatest_erosion(obj), dr);
+    dr += (obj->spe + 1) / 2; /* donor C rounding, including negative spe */
+    return dr;
+}
+
+staticfn struct obj *
+mith_worn(struct monst *mon, long mask)
+{
+    if (mon == &gy.youmonst) {
+        switch (mask) {
+        case W_ARM: return uarm;
+        case W_ARMC: return uarmc;
+        case W_ARMU: return uarmu;
+        case W_ARMH: return uarmh;
+        case W_ARMF: return uarmf;
+        case W_ARMG: return uarmg;
+        }
+        return (struct obj *) 0;
+    }
+    return which_armor(mon, mask);
+}
+
+/* Five equally likely donor body locations; no global DR table or save
+   fields. Return before RNG for every unaffected native combatant. */
+int
+mith_roll_dr(struct monst *mon)
+{
+    static const long slots[] = { W_ARM, W_ARMC, W_ARMU, W_ARMH, W_ARMF, W_ARMG };
+    struct obj *obj;
+    struct permonst *ptr = mon->data;
+    boolean you = mon == &gy.youmonst, equipped = FALSE;
+    int natural = ptr == &mons[PM_YURIAN] ? 2
+                  : ptr == &mons[PM_ALABASTER_MUMMY] ? 4
+                  : ptr == &mons[PM_ASPECT_OF_THE_SILENCE] ? 3 : 0;
+    int base = !you && mith_mon_syllable(mon) == 5 ? 10 : 0;
+    int vaul = you ? u.mith_syllables[5] : 0;
+    int i, slot, armor = 0, cloak;
+
+    if (!you && ptr == &mons[PM_ASPECT_OF_THE_SILENCE] && !mon->mcan)
+        base += 3; /* donor aura DR, separate from the natural 3 */
+
+    for (i = 0; i < SIZE(slots); ++i) {
+        obj = mith_worn(mon, slots[i]);
+        if (obj && mith_armor_base(obj->otyp) >= 0)
+            equipped = TRUE;
+    }
+    if (!natural && !base && !vaul && !equipped)
+        return 0;
+    slot = rn2(5); /* upper torso, lower torso, head, legs, arms */
+    if (slot == 2 && !has_head(ptr))
+        slot = 0;
+    if (slot == 3 && (!humanoid(ptr) || nolimbs(ptr) || slithy(ptr)))
+        slot = 1;
+    if (slot == 4 && nohands(ptr))
+        slot = 0;
+    cloak = mith_armor_dr(mith_worn(mon, W_ARMC));
+    switch (slot) {
+    case 0:
+        armor += mith_armor_dr(mith_worn(mon, W_ARMU));
+        base += (vaul + 3) / 5;
+        /* FALLTHRU */
+    case 1:
+        armor += mith_armor_dr(mith_worn(mon, W_ARM)) + cloak;
+        if (slot == 1) {
+            base += (vaul + 1) / 5;
+            obj = mith_worn(mon, W_ARMU);
+            if (obj && (obj->otyp == BLACK_DRESS || obj->otyp == VICTORIAN_UNDERWEAR))
+                armor += mith_armor_dr(obj);
+        }
+        break;
+    case 2:
+        armor += mith_armor_dr(mith_worn(mon, W_ARMH)) + cloak;
+        base += (vaul + 4) / 5;
+        break;
+    case 3:
+        armor += mith_armor_dr(mith_worn(mon, W_ARMF)) + cloak;
+        base += vaul / 5;
+        break;
+    case 4:
+        armor += mith_armor_dr(mith_worn(mon, W_ARMG));
+        base += (vaul + 2) / 5;
+        break;
+    }
+    /* Negative enchantment cannot turn resistance into extra damage. */
+    armor = max(0, armor);
+    if (!you && armor > 11)
+        armor = 10 + rnd(armor - 10);
+    base += natural && armor ? isqrt(natural * natural + armor * armor)
+                             : natural + armor;
+    if (you) {
+        base = min(base, 127);
+        if (base > 11)
+            base = 10 + rnd(base - 10);
+    }
+    return base;
+}
+
+/* Selected donor bodies resist weapon damage types. Damage-type flags have
+   different numeric values in the two games; use the native named masks. */
+int
+mith_physical_damage(struct monst *def, struct obj *weapon, int aatyp, int damage)
+{
+    struct permonst *ptr = def->data;
+    int mask, resist = 0;
+    boolean weaponlike = weapon || aatyp == AT_WEAP || aatyp == AT_KICK
+                         || aatyp == AT_CLAW;
+
+    if (damage <= 0)
+        return damage;
+    if (weaponlike) {
+        if (ptr == &mons[PM_LIVING_MIRAGE]) {
+            damage = 1;
+        } else {
+            if (ptr == &mons[PM_CRYSTAL_OOZE] || ptr == &mons[PM_ALABASTER_MUMMY])
+                resist = WHACK | PIERCE;
+            else if (ptr == &mons[PM_SENTINEL_OF_MITHARDIR])
+                resist = SLASH | PIERCE;
+            else if (ptr == &mons[PM_MOTE_OF_LIGHT]
+                     || ptr == &mons[PM_WATER_DOLPHIN]
+                     || ptr == &mons[PM_SINGING_SAND]
+                     || ptr == &mons[PM_ASPECT_OF_THE_SILENCE])
+                resist = WHACK | PIERCE | SLASH;
+            mask = weapon ? objects[weapon->otyp].oc_dir
+                   : aatyp == AT_CLAW ? WHACK | SLASH : WHACK;
+            if (!mask)
+                mask = WHACK;
+            if (resist && !(mask & ~resist))
+                damage = max(1, damage / 4);
+            else if (resist && resist != (WHACK | PIERCE | SLASH))
+                damage *= 2;
+        }
+    }
+    return max(1, damage - mith_roll_dr(def));
+}
+
 staticfn void m_lose_armor(struct monst *, struct obj *, boolean) NONNULLPTRS;
 staticfn void clear_bypass(struct obj *) NO_NNARGS;
 staticfn void m_dowear_type(struct monst *, long, boolean, boolean)
@@ -324,7 +523,8 @@ wearslot(struct obj *obj)
             res |= W_QUIVER;
         break;
     case TOOL_CLASS:
-        if (otyp == BLINDFOLD || otyp == TOWEL || otyp == LENSES)
+        if (otyp == BLINDFOLD || otyp == TOWEL || otyp == LENSES
+            || otyp == LIVING_MASK || otyp == MASK)
             res = W_TOOL; /* WORN_BLINDF */
         else if (is_weptool(obj) || otyp == TIN_OPENER)
             res = W_WEP | W_SWAPWEP;
@@ -586,9 +786,12 @@ update_mon_extrinsics(
     uchar mask;
     struct obj *otmp;
     int which = (int) objects[obj->otyp].oc_oprop,
-        altwhich = altprop(obj);
+        altwhich = altprop(obj),
+        chromwhich = Is_chromatic_armor(obj) ? FIRE_RES : 0;
 
     unseen = !canseemon(mon);
+    if (chromwhich)
+        which = chromwhich++;
     if (!which && !altwhich)
         goto maybe_blocks;
 
@@ -674,6 +877,9 @@ update_mon_extrinsics(
                    one rather than as the one specified for it in objects[] */
                 if (altprop(otmp) == which)
                     break;
+                if (Is_chromatic_armor(otmp)
+                    && which >= FIRE_RES && which <= STONE_RES)
+                    break;
             }
             if (!otmp)
                 mon->mextrinsics &= ~((unsigned short) mask);
@@ -687,6 +893,10 @@ update_mon_extrinsics(
        resistance to the hero so do likewise for monster who wears one */
     if (altwhich && which != altwhich) {
         which = altwhich;
+        goto again;
+    }
+    if (chromwhich && chromwhich <= STONE_RES) {
+        which = chromwhich++;
         goto again;
     }
 
@@ -717,9 +927,12 @@ int
 find_mac(struct monst *mon)
 {
     struct obj *obj;
-    int base = mon->data->ac;
+    int base = mon->data->ac
+               - ((mon->data->mflags3 & M3_BLINKER) && mon->mflee ? 10 : 0);
     long mwflags = mon->misc_worn_check;
 
+    if (mith_mon_syllable(mon) == MITH_UUR)
+        base -= 10;
     for (obj = mon->minvent; obj; obj = obj->nobj) {
         if (obj->owornmask & mwflags) {
             if (obj->otyp == AMULET_OF_GUARDING)
@@ -763,7 +976,8 @@ m_dowear(struct monst *mon, boolean creation)
      * except for the additional restriction on intelligence.  (Players
      * are always intelligent, even if polymorphed).
      */
-    if (verysmall(mon->data) || nohands(mon->data) || is_animal(mon->data))
+    if ((verysmall(mon->data) && mon->data != &mons[PM_COURE_ELADRIN])
+        || nohands(mon->data) || is_animal(mon->data))
         return;
     /* give mummies a chance to wear their wrappings
      * and let skeletons wear their initial armor */
@@ -773,7 +987,8 @@ m_dowear(struct monst *mon, boolean creation)
         return;
 
     m_dowear_type(mon, W_AMUL, creation, FALSE);
-    can_wear_armor = !cantweararm(mon->data); /* for suit, cloak, shirt */
+    can_wear_armor = (!cantweararm(mon->data)
+                      || mon->data == &mons[PM_COURE_ELADRIN]);
     /* can't put on shirt if already wearing suit */
     if (can_wear_armor && !(mon->misc_worn_check & W_ARM))
         m_dowear_type(mon, W_ARMU, creation, FALSE);
@@ -824,6 +1039,13 @@ m_dowear_type(
     best = old;
 
     for (obj = mon->minvent; obj; obj = obj->nobj) {
+        /* Only imported size metadata changes native armor fitting. Coure
+           can wear their tiny equipment, not ordinary human-sized armor. */
+        if (obj->oclass == ARMOR_CLASS
+            && ((!mith_armor_size_fits(obj, mon->data))
+                || (mon->data == &mons[PM_COURE_ELADRIN]
+                    && !obj->obranch_size)))
+            continue;
         switch (flag) {
         case W_AMUL:
             if (obj->oclass != AMULET_CLASS

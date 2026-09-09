@@ -43,12 +43,22 @@ for sample in range(count):
             pass
     thread = threading.Thread(target=reader, daemon=True)
     thread.start()
+    pages = []
     def wait_for(needle):
         deadline = time.monotonic()+30
         while time.monotonic()<deadline:
             text = "\n".join(screen.display)
             if needle in text:
                 return text
+            if needle == 'Floating branches' and '--More--' in text:
+                # Step 9 topology exceeds one TTY page. Capture each page
+                # before dismissal, without counting stale screen rows twice.
+                time.sleep(1)
+                pages.append('\n'.join(screen.display).split('--More--')[0])
+                # Keep the screen model: Windows omits characters which
+                # already match at the same position on the preceding page.
+                p.write(' ')
+                time.sleep(1)
             time.sleep(0.05)
         raise AssertionError("Missing " + needle + "\n" + text)
     try:
@@ -57,7 +67,7 @@ for sample in range(count):
         text = wait_for("Floating branches")
         # Complete rendering of the final page before reading it.
         time.sleep(0.3)
-        text = "\n".join(screen.display)
+        text = "\n".join(pages + ["\n".join(screen.display).split('--More--')[0]])
         (game / "topology.txt").write_text(text)
         tombs = re.findall(r"Stair to The Lost Tomb: (\d+)", text)
         temples = re.findall(r"Stair to The Temple of Moloch: (\d+)", text)

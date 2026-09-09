@@ -12,6 +12,9 @@ dungeon = {
       alignment = "unaligned",
       themerooms = "themerms.lua",
       branches = {
+         { name="Sheol", base=108, direction="down" },
+         { name="The Dragon Caves", base=109, direction="down" },
+         { name="Mithardir", base=110, branchtype="portal" },
          {
             name = "The Gnomish Mines",
             base = 2,
@@ -68,6 +71,7 @@ dungeon = {
          }
       },
       levels = {
+         { name = "chalv2", base = 110 },
          {
             name = "rogue",
             bonetag = "R",
@@ -381,4 +385,37 @@ dungeon = {
          { name = "moria1-1", bonetag = "1", base = 6 }
       }
    },
+   {
+      name = "Sheol", bonetag = "S", base = 6, range = 2,
+      alignment = "unaligned", lvlfill = "sheolfil",
+      levels = {
+         { name = "sheolmid", bonetag = "H", base = 2 },
+         { name = "palace_f", bonetag = "P", base = -2 },
+         { name = "palace_e", bonetag = "U", base = -1 }
+      }
+   },
+   {
+      name = "The Dragon Caves", bonetag = "D", base = 4,
+      flags = { "mazelike" }, alignment = "chaotic",
+      levels = {
+         { name = "drgnA", bonetag = "D", base = 1 },
+         { name = "drgnB", bonetag = "D", base = 2, flags = { "town" } },
+         { name = "drgnC", bonetag = "D", base = 3 },
+         { name = "drgnD", bonetag = "D", base = 4 }
+      }
+   },
+   {
+      name = "Mithardir", bonetag = "M", base = 10,
+      alignment = "chaotic",
+      levels = {
+         { name = "ossa1", base = 1, flags = { "town" } },
+         { name = "mith1", base = 2 },
+         { name = "mith2", base = 3 },
+         { name = "mith3", base = 4 },
+         { name = "cat1", base = 5 },
+         { name = "cat2", base = 6 },
+         { name = "cat3", base = 7 }
+      }
+   },
+
 }

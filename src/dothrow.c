@@ -1102,6 +1102,12 @@ hurtle(int dx, int dy, int range, boolean verbose)
         return;
     }
 
+    if (Frozen_feet) {
+        You("are anchored by the ice.");
+        nomul(0);
+        return;
+    }
+
     /* make sure dx and dy are [-1,0,1] */
     dx = sgn(dx);
     dy = sgn(dy);

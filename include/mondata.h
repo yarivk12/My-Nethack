@@ -12,6 +12,10 @@
 #define bigmonst(ptr) ((ptr)->msize >= MZ_LARGE)
 
 /* Only the Moria-dependent fern family is imported from UnNetHack. */
+#define is_weeping(ptr) ((ptr) == &mons[PM_WEEPING_ANGEL] \
+                        || (ptr) == &mons[PM_WEEPING_ARCHANGEL])
+#define is_arctic_fern(ptr) ((ptr) == &mons[PM_ARCTIC_FERN] \
+                            || (ptr) == &mons[PM_ARCTIC_FERN_SPROUT])
 #define is_swamp_fern(ptr) ((ptr) == &mons[PM_SWAMP_FERN] \
                             || (ptr) == &mons[PM_SWAMP_FERN_SPROUT])
 
@@ -177,16 +181,24 @@
    as unique even though they really aren't; that's ok here */
 #define unique_corpstat(ptr) (((ptr)->geno & G_UNIQ) != 0)
 
+#define is_cave_dragon(ptr) \
+    ((ptr) == &mons[PM_GLOWING_DRAGON] \
+     || (ptr) == &mons[PM_BABY_GLOWING_DRAGON] \
+     || (ptr) == &mons[PM_CAVE_CHROMATIC_DRAGON])
+
 /* this returns the light's range, or 0 if none; if we add more light-emitting
    monsters, we'll likely have to add a new light range field to mons[] */
 #define emits_light(ptr)                                          \
     (((ptr)->mlet == S_LIGHT || (ptr) == &mons[PM_FLAMING_SPHERE] \
       || (ptr) == &mons[PM_SHOCKING_SPHERE]                       \
       || (ptr) == &mons[PM_BABY_GOLD_DRAGON]                      \
+      || (ptr) == &mons[PM_BABY_GLOWING_DRAGON]                   \
+      || (ptr) == &mons[PM_GLOWING_DRAGON]                        \
       || (ptr) == &mons[PM_FIRE_VORTEX])                          \
          ? 1                                                      \
          : ((ptr) == &mons[PM_FIRE_ELEMENTAL]                     \
-            || (ptr) == &mons[PM_GOLD_DRAGON]) ? 1 : 0)
+            || (ptr) == &mons[PM_GOLD_DRAGON]) ? 1 \
+           : (ptr) == &mons[PM_ASPECT_OF_THE_SILENCE] ? 3 : 0)
     /* [Note: the light ranges above were reduced to 1 for performance,
      *  otherwise screen updating on the plane of fire slowed to a crawl.
      *  Note too: that was with 1990s hardware and before fumarole smoke
@@ -218,13 +230,26 @@
 
 /* NerfHack classic Tomb: only the Shadow is imported. */
 #define is_shadow(ptr) ((ptr) == &mons[PM_SHADOW])
+/* mspare1 bits 0..4 are Sheol freeze, 5..6 Dragon Caves revival.
+   Mithardir uses 7..9 for a mummy's syllable (0 absent, 1..6 present). */
+#define MITH_SYLLABLE_SHIFT 7
+#define MITH_SYLLABLE_MASK (7L << MITH_SYLLABLE_SHIFT)
+#define mith_hates_iron(ptr) \
+    ((ptr) == &mons[PM_ALABASTER_ELF] \
+     || (ptr) == &mons[PM_ALABASTER_ELF_ELDER])
+
+#define mith_mon_syllable(mon) \
+    ((mon)->data == &mons[PM_ALABASTER_MUMMY] \
+     ? (int) (((mon)->mspare1 & MITH_SYLLABLE_MASK) \
+               >> MITH_SYLLABLE_SHIFT) - 1 : -1)
 #define shadelike(ptr) ((ptr) == &mons[PM_SHADE] || is_shadow(ptr))
 #define hates_light(ptr) ((ptr) == &mons[PM_GREMLIN] || is_shadow(ptr))
 
 /* used to vary a few messages */
 #define weirdnonliving(ptr) (is_golem(ptr) || (ptr)->mlet == S_VORTEX)
 #define nonliving(ptr) \
-    (is_undead(ptr) || (ptr) == &mons[PM_MANES] || weirdnonliving(ptr))
+    (is_undead(ptr) || (ptr) == &mons[PM_MANES] || weirdnonliving(ptr) \
+     || (ptr) == &mons[PM_ASPECT_OF_THE_SILENCE])
 
 /* no corpse (ie, blank scrolls) if killed by fire; special case instakill  */
 #define completelyburns(ptr) \

@@ -2282,6 +2282,23 @@ percent_success(int spell)
      */
     chance = chance * (20 - splcaster) / 15 - splcaster;
 
+    {
+        struct monst *mon;
+
+        for (mon = fmon; mon; mon = mon->nmon)
+            if (!DEADMONSTER(mon)
+                && mon->data == &mons[PM_ASPECT_OF_THE_SILENCE]) {
+                int distance = isqrt(9 * dist2(u.ux, u.uy, mon->mx, mon->my));
+
+                chance = min(100, chance);
+                if (distance < 100)
+                    chance -= 100 - distance;
+                break; /* donor uses the first live Aspect on the level */
+            }
+    }
+    if (u.mith_timers[MITH_NAEN])
+        chance = 100;
+
     /* Clamp to percentile */
     if (chance > 100)
         chance = 100;
@@ -2422,6 +2439,190 @@ num_spells(void)
         if (spellid(i) == NO_SPELL)
             break;
     return i;
+}
+
+/* The three Mithardir Words use a separate command instead of importing
+   dNetHack's global spell and partial-action menus. One successful Word
+   consumes one ordinary native action; cancelling consumes none. */
+staticfn void
+mith_blessed_light(coordxy x, coordxy y)
+{
+    struct monst *mon = m_at(x, y);
+    int multiplier = 1, dice = max(u.ulevel / 2, 1);
+
+    if (!levl[x][y].lit) {
+        levl[x][y].lit = 1;
+        newsym(x, y);
+    }
+    if (!mon || mon->mpeaceful)
+        return;
+    multiplier += !!is_undead(mon->data) + !!is_demon(mon->data)
+        + (mon->data == &mons[PM_ASPECT_OF_THE_SILENCE])
+        + (dmgtype(mon->data, AD_DRLI) || dmgtype(mon->data, AD_VAMP))
+        + dmgtype(mon->data, AD_DISN)
+        + (shadelike(mon->data) || mon->data->mlet == S_WRAITH
+           || mon->data->mlet == S_UMBER);
+    mon->mhp -= d(dice, 3 * multiplier);
+    pline("%s is seared by the Light.", Monnam(mon));
+    if (DEADMONSTER(mon))
+        killed(mon);
+}
+
+staticfn boolean
+mith_word_effect(int word)
+{
+    int x, y, dice = max(u.ulevel / 2, 1), dx, dy;
+    struct monst *mon;
+    struct trap *trap;
+    boolean parted = FALSE;
+
+    if (word == 1) {
+        if (!getdir((char *) 0) || !(u.dx || u.dy))
+            return FALSE;
+        dx = u.dx;
+        dy = u.dy;
+        if (u.uswallow) {
+            mon = u.ustuck;
+            pline("%s splits in half!", Monnam(mon));
+            expels(mon, mon->data, TRUE);
+            killed(mon);
+        }
+        x = u.ux + dx;
+        y = u.uy + dy;
+        while (isok(x, y) && ZAP_POS(levl[x][y].typ)) {
+            int typ = levl[x][y].typ;
+
+            if (typ == POOL || typ == MOAT || typ == PUDDLE) {
+                levl[x][y].typ = ROOM;
+                if ((typ == POOL || typ == MOAT) && !t_at(x, y)) {
+                    trap = maketrap(x, y, PIT);
+                    if (trap)
+                        trap->tseen = 1;
+                }
+                if (!parted)
+                    pline("The waters part.");
+                parted = TRUE;
+                newsym(x, y);
+            }
+            mon = m_at(x, y);
+            if (mon && !mon->mpeaceful) {
+                if (!rn2(20)) {
+                    pline("%s is bisected!", Monnam(mon));
+                    killed(mon);
+                } else {
+                    int side = rn2(2) ? 1 : -1;
+
+                    pline("%s is thrown to the side.", Monnam(mon));
+                    mon->mhp -= d(dice, 3);
+                    if (DEADMONSTER(mon))
+                        killed(mon);
+                    else
+                        mhurtle(mon, -side * dy, side * dx, 33);
+                }
+            }
+            x += dx;
+            y += dy;
+        }
+        return TRUE;
+    }
+    for (y = 0; y < ROWNO; ++y)
+        for (x = 1; x < COLNO; ++x) {
+            if (!couldsee(x, y))
+                continue;
+            if (word == 0) {
+                mith_blessed_light(x, y);
+                continue;
+            }
+            if (levl[x][y].typ == ROOM || levl[x][y].typ == SOIL) {
+                levl[x][y].typ = GRASS;
+                newsym(x, y);
+            }
+            mon = m_at(x, y);
+            if (mon && !mon->mpeaceful
+                && (mon->data->mlet == S_ELEMENTAL || is_undead(mon->data)
+                    || mon->data == &mons[PM_ASPECT_OF_THE_SILENCE]
+                    || mon->data == &mons[PM_SENTINEL_OF_MITHARDIR]
+                    || mon->data == &mons[PM_STONE_GOLEM]
+                    || mon->data == &mons[PM_CLAY_GOLEM]
+                    || mon->data == &mons[PM_FLESH_GOLEM])) {
+                mon->mhp -= d(dice, 12);
+                if (DEADMONSTER(mon)) {
+                    killed(mon);
+                    /* A life-saved victim must not be embedded in a tree. */
+                    if (DEADMONSTER(mon)
+                        && (levl[x][y].typ == ROOM || levl[x][y].typ == SOIL
+                            || levl[x][y].typ == GRASS
+                            || levl[x][y].typ == PUDDLE
+                            || levl[x][y].typ == CORR)) {
+                        levl[x][y].typ = TREE;
+                        levl[x][y].flags = 0;
+                        bury_objs(x, y);
+                        newsym(x, y);
+                    }
+                } else {
+                    mon->movement -= NORMAL_SPEED;
+                }
+            }
+            if (levl[x][y].typ == TREE)
+                levl[x][y].looted &= ~TREE_LOOTED;
+        }
+    if (word == 2)
+        for (y = 0; y < ROWNO; ++y)
+            for (x = 1; x < COLNO; ++x)
+                if (levl[x][y].typ == TREE)
+                    recalc_block_point(x, y);
+    gv.vision_full_recalc = 1;
+    (void) doredraw();
+    return TRUE;
+}
+
+int
+domithword(void)
+{
+    static const char *const names[3] = {
+        "First Word: blessed light", "Dividing Word: part water",
+        "Nurturing Word: overgrow"
+    };
+    winid menu;
+    menu_item *selected = (menu_item *) 0;
+    anything any;
+    char buf[BUFSZ];
+    int i, n, choice;
+    long cooldown;
+
+    if (!u.mith_words) {
+        You("have not learned any Words of Creation.");
+        return ECMD_OK;
+    }
+    menu = create_nhwindow(NHW_MENU);
+    start_menu(menu, MENU_BEHAVE_STANDARD);
+    for (i = 0; i < 3; ++i)
+        if (u.mith_words & (1U << i)) {
+            any = cg.zeroany;
+            any.a_int = i + 1;
+            Snprintf(buf, sizeof buf, "%s%s", names[i],
+                     u.mith_word_timeout[i] > svm.moves ? " (recovering)" : "");
+            add_menu(menu, &nul_glyphinfo, &any, 'a' + i, 0, ATR_NONE,
+                     NO_COLOR, buf, MENU_ITEMFLAGS_NONE);
+        }
+    end_menu(menu, "Speak which Word?");
+    n = select_menu(menu, PICK_ONE, &selected);
+    destroy_nhwindow(menu);
+    if (n <= 0)
+        return ECMD_CANCEL;
+    choice = selected[0].item.a_int - 1;
+    free((genericptr_t) selected);
+    if (u.mith_word_timeout[choice] > svm.moves) {
+        You("cannot summon that Word again yet.");
+        return ECMD_OK;
+    }
+    if (!mith_word_effect(choice))
+        return ECMD_CANCEL;
+    cooldown = rnz(100);
+    if (Role_if(PM_CLERIC))
+        cooldown = cooldown * 4 / 5;
+    u.mith_word_timeout[choice] = svm.moves + cooldown;
+    return ECMD_TIME;
 }
 
 /*spell.c*/

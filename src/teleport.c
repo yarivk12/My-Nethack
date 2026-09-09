@@ -484,6 +484,7 @@ teleds(coordxy nux, coordxy nuy, int teleds_flags)
         else if (!allow_drag)
             unplacebc(); /* have to move the ball */
     }
+    Frozen_feet = 0; /* the ice does not teleport with the hero */
     reset_utrap(FALSE);
     was_swallowed = u.uswallow; /* set_ustuck(Null) clears uswallow */
     set_ustuck((struct monst *) 0);
@@ -1688,6 +1689,7 @@ rloc_to_core(
         }
     }
 
+    set_mon_frozen_feet(mtmp, 0);
     mon_track_clear(mtmp);
     place_monster(mtmp, x, y); /* put monster down */
     update_monster_region(mtmp);

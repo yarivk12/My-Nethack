@@ -2230,6 +2230,9 @@ create_object(object *o, struct mkroom *croom)
 
     if (o->spe != -127) /* That means NOT RANDOM! */
         otmp->spe = (schar) o->spe;
+    otmp->obranch_props = o->branch_props;
+    otmp->obranch_material = o->branch_material;
+    otmp->obranch_size = o->branch_size;
 
     switch (o->curse_state) {
     case 1: /* blessed */
@@ -2300,6 +2303,8 @@ create_object(object *o, struct mkroom *croom)
         otmp->quan = o->quan;
         otmp->owt = weight(otmp);
     }
+    if (otmp->obranch_material || otmp->obranch_size)
+        otmp->owt = weight(otmp);
 
     /* contents (of a container or monster's inventory) */
     if (o->containment & SP_OBJ_CONTENT || invent_carrying_monster) {
@@ -3010,6 +3015,9 @@ splev_initlev(lev_init *linit)
         linit->icedpools = icedpools;
         mkmap(linit);
         break;
+    case LVLINIT_SHEOL:
+        mksheol();
+        break;
     case LVLINIT_SWAMP:
         if (linit->lit == BOOL_RANDOM)
             linit->lit = rn2(2);
@@ -3468,6 +3476,13 @@ get_table_objclass(lua_State *L)
 staticfn int
 find_objtype(lua_State *L, const char *s, char oclass)
 {
+    if (s && !strcmpi(s, "ceramic tile"))
+        return mith_tile_type();
+    if (s && !strcmpi(s, "slab")) {
+        int typ = mith_slab_type();
+
+        return typ == STRANGE_OBJECT ? -2 : typ;
+    }
     if (s && *s) {
         int i;
         const char *objname;
@@ -3665,8 +3680,45 @@ lspo_object(lua_State *L)
     else if (tmpobj.class > -1 && tmpobj.id == STRANGE_OBJECT)
         tmpobj.id = -1;
 
+    if (lua_type(L, 1) == LUA_TTABLE) {
+        char *mat = get_table_str_opt(L, "material", NULL);
+        char *size = get_table_str_opt(L, "size", NULL);
+
+        if (mat) {
+            if (!strcmpi(mat, "mineral") || !strcmpi(mat, "stone"))
+                tmpobj.branch_material = MINERAL;
+            else if (!strcmpi(mat, "shell"))
+                tmpobj.branch_material = SHELL;
+            else if (!strcmpi(mat, "metal"))
+                tmpobj.branch_material = METAL;
+            else if (!strcmpi(mat, "silver"))
+                tmpobj.branch_material = SILVER;
+            else
+                nhl_error(L, "Unsupported branch material");
+            free(mat);
+        }
+        if (size) {
+            if (!strcmpi(size, "large"))
+                tmpobj.branch_size = MZ_LARGE + 1;
+            else if (!strcmpi(size, "huge"))
+                tmpobj.branch_size = MZ_HUGE + 1;
+            else if (!strcmpi(size, "small"))
+                tmpobj.branch_size = MZ_SMALL + 1;
+            else if (!strcmpi(size, "medium"))
+                tmpobj.branch_size = MZ_MEDIUM + 1;
+            else
+                nhl_error(L, "Unsupported branch object size");
+            free(size);
+        }
+        if (get_table_boolean_opt(L, "anarchic", FALSE))
+            tmpobj.branch_props |= OBP_ANARCHIC;
+        if (get_table_boolean_opt(L, "acid_coated", FALSE))
+            tmpobj.branch_props |= OBP_ACID;
+        if (tmpobj.id == STATUE && get_table_boolean_opt(L, "faceless", FALSE))
+            tmpobj.branch_props |= OBP_FACELESS;
+    }
     if (tmpobj.id == STATUE || tmpobj.id == EGG
-        || tmpobj.id == CORPSE || tmpobj.id == TIN
+        || tmpobj.id == CORPSE || tmpobj.id == TIN || tmpobj.id == MASK
         || tmpobj.id == FIGURINE) {
         struct permonst *pm = NULL;
         boolean nonpmobj = FALSE;
@@ -3730,6 +3782,12 @@ lspo_object(lua_State *L)
         }
     }
 
+    /* A random slab request after all three exist intentionally creates none. */
+    if (tmpobj.id == -2) {
+        Free(tmpobj.name.str);
+        lua_pushnil(L);
+        return 1;
+    }
     quancnt = (tmpobj.id > STRANGE_OBJECT) ? tmpobj.quan : 0;
 
     if (container_idx)
@@ -3847,11 +3905,11 @@ int
 lspo_level_init(lua_State *L)
 {
     static const char *const initstyles[] = {
-        "solidfill", "mazegrid", "maze", "rogue", "mines", "swamp", NULL
+        "solidfill", "mazegrid", "maze", "rogue", "mines", "swamp", "sheol", NULL
     };
     static const int initstyles2i[] = {
         LVLINIT_SOLIDFILL, LVLINIT_MAZEGRID, LVLINIT_MAZE, LVLINIT_ROGUE,
-        LVLINIT_MINES, LVLINIT_SWAMP, 0
+        LVLINIT_MINES, LVLINIT_SWAMP, LVLINIT_SHEOL, 0
     };
     lev_init init_lev;
 
@@ -3994,6 +4052,10 @@ static const struct {
     { "book shop", BOOKSHOP },
     { "health food shop", FODDERSHOP },
     { "candle shop", CANDLESHOP },
+    { "sea garden", SEAGARDEN },
+    { "fishery", SEAFOOD },
+    { "sand-walker shop", SANDWALKER },
+    { "spa", NAIADSHOP },
     { 0, 0 }
 };
 

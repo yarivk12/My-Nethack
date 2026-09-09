@@ -50,7 +50,8 @@ staticfn void wish_history_menu(char *);
 #define ZT_LIGHTNING (AD_ELEC - 1)
 #define ZT_POISON_GAS (AD_DRST - 1)
 #define ZT_ACID (AD_ACID - 1)
-/* 8 and 9 are currently unassigned */
+#define ZT_LAVA (AD_LAVA - 1)
+/* 9 is currently unassigned */
 
 #define ZT_WAND(x) (x)
 #define ZT_SPELL(x) (10 + (x))
@@ -81,7 +82,7 @@ static const char *const flash_types[] = {
     "blast of missiles", /* Dragon breath equivalents 20-29*/
     "blast of fire", "blast of frost", "blast of sleep gas",
     "blast of disintegration", "blast of lightning",
-    "blast of poison gas", "blast of acid", "", ""
+    "blast of poison gas", "blast of acid", "jet of molten lava", ""
 };
 
 /* convert monster zap/spell/breath value to hero zap/spell/breath value */
@@ -790,6 +791,9 @@ montraits(
         mtmp2->m_ap_type = mtmp->m_ap_type;
         /* set these ones explicitly */
         mtmp2->mrevived = 1;
+        if (is_cave_dragon(mtmp2->data))
+            set_dragon_revivals(mtmp2, min(2L, dragon_revivals(mtmp2) + 1L));
+        set_mon_frozen_feet(mtmp2, 0);
         mtmp2->mavenge = 0;
         mtmp2->meating = 0;
         mtmp2->mleashed = 0;
@@ -1115,6 +1119,8 @@ revive(struct obj *corpse, boolean by_hero)
         mtmp->mhp = eaten_stat(mtmp->mhp, corpse);
     /* track that this monster was revived at least once */
     mtmp->mrevived = 1;
+    if (is_cave_dragon(mtmp->data) && !has_omonst(corpse))
+        set_dragon_revivals(mtmp, 1);
 
     /* finally, get rid of the corpse--it's gone now */
     switch (corpse->where) {
@@ -1308,6 +1314,36 @@ cancel_item(struct obj *obj)
     }
     /* cancelled item might not be in hero's possession but
        cancellation is presumed to be instigated by hero */
+    if (otyp == GLOWING_DRAGON_SCALE_MAIL
+        || otyp == CHROMATIC_DRAGON_SCALE_MAIL) {
+        boolean worn = obj == uarm;
+        struct monst *carrier = obj->where == OBJ_MINVENT ? obj->ocarry : 0;
+        long mask = obj->owornmask;
+        int old_light = artifact_light(obj) ? arti_light_radius(obj) : 0;
+
+        costly_alteration(obj, COST_CANCEL);
+        if (!Blind)
+            pline("%s reverts to its natural form!", Yname2(obj));
+        else if (worn)
+            Your("armor feels looser.");
+        if (worn)
+            setworn((struct obj *) 0, W_ARM);
+        if (carrier && mask)
+            update_mon_extrinsics(carrier, obj, FALSE, TRUE);
+        obj->otyp += GRAY_DRAGON_SCALES - GRAY_DRAGON_SCALE_MAIL;
+        if (worn) {
+            setworn(obj, W_ARM);
+            /* Mail's primary poison property becomes one of the scales'
+             * manually handled properties; all ten remain active. */
+            if (Is_chromatic_armor(obj))
+                EPoison_resistance |= W_ARM;
+            disp.botl = TRUE;
+        }
+        if (carrier && mask)
+            update_mon_extrinsics(carrier, obj, TRUE, TRUE);
+        if (old_light)
+            maybe_adjust_light(obj, old_light);
+    }
     if (objects[otyp].oc_magic
         || (obj->spe && (obj->oclass == ARMOR_CLASS
                          || obj->oclass == WEAPON_CLASS || is_weptool(obj)))
@@ -3516,6 +3552,14 @@ spell_damage_bonus(
     else
         dmg += 3; /* Int 25 */
 
+    if (u.mith_syllables[MITH_KRAU]) {
+        int count = u.mith_syllables[MITH_KRAU];
+
+        dmg += count / 3 + (rn2(3) < count % 3);
+    }
+    if (u.mith_timers[MITH_KRAU])
+        dmg += dmg / 2;
+
     return dmg;
 }
 
@@ -4250,6 +4294,31 @@ boomhit(struct obj *obj, int dx, int dy)
     return (struct monst *) 0;
 }
 
+/* A lava jet terminates at an obstacle. Unlike a fire ray it can melt
+ * diggable stone into lava, but it does not evaporate open water/bog. */
+void
+lava_jet_obstacle(coordxy x, coordxy y)
+{
+    struct rm *lev = &levl[x][y];
+
+    if (IS_STWALL(lev->typ) && !(lev->wall_info & W_NONDIGGABLE)) {
+        lev->typ = LAVAPOOL;
+        lev->flags = 0;
+        lev->lit = 1;
+        if (cansee(x, y))
+            pline_The("jet of molten lava melts the wall!");
+    } else if (IS_ANY_ICEWALL(lev->typ)) {
+        lev->typ = ICE;
+        lev->flags = 0;
+        if (cansee(x, y))
+            pline_The("ice wall melts away.");
+    } else {
+        return;
+    }
+    recalc_block_point(x, y);
+    newsym(x, y);
+}
+
 /* used by buzz(); also used by munslime(muse.c); returns damage applied
    to mon; note: caller is responsible for killing mon if damage is fatal */
 int
@@ -4275,6 +4344,7 @@ zhitm(
         if (spellcaster)
             tmp = spell_damage_bonus(tmp);
         break;
+    case ZT_LAVA:
     case ZT_FIRE:
         if (resists_fire(mon) || defended(mon, AD_FIRE)) {
             sho_shieldeff = TRUE;
@@ -4436,6 +4506,7 @@ zhitu(
             monstunseesu(M_SEEN_MAGR);
         }
         break;
+    case ZT_LAVA:
     case ZT_FIRE:
         orig_dam = d(nd, 6);
         if (Fire_resistance) {
@@ -4602,6 +4673,8 @@ zhitu(
         /* Half_spell_damage protection yields half-damage for wands & spells,
            including hero's own ricochets; breath attacks do full damage */
         if (dam && Half_spell_damage && abstyp < 20)
+            dam = (dam + 1) / 2;
+        if (dam && u.mith_timers[MITH_VAUL])
             dam = (dam + 1) / 2;
         losehp(dam, kbuf, KILLED_BY_AN);
     }
@@ -4898,6 +4971,8 @@ dobuzz(
                     }
                     dx = -dx;
                     dy = -dy;
+                    if (damgtype == ZT_LAVA)
+                        range = 0; /* reflected lava stops; it does not return */
                 } else {
                     boolean mon_could_move = mon->mcanmove;
                     int tmp = zhitm(mon, type, nd, &otmp);
@@ -4990,6 +5065,8 @@ dobuzz(
                     monstseesu(M_SEEN_REFL);
                     dx = -dx;
                     dy = -dy;
+                    if (damgtype == ZT_LAVA)
+                        range = 0;
                     shieldeff(sx, sy);
                     gas_hit = FALSE;
                 } else {
@@ -5018,6 +5095,11 @@ dobuzz(
             int bchance;
 
  make_bounce:
+            if (damgtype == ZT_LAVA) {
+                if (isok(sx, sy) && range > 1)
+                    lava_jet_obstacle(sx, sy);
+                break;
+            }
             bchance = (!isok(sx, sy) || levl[sx][sy].typ == STONE) ? 10
                       : (In_mines(&u.uz) && IS_WALL(levl[sx][sy].typ)) ? 20
                         : 75;
@@ -5067,20 +5149,22 @@ melt_ice(coordxy x, coordxy y, const char *msg)
         lev->drawbridgemask &= ~DB_ICE; /* revert to DB_MOAT */
     } else { /* lev->typ == ICE */
         lev->typ = (lev->icedpool == ICED_POOL ? POOL
-                    : lev->icedpool == ICED_BOG ? BOG : MOAT);
+                    : lev->icedpool == ICED_BOG ? BOG
+                    : lev->icedpool == ICED_PUDDLE ? PUDDLE : MOAT);
         lev->icedpool = 0;
     }
     spot_stop_timers(x, y, MELT_ICE_AWAY); /* no more ice to melt away */
     if (t_at(x, y))
         trap_ice_effects(x, y, TRUE); /* TRUE because ice_is_melting */
     obj_ice_effects(x, y, FALSE);
-    unearth_objs(x, y);
+    if (!IS_PUDDLE(lev->typ))
+        unearth_objs(x, y);
     if (Underwater)
         vision_recalc(1);
     newsym(x, y);
     if (cansee(x, y) || u_at(x, y))
         Norep("%s", msg);
-    if ((otmp = sobj_at(BOULDER, x, y)) != 0) {
+    if (!IS_PUDDLE(lev->typ) && (otmp = sobj_at(BOULDER, x, y)) != 0) {
         if (cansee(x, y))
             pline("%s settles...", An(xname(otmp)));
         do {
@@ -5191,6 +5275,25 @@ zap_over_floor(
         }
         break;
     case ZT_FIRE:
+        if (u_at(x, y) && Frozen_feet) {
+            Frozen_feet = 0;
+            disp.botl = TRUE;
+            pline_The("ice around your feet melts away!");
+        }
+        if (m_at(x, y))
+            set_mon_frozen_feet(m_at(x, y), 0);
+        if (IS_ANY_ICEWALL(lev->typ)) {
+            if (see_it)
+                Norep(lev->typ == CRYSTALICEWALL
+                      ? "The crystal ice wall melts and breaks down."
+                      : "The ice wall melts away.");
+            lev->typ = ICE;
+            lev->flags = 0;
+            newsym(x, y);
+            recalc_block_point(x, y);
+            vision_recalc(1);
+            return -3;
+        }
         t = t_at(x, y);
         if (t && t->ttyp == WEB) {
             /* a burning web is too flimsy to notice if you can't see it */
@@ -5200,7 +5303,16 @@ zap_over_floor(
             if (see_it)
                 newsym(x, y);
         }
-        if (IS_BOG(lev->typ)) {
+        if (IS_PUDDLE(lev->typ)) {
+            lev->typ = ROOM;
+            lev->flags = 0;
+            if (see_it)
+                pline_The("water evaporates.");
+            else if (!Deaf)
+                You_hear("hissing gas.");
+            newsym(x, y);
+            return -3;
+        } else if (IS_BOG(lev->typ)) {
             lev->typ = ROOM;
             if (fillholetyp(x, y, FALSE) != ROOM)
                 lev->typ = BOG;
@@ -5284,7 +5396,8 @@ zap_over_floor(
         break; /* ZT_FIRE */
 
     case ZT_COLD:
-        if (is_pool(x, y) || is_lava(x, y) || lavawall || IS_BOG(lev->typ)) {
+        if (is_pool(x, y) || is_lava(x, y) || lavawall || IS_BOG(lev->typ)
+            || IS_PUDDLE(lev->typ)) {
             boolean lava = (is_lava(x, y) || lavawall),
                     moat = is_moat(x, y);
             int chance = max(2, 5 + svl.level.flags.temperature * 10);
@@ -5309,7 +5422,9 @@ zap_over_floor(
                 } else {
                     lev->icedpool = lava ? 0
                                          : (lev->typ == POOL) ? ICED_POOL
-                                         : IS_BOG(lev->typ) ? ICED_BOG : ICED_MOAT;
+                                         : IS_BOG(lev->typ) ? ICED_BOG
+                                         : IS_PUDDLE(lev->typ) ? ICED_PUDDLE
+                                         : ICED_MOAT;
                     if (lavawall) {
                         if ((isok(x, y-1) && IS_WALL(levl[x][y-1].typ))
                             || (isok(x, y+1) && IS_WALL(levl[x][y+1].typ)))
@@ -5322,7 +5437,8 @@ zap_over_floor(
                         lev->typ = lava ? ROOM : ICE;
                     }
                 }
-                bury_objs(x, y);
+                if (lev->icedpool != ICED_PUDDLE)
+                    bury_objs(x, y);
                 if (!lava) {
                     Soundeffect(se_soft_crackling, 30);
                 }
@@ -5463,6 +5579,7 @@ zap_over_floor(
 
         rangemod = -1000;
         switch (damgtype) {
+        case ZT_LAVA:
         case ZT_FIRE:
             new_doormask = D_NODOOR;
             see_txt = "The door is consumed in flames!";

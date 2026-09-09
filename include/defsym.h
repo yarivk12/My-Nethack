@@ -151,37 +151,44 @@
        dungeon and Plane of Water in the endgame */
     PCHAR(48, '#', S_deadtree, "dead tree", CLR_BROWN)
     PCHAR(49, '}', S_bog, "muddy swamp", CLR_BROWN)
-    PCHAR( 50, '}',  S_water,  "water", CLR_BRIGHT_BLUE)
+    PCHAR(50, '#', S_icewall, "ice wall", CLR_WHITE)
+    PCHAR(51, '#', S_crystalicewall, "crystal ice wall", CLR_BRIGHT_CYAN)
+    PCHAR(52, '}', S_puddle, "shallow water", CLR_BLUE)
+    PCHAR(53, '.', S_sand, "white dust", CLR_WHITE)
+    PCHAR(54, '.', S_soil, "soil", CLR_BROWN)
+    PCHAR(55, '.', S_grass, "grass", CLR_GREEN)
+    PCHAR( 56, '}',  S_water,  "water", CLR_BRIGHT_BLUE)
     /* end dungeon characters                                          */
     /*                                                                 */
     /* begin traps                                                     */
     /*                                                                 */
-    PCHAR( 51, '^',  S_arrow_trap, "arrow trap", HI_METAL)
-    PCHAR( 52, '^',  S_dart_trap, "dart trap", HI_METAL)
-    PCHAR( 53, '^',  S_falling_rock_trap, "falling rock trap", CLR_GRAY)
-    PCHAR( 54, '^',  S_squeaky_board, "squeaky board", CLR_BROWN)
-    PCHAR( 55, '^',  S_bear_trap, "bear trap", HI_METAL)
-    PCHAR( 56, '^',  S_land_mine, "land mine", CLR_RED)
-    PCHAR( 57, '^',  S_rolling_boulder_trap, "rolling boulder trap", CLR_GRAY)
-    PCHAR( 58, '^',  S_sleeping_gas_trap, "sleeping gas trap", HI_ZAP)
-    PCHAR( 59, '^',  S_rust_trap, "rust trap", CLR_BLUE)
-    PCHAR( 60, '^',  S_fire_trap, "fire trap", CLR_ORANGE)
-    PCHAR( 61, '^',  S_pit, "pit", CLR_BLACK)
-    PCHAR( 62, '^',  S_spiked_pit, "spiked pit", CLR_BLACK)
-    PCHAR( 63, '^',  S_hole, "hole", CLR_BROWN)
-    PCHAR( 64, '^',  S_trap_door, "trap door", CLR_BROWN)
-    PCHAR( 65, '^',  S_teleportation_trap, "teleportation trap", CLR_MAGENTA)
-    PCHAR( 66, '^',  S_level_teleporter, "level teleporter", CLR_MAGENTA)
-    PCHAR( 67, '^',  S_magic_portal, "magic portal", CLR_BRIGHT_MAGENTA)
-    PCHAR( 68, '"',  S_web, "web", CLR_GRAY)
-    PCHAR( 69, '^',  S_statue_trap, "statue trap", CLR_GRAY)
-    PCHAR( 70, '^',  S_magic_trap, "magic trap", HI_ZAP)
-    PCHAR2(71, '^',  S_anti_magic_trap, "anti magic trap", "anti-magic field",
+    PCHAR( 57, '^',  S_arrow_trap, "arrow trap", HI_METAL)
+    PCHAR( 58, '^',  S_dart_trap, "dart trap", HI_METAL)
+    PCHAR( 59, '^',  S_falling_rock_trap, "falling rock trap", CLR_GRAY)
+    PCHAR( 60, '^',  S_squeaky_board, "squeaky board", CLR_BROWN)
+    PCHAR( 61, '^',  S_bear_trap, "bear trap", HI_METAL)
+    PCHAR( 62, '^',  S_land_mine, "land mine", CLR_RED)
+    PCHAR( 63, '^',  S_rolling_boulder_trap, "rolling boulder trap", CLR_GRAY)
+    PCHAR( 64, '^',  S_sleeping_gas_trap, "sleeping gas trap", HI_ZAP)
+    PCHAR( 65, '^',  S_rust_trap, "rust trap", CLR_BLUE)
+    PCHAR( 66, '^',  S_fire_trap, "fire trap", CLR_ORANGE)
+    PCHAR( 67, '^',  S_pit, "pit", CLR_BLACK)
+    PCHAR( 68, '^',  S_spiked_pit, "spiked pit", CLR_BLACK)
+    PCHAR( 69, '^',  S_hole, "hole", CLR_BROWN)
+    PCHAR( 70, '^',  S_trap_door, "trap door", CLR_BROWN)
+    PCHAR( 71, '^',  S_teleportation_trap, "teleportation trap", CLR_MAGENTA)
+    PCHAR( 72, '^',  S_level_teleporter, "level teleporter", CLR_MAGENTA)
+    PCHAR( 73, '^',  S_magic_portal, "magic portal", CLR_BRIGHT_MAGENTA)
+    PCHAR( 74, '"',  S_web, "web", CLR_GRAY)
+    PCHAR( 75, '^',  S_statue_trap, "statue trap", CLR_GRAY)
+    PCHAR( 76, '^',  S_magic_trap, "magic trap", HI_ZAP)
+    PCHAR2(77, '^',  S_anti_magic_trap, "anti magic trap", "anti-magic field",
                                         HI_ZAP)
-    PCHAR( 72, '^',  S_polymorph_trap, "polymorph trap", CLR_BRIGHT_GREEN)
-    PCHAR( 73, '~',  S_vibrating_square, "vibrating square", CLR_MAGENTA)
-    PCHAR( 74, '^',  S_trapped_door, "trapped door", CLR_ORANGE)
-    PCHAR( 75, '^',  S_trapped_chest, "trapped chest", CLR_ORANGE)
+    PCHAR( 78, '^',  S_polymorph_trap, "polymorph trap", CLR_BRIGHT_GREEN)
+    PCHAR( 79, '~',  S_vibrating_square, "vibrating square", CLR_MAGENTA)
+    PCHAR( 80, '^',  S_trapped_door, "trapped door", CLR_ORANGE)
+    PCHAR( 81, '^',  S_trapped_chest, "trapped chest", CLR_ORANGE)
+    PCHAR(82, '^', S_ice_trap, "ice trap", CLR_WHITE)
     /* end traps                                                       */
     /* end cmap B */
     /*                                                                   */
@@ -189,24 +196,25 @@
     /*                                                                   */
     /* zap colors are changed by reset_glyphmap() to match type of beam */
     /*                                                                   */
-    PCHAR2(76, '|',  S_vbeam, "vertical beam", "", CLR_GRAY)
-    PCHAR2(77, '-',  S_hbeam, "horizontal beam", "", CLR_GRAY)
-    PCHAR2(78, '\\', S_lslant, "left slant beam", "", CLR_GRAY)
-    PCHAR2(79, '/',  S_rslant, "right slant beam", "", CLR_GRAY)
+    PCHAR2(83, '|',  S_vbeam, "vertical beam", "", CLR_GRAY)
+    PCHAR2(84, '-',  S_hbeam, "horizontal beam", "", CLR_GRAY)
+    PCHAR2(85, '\\', S_lslant, "left slant beam", "", CLR_GRAY)
+    PCHAR2(86, '/',  S_rslant, "right slant beam", "", CLR_GRAY)
     /* start cmap C */
-    PCHAR2(80, '*',  S_digbeam, "dig beam", "", CLR_WHITE)
-    PCHAR2(81, '!',  S_flashbeam, "flash beam", "", CLR_WHITE)
-    PCHAR2(82, ')',  S_boomleft, "boom left", "", HI_WOOD)
-    PCHAR2(83, '(',  S_boomright, "boom right", "", HI_WOOD)
+    PCHAR2(87, '*',  S_digbeam, "dig beam", "", CLR_WHITE)
+    PCHAR2(88, '!',  S_flashbeam, "flash beam", "", CLR_WHITE)
+    PCHAR2(89, ')',  S_boomleft, "boom left", "", HI_WOOD)
+    PCHAR2(90, '(',  S_boomright, "boom right", "", HI_WOOD)
     /* 4 magic shield symbols                                          */
-    PCHAR2(84, '0',  S_ss1, "shield1", "", HI_ZAP)
-    PCHAR2(85, '#',  S_ss2, "shield2", "", HI_ZAP)
-    PCHAR2(86, '@',  S_ss3, "shield3", "", HI_ZAP)
-    PCHAR2(87, '*',  S_ss4, "shield4", "", HI_ZAP)
-    PCHAR( 88, '#',  S_poisoncloud, "poison cloud", CLR_BRIGHT_GREEN)
+    PCHAR2(91, '0',  S_ss1, "shield1", "", HI_ZAP)
+    PCHAR2(92, '#',  S_ss2, "shield2", "", HI_ZAP)
+    PCHAR2(93, '@',  S_ss3, "shield3", "", HI_ZAP)
+    PCHAR2(94, '*',  S_ss4, "shield4", "", HI_ZAP)
+    PCHAR( 95, '#',  S_poisoncloud, "poison cloud", CLR_BRIGHT_GREEN)
     /* for a time S_goodpos was a question mark, but dollar sign is the
        default keystroke for getpos() to toggle goodpos glyphs on or off */
-    PCHAR( 89, '$',  S_goodpos, "valid position", HI_ZAP)
+    PCHAR(96, '#', S_dustcloud, "dust cloud", CLR_WHITE)
+    PCHAR( 97, '$',  S_goodpos, "valid position", HI_ZAP)
     /* end cmap C */
     /*                                                             */
     /* The 8 swallow symbols.  Do NOT separate.                    */
@@ -220,14 +228,14 @@
     /*      4 5 6                                                  */
     /*      7 8 9                                                  */
     /*                                                             */
-    PCHAR2(90, '/',  S_sw_tl, "swallow top left", "", CLR_GREEN)      /*1*/
-    PCHAR2(91, '-',  S_sw_tc, "swallow top center", "", CLR_GREEN)    /*2*/
-    PCHAR2(92, '\\', S_sw_tr, "swallow top right", "", CLR_GREEN)     /*3*/
-    PCHAR2(93, '|',  S_sw_ml, "swallow middle left", "", CLR_GREEN)   /*4*/
-    PCHAR2(94, '|',  S_sw_mr, "swallow middle right", "", CLR_GREEN)  /*6*/
-    PCHAR2(95, '\\', S_sw_bl, "swallow bottom left", "", CLR_GREEN)   /*7*/
-    PCHAR2(96, '-',  S_sw_bc, "swallow bottom center", "", CLR_GREEN) /*8*/
-    PCHAR2(97, '/',  S_sw_br, "swallow bottom right", "", CLR_GREEN)  /*9*/
+    PCHAR2(98, '/',  S_sw_tl, "swallow top left", "", CLR_GREEN)      /*1*/
+    PCHAR2(99, '-',  S_sw_tc, "swallow top center", "", CLR_GREEN)    /*2*/
+    PCHAR2(100, '\\', S_sw_tr, "swallow top right", "", CLR_GREEN)     /*3*/
+    PCHAR2(101, '|',  S_sw_ml, "swallow middle left", "", CLR_GREEN)   /*4*/
+    PCHAR2(102, '|',  S_sw_mr, "swallow middle right", "", CLR_GREEN)  /*6*/
+    PCHAR2(103, '\\', S_sw_bl, "swallow bottom left", "", CLR_GREEN)   /*7*/
+    PCHAR2(104, '-',  S_sw_bc, "swallow bottom center", "", CLR_GREEN) /*8*/
+    PCHAR2(105, '/',  S_sw_br, "swallow bottom right", "", CLR_GREEN)  /*9*/
     /*                                                             */
     /* explosion colors are changed by reset_glyphmap() to match   */
     /* the type of expl.                                           */
@@ -238,15 +246,15 @@
     /*      |@|                                                    */
     /*      \-/                                                    */
     /*                                                             */
-    PCHAR2(98, '/',  S_expl_tl, "explosion top left", "", CLR_ORANGE)
-    PCHAR2(99, '-',  S_expl_tc, "explosion top center", "", CLR_ORANGE)
-    PCHAR2(100, '\\', S_expl_tr, "explosion top right", "", CLR_ORANGE)
-    PCHAR2(101, '|',  S_expl_ml, "explosion middle left", "", CLR_ORANGE)
-    PCHAR2(102, ' ',  S_expl_mc, "explosion middle center", "", CLR_ORANGE)
-    PCHAR2(103, '|',  S_expl_mr, "explosion middle right", "", CLR_ORANGE)
-    PCHAR2(104, '\\', S_expl_bl, "explosion bottom left", "", CLR_ORANGE)
-    PCHAR2(105, '-', S_expl_bc, "explosion bottom center", "", CLR_ORANGE)
-    PCHAR2(106, '/', S_expl_br, "explosion bottom right", "", CLR_ORANGE)
+    PCHAR2(106, '/',  S_expl_tl, "explosion top left", "", CLR_ORANGE)
+    PCHAR2(107, '-',  S_expl_tc, "explosion top center", "", CLR_ORANGE)
+    PCHAR2(108, '\\', S_expl_tr, "explosion top right", "", CLR_ORANGE)
+    PCHAR2(109, '|',  S_expl_ml, "explosion middle left", "", CLR_ORANGE)
+    PCHAR2(110, ' ',  S_expl_mc, "explosion middle center", "", CLR_ORANGE)
+    PCHAR2(111, '|',  S_expl_mr, "explosion middle right", "", CLR_ORANGE)
+    PCHAR2(112, '\\', S_expl_bl, "explosion bottom left", "", CLR_ORANGE)
+    PCHAR2(113, '-', S_expl_bc, "explosion bottom center", "", CLR_ORANGE)
+    PCHAR2(114, '/', S_expl_br, "explosion bottom right", "", CLR_ORANGE)
 #undef PCHAR
 #undef PCHAR2
 #endif /* PCHAR_S_ENUM || PCHAR_PARSE || PCHAR_DRAWING || PCHAR_TILES
@@ -364,8 +372,9 @@
     MONSYM(57, ';', EEL, S_EEL,  "sea monster")
     /* reptiles */
     MONSYM(58, ':', LIZARD, S_LIZARD, "lizard")
-    MONSYM(59, '~', WORM_TAIL, S_WORM_TAIL, "long worm tail")
-    MONSYM(60, ']', MIMIC_DEF, S_MIMIC_DEF, "mimic")
+    MONSYM(59, '`', STATUE, S_STATUE, "animated statue")
+    MONSYM(60, '~', WORM_TAIL, S_WORM_TAIL, "long worm tail")
+    MONSYM(61, ']', MIMIC_DEF, S_MIMIC_DEF, "mimic")
 
 #undef MONSYM
 #endif /* MONSYMS_S_ENUM || MONSYMS_DEFCHAR_ENUM || MONSYMS_PARSE

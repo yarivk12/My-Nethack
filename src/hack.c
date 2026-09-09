@@ -655,7 +655,8 @@ still_chewing(coordxy x, coordxy y)
                       sizeof (struct dig_info));
 
     if (!boulder
-        && ((IS_OBSTRUCTED(lev->typ) && !may_dig(x, y))
+        && (lev->typ == CRYSTALICEWALL
+            || (IS_OBSTRUCTED(lev->typ) && !may_dig(x, y))
             /* may_dig() checks W_NONDIGGABLE but doesn't handle iron bars */
             || (lev->typ == IRONBARS && (lev->wall_info & W_NONDIGGABLE)))) {
         You("hurt your teeth on the %s.",
@@ -749,6 +750,10 @@ still_chewing(coordxy x, coordxy y)
             return 1;
         }
 
+    } else if (lev->typ == ICEWALL) {
+        digtxt = "chew through the ice wall.";
+        lev->typ = ICE;
+        lev->flags = 0;
     } else if (IS_WALL(lev->typ)) {
         if (*in_rooms(x, y, SHOPBASE)) {
             add_damage(x, y, SHOP_WALL_DMG);
@@ -1241,7 +1246,8 @@ test_move(
                     && !could_move_onto_boulder(ux, uy)
                     && !(tunnels(gy.youmonst.data)
                          && !needspick(gy.youmonst.data))
-                    && !carrying(PICK_AXE) && !carrying(DWARVISH_MATTOCK)
+                    && !carrying(PICK_AXE) && !carrying(CRYSTAL_PICK)
+                    && !carrying(DWARVISH_MATTOCK)
                     && !((obj = carrying(WAN_DIGGING))
                          && !objects[obj->otyp].oc_name_known))
                     return FALSE;
@@ -2831,6 +2837,18 @@ domove_core(void)
                 return;
         }
 
+        if (Frozen_feet) {
+            disp.botl = TRUE;
+            if (flaming(gy.youmonst.data) || is_whirly(gy.youmonst.data)
+                || amorphous(gy.youmonst.data)) {
+                Frozen_feet = 0;
+            } else {
+                --Frozen_feet;
+                You("are stuck in ice.");
+                nomul(0);
+                return;
+            }
+        }
         if (u.utrap) { /* when u.utrap is True, displaceu is False */
             boolean moved = trapmove(x, y, (struct trap *) NULL);
 
@@ -3285,6 +3303,27 @@ pooleffects(
         return swamp_effects();
     }
 
+    /* Donor shallow water wets feet without the bog's sinking/dismounting. */
+    if (IS_PUDDLE(levl[u.ux][u.uy].typ) && !u.ustuck
+        && !Levitation && !Flying && !Wwalking) {
+        if (u.umonnum == PM_GREMLIN) {
+            (void) split_mon(&gy.youmonst, (struct monst *) 0);
+        } else if (u.umonnum == PM_IRON_GOLEM
+                   && (!uarmf || strncmp(OBJ_DESCR(objects[uarmf->otyp]),
+                                        "mud ", 4))) {
+            int damage = rnd(6);
+
+            Your("%s rust!", makeplural(body_part(FOOT)));
+            if (u.mhmax > damage)
+                u.mhmax -= damage;
+            losehp(damage, "rusting away", KILLED_BY);
+        }
+        if (verysmall(gy.youmonst.data))
+            water_damage_chain(gi.invent, FALSE);
+        if (!u.usteed && uarmf)
+            (void) water_damage(uarmf, "boots", TRUE);
+    }
+
     /* check for entering water or lava */
     if (!u.ustuck && !Levitation && !Flying && is_pool_or_lava(u.ux, u.uy)) {
         if (u.usteed && !grounded(u.usteed->data)) {
@@ -3452,6 +3491,8 @@ spoteffects(boolean pick)
                     x_monnam(mtmp, ARTICLE_A, "falling", 0, TRUE));
                 dmg = d(4, 6);
                 if (Half_physical_damage)
+                    dmg = (dmg + 1) / 2;
+                if (u.mith_timers[MITH_VAUL])
                     dmg = (dmg + 1) / 2;
                 mdamageu(mtmp, dmg);
             }

@@ -31,7 +31,8 @@ enum obj_material_types {
     PLASTIC     = 18,
     GLASS       = 19,
     GEMSTONE    = 20,
-    MINERAL     = 21
+    MINERAL     = 21,
+    SHELL       = 22 /* Mithardir sea-garden equipment */
 };
 
 enum obj_armor_types {
@@ -190,21 +191,22 @@ extern NEARDATA struct objdescr obj_descr[NUM_OBJECTS + 1];
 #define OBJ_NAME(obj) (obj_descr[(obj).oc_name_idx].oc_name)
 #define OBJ_DESCR(obj) (obj_descr[(obj).oc_descr_idx].oc_descr)
 
-#define is_organic(otmp) (objects[otmp->otyp].oc_material <= WOOD)
+#define obj_material(otmp) ((otmp)->obranch_material \
+                            ? (otmp)->obranch_material \
+                            : objects[(otmp)->otyp].oc_material)
+#define is_organic(otmp) (obj_material(otmp) <= WOOD)
 #define is_metallic(otmp) \
-    (objects[otmp->otyp].oc_material >= IRON            \
-     && objects[otmp->otyp].oc_material <= MITHRIL)
+    (obj_material(otmp) >= IRON && obj_material(otmp) <= MITHRIL)
 
 /* primary damage: fire/rust/--- */
 /* is_flammable(otmp), is_rottable(otmp) in mkobj.c */
-#define is_rustprone(otmp) (objects[otmp->otyp].oc_material == IRON)
+#define is_rustprone(otmp) (obj_material(otmp) == IRON)
 #define is_crackable(otmp) \
-    (objects[(otmp)->otyp].oc_material == GLASS         \
+    (obj_material(otmp) == GLASS                       \
      && (otmp)->oclass == ARMOR_CLASS) /* erosion_matters() */
 /* secondary damage: rot/acid/acid */
 #define is_corrodeable(otmp) \
-    (objects[otmp->otyp].oc_material == COPPER          \
-     || objects[otmp->otyp].oc_material == IRON)
+    (obj_material(otmp) == COPPER || obj_material(otmp) == IRON)
 /* subject to any damage */
 #define is_damageable(otmp) \
     (is_rustprone(otmp) || is_flammable(otmp)           \

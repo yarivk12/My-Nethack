@@ -1651,6 +1651,7 @@ goto_level(
     if (Punished)
         unplacebc();
     reset_utrap(FALSE); /* needed in level_tele */
+    Frozen_feet = 0;
     fill_pit(u.ux, u.uy);
     set_ustuck((struct monst *) 0); /* clear u.ustuck and u.uswallow */
     set_uinwater(0); /* u.uinwater = 0 */
@@ -1784,6 +1785,18 @@ goto_level(
             if (ttrap->ttyp == MAGIC_PORTAL)
                 break;
 
+        if (In_mithardir(&u.uz) || In_mithardir(&u.uz0)) {
+            struct trap *match;
+            for (match = gf.ftrap; match; match = match->ntrap)
+                if (match->ttyp == MAGIC_PORTAL
+                    && on_level(&match->dst, &u.uz0)) {
+                    ttrap = match;
+                    break;
+                }
+            /* The directed cat3 -> mith3 shortcut has no reciprocal
+               portal; the donor falls back to the first arrival portal. */
+        }
+
         if (!ttrap) {
             if (u.uevent.qexpelled
                 && (Is_qstart(&u.uz0) || Is_qstart(&u.uz))) {
@@ -1913,6 +1926,9 @@ goto_level(
 
     /* special levels can have a custom arrival message */
     deliver_splev_message();
+
+    if (!In_sheol(&u.uz0) && In_sheol(&u.uz))
+        pline("It is freezing here.  You feel cold wind...");
 
     /* Check whether we just entered Gehennom. */
     if (!In_hell(&u.uz0) && Inhell) {

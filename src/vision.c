@@ -163,7 +163,8 @@ does_block(int x, int y, struct rm *lev)
 #endif
 
     /* Features that block . . */
-    if (IS_OBSTRUCTED(lev->typ) || lev->typ == TREE
+    if ((IS_OBSTRUCTED(lev->typ) && lev->typ != CRYSTALICEWALL)
+        || lev->typ == TREE
         || (IS_DOOR(lev->typ)
             && (lev->doormask & (D_CLOSED | D_LOCKED | D_TRAPPED))))
         return 1;
@@ -192,7 +193,7 @@ does_block(int x, int y, struct rm *lev)
     if (gs.seethru != 1) {
 #endif
     /* Clouds (poisonous or not) block light. */
-    if (visible_region_at(x, y))
+    if (region_blocks_light(x, y))
         return 2;
 #ifdef DEBUG
     } /* gs.seethru */
@@ -230,7 +231,8 @@ vision_reset(void)
         block = TRUE; /* location (0,y) is always stone; it's !isok() */
         lev = &levl[1][y];
         for (x = 1; x < COLNO; x++, lev += ROWNO)
-            if (block != (IS_OBSTRUCTED(lev->typ) || does_block(x, y, lev))) {
+            if (block != ((IS_OBSTRUCTED(lev->typ) && lev->typ != CRYSTALICEWALL)
+                          || does_block(x, y, lev))) {
                 if (block) {
                     for (i = dig_left; i < x; i++) {
                         left_ptrs[y][i] = dig_left;
@@ -753,7 +755,7 @@ vision_recalc(int control)
                     newsym(col, row);
 
             } else if ((next_row[col] & COULD_SEE)
-                     && (lev->lit || (next_row[col] & TEMP_LIT))) {
+                     && mith_viz_lit(lev->lit, next_row[col])) {
                 /*
                  * We see this position because it is lit.
                  */
@@ -768,8 +770,8 @@ vision_recalc(int control)
                     dx = u.ux - col;
                     dx = sign(dx);
                     flev = &(levl[col + dx][row + dy]);
-                    if (flev->lit
-                        || next_array[row + dy][col + dx] & TEMP_LIT) {
+                    if (mith_viz_lit(flev->lit,
+                                      next_array[row + dy][col + dx])) {
                         next_row[col] |= IN_SIGHT; /* we see it */
 
                         oldseenv = lev->seenv;

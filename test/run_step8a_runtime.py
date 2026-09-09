@@ -14,6 +14,32 @@ import time
 import pyte
 from winpty import PtyProcess
 
+def tty_transcript(raw):
+    """Retain printed messages and spaces skipped by the Windows console."""
+    out=[]
+    x=y=0
+    for token in re.findall(r'\x1b\[[0-?]*[ -/]*[@-~]|[^\x1b]+',raw):
+        if token.startswith('\x1b['):
+            if token[-1] in 'Hf':
+                values=token[2:-1].split(';')
+                ny=int(values[0] or '1')-1
+                nx=int(values[1] or '1')-1 if len(values)>1 else 0
+                if ny==y and nx>x:
+                    out.append(' '*(nx-x))
+                elif ny!=y or nx<x:
+                    out.append('\n')
+                x,y=nx,ny
+            elif token[-1]=='C':
+                n=int(token[2:-1] or '1');out.append(' '*n);x+=n
+        else:
+            out.append(token)
+            for c in token:
+                if c=='\n':y+=1;x=0
+                elif c=='\r':x=0
+                elif c=='\b':x=max(0,x-1)
+                else:x+=1
+    return ''.join(out)
+
 class Game:
     def __init__(self, release, output, restore=False):
         self.path = Path(output).resolve()
@@ -34,7 +60,13 @@ class Game:
             dimensions=(80,100))
         self.thread = threading.Thread(target=self.reader, daemon=True)
         self.thread.start()
-        self.wait('Dlvl:')
+        try:
+            self.wait('Dlvl:')
+        except Exception:
+            # Retain startup diagnostics too (for example a Lua dungeon
+            # error), rather than losing the transcript before construction.
+            self.close()
+            raise
         if restore:
             self.wait('keep the save file')
             self.send('n')
@@ -61,9 +93,16 @@ class Game:
             if needle in text:
                 time.sleep(1)
                 return self.text()
+            if 'Oops...' in text and 'Hit <Enter>' in text:
+                # panic() waits here before printing its actual diagnostic.
+                # Advance only this error screen so the failure is captured.
+                self.send('\n',1)
             if more and '--More--' in text:
                 self.p.write(' ')
-                time.sleep(.15)
+                # Windows redraws this prompt character by character. An
+                # extra queued space can answer the following save question
+                # before its intended 'n', which then becomes a movement key.
+                time.sleep(1)
             time.sleep(.05)
         raise AssertionError('Missing '+needle+'\n'+text)
 
@@ -88,6 +127,7 @@ class Game:
 
     def lua(self, code):
         self.settle()
+        raw_start = len(self.raw)
         self.seq += 1
         marker = 'LUA_DONE_%d' % self.seq
         (self.path/'probe.lua').write_text(code+'\nnh.pline("'+marker+'");\n')
@@ -105,7 +145,11 @@ class Game:
         self.send('probe.lua\n')
         self.wait(marker)
         assert 'Lua error' not in self.text(), self.text()
-        text = self.text()
+        # Lua can emit several messages on the same TTY row. The completion
+        # marker can overwrite the data we need before the screen is sampled.
+        # Read this command's transcript, preserving those earlier messages.
+        text = tty_transcript(''.join(self.raw[raw_start:]))+'\n'+self.text()
+        assert 'Lua error' not in text, text
         self.settle()
         return text
 
@@ -122,11 +166,10 @@ class Game:
 
     def branch_depth(self, name):
         """Return a fresh game's persistent DoD entrance for a named branch."""
-        # Clear the terminal parser so a previous #wizwhere page cannot
-        # satisfy the wait before the new command has rendered.
-        self.screen.reset()
-        self.send('#wizwhere\n')
-        text = self.wait('Floating branches', more=False)
+        # Preserve the terminal model: Windows can omit unchanged cells.
+        # Wait for this command's redraw before looking for the parent.
+        self.send('#wizwhere\n',1)
+        text = self.wait('Stair to ' + name + ':', more=False)
         matches = re.findall(r'Stair to ' + re.escape(name) + r': (\d+)', text)
         assert len(matches) == 1, (name, text)
         depth = int(matches[0])
@@ -137,9 +180,9 @@ class Game:
     def dungeon_number(self, name):
         marker = 'DNUM_QUERY'
         lua_name = name.replace('\\', '\\\\').replace('"', '\\"')
-        text = self.lua('''for i=0,31 do if nh.dnum_name(i)=="%s" then nh.pline("%s %%d",i) end end'''
+        text = self.lua('''for i=0,31 do if nh.dnum_name(i)=="%s" then nh.pline(string.format("%s %%d",i)) end end'''
                     % (lua_name, marker))
-        matches = re.findall(marker + r' (\d+)', text)
+        matches = list(dict.fromkeys(re.findall(marker + r' (\d+)', text)))
         assert len(matches) == 1, (name, text)
         return int(matches[0])
 
@@ -163,6 +206,17 @@ end''' % lua_name)
         raise AssertionError('missing branch stair '+name)
 
     def stair(self, direction, branch=False, target_dnum=None):
+        # Ctrl-T's native teleport cost consumes 100 nutrition even when
+        # debug hunger is disabled. Feed through the normal eating command
+        # before long round trips can faint and lose control of the hero.
+        text = self.lua('''if u.uhunger < 350 then
+ local o=obj.new("uncursed food ration");u.giveobj(o)
+ nh.pline("TRAVERSAL_FOOD "..o:totable().invlet)
+end''')
+        food = re.findall(r'TRAVERSAL_FOOD (.)',text)
+        if food:
+            self.send('e'+food[-1],2)
+            self.settle()
         text = self.lua('''
 local target
 for _,s in ipairs(nh.stairways()) do
@@ -243,7 +297,7 @@ def main():
         game.send(str(moria_depth)+'\n',1)
         game.settle()
         assert game.state()[:2] == (0,moria_depth)
-        game.stair('up', True, 0)
+        game.stair('up', True, game.dungeon_number('The Ruins of Moria'))
         for _ in range(5):
             game.stair('up')
         for _ in range(5):

@@ -590,7 +590,8 @@ rndcurse(void)
             continue;
         nobj++;
     }
-    cnt = rnd(6 / ((!!Antimagic) + (!!Half_spell_damage) + 1));
+    cnt = rnd(6 / ((!!Antimagic) + (!!Half_spell_damage)
+                   + (!!u.mith_timers[MITH_VAUL]) + 1));
     if (nobj) {
         for (; cnt > 0; cnt--) {
             onum = rnd(nobj);

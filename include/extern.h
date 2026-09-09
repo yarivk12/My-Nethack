@@ -1527,6 +1527,7 @@ extern void dump_mongen(void);
 
 extern int castmu(struct monst *, struct attack *,
                   boolean, boolean) NONNULLARG12;
+extern int mith_castmm(struct monst *, struct monst *, struct attack *) NONNULLPTRS;
 extern void touch_of_death(struct monst *) NONNULLARG1;
 extern char *death_inflicted_by(char *, const char *,
                                 struct monst *) NONNULLARG12;
@@ -3502,7 +3503,7 @@ extern int explum(struct monst *, struct attack *) NONNULLARG2;
 extern void missum(struct monst *, struct attack *, boolean) NONNULLARG12;
 extern boolean m_is_steadfast(struct monst *) NONNULLARG1;
 extern boolean mhitm_knockback(struct monst *, struct monst *,struct attack *,
-                               int *, boolean) NONNULLPTRS;
+                               int *, struct obj *) NONNULLARG123;
 extern int passive(struct monst *, struct obj *, boolean, boolean, uchar,
                    boolean) NONNULLARG1;
 extern void passive_obj(struct monst *, struct obj *, struct attack *) NONNULLARG1;
@@ -3751,6 +3752,11 @@ extern void silver_sears(struct monst *, struct monst *, long) NONNULLARG2;
 extern struct obj *select_rwep(struct monst *) NONNULLARG1;
 extern boolean monmightthrowwep(struct obj *) NONNULLARG1;
 extern struct obj *select_hwep(struct monst *) NONNULLARG1;
+extern boolean mith_offhand_attack(const struct permonst *, int) NONNULLARG1;
+extern struct obj *mith_select_offhand(struct monst *) NONNULLARG1;
+extern boolean mith_bimanual(struct obj *, const struct permonst *) NONNULLPTRS;
+extern boolean mith_fey_weapon_attack(struct monst *, struct attack *) NONNULLPTRS;
+extern void mith_coure_sleep(struct monst *, struct monst *) NONNULLPTRS;
 extern void possibly_unwield(struct monst *, boolean) NONNULLARG1;
 extern int mon_wield_item(struct monst *) NONNULLARG1;
 extern void mwepgone(struct monst *) NONNULLARG1;
@@ -4077,6 +4083,36 @@ extern void free_nhuuid(void);
 
 #endif /* !MAKEDEFS_C && !MDLIB_C */
 
+extern void mksheol(void);
+extern void sheol_freeze(struct monst *, int *);
+extern boolean In_sheol(d_level *);
+extern boolean In_dragon_caves(d_level *);
+extern boolean In_mithardir(const d_level *);
+extern boolean In_mithardir_desert(const d_level *);
+extern boolean In_mithardir_catacombs(const d_level *);
+extern boolean mith_anhydrous(const struct permonst *);
+extern boolean mith_displaced(struct monst *);
+extern int mith_paralyze_gaze(struct monst *, struct monst *, struct attack *);
+extern boolean mith_watery(const struct permonst *);
+extern void mith_dust_storm(void);
+extern NhRegion *create_dust_cloud(coordxy, coordxy, int, int);
+extern boolean region_blocks_light(coordxy, coordxy);
+extern int mith_tile_type(void);
+extern int mith_slab_type(void);
+extern int mith_aesh_bonus(void);
+extern int mith_weapon_effects(struct obj *, struct monst *, int);
+extern int mith_iron_damage(struct monst *, int);
+extern int mith_iron_contact(struct monst *, struct monst *, int, struct obj *);
+extern int domithword(void);
+extern void mith_living_armor_turn(void);
+extern void mith_cold_heal(struct monst *, int);
+extern int mith_roll_dr(struct monst *);
+extern boolean mith_armor_size_fits(struct obj *, const struct permonst *);
+extern int mith_physical_damage(struct monst *, struct obj *, int, int);
+extern struct permonst *mith_rndmonst(void);
+extern void lava_jet_obstacle(coordxy, coordxy);
+extern int cave_breath_type(struct permonst *, int);
+extern int cave_dragon_scale_chance(struct monst *);
 #endif /* EXTERN_H */
 
 /*extern.h*/

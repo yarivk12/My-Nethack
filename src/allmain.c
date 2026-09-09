@@ -20,6 +20,7 @@ staticfn void do_positionbar(void);
 #endif
 staticfn void regen_pw(int);
 staticfn void regen_hp(int);
+staticfn void mith_syllable_turn(void);
 staticfn void interrupt_multi(const char *);
 
 /*ARGSUSED*/
@@ -117,6 +118,8 @@ u_calc_moveamt(int wtcap)
         moveamt = mcalcmove(u.usteed, TRUE);
     } else {
         moveamt = gy.youmonst.data->mmove;
+        if (u.mith_timers[MITH_UUR])
+            moveamt += 6;
 
         if (Very_fast) { /* speed boots, potion, or spell */
             /* gain a free action on 2/3 of turns */
@@ -157,6 +160,16 @@ u_calc_moveamt(int wtcap)
 staticfn void
 maybe_generate_rnd_mon(void)
 {
+    unsigned words = u.mith_words & 7U;
+
+    /* The first Aspect is forced after learning any two Words, only at
+       the terminus. Later appearances use the donor's ordinary pool. */
+    if (In_mithardir(&u.uz) && u.uz.dlevel == 10
+        && svm.mvitals[PM_ASPECT_OF_THE_SILENCE].born == 0
+        && (words & (words - 1U))) {
+        (void) makemon(&mons[PM_ASPECT_OF_THE_SILENCE], 0, 0, NO_MM_FLAGS);
+        return;
+    }
     if (!rn2(u.uevent.udemigod ? 25
              : (depth(&u.uz) > depth(&stronghold_level)) ? 50
              : 70))
@@ -273,6 +286,9 @@ moveloop_core(void)
                     glibr();
                 nh_timeout();
                 run_regions();
+                mith_dust_storm();
+                mith_syllable_turn();
+                mith_living_armor_turn();
 
                 if (u.ublesscnt)
                     u.ublesscnt--;
@@ -1041,6 +1057,52 @@ timet_delta(time_t etim, time_t stim) /* end and start times */
     /* difftime() is a STDC routine which returns the number of seconds
        between two time_t values as a 'double' */
     return (long) difftime(etim, stim);
+}
+
+/* Preserve the donor's distributed 90-turn regeneration schedule, avoiding
+   overflow by reducing the turn modulo 90 before multiplying. */
+staticfn int
+mith_regen_increment(int count)
+{
+    int remainder = count % 90;
+
+    return count / 90
+        + (remainder && ((svm.moves % 90) * remainder) % 90 < remainder);
+}
+
+staticfn void
+mith_syllable_turn(void)
+{
+    int hp = mith_regen_increment(u.mith_syllables[MITH_HOON]),
+        pw = mith_regen_increment(u.mith_syllables[MITH_NAEN]), i;
+    struct monst *mon;
+
+    for (mon = fmon; mon; mon = mon->nmon)
+        if (!DEADMONSTER(mon)
+            && mon->data == &mons[PM_ASPECT_OF_THE_SILENCE]) {
+            u.uen = max(0, u.uen - 3);
+            disp.botl = TRUE;
+        }
+    if (u.mith_timers[MITH_HOON])
+        hp += 10;
+    if (u.mith_timers[MITH_NAEN])
+        pw += 10;
+    if (hp && !u.uinvulnerable)
+        healup(hp, 0, FALSE, FALSE);
+    if (pw && u.uen < u.uenmax) {
+        u.uen += min(pw, u.uenmax - u.uen);
+        disp.botl = TRUE;
+    }
+    if (u.mith_words & MITH_NURTURING)
+        for (mon = fmon; mon; mon = mon->nmon)
+            if (mon->mtame && !DEADMONSTER(mon) && mon->mhp < mon->mhpmax)
+                ++mon->mhp;
+    for (i = 0; i < 6; ++i)
+        if (u.mith_timers[i] > 0 && !--u.mith_timers[i]) {
+            if (i == MITH_UUR)
+                find_ac();
+            disp.botl = TRUE;
+        }
 }
 
 /*allmain.c*/

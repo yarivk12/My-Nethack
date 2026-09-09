@@ -157,6 +157,176 @@ m_initthrow(struct monst *mtmp, int otyp, int oquan)
     (void) mpickobj(mtmp, otmp);
 }
 
+/* Mithardir deep-one equipment, from the donor's non-R'lyeh path. */
+staticfn boolean
+mith_deep_equipment(struct monst *mon)
+{
+    int type = monsndx(mon->data), n, choice, otyp;
+    struct obj *otmp;
+    static const int armor[] = { JACKET, LEATHER_ARMOR, CHAIN_MAIL };
+    static const int weapons[] = {
+        TWO_HANDED_SWORD, SCIMITAR, TRIDENT, SHORT_SWORD, DAGGER, SPEAR
+    };
+
+    if (type == PM_DEEP_ONE || type == PM_DEEPER_ONE) {
+        choice = rn2(SIZE(armor));
+        if (choice == 2) {
+            otmp = mksobj(CHAIN_MAIL, TRUE, FALSE);
+            otmp->oeroded = 2;
+            (void) mpickobj(mon, otmp);
+        } else {
+            (void) mongets(mon, armor[choice]);
+        }
+        for (n = d(4, 2) / 3; n > 0; --n) {
+            otmp = mksobj(weapons[rn2(SIZE(weapons))], TRUE, FALSE);
+            otmp->oeroded = 3;
+            (void) mpickobj(mon, otmp);
+        }
+    } else if (type == PM_DEEPEST_ONE) {
+        choice = rn2(6);
+        n = (choice == 1 || choice == 3) ? 2 : choice == 5 ? 0 : 1;
+        while (n-- > 0) {
+            otyp = choice == 0 ? TWO_HANDED_SWORD
+                   : choice <= 2 ? SCIMITAR
+                   : choice == 3 ? TRIDENT : KNIFE;
+            otmp = mksobj(otyp, TRUE, FALSE);
+            otmp->oerodeproof = 1;
+            otmp->spe = 3;
+            otmp->obranch_size = MZ_HUGE + 1;
+            otmp->owt = weight(otmp);
+            (void) mpickobj(mon, otmp);
+            ++choice; /* donor's scimitar/scimitar and trident/knife pairs */
+        }
+    } else {
+        return FALSE;
+    }
+    return TRUE;
+}
+
+/* The selected fey use donor-sized equipment. Apply size before inventory
+   merging; a tiny Coure's arrow stack must not merge with normal arrows. */
+staticfn void
+mith_fey_item(struct monst *mon, int type, int quantity)
+{
+    struct obj *otmp = mksobj(type, TRUE, FALSE);
+
+    if (quantity)
+        otmp->quan = rn1(quantity, 3);
+    if ((otmp->oclass == WEAPON_CLASS || otmp->oclass == ARMOR_CLASS)
+        && mon->data->msize != MZ_HUMAN)
+        otmp->obranch_size = mon->data->msize + 1;
+    otmp->owt = weight(otmp);
+    (void) mpickobj(mon, otmp);
+}
+
+staticfn void
+mith_alabaster_weapon(struct monst *mon, int type, int size)
+{
+    struct obj *otmp = mksobj(type, TRUE, FALSE);
+
+    otmp->obranch_material = METAL;
+    if (size < 0)
+        size = rn2(2) ? MZ_LARGE : MZ_HUMAN;
+    if (size != MZ_HUMAN)
+        otmp->obranch_size = size + 1;
+    otmp->owt = weight(otmp);
+    (void) mpickobj(mon, otmp);
+}
+
+staticfn boolean
+mith_fey_equipment(struct monst *mon)
+{
+    switch (monsndx(mon->data)) {
+    case PM_ALABASTER_ELF:
+        if (rn2(3)) {
+            mith_alabaster_weapon(mon, ELVEN_SICKLE, MZ_HUGE);
+        } else if (rn2(3)) {
+            mith_alabaster_weapon(mon, ELVEN_DAGGER, MZ_LARGE);
+            mith_alabaster_weapon(mon, ELVEN_SICKLE, MZ_HUMAN);
+        } else {
+            mith_alabaster_weapon(mon, ELVEN_BROADSWORD, -1);
+        }
+        mith_fey_item(mon, ELVEN_BOW, 0);
+        mith_fey_item(mon, ELVEN_ARROW, 12);
+        mith_fey_item(mon, ELVEN_LEATHER_HELM, 0);
+        mith_fey_item(mon, LEATHER_ARMOR, 0);
+        mith_fey_item(mon, LEATHER_GLOVES, 0);
+        mith_fey_item(mon, ELVEN_BOOTS, 0);
+        break;
+    case PM_ALABASTER_ELF_ELDER:
+        mith_fey_item(mon, QUARTERSTAFF, 0);
+        mith_fey_item(mon, ELVEN_TOGA, 0);
+        mith_fey_item(mon, ELVEN_BOOTS, 0);
+        break;
+    case PM_COURE_ELADRIN:
+        mith_fey_item(mon, LEATHER_GLOVES, 0);
+        mith_fey_item(mon, JACKET, 0);
+        mith_fey_item(mon, LOW_BOOTS, 0);
+        mith_fey_item(mon, BOW, 0);
+        mith_fey_item(mon, ARROW, d(4, 4));
+        switch (rnd(4)) {
+        case 1: mith_fey_item(mon, RAPIER, 0); break;
+        case 2:
+            mith_fey_item(mon, SCIMITAR, 0);
+            mith_fey_item(mon, KITE_SHIELD, 0);
+            break;
+        case 3:
+            mith_fey_item(mon, SHORT_SWORD, 0);
+            mith_fey_item(mon, BUCKLER, 0);
+            break;
+        case 4: mith_fey_item(mon, MOON_AXE, 0); break;
+        }
+        break;
+    case PM_NOVIERE_ELADRIN:
+        mith_fey_item(mon, LEATHER_GLOVES, 0);
+        mith_fey_item(mon, JACKET, 0);
+        mith_fey_item(mon, LOW_BOOTS, 0);
+        mith_fey_item(mon, ELVEN_LEATHER_HELM, 0);
+        mith_fey_item(mon, ELVEN_SPEAR, 0);
+        mith_fey_item(mon, rn2(2) ? ELVEN_SICKLE : RAPIER, 0);
+        break;
+    case PM_BRALANI_ELADRIN:
+        mith_fey_item(mon, CHAIN_MAIL, 0);
+        mith_fey_item(mon, LEATHER_CLOAK, 0);
+        mith_fey_item(mon, HIGH_BOOTS, 0);
+        mith_fey_item(mon, HELMET, 0);
+        mith_fey_item(mon, DWARVISH_SPEAR, 0);
+        mith_fey_item(mon, DWARVISH_SPEAR, 0);
+        mith_fey_item(mon, DWARVISH_SHORT_SWORD, 0);
+        break;
+    case PM_SELKIE:
+    case PM_OCEANID:
+        switch (rn2(6)) {
+        case 0:
+            mith_fey_item(mon, WAN_MAGIC_MISSILE, 0);
+            FALLTHROUGH;
+        case 1:
+            mith_fey_item(mon, POT_EXTRA_HEALING, 0);
+            FALLTHROUGH;
+        case 2:
+            mith_fey_item(mon, POT_HEALING, 0);
+            break;
+        case 3:
+            mith_fey_item(mon, WAN_STRIKING, 0);
+            FALLTHROUGH;
+        case 4:
+            mith_fey_item(mon, POT_HEALING, 0);
+            FALLTHROUGH;
+        case 5:
+            mith_fey_item(mon, POT_EXTRA_HEALING, 0);
+            break;
+        }
+        if (mon->data == &mons[PM_OCEANID]) {
+            mith_fey_item(mon, POT_OBJECT_DETECTION, 0);
+            mith_fey_item(mon, MIRROR, 0);
+        }
+        break;
+    default:
+        return FALSE;
+    }
+    return TRUE;
+}
+
 staticfn void
 m_initweap(struct monst *mtmp)
 {
@@ -167,6 +337,8 @@ m_initweap(struct monst *mtmp)
 
     if (Is_rogue_level(&u.uz))
         return;
+    if (mith_deep_equipment(mtmp) || mith_fey_equipment(mtmp))
+        goto offensive_item;
     /*
      *  First a few special cases:
      *          giants get a boulder to throw sometimes
@@ -184,6 +356,16 @@ m_initweap(struct monst *mtmp)
             (void) mongets(mtmp, rn2(2) ? TWO_HANDED_SWORD : BATTLE_AXE);
         break;
     case S_HUMAN:
+        if (mm == PM_EXECUTIONER) {
+            otmp = mksobj(BATTLE_AXE, FALSE, FALSE);
+            otmp = oname(otmp, artiname(ART_CLEAVER), 0);
+            bless(otmp);
+            otmp->oerodeproof = 1;
+            otmp->spe = rn2(6);
+            (void) mpickobj(mtmp, otmp);
+            (void) mongets(mtmp, CLOAK_OF_MAGIC_RESISTANCE);
+            break;
+        }
         if (is_mercenary(ptr)) {
             w1 = w2 = 0;
             switch (mm) {
@@ -567,6 +749,7 @@ m_initweap(struct monst *mtmp)
         break;
     }
 
+ offensive_item:
     if ((int) mtmp->m_lev > rn2(75))
         (void) mongets(mtmp, rnd_offensive_item(mtmp));
 }
@@ -729,6 +912,14 @@ m_initinv(struct monst *mtmp)
             (void) mongets(mtmp, rn2(11) ? ROBE : CLOAK_OF_MAGIC_RESISTANCE);
         }
         break;
+    case S_ANGEL:
+        if (is_weeping(ptr) && !rn2(3))
+            (void) mongets(mtmp, POT_BLINDNESS);
+        if (ptr == &mons[PM_WEEPING_ARCHANGEL] && !rn2(3)) {
+            (void) mongets(mtmp, WAN_LIGHTNING);
+            (void) mongets(mtmp, AMULET_OF_REFLECTION);
+        }
+        break;
     case S_NYMPH:
         if (!rn2(2))
             (void) mongets(mtmp, MIRROR);
@@ -770,7 +961,20 @@ m_initinv(struct monst *mtmp)
         }
         break;
     case S_MUMMY:
-        if (rn2(7))
+        if (ptr == &mons[PM_ALABASTER_MUMMY]) {
+            static const int syllables[6] = {
+                MITH_AESH, MITH_UUR, MITH_HOON, MITH_VAUL,
+                MITH_KRAU, MITH_NAEN
+            };
+            otmp = mksobj(MASK, TRUE, FALSE);
+            otmp->corpsenm = PM_ALABASTER_ELF;
+            otmp->obranch_material = MINERAL;
+            otmp->owt = weight(otmp);
+            curse(otmp);
+            (void) mpickobj(mtmp, otmp);
+            mtmp->mspare1 = (mtmp->mspare1 & ~MITH_SYLLABLE_MASK)
+                | ((long) (syllables[rn2(6)] + 1) << MITH_SYLLABLE_SHIFT);
+        } else if (rn2(7))
             (void) mongets(mtmp, MUMMY_WRAPPING);
         break;
     case S_QUANTMECH:
@@ -1136,6 +1340,41 @@ makemon_rnd_goodpos(
     return FALSE;
 }
 
+/* Randomly selected donor leaders arrive with their entourage. Explicit
+ * monster creation and callers requesting no groups remain single spawns. */
+staticfn void
+mith_entourage(struct monst *mtmp, boolean anymon, mmflags_nht mmflags)
+{
+    struct monst *companion;
+    int num, type = monsndx(mtmp->data);
+
+    if (!anymon || (mmflags & (MM_EDOG | MM_NOGRP)))
+        return;
+    if (type == PM_DEEPEST_ONE) {
+        for (num = rn1(3, 3); num >= 0; --num)
+            (void) makemon(&mons[PM_DEEPER_ONE], mtmp->mx, mtmp->my,
+                           MM_ADJACENTOK);
+        for (num = rn1(10, 10); num >= 0; --num)
+            (void) makemon(&mons[PM_DEEP_ONE], mtmp->mx, mtmp->my,
+                           MM_ADJACENTOK);
+    } else if (type == PM_DEEPER_ONE) {
+        for (num = rn1(10, 3); num >= 0; --num)
+            (void) makemon(&mons[PM_DEEP_ONE], mtmp->mx, mtmp->my,
+                           MM_ADJACENTOK);
+    } else if (type == PM_ALABASTER_ELF_ELDER) {
+        if (rn2(2)) {
+            companion = makemon(&mons[PM_ALABASTER_ELF_ELDER], mtmp->mx,
+                                 mtmp->my, MM_ADJACENTOK);
+            if (companion)
+                m_initsgrp(companion, mtmp->mx, mtmp->my, mmflags);
+        }
+        companion = makemon(&mons[PM_ALABASTER_ELF], mtmp->mx, mtmp->my,
+                             MM_ADJACENTOK);
+        if (companion)
+            m_initlgrp(companion, mtmp->mx, mtmp->my, mmflags);
+    }
+}
+
 /*
  * called with [x,y] = coordinates;
  *      [0,0] means anyplace
@@ -1256,6 +1495,8 @@ makemon(
 
     /* set up level and hit points */
     newmonhp(mtmp, mndx);
+    if (mndx == PM_SENTINEL_OF_MITHARDIR)
+        mtmp->mhp = mtmp->mhpmax = 60;
 
     femaleok = (!is_male(ptr) && !is_neuter(ptr));
     maleok = (!is_female(ptr) && !is_neuter(ptr));
@@ -1351,6 +1592,23 @@ makemon(
     if ((ct = emits_light(mtmp->data)) > 0)
         new_light_source(mtmp->mx, mtmp->my, ct, LS_MONSTER,
                          monst_to_any(mtmp));
+    if (mndx == PM_LIVING_MIRAGE) {
+        set_mimic_sym(mtmp);
+    } else if (mndx == PM_ASPECT_OF_THE_SILENCE) {
+        struct obj *key = mksobj(SKELETON_KEY, TRUE, FALSE);
+
+        mtmp->minvis = mtmp->perminvis = TRUE;
+        key = oname(key, artiname(ART_THIRD_KEY_OF_CHAOS), 0);
+        if (key->oartifact) {
+            place_object(key, mtmp->mx, mtmp->my);
+            (void) rloco(key);
+        } else {
+            obfree(key, (struct obj *) 0);
+        }
+        pline("A terrible silence falls!");
+        com_pager("mithardir_silence");
+        nomul(0);
+    }
     mitem = STRANGE_OBJECT; /* extra inventory item for this monster */
 
     if (mndx == PM_VLAD_THE_IMPALER)
@@ -1430,6 +1688,7 @@ makemon(
                               : eminp->renegade;
     }
     set_malign(mtmp); /* having finished peaceful changes */
+    mith_entourage(mtmp, anymon, mmflags);
     if (anymon && !(mmflags & MM_NOGRP)) {
         if ((ptr->geno & G_SGROUP) && rn2(2)) {
             m_initsgrp(mtmp, mtmp->mx, mtmp->my, mmflags);
@@ -1550,7 +1809,8 @@ mbirth_limit(int mndx)
      */
 
     /* assert(MAXMONNO < 255); */
-    return (mndx == PM_NAZGUL ? 9 : mndx == PM_ERINYS ? 3 : MAXMONNO);
+    return (mndx == PM_NAZGUL ? 9 : mndx == PM_ERINYS ? 3
+            : mndx == PM_WEEPING_ARCHANGEL ? 7 : MAXMONNO);
 }
 
 /* used for wand/scroll/spell of create monster */
@@ -1592,12 +1852,312 @@ create_critters(
     return known;
 }
 
+/* Sheol eligibility from pinned UnNetHack monst.c; native species retain
+ * their existing stats and behavior outside this branch. */
+staticfn boolean
+sheol_mon_allowed(int mndx)
+{
+    /* The donor's globally renamed dragon family has no Sheol exclusion.
+       Retain the native colored equivalents without importing that global
+       identity/randomization system. */
+    if (mons[mndx].mlet == S_DRAGON)
+        return TRUE;
+    switch (mndx) {
+    case PM_ABBOT:
+    case PM_ACOLYTE:
+    case PM_AIR_ELEMENTAL:
+    case PM_AMOROUS_DEMON:
+    case PM_APPRENTICE:
+    case PM_ARCHEOLOGIST:
+    case PM_ARCH_LICH:
+    case PM_ARCH_PRIEST:
+    case PM_ARCTIC_FERN:
+    case PM_ARCTIC_FERN_SPORE:
+    case PM_ARCTIC_FERN_SPROUT:
+    case PM_ASHIKAGA_TAKAUJI:
+    case PM_ATTENDANT:
+    case PM_BABY_LONG_WORM:
+    case PM_BABY_PURPLE_WORM:
+    case PM_BALROG:
+    case PM_BALUCHITHERIUM:
+    case PM_BARBARIAN:
+    case PM_BARBED_DEVIL:
+    case PM_BARROW_WIGHT:
+    case PM_BAT:
+    case PM_BLACK_LIGHT:
+    case PM_BLACK_NAGA:
+    case PM_BLACK_NAGA_HATCHLING:
+    case PM_BLACK_PUDDING:
+    case PM_BLUE_JELLY:
+    case PM_BLUE_SLIME:
+    case PM_BONE_DEVIL:
+    case PM_BROWN_MOLD:
+    case PM_CAPTAIN:
+    case PM_CAVE_DWELLER:
+    case PM_CHAMELEON:
+    case PM_CHIEFTAIN:
+    case PM_CHILLBUG:
+    case PM_CHROMATIC_DRAGON:
+    case PM_CLAY_GOLEM:
+    case PM_CLERIC:
+    case PM_CROESUS:
+    case PM_CRYSTAL_ICE_GOLEM:
+    case PM_CYCLOPS:
+    case PM_DARK_ANGEL:
+    case PM_DEATH:
+    case PM_DEEP_ORC:
+    case PM_DEMILICH:
+    case PM_DISENCHANTER:
+    case PM_DJINNI:
+    case PM_DOPPELGANGER:
+    case PM_DURINS_BANE:
+    case PM_DWARF_MUMMY:
+    case PM_DWARF_ZOMBIE:
+    case PM_EARTH_ELEMENTAL:
+    case PM_ELECTRIC_EEL:
+    case PM_ELF:
+    case PM_ELF_MUMMY:
+    case PM_ELF_ZOMBIE:
+    case PM_ELVEN_MONARCH:
+    case PM_ENERGY_VORTEX:
+    case PM_ERINYS:
+    case PM_ETTIN:
+    case PM_ETTIN_MUMMY:
+    case PM_ETTIN_ZOMBIE:
+    case PM_EVIL_EYE:
+    case PM_EXECUTIONER:
+    case PM_FAMINE:
+    case PM_FLESH_GOLEM:
+    case PM_FLOATING_EYE:
+    case PM_FREEZING_SPHERE:
+    case PM_FROST_GIANT:
+    case PM_GAS_SPORE:
+    case PM_GHOST:
+    case PM_GHOUL:
+    case PM_GIANT_BAT:
+    case PM_GIANT_EEL:
+    case PM_GIANT_MIMIC:
+    case PM_GIANT_MUMMY:
+    case PM_GIANT_SPIDER:
+    case PM_GIANT_ZOMBIE:
+    case PM_GLASS_GOLEM:
+    case PM_GLASS_PIERCER:
+    case PM_GNOME_MUMMY:
+    case PM_GNOME_ZOMBIE:
+    case PM_GOLDEN_NAGA:
+    case PM_GOLDEN_NAGA_HATCHLING:
+    case PM_GRAND_MASTER:
+    case PM_GREEN_SLIME:
+    case PM_GUARD:
+    case PM_GUARDIAN_NAGA:
+    case PM_GUARDIAN_NAGA_HATCHLING:
+    case PM_GUIDE:
+    case PM_HEALER:
+    case PM_HEZROU:
+    case PM_HIGH_CLERIC:
+    case PM_HILL_GIANT:
+    case PM_HIPPOCRATES:
+    case PM_HOMUNCULUS:
+    case PM_HORSE:
+    case PM_HUMAN:
+    case PM_HUMAN_MUMMY:
+    case PM_HUMAN_WEREWOLF:
+    case PM_HUMAN_ZOMBIE:
+    case PM_HUNTER:
+    case PM_ICE_DEVIL:
+    case PM_ICE_GOLEM:
+    case PM_ICE_TROLL:
+    case PM_ICE_VORTEX:
+    case PM_IMP:
+    case PM_IRON_GOLEM:
+    case PM_IRON_PIERCER:
+    case PM_IXOTH:
+    case PM_JABBERWOCK:
+    case PM_JELLYFISH:
+    case PM_KEYSTONE_KOP:
+    case PM_KING_ARTHUR:
+    case PM_KNIGHT:
+    case PM_KOBOLD_MUMMY:
+    case PM_KOBOLD_ZOMBIE:
+    case PM_KOP_KAPTAIN:
+    case PM_KOP_LIEUTENANT:
+    case PM_KOP_SERGEANT:
+    case PM_KRAKEN:
+    case PM_LARGE_MIMIC:
+    case PM_LEMURE:
+    case PM_LEOCROTTA:
+    case PM_LICH:
+    case PM_LIEUTENANT:
+    case PM_LIZARD:
+    case PM_LONG_WORM:
+    case PM_LONG_WORM_TAIL:
+    case PM_LORD_CARNARVON:
+    case PM_LORD_SATO:
+    case PM_LORD_SURTUR:
+    case PM_LURKER_ABOVE:
+    case PM_MAIL_DAEMON:
+    case PM_MARILITH:
+    case PM_MASTER_ASSASSIN:
+    case PM_MASTER_KAEN:
+    case PM_MASTER_LICH:
+    case PM_MASTER_MIND_FLAYER:
+    case PM_MASTER_OF_THIEVES:
+    case PM_MASTODON:
+    case PM_MEDUSA:
+    case PM_MIND_FLAYER:
+    case PM_MONK:
+    case PM_MOUNTAIN_CENTAUR:
+    case PM_MOUNTAIN_NYMPH:
+    case PM_MUMAK:
+    case PM_NALFESHNEE:
+    case PM_NALZOK:
+    case PM_NAZGUL:
+    case PM_NEANDERTHAL:
+    case PM_NEFERET_THE_GREEN:
+    case PM_NINJA:
+    case PM_NORN:
+    case PM_OCHRE_JELLY:
+    case PM_OGRE:
+    case PM_OGRE_LEADER:
+    case PM_OGRE_TYRANT:
+    case PM_OLOG_HAI:
+    case PM_ORACLE:
+    case PM_ORC_CAPTAIN:
+    case PM_ORC_MUMMY:
+    case PM_ORC_SHAMAN:
+    case PM_ORC_ZOMBIE:
+    case PM_ORION:
+    case PM_PAGE:
+    case PM_PELIAS:
+    case PM_PESTILENCE:
+    case PM_PIRANHA:
+    case PM_PIT_FIEND:
+    case PM_PRISONER:
+    case PM_PUNISHER:
+    case PM_PURPLE_WORM:
+    case PM_QUANTUM_MECHANIC:
+    case PM_QUASIT:
+    case PM_RANGER:
+    case PM_RAVEN:
+    case PM_ROCK_PIERCER:
+    case PM_ROCK_TROLL:
+    case PM_ROGUE:
+    case PM_ROSHI:
+    case PM_RUST_MONSTER:
+    case PM_SAMURAI:
+    case PM_SANDESTIN:
+    case PM_SCORPIUS:
+    case PM_SERGEANT:
+    case PM_SHADE:
+    case PM_SHAMAN_KARNOV:
+    case PM_SHARK:
+    case PM_SHOCKING_SPHERE:
+    case PM_SHOPKEEPER:
+    case PM_SHRIEKER:
+    case PM_SKELETON:
+    case PM_SMALL_MIMIC:
+    case PM_SOLDIER:
+    case PM_SPOTTED_JELLY:
+    case PM_STALKER:
+    case PM_STONE_GIANT:
+    case PM_STONE_GOLEM:
+    case PM_STORM_GIANT:
+    case PM_STUDENT:
+    case PM_SWAMP_FERN_SPORE:
+    case PM_SWAMP_FERN_SPROUT:
+    case PM_THOTH_AMON:
+    case PM_THUG:
+    case PM_TITAN:
+    case PM_TITANOTHERE:
+    case PM_TOURIST:
+    case PM_TRAPPER:
+    case PM_TROLL:
+    case PM_TWOFLOWER:
+    case PM_UMBER_HULK:
+    case PM_VALKYRIE:
+    case PM_VAMPIRE:
+    case PM_VAMPIRE_BAT:
+    case PM_VAMPIRE_LEADER:
+    case PM_VIOLET_FUNGUS:
+    case PM_VLAD_THE_IMPALER:
+    case PM_VROCK:
+    case PM_WARG:
+    case PM_WARHORSE:
+    case PM_WARRIOR:
+    case PM_WATCHER_IN_THE_WATER:
+    case PM_WATCHMAN:
+    case PM_WATCH_CAPTAIN:
+    case PM_WATER_DEMON:
+    case PM_WATER_ELEMENTAL:
+    case PM_WATER_NYMPH:
+    case PM_WEEPING_ANGEL:
+    case PM_WEEPING_ARCHANGEL:
+    case PM_WHITE_NAGA:
+    case PM_WHITE_NAGA_HATCHLING:
+    case PM_WHITE_UNICORN:
+    case PM_WINTER_WOLF:
+    case PM_WINTER_WOLF_CUB:
+    case PM_WIZARD:
+    case PM_WIZARD_OF_YENDOR:
+    case PM_WOLF:
+    case PM_WRAITH:
+    case PM_WUMPUS:
+    case PM_XAN:
+    case PM_XORN:
+    case PM_YELLOW_LIGHT:
+    case PM_YETI:
+        return TRUE;
+    default:
+        return FALSE;
+    }
+}
+
+staticfn boolean
+sheol_mon_boosted(int mndx)
+{
+    switch (mndx) {
+    case PM_ARCH_LICH:
+    case PM_ARCTIC_FERN:
+    case PM_BALROG:
+    case PM_BARBED_DEVIL:
+    case PM_BLUE_SLIME:
+    case PM_BONE_DEVIL:
+    case PM_CHILLBUG:
+    case PM_CRYSTAL_ICE_GOLEM:
+    case PM_DARK_ANGEL:
+    case PM_DISENCHANTER:
+    case PM_ERINYS:
+    case PM_EVIL_EYE:
+    case PM_GREEN_SLIME:
+    case PM_HEZROU:
+    case PM_ICE_DEVIL:
+    case PM_ICE_GOLEM:
+    case PM_LEMURE:
+    case PM_MARILITH:
+    case PM_MASTER_LICH:
+    case PM_NALFESHNEE:
+    case PM_PIT_FIEND:
+    case PM_SANDESTIN:
+    case PM_VROCK:
+    case PM_WEEPING_ARCHANGEL:
+    case PM_WHITE_NAGA:
+        return TRUE;
+    default:
+        return FALSE;
+    }
+}
+
 staticfn boolean
 uncommon(int mndx)
 {
     if (mons[mndx].geno & (G_NOGEN | G_UNIQ))
         return TRUE;
     if (svm.mvitals[mndx].mvflags & G_GONE)
+        return TRUE;
+    if (In_sheol(&u.uz))
+        return !sheol_mon_allowed(mndx);
+    if ((mons[mndx].geno & G_SHEOL)
+        && !(Inhell && (mons[mndx].geno & G_HELL)))
         return TRUE;
     if (Inhell)
         return (boolean) (mons[mndx].maligntyp > A_NEUTRAL);
@@ -1650,6 +2210,65 @@ temperature_shift(struct permonst *ptr)
     return 0;
 }
 
+/* Pinned chaos2_montype, confined to the optional Mithardir branch. The
+   donor checks wraithworm genocide but returns a sentinel in two cases;
+   keep that actual distribution rather than silently changing its pool. */
+staticfn struct permonst *
+mith_eladrin_fallback(void)
+{
+    int choices[3], n = 0, i;
+    static const int types[] = { PM_COURE_ELADRIN, PM_NOVIERE_ELADRIN,
+                                PM_BRALANI_ELADRIN };
+    for (i = 0; i < SIZE(types); ++i)
+        if (!(svm.mvitals[types[i]].mvflags & G_GENOD))
+            choices[n++] = types[i];
+    return n ? &mons[choices[rn2(n)]] : (struct permonst *) 0;
+}
+
+struct permonst *
+mith_rndmonst(void)
+{
+    int typ, fallback;
+    if (!In_mithardir(&u.uz))
+        return (struct permonst *) 0;
+    if (u.uz.dlevel == 1) {
+        if (rn2(3))
+            typ = PM_FOG_CLOUD, fallback = S_VORTEX;
+        else if (!rn2(2))
+            typ = PM_PIRANHA, fallback = S_EEL;
+        else if (rn2(3))
+            return mkclass(S_EEL, G_NOHELL);
+        else {
+            typ = rn2(2) ? PM_COURE_ELADRIN : PM_NOVIERE_ELADRIN;
+            return !(svm.mvitals[typ].mvflags & G_GENOD)
+                ? &mons[typ] : mith_eladrin_fallback();
+        }
+    } else if (In_mithardir_desert(&u.uz)) {
+        fallback = S_ZOMBIE;
+        if (rn2(3)) typ = PM_DUST_VORTEX;
+        else if (rn2(2)) typ = PM_ALABASTER_ELF;
+        else if (rn2(2)) typ = PM_WEREWOLF;
+        else if (rn2(3)) typ = PM_ALABASTER_ELF_ELDER;
+        else if (!rn2(3)) typ = PM_SENTINEL_OF_MITHARDIR, fallback = S_GOLEM;
+        else if (rn2(2))
+            return !(svm.mvitals[PM_WRAITHWORM].mvflags & G_GENOD)
+                ? &mons[PM_SENTINEL_OF_MITHARDIR] : mkclass(S_SNAKE, G_NOHELL);
+        else typ = PM_LIVING_MIRAGE, fallback = S_PUDDING;
+    } else {
+        if (rn2(2)) return mkclass(S_BLOB, G_NOHELL);
+        else if (rn2(3)) return mkclass(S_PUDDING, G_NOHELL);
+        else if (!rn2(3)) return mkclass(S_WRAITH, G_NOHELL);
+        else if (rn2(2))
+            return !(svm.mvitals[PM_WRAITHWORM].mvflags & G_GENOD)
+                ? &mons[PM_SENTINEL_OF_MITHARDIR] : mkclass(S_SNAKE, G_NOHELL);
+        else if (rn2(3) || u.uz.dlevel != 10)
+            typ = PM_SENTINEL_OF_MITHARDIR, fallback = S_GOLEM;
+        else typ = PM_ASPECT_OF_THE_SILENCE, fallback = S_ZOMBIE;
+    }
+    return !(svm.mvitals[typ].mvflags & G_GENOD)
+        ? &mons[typ] : mkclass(fallback, G_NOHELL);
+}
+
 /* select a random monster type */
 struct permonst *
 rndmonst(void)
@@ -1665,6 +2284,9 @@ rndmonst_adj(int minadj, int maxadj)
     int mndx;
     int weight, totalweight, selected_mndx, zlevel, minmlev, maxmlev;
     boolean elemlevel, upper;
+
+    if (In_mithardir(&u.uz))
+        return mith_rndmonst();
 
     if ((ptr = moria_rndmonst()) != 0)
         return ptr;
@@ -1711,6 +2333,8 @@ rndmonst_adj(int minadj, int maxadj)
          */
         weight = (int) (ptr->geno & G_FREQ) + align_shift(ptr);
         weight += temperature_shift(ptr);
+        if (In_sheol(&u.uz) && sheol_mon_boosted(mndx))
+            weight *= 2;
         if (weight < 0 || weight > 127) {
             impossible("bad weight in rndmonst for mndx %d", mndx);
             weight = 0;
@@ -1748,6 +2372,9 @@ mk_gen_ok(int mndx, unsigned mvflagsmask, unsigned genomask)
     if (ptr->geno & genomask)
         return FALSE;
     if (is_placeholder(ptr))
+        return FALSE;
+    if ((ptr->geno & G_SHEOL) && !In_sheol(&u.uz)
+        && !(Inhell && (ptr->geno & G_HELL)))
         return FALSE;
 #ifdef MAIL_STRUCTURES
     /* special levels might ask for random demon type; reject this one */
@@ -1929,6 +2556,13 @@ mkclass_aligned(char class, int spc, /* special mons[].geno handling */
      */
     for (last = first; last < SPECIAL_PM && mons[MONSi(last)].mlet == class;
          last++) {
+        /* The donor's ten adult identities include lava, but not native
+         * NetHack5's gold dragon. Keep that local addition out of this
+         * branch's explicit dragon-class rolls only. */
+        if (class == S_DRAGON && In_dragon_caves(&u.uz)
+            && (MONSi(last) == PM_GOLD_DRAGON
+                || MONSi(last) == PM_BABY_GOLD_DRAGON))
+            continue;
         if (atyp != A_NONE && sgn(mons[MONSi(last)].maligntyp) != sgn(atyp))
             continue;
         /* traditionally mkclass() ignored hell-only and never-in-hell;
@@ -2059,6 +2693,7 @@ grow_up(struct monst *mtmp, struct monst *victim)
     int oldtype, newtype, max_increase, cur_increase, lev_limit, hp_threshold;
     unsigned fem;
     struct permonst *ptr = mtmp->data;
+    boolean deep_soul;
 
     /* monster died after killing enemy but before calling this function */
     /* currently possible if killing a gas spore */
@@ -2069,6 +2704,11 @@ grow_up(struct monst *mtmp, struct monst *victim)
        have both little and big forms (killer bee can't grow into queen
        bee by just killing things, so isn't in the little_to_big list) */
     oldtype = monsndx(ptr);
+    deep_soul = (victim == mtmp && (oldtype == PM_DEEP_ONE
+                                   || oldtype == PM_DEEPER_ONE
+                                   || oldtype == PM_DEEPEST_ONE));
+    if (deep_soul && mtmp->m_lev > 50)
+        return ptr;
     newtype = (oldtype == PM_KILLER_BEE && !victim) ? PM_QUEEN_BEE
                                                     : little_to_big(oldtype);
 #if 0
@@ -2098,10 +2738,16 @@ grow_up(struct monst *mtmp, struct monst *victim)
             lev_limit = (int) mons[newtype].mlevel;
         /* number of hit points to gain; unlike for the player, we put
            the limit at the bottom of the next level rather than the top */
-        max_increase = rnd((int) victim->m_lev + 1);
-        if (mtmp->mhpmax + max_increase > hp_threshold + 1)
-            max_increase = max((hp_threshold + 1) - mtmp->mhpmax, 0);
-        cur_increase = (max_increase > 1) ? rn2(max_increase) : 0;
+        if (deep_soul) {
+            /* AD_SOUL uses the donor's one-HP self-growth operation.
+               Ordinary native kill/gain-level growth stays unchanged. */
+            max_increase = cur_increase = 1;
+        } else {
+            max_increase = rnd((int) victim->m_lev + 1);
+            if (mtmp->mhpmax + max_increase > hp_threshold + 1)
+                max_increase = max((hp_threshold + 1) - mtmp->mhpmax, 0);
+            cur_increase = (max_increase > 1) ? rn2(max_increase) : 0;
+        }
     } else {
         /* a gain level potion or wraith corpse; always go up a level
            unless already at maximum (49 is hard upper limit except
@@ -2111,8 +2757,13 @@ grow_up(struct monst *mtmp, struct monst *victim)
         lev_limit = 50;   /* recalc below */
     }
 
-    mtmp->mhpmax += max_increase;
-    mtmp->mhp += cur_increase;
+    if (deep_soul) {
+        mtmp->mhpmax += min(max_increase, LARGEST_INT - mtmp->mhpmax);
+        mtmp->mhp += min(cur_increase, LARGEST_INT - mtmp->mhp);
+    } else {
+        mtmp->mhpmax += max_increase;
+        mtmp->mhp += cur_increase;
+    }
     if (mtmp->mhpmax <= hp_threshold)
         return ptr; /* doesn't gain a level */
 
@@ -2172,10 +2823,11 @@ grow_up(struct monst *mtmp, struct monst *victim)
     if ((int) mtmp->m_lev > lev_limit) {
         mtmp->m_lev--; /* undo increment */
         /* HP might have been allowed to grow when it shouldn't */
-        if (mtmp->mhpmax == hp_threshold + 1)
+        if (deep_soul ? mtmp->mhpmax >= hp_threshold + 1
+                      : mtmp->mhpmax == hp_threshold + 1)
             mtmp->mhpmax--;
     }
-    if (mtmp->mhpmax > 50 * 8)
+    if (!deep_soul && mtmp->mhpmax > 50 * 8)
         mtmp->mhpmax = 50 * 8; /* absolute limit */
     if (mtmp->mhp > mtmp->mhpmax)
         mtmp->mhp = mtmp->mhpmax;
@@ -2259,6 +2911,10 @@ golemhp(int type)
         return 100;
     case PM_GLASS_GOLEM:
         return 80;
+    case PM_ICE_GOLEM:
+        return 130;
+    case PM_CRYSTAL_ICE_GOLEM:
+        return 160;
     case PM_IRON_GOLEM:
         return 120;
     default:
@@ -2420,7 +3076,10 @@ set_mimic_sym(struct monst *mtmp)
     else
         rt = 0; /* roomno < 0 case for GCC_WARN */
 
-    if (OBJ_AT(mx, my)) {
+    if (mtmp->data == &mons[PM_LIVING_MIRAGE]) {
+        ap_type = M_AP_FURNITURE;
+        appear = S_puddle;
+    } else if (OBJ_AT(mx, my)) {
         ap_type = M_AP_OBJECT;
         appear = svl.level.objects[mx][my]->otyp;
     } else if (IS_DOOR(typ) || IS_WALL(typ) || typ == SDOOR || typ == SCORR) {

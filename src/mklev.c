@@ -26,6 +26,7 @@ staticfn void themerooms_post_level_generate(void);
 staticfn boolean chk_okdoor(coordxy, coordxy);
 staticfn void mklev_sanity_check(void);
 staticfn void makelevel(void);
+staticfn void mith_catacombs(void);
 staticfn boolean water_has_kelp(coordxy, coordxy, int, int);
 staticfn boolean bydoor(coordxy, coordxy);
 staticfn void mktrap_victim(struct trap *);
@@ -780,7 +781,8 @@ makeniche(int trap_type)
                 dosdoor(xx, yy, aroom, rn2(5) ? SDOOR : DOOR);
             } else {
                 /* inaccessible niches occasionally have iron bars */
-                if (!rn2(5) && IS_WALL(levl[xx][yy].typ)) {
+                if (!In_mithardir_catacombs(&u.uz)
+                    && !rn2(5) && IS_WALL(levl[xx][yy].typ)) {
                     (void) set_levltyp(xx, yy, IRONBARS);
                     if (rn2(3))
                         (void) mkcorpstat(CORPSE, (struct monst *) 0,
@@ -793,6 +795,12 @@ makeniche(int trap_type)
                 if (!rn2(3))
                     (void) mkobj_at(RANDOM_CLASS, xx, yy + dy, TRUE);
             }
+        }
+        if (In_mithardir_catacombs(&u.uz)) {
+            if (!rn2(2))
+                (void) makemon(&mons[PM_ALABASTER_MUMMY], xx, yy + dy, NO_MM_FLAGS);
+            else
+                (void) mksobj_at(mith_tile_type(), xx, yy + dy, TRUE, FALSE);
         }
         return;
     }
@@ -1247,6 +1255,188 @@ mklev_sanity_check(void)
 }
 
 
+/* dNetHack's river erodes walls while leaving existing room floors,
+   stairs and the slab intact. The local extended depth requires positive
+   denominators where the donor assumes a depth below 85/100/140. */
+staticfn void
+mith_liquify(coordxy x, coordxy y, boolean edge)
+{
+    int typ, monster = PM_JELLYFISH, dep = depth(&u.uz);
+    if (!isok(x, y))
+        return;
+    typ = levl[x][y].typ;
+    if (typ == STONE || (IS_WALL(typ) && !edge && rn2(3)))
+        (void) set_levltyp(x, y, POOL);
+    else if (typ == SCORR || typ == CORR || typ == DOOR || typ == SDOOR)
+        (void) set_levltyp(x, y, ROOM);
+    if (levl[x][y].typ == ROOM && !rn2(13))
+        (void) mksobj_at(BOULDER, x, y, TRUE, FALSE);
+    if (levl[x][y].typ == POOL) {
+        if (!rn2(max(1, 85 - dep))) {
+            if (dep > 19 && !rn2(3)) monster = PM_ELECTRIC_EEL;
+            else if (dep > 15 && !rn2(3)) monster = PM_GIANT_EEL;
+            else if (dep > 11 && !rn2(2)) monster = PM_SHARK;
+            else if (dep > 7 && rn2(4)) monster = PM_PIRANHA;
+            (void) makemon(&mons[monster], x, y, NO_MM_FLAGS);
+        }
+        if (!rn2(max(1, 140 - dep)))
+            (void) mkobj_at(RANDOM_CLASS, x, y, FALSE);
+        else if (!rn2(max(1, 100 - dep)))
+            (void) mkgold((long) rn1(10 * level_difficulty(), 10), x, y);
+    }
+    levl[x][y].lit = 1;
+}
+
+staticfn void
+mith_river(void)
+{
+    int center, width, prog, fill;
+    boolean edge;
+    if (!rn2(4)) {
+        center = rn2(ROWNO - 12) + 6;
+        width = rn2(4) + 4;
+        for (prog = 1; prog < COLNO; ++prog) {
+            edge = TRUE;
+            for (fill = center - width / 2; fill <= center + width / 2; ++fill) {
+                mith_liquify(prog, fill, edge);
+                edge = fill == center + width / 2 - 1;
+            }
+            if (!rn2(3)) {
+                if (!rn2(2) && width > 4) --width;
+                else if (width < 7) ++width;
+            }
+            if (!rn2(3)) {
+                if (!rn2(2) && center - width / 2 > 1) --center;
+                else if (center + width / 2 < ROWNO - 1) ++center;
+            }
+            center = max(4, min(center, ROWNO - 5));
+        }
+    } else {
+        center = rn2(COLNO - 14) + 7;
+        width = rn2(4) + 5;
+        for (prog = 0; prog < ROWNO; ++prog) {
+            edge = TRUE;
+            for (fill = center - width / 2; fill <= center + width / 2; ++fill) {
+                mith_liquify(fill, prog, edge);
+                edge = fill == center + width / 2 - 1;
+            }
+            if (!rn2(3)) {
+                if (!rn2(2) && width > 5) --width;
+                else if (width < 8) ++width;
+            }
+            if (!rn2(3)) {
+                if (!rn2(2) && center - width / 2 > 1) --center;
+                /* Preserve the pinned donor's ROWNO bound here. */
+                else if (center + width / 2 < ROWNO - 1) ++center;
+            }
+            center = max(5, min(center, COLNO - 6));
+        }
+    }
+}
+
+staticfn void
+mith_slabroom(struct mkroom *room)
+{
+    coordxy x, y, cx = room->lx + 3, cy = room->ly + 3;
+    int typ;
+    /* THEMEROOM keeps the native room record, but excludes ordinary stock.
+       The donor pool/slab room types have no required runtime room effects. */
+    room->rtype = THEMEROOM;
+    room->needfill = FILL_NONE;
+    for (x = cx - 1; x <= cx + 1; ++x)
+        for (y = cy - 1; y <= cy + 1; ++y)
+            (void) set_levltyp(x, y, VWALL);
+    (void) set_levltyp(cx, cy, ROOM);
+    typ = mith_slab_type();
+    if (typ != STRANGE_OBJECT)
+        (void) mksobj_at(typ, cx, cy, TRUE, FALSE);
+    (void) set_levltyp(cx - 1, cy, DOOR);
+    (void) set_levltyp(cx + 1, cy, DOOR);
+    (void) set_levltyp(cx, cy - 1, DOOR);
+    (void) set_levltyp(cx, cy + 1, DOOR);
+    wallification(room->lx, room->ly, room->hx, room->hy);
+}
+
+staticfn void
+mith_poolroom(void)
+{
+    struct mkroom *room;
+    coordxy x, y;
+    int i;
+    for (i = 0; i < svn.nroom; ++i) {
+        room = &svr.rooms[i];
+        if (room->rtype != OROOM || room->hx - room->lx < 4
+            || room->hy - room->ly < 4 || has_dnstairs(room) || has_upstairs(room))
+            continue;
+        room->rtype = THEMEROOM;
+        room->needfill = FILL_NONE;
+        for (x = room->lx + 1; x < room->hx; ++x)
+            for (y = room->ly + 1; y < room->hy; ++y) {
+                (void) set_levltyp(x, y, POOL);
+                if (depth(&u.uz) > 8 && !rn2(16))
+                    (void) makemon(&mons[rn2(2) ? PM_GIANT_EEL : PM_ELECTRIC_EEL],
+                                   x, y, NO_MM_FLAGS);
+            }
+        return;
+    }
+}
+
+staticfn void
+mith_catacombs(void)
+{
+    struct mkroom *room;
+    coordxy x, y;
+    int i, tries = 0;
+    boolean terminus = u.uz.dlevel == 10;
+    if (terminus && create_room(-1, -1, 7, 7, -1, -1, OROOM, 0))
+        mith_slabroom(&svr.rooms[0]);
+    while (svn.nroom < MAXNROFROOMS - 1 && rnd_rect()
+           && (svn.nroom < 9 || rn2(MAXNROFROOMS - svn.nroom))) {
+        if (++tries > 5000) /* exhausted native packing, not an endless retry */
+            break;
+        (void) create_room(-1, -1, 2 + rnd(4), 2 + rnd(4), -1, -1, OROOM, -1);
+    }
+    if (!svn.nroom)
+        panic("Mithardir: no rooms generated");
+    sort_rooms();
+    generate_stairs();
+    makecorridors();
+    for (i = 6 + rn2(3); i > 0; --i)
+        makeniche(NO_TRAP);
+    for (i = rn2(7); i > 0; --i)
+        mith_poolroom();
+    for (i = 0; i < svn.nroom; ++i) {
+        room = &svr.rooms[i];
+        room->needfill = FILL_NONE;
+        if (room->rtype != OROOM)
+            continue;
+        if (!rn2(3)) {
+            x = somex(room); y = somey(room);
+            (void) makemon(rn2(2) ? &mons[PM_ALABASTER_MUMMY] : (struct permonst *) 0,
+                           x, y, NO_MM_FLAGS);
+        }
+        if (!rn2(svn.nroom * 5 / 2))
+            (void) mksobj_at(rn2(3) ? LARGE_BOX : CHEST, somex(room), somey(room),
+                             TRUE, FALSE);
+        if (!rn2(9))
+            (void) mksobj_at(mith_tile_type(), somex(room), somey(room), TRUE, FALSE);
+    }
+    for (x = 1; x < COLNO; ++x)
+        for (y = 0; y < ROWNO; ++y) {
+            levl[x][y].lit = 0;
+            if (levl[x][y].typ == CORR || levl[x][y].typ == SCORR)
+                (void) set_levltyp(x, y, ROOM);
+            else if (levl[x][y].typ == SDOOR) {
+                (void) set_levltyp(x, y, DOOR);
+                levl[x][y].doormask = D_LOCKED;
+            } else if (IS_OBSTRUCTED(levl[x][y].typ))
+                (void) set_levltyp(x, y, VWALL);
+        }
+    wallification(1, 0, COLNO - 1, ROWNO - 1);
+    if (terminus)
+        mith_river();
+}
+
 staticfn void
 makelevel(void)
 {
@@ -1288,6 +1478,8 @@ makelevel(void)
         Strcat(fillname,
                 (u.uz.dlevel < loc_lev->dlevel.dlevel) ? "a" : "b");
         makemaz(fillname);
+    } else if (In_mithardir(&u.uz) && u.uz.dlevel >= 8) {
+        mith_catacombs();
     } else if (In_hell(&u.uz)
                 || (rn2(5) && u.uz.dnum == medusa_level.dnum
                     && depth(&u.uz) > depth(&medusa_level))) {
@@ -1993,8 +2185,12 @@ traptype_rnd(unsigned mktrapflags)
         if (lvl < 8)
             kind = NO_TRAP;
         break;
+    case ICE_TRAP:
+        if (!In_sheol(&u.uz))
+            kind = NO_TRAP;
+        break;
     case FIRE_TRAP:
-        if (!Inhell)
+        if (!Inhell || In_sheol(&u.uz))
             kind = NO_TRAP;
         break;
     case TELEP_TRAP:
@@ -2081,7 +2277,9 @@ mktrap(
         kind = num;
     } else if (Is_rogue_level(&u.uz)) {
         kind = traptype_roguelvl();
-    } else if (Inhell && !rn2(5)) {
+    } else if (In_sheol(&u.uz) && !rn2(3)) {
+        kind = ICE_TRAP;
+    } else if (Inhell && !In_sheol(&u.uz) && !rn2(5)) {
         /* bias the frequency of fire traps in Gehennom */
         kind = FIRE_TRAP;
     } else {

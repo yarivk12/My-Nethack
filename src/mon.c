@@ -11,6 +11,7 @@ staticfn void sanity_check_single_mon(struct monst *, boolean, const char *);
 staticfn struct obj *make_corpse(struct monst *, unsigned);
 staticfn int minliquid_core(struct monst *);
 staticfn void m_calcdistress(struct monst *);
+staticfn void mith_worm_wind(struct monst *);
 staticfn boolean monlineu(struct monst *, int, int);
 staticfn long mm_2way_aggression(struct monst *, struct monst *);
 staticfn long mm_aggression(struct monst *, struct monst *);
@@ -217,6 +218,9 @@ sanity_check_single_mon(
            on furniture, object, or monster shape, but only until the pet
            finishes eating a mimic corpse */
         if (!(is_mimic || mtmp->meating
+              || (mptr == &mons[PM_LIVING_MIRAGE]
+                  && M_AP_TYPE(mtmp) == M_AP_FURNITURE
+                  && mtmp->mappearance == S_puddle)
               || (mtmp->iswiz && M_AP_TYPE(mtmp) == M_AP_MONSTER)))
             impossible("non-mimic (%s) posing as %s (%s)",
                        mptr->pmnames[NEUTRAL], what, msg);
@@ -417,6 +421,9 @@ int
 undead_to_corpse(int mndx)
 {
     switch (mndx) {
+    case PM_ALABASTER_MUMMY:
+        mndx = PM_ALABASTER_ELF_ELDER;
+        break;
     case PM_KOBOLD_ZOMBIE:
     case PM_KOBOLD_MUMMY:
         mndx = PM_KOBOLD;
@@ -548,12 +555,22 @@ pm_to_cham(int mndx)
 /* for deciding whether corpse will carry along full monster data */
 #define KEEPTRAITS(mon)                                                  \
     ((mon)->isshk || (mon)->mtame || unique_corpstat((mon)->data)        \
-     || is_reviver((mon)->data)                                          \
+     || is_reviver((mon)->data) || is_cave_dragon((mon)->data)            \
         /* normally quest leader will be unique, */                      \
         /* but he or she might have been polymorphed  */                 \
      || (mon)->m_id == svq.quest_status.leader_m_id                       \
         /* special cancellation handling for these */                    \
      || (dmgtype((mon)->data, AD_SEDU) || dmgtype((mon)->data, AD_SSEX)))
+
+int
+cave_dragon_scale_chance(struct monst *mon)
+{
+    if (dragon_revivals(mon) >= 2)
+        return 0;
+    if (dragon_revivals(mon) == 1)
+        return 20;
+    return mon->data == &mons[PM_CAVE_CHROMATIC_DRAGON] ? 6 : 3;
+}
 
 /* Creates a monster corpse, a "special" corpse, or nothing if it doesn't
  * leave corpses.  Monsters which leave "special" corpses should have
@@ -601,6 +618,18 @@ make_corpse(struct monst *mtmp, unsigned int corpseflags)
             obj->cursed = obj->blessed = FALSE;
         }
         goto default_1;
+    case PM_GLOWING_DRAGON:
+    case PM_CAVE_CHROMATIC_DRAGON: {
+        int chance = cave_dragon_scale_chance(mtmp);
+        if (chance && !rn2(chance)) {
+            num = mndx == PM_GLOWING_DRAGON ? GLOWING_DRAGON_SCALES
+                                           : CHROMATIC_DRAGON_SCALES;
+            obj = mksobj_at(num, x, y, FALSE, FALSE);
+            obj->spe = 0;
+            obj->cursed = obj->blessed = FALSE;
+        }
+        goto default_1;
+    }
     case PM_WHITE_UNICORN:
     case PM_GRAY_UNICORN:
     case PM_BLACK_UNICORN:
@@ -625,6 +654,19 @@ make_corpse(struct monst *mtmp, unsigned int corpseflags)
         corpstatflags |= CORPSTAT_INIT;
         obj = mkcorpstat(CORPSE, mtmp, &mons[num], x, y, corpstatflags);
         obj->age -= (TAINT_AGE + 1); /* this is an *OLD* corpse */
+        break;
+    case PM_ALABASTER_MUMMY:
+        num = mith_mon_syllable(mtmp);
+        if (num >= 0 && num < 6) {
+            (void) mksobj_at(SYLLABLE_OF_STRENGTH__AESH + num,
+                             x, y, TRUE, FALSE);
+            /* Clear before mkcorpstat preserves traits: resurrection must
+               not grant a second shard or retain its syllable powers. */
+            mtmp->mspare1 &= ~MITH_SYLLABLE_MASK;
+        }
+        num = undead_to_corpse(mndx);
+        corpstatflags |= CORPSTAT_INIT;
+        obj = mkcorpstat(CORPSE, mtmp, &mons[num], x, y, corpstatflags);
         break;
     case PM_KOBOLD_MUMMY:
     case PM_DWARF_MUMMY:
@@ -670,6 +712,11 @@ make_corpse(struct monst *mtmp, unsigned int corpseflags)
         corpstatflags &= ~CORPSTAT_INIT;
         obj = mkcorpstat(STATUE, (struct monst *) 0, mdat, x, y,
                          corpstatflags);
+        break;
+    case PM_SENTINEL_OF_MITHARDIR:
+        corpstatflags &= ~CORPSTAT_INIT;
+        obj = mkcorpstat(STATUE, (struct monst *) 0,
+                         &mons[PM_ALABASTER_ELF], x, y, corpstatflags);
         break;
     case PM_WOOD_GOLEM:
         num = d(2, 4);
@@ -733,6 +780,26 @@ make_corpse(struct monst *mtmp, unsigned int corpseflags)
         break;
 
 #if (NH_DEVEL_STATUS != NH_STATUS_RELEASED)
+    /* Imported species use ordinary corpse handling below, including the
+       G_NOCORPSE check. Post-release builds enumerate every species rather
+       than having a default case, so new tables need this dispatch too. */
+    case PM_DEEP_ORC: case PM_DURINS_BANE:
+    case PM_WATCHER_IN_THE_WATER: case PM_SWAMP_FERN:
+    case PM_SWAMP_FERN_SPROUT: case PM_SWAMP_FERN_SPORE:
+    case PM_ARCTIC_FERN: case PM_ARCTIC_FERN_SPROUT: case PM_ARCTIC_FERN_SPORE:
+    case PM_EVIL_EYE: case PM_CHILLBUG: case PM_DARK_ANGEL:
+    case PM_WEEPING_ANGEL: case PM_WEEPING_ARCHANGEL:
+    case PM_WHITE_NAGA: case PM_WHITE_NAGA_HATCHLING: case PM_BLUE_SLIME:
+    case PM_ICE_GOLEM: case PM_CRYSTAL_ICE_GOLEM:
+    case PM_EXECUTIONER: case PM_PUNISHER: case PM_BABY_GLOWING_DRAGON:
+    case PM_CRYSTAL_OOZE: case PM_DEEP_ONE: case PM_DEEPER_ONE:
+    case PM_DEEPEST_ONE: case PM_SELKIE: case PM_SEAL:
+    case PM_OCEANID: case PM_YURIAN: case PM_COURE_ELADRIN:
+    case PM_NOVIERE_ELADRIN: case PM_BRALANI_ELADRIN: case PM_MOTE_OF_LIGHT:
+    case PM_WATER_DOLPHIN: case PM_SINGING_SAND: case PM_LIVING_MIRAGE:
+    case PM_WRAITHWORM: case PM_FIRST_WRAITHWORM: case PM_ALABASTER_ELF:
+    case PM_ALABASTER_ELF_ELDER: case PM_ASPECT_OF_THE_SILENCE:
+
     case PM_GIANT_ANT: case PM_KILLER_BEE: case PM_SOLDIER_ANT:
     case PM_FIRE_ANT: case PM_GIANT_BEETLE: case PM_QUEEN_BEE:
 
@@ -1133,6 +1200,8 @@ mcalcmove(
     int mmove = mon->data->mmove;
     int mmove_adj;
 
+    if (mith_mon_syllable(mon) == MITH_UUR)
+        mmove += 6;
     /* Note: MSLOW's `+ 1' prevents slowed speed 1 getting reduced to 0;
      *       MFAST's `+ 2' prevents hasted speed 1 from becoming a no-op;
      *       both adjustments have negligible effect on higher speeds.
@@ -1193,6 +1262,7 @@ m_calcdistress(struct monst *mtmp)
 
     /* regenerate hit points */
     mon_regen(mtmp, FALSE);
+    mith_worm_wind(mtmp);
 
     /* possibly polymorph shapechangers and lycanthropes */
     if (ismnum(mtmp->cham))
@@ -1837,7 +1907,7 @@ mpickgold(struct monst *mtmp)
     int mat_idx;
 
     if ((gold = g_at(mtmp->mx, mtmp->my)) != 0) {
-        mat_idx = objects[gold->otyp].oc_material;
+        mat_idx = obj_material(gold);
         obj_extract_self(gold);
         add_to_minv(mtmp, gold);
         if (cansee(mtmp->mx, mtmp->my)) {
@@ -1971,6 +2041,9 @@ can_touch_safely(struct monst *mtmp, struct obj *otmp)
         && !(mtmp->misc_worn_check & W_ARMG) && !resists_ston(mtmp))
         return FALSE;
     if (otyp == CORPSE && is_rider(&mons[otmp->corpsenm]))
+        return FALSE;
+    if (mith_hates_iron(mdat) && obj_material(otmp) == IRON
+        && !(mtmp->misc_worn_check & W_ARMG))
         return FALSE;
     if (objects[otyp].oc_material == SILVER && mon_hates_silver(mtmp)
         && (otyp != BELL_OF_OPENING || !is_covetous(mdat)))
@@ -2168,6 +2241,8 @@ mfndpos(
 
     (void)memset((genericptr_t) data, 0, sizeof(struct mfndposdata));
 
+    if (is_weeping(mdat) && canseemon(mon))
+        return 0; /* quantum lock applies to pets and ordinary movement */
     nodiag = NODIAG(mdat - mons);
     wantpool = (mdat->mlet == S_EEL);
     poolok = ((!Is_waterlevel(&u.uz) && m_in_air(mon))
@@ -2216,6 +2291,9 @@ mfndpos(
             if (nx == x && ny == y)
                 continue;
             ntyp = levl[nx][ny].typ;
+            if (ntyp == CRYSTALICEWALL
+                && !((flag & ALLOW_WALL) && may_passwall(nx, ny)))
+                continue;
             if (IS_OBSTRUCTED(ntyp)
                 && !((flag & ALLOW_WALL) && may_passwall(nx, ny))
                 && !((IS_TREE(ntyp) ? treeok : rockok) && may_dig(nx, ny)))
@@ -2394,14 +2472,25 @@ mfndpos(
 staticfn long
 mm_2way_aggression(struct monst *magr, struct monst *mdef)
 {
+    /* Mithardir's Alabaster defenders and oozes are mutual enemies. */
+    if ((magr->data == &mons[PM_ALABASTER_ELF]
+         || magr->data == &mons[PM_ALABASTER_ELF_ELDER]
+         || magr->data == &mons[PM_SENTINEL_OF_MITHARDIR])
+        && (mdef->data->mlet == S_PUDDING || mdef->data->mlet == S_BLOB
+            || mdef->data->mlet == S_UMBER)
+        && !is_undead(magr->data))
+        return ALLOW_M | ALLOW_TM;
+
     /* The Moria captors and their dwarf prisoners are mortal enemies. */
     if (magr->data == &mons[PM_DEEP_ORC] && is_dwarf(mdef->data))
         return ALLOW_M | ALLOW_TM;
     /* Spores attack other creatures, which retaliate; plants and other
      * spores are exempt. mm_aggression calls this in both directions. */
-    if (magr->data == &mons[PM_SWAMP_FERN_SPORE]
+    if ((magr->data == &mons[PM_SWAMP_FERN_SPORE]
+         || magr->data == &mons[PM_ARCTIC_FERN_SPORE])
         && mdef->data != &mons[PM_SWAMP_FERN_SPORE]
-        && !is_swamp_fern(mdef->data))
+        && mdef->data != &mons[PM_ARCTIC_FERN_SPORE]
+        && !is_swamp_fern(mdef->data) && !is_arctic_fern(mdef->data))
         return ALLOW_M | ALLOW_TM;
 
     if (On_W_tower_level(&u.uz)) {
@@ -3105,6 +3194,62 @@ swamp_spore_dies(struct monst *mtmp)
                        mtmp->mx, mtmp->my, NO_MM_FLAGS);
 }
 
+staticfn void
+arctic_spore_dies(struct monst *mtmp)
+{
+    coordxy x = mtmp->mx, y = mtmp->my;
+    int typ = levl[x][y].typ;
+    NhRegion *cloud = create_gas_cloud(x, y, rn1(2, 1), rnd(8));
+
+    cloud->ttl = rn1(3, 2);
+    if (!(typ == POOL || typ == MOAT || typ == ICE || IS_BOG(typ)) || rn2(3))
+        return;
+    if (typ != ICE) {
+        levl[x][y].typ = ICE;
+        levl[x][y].icedpool = IS_BOG(typ) ? ICED_BOG
+                              : typ == POOL ? ICED_POOL : ICED_MOAT;
+        obj_ice_effects(x, y, TRUE);
+        newsym(x, y);
+        if (!Deaf)
+            You_hear("a crackling sound.");
+    }
+    (void) makemon(&mons[rn2(6) ? PM_ARCTIC_FERN_SPROUT : PM_ARCTIC_FERN],
+                   x, y, NO_MM_FLAGS);
+}
+
+/* The Alabaster death transformation is a donor life-saving mechanism,
+   separate from native amulets. Petrification never invokes it. */
+staticfn boolean
+mith_putrefies(struct monst *mon)
+{
+    int syllable;
+
+    if (gs.stoned || !(mon->data == &mons[PM_ALABASTER_ELF]
+                       || mon->data == &mons[PM_ALABASTER_ELF_ELDER]
+                       || mon->data == &mons[PM_ALABASTER_MUMMY])
+        || rn2(20))
+        return FALSE;
+    if (canseemon(mon))
+        pline("%s putrefies with impossible speed!", Monnam(mon));
+    mon->mspec_used = 0;
+    syllable = mith_mon_syllable(mon);
+    if (syllable >= 0 && syllable < 6) {
+        (void) mksobj_at(SYLLABLE_OF_STRENGTH__AESH + syllable,
+                         mon->mx, mon->my, TRUE, FALSE);
+        mon->mspare1 &= ~MITH_SYLLABLE_MASK;
+    }
+    if (!newcham(mon, &mons[rn2(4) ? PM_ACID_BLOB : PM_BLACK_PUDDING],
+                 NO_NC_FLAGS))
+        return FALSE;
+    mon->mcanmove = 1;
+    mon->mfrozen = 0;
+    if (mon->mtame && !mon->isminion)
+        wary_dog(mon, FALSE);
+    set_mon_min_mhpmax(mon, 10);
+    mon->mhp = mon->mhpmax;
+    return TRUE;
+}
+
 void
 mondead(struct monst *mtmp)
 {
@@ -3119,6 +3264,8 @@ mondead(struct monst *mtmp)
     mtmp->mhp = 0; /* in case caller hasn't done this */
     lifesaved_monster(mtmp);
     if (!DEADMONSTER(mtmp))
+        return;
+    if (mith_putrefies(mtmp))
         return;
 
     /* vampire in bat/fog/wolf form reverts to vampire instead of dying */
@@ -3162,6 +3309,12 @@ mondead(struct monst *mtmp)
     mndx = monsndx(mtmp->data);
     if (svm.mvitals[mndx].died < 255)
         svm.mvitals[mndx].died++;
+    if (mndx == PM_ASPECT_OF_THE_SILENCE) {
+        int slab = mith_slab_type();
+
+        if (slab != STRANGE_OBJECT)
+            (void) mksobj_at(slab, mtmp->mx, mtmp->my, TRUE, FALSE);
+    }
 
     /* if it's a (possibly polymorphed) quest leader, mark him as dead */
     if (mtmp->m_id == svq.quest_status.leader_m_id)
@@ -3205,10 +3358,34 @@ mondead(struct monst *mtmp)
      * Regions and their lifetime use the existing region save machinery. */
     if (mptr == &mons[PM_SWAMP_FERN_SPORE])
         swamp_spore_dies(mtmp);
+    else if (mptr == &mons[PM_ARCTIC_FERN_SPORE])
+        arctic_spore_dies(mtmp);
     return;
 }
 
 /* TRUE if corpse might be dropped, magr may die if mon was swallowed */
+/* This death pulse belongs to AD_SOUL's corpse-processing path, as in the
+   donor. Disintegration and other paths skipping corpses do not trigger it. */
+staticfn void
+mith_deep_soul(const struct permonst *dead)
+{
+    struct monst *mon;
+    int gain = dead == &mons[PM_DEEP_ONE] ? 2
+               : dead == &mons[PM_DEEPER_ONE] ? 4
+               : dead == &mons[PM_DEEPEST_ONE] ? 8 : 0;
+    if (!gain) return;
+    for (mon = fmon; mon; mon = mon->nmon) {
+        if (!DEADMONSTER(mon) && (mon->data == &mons[PM_DEEP_ONE]
+                                 || mon->data == &mons[PM_DEEPER_ONE]
+                                 || mon->data == &mons[PM_DEEPEST_ONE])) {
+            int increase = mon->mhpmax < 300 ? gain - 1 : 1;
+            mon->mhpmax += min(increase, LARGEST_INT - mon->mhpmax);
+            mon->mhp += min(increase, LARGEST_INT - mon->mhp);
+            (void) grow_up(mon, mon);
+        }
+    }
+}
+
 boolean
 corpse_chance(
     struct monst *mon,
@@ -3217,6 +3394,8 @@ corpse_chance(
 {
     struct permonst *mdat = mon->data;
     int i, tmp;
+
+    mith_deep_soul(mdat);
 
     if (!magr && gm.mswallower && attacktype(gm.mswallower->data, AT_ENGL))
         magr = gm.mswallower, was_swallowed = TRUE; /* for gas spore boom */
@@ -3245,8 +3424,10 @@ corpse_chance(
                     There("is an explosion in your %s!", body_part(STOMACH));
                     Sprintf(svk.killer.name, "%s explosion",
                             s_suffix(pmname(mdat, Mgender(mon))));
-                    losehp(Maybe_Half_Phys(tmp), svk.killer.name,
-                           KILLED_BY_AN);
+                    tmp = Maybe_Half_Phys(tmp);
+                    if (u.mith_timers[MITH_VAUL])
+                        tmp = (tmp + 1) / 2;
+                    losehp(tmp, svk.killer.name, KILLED_BY_AN);
                 } else {
                     You_hear("an explosion.");
                     magr->mhp -= tmp;
@@ -3274,7 +3455,8 @@ corpse_chance(
         return FALSE;
 
     if (((bigmonst(mdat) || mdat == &mons[PM_LIZARD]) && !mon->mcloned)
-        || is_golem(mdat) || is_mplayer(mdat) || is_rider(mdat) || mon->isshk)
+        || is_golem(mdat) || is_mplayer(mdat) || is_rider(mdat) || mon->isshk
+        || mdat == &mons[PM_ALABASTER_MUMMY])
         return TRUE;
     tmp = 2 + ((mdat->geno & G_FREQ) < 2) + verysmall(mdat);
     return (boolean) !rn2(tmp);
@@ -3395,7 +3577,13 @@ monstone(struct monst *mdef)
        could */
     if (engulfing_u(mdef))
         wasinside = TRUE;
-    mondead(mdef);
+    {
+        boolean was_stoned = gs.stoned;
+
+        gs.stoned = TRUE; /* suppress Alabaster decay during all stoning */
+        mondead(mdef);
+        gs.stoned = was_stoned;
+    }
     if (wasinside) {
         if (digests(mdef->data))
             You("%s through an opening in the new %s.",
@@ -4151,6 +4339,34 @@ m_respond_medusa(struct monst *mtmp)
             (void) gazemu(mtmp, &mtmp->data->mattk[i]);
             break;
         }
+}
+
+/* Donor wind occurs once per world turn, independent of monster speed. */
+/* The Aspect grows only when absorbed warmth exceeds its current maximum.
+   Native mold/jelly healing has a different maximum-HP rule. */
+void
+mith_cold_heal(struct monst *mtmp, int damage)
+{
+    mtmp->mhp = min(LARGEST_INT, mtmp->mhp + damage / 2);
+    mtmp->mhpmax = max(mtmp->mhpmax, mtmp->mhp);
+}
+
+staticfn void
+mith_worm_wind(struct monst *mtmp)
+{
+    if (mtmp->data == &mons[PM_FIRST_WRAITHWORM]
+        && distmin(u.ux, u.uy, mtmp->mx, mtmp->my) < 6) {
+        struct monst *mon, *next;
+
+        You("are thrown by a blast of wind!");
+        hurtle(rn2(3) - 1, rn2(3) - 1, rnd(6), FALSE);
+        for (mon = fmon; mon; mon = next) {
+            next = mon->nmon;
+            if (mon != mtmp && !DEADMONSTER(mon)
+                && distmin(mon->mx, mon->my, mtmp->mx, mtmp->my) < 6)
+                mhurtle(mon, rn2(3) - 1, rn2(3) - 1, rnd(6));
+        }
+    }
 }
 
 /* monster responds to player action; not the same as a passive attack */

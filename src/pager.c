@@ -570,6 +570,8 @@ waterbody_name(coordxy x, coordxy y)
 
     if (IS_BOG(ltyp))
         return "muddy swamp";
+    if (IS_PUDDLE(ltyp))
+        return "shallow water";
 
     if (ltyp == LAVAPOOL) {
         Snprintf(pooltype, sizeof pooltype, "molten %s", hliquid("lava"));

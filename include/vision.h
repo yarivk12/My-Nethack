@@ -8,6 +8,14 @@
 #define COULD_SEE 0x1 /* location could be seen, if it were lit */
 #define IN_SIGHT 0x2  /* location can be seen */
 #define TEMP_LIT 0x4  /* location is temporarily lit */
+/* Aspect darkness, using the donor's regular-sight radius3/radius2 layers.
+   These are transient vision bits, never terrain or save fields. */
+#define MITH_DARK1 0x8
+#define MITH_DARK2 0x10
+#define mith_viz_lit(permanent, bits) \
+    (((permanent) && !(((bits) & MITH_DARK1) && !((bits) & TEMP_LIT)) \
+       && !((bits) & MITH_DARK2)) \
+     || (((bits) & TEMP_LIT) && !((bits) & MITH_DARK1)))
 
 /*
  * Light source sources

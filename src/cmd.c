@@ -1083,7 +1083,8 @@ const char *levltyp[MAX_TYPE + 2] = {
     "drawbridge up", "lava pool", "lava wall", "iron bars", "door",
     "corridor", "room", "stairs", "ladder", "fountain", "throne", "sink",
     "grave", "altar", "ice", "drawbridge down", "air", "cloud",
-    "dead tree", "muddy swamp",
+    "dead tree", "muddy swamp", "ice wall", "crystal ice wall",
+    "shallow water", "white dust", "soil", "grass",
     /* not a real terrain type, but used for undiggable stone
        by wiz_map_levltyp() */
     "unreachable/undiggable",
@@ -1945,6 +1946,8 @@ struct ext_func_tab extcmdlist[] = {
               dowield, 0, NULL },
     { M('w'), "wipe", "wipe off your face",
               dowipe, AUTOCOMPLETE, NULL },
+    { '\0',   "word", "speak a learned Word of Creation",
+              domithword, AUTOCOMPLETE, NULL },
     { '\0',   "wizborn", "show stats of monsters created",
               doborn, IFBURIED | WIZMODECMD, NULL },
 #ifdef DEBUG

@@ -176,6 +176,9 @@ do_light_sources(seenV **cs_rows)
     seenV *row;
 
     for (ls = gl.light_base; ls; ls = ls->next) {
+        boolean dark = ls->type == LS_MONSTER
+            && ls->id.a_monst->data == &mons[PM_ASPECT_OF_THE_SILENCE];
+
         ls->flags &= ~LSF_SHOW;
 
         /*
@@ -195,7 +198,7 @@ do_light_sources(seenV **cs_rows)
 
         /* minor optimization: don't bother with duplicate light sources
            at hero */
-        if (u_at(ls->x, ls->y)) {
+        if (!dark && u_at(ls->x, ls->y)) {
             if (at_hero_range >= ls->range)
                 ls->flags &= ~LSF_SHOW;
             else
@@ -236,13 +239,21 @@ do_light_sources(seenV **cs_rows)
                      * does this.
                      */
                     for (x = min_x; x <= max_x; x++)
-                        if (row[x] & COULD_SEE)
-                            row[x] |= TEMP_LIT;
+                        if (row[x] & COULD_SEE) {
+                            row[x] |= dark ? MITH_DARK1 : TEMP_LIT;
+                            if (dark && abs(y - ls->y) <= 2
+                                && abs(x - ls->x) <= circle_ptr(2)[abs(y - ls->y)])
+                                row[x] |= MITH_DARK2;
+                        }
                 } else {
                     for (x = min_x; x <= max_x; x++)
                         if ((ls->x == x && ls->y == y)
-                            || clear_path((int) ls->x, (int) ls->y, x, y))
-                            row[x] |= TEMP_LIT;
+                            || clear_path((int) ls->x, (int) ls->y, x, y)) {
+                            row[x] |= dark ? MITH_DARK1 : TEMP_LIT;
+                            if (dark && abs(y - ls->y) <= 2
+                                && abs(x - ls->x) <= circle_ptr(2)[abs(y - ls->y)])
+                                row[x] |= MITH_DARK2;
+                        }
                 }
             }
         }
@@ -904,7 +915,8 @@ arti_light_radius(struct obj *obj)
        light than other light sources */
     if (obj == uskin)
         res = 1;
-    else if (obj->otyp == GOLD_DRAGON_SCALE_MAIL) /* DSM but not scales */
+    else if (obj->otyp == GOLD_DRAGON_SCALE_MAIL
+             || obj->otyp == GLOWING_DRAGON_SCALE_MAIL) /* DSM but not scales */
         ++res;
 
     return res;

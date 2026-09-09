@@ -409,6 +409,15 @@ BOW("crossbow", NoDes,          1, 45, 50, 40, 0, WOOD, P_CROSSBOW, HI_WOOD,
 #undef S
 #undef B
 
+/* Step9C: dNetHack Mithardir shop/equipment dependencies, generation only
+   through the imported branch; see doc/step9c.md. */
+WEAPON("spike", NoDes, 1, 1, 0, 0, 1, 2, 3, 1, 0, PIERCE, -P_DART, BONE, CLR_WHITE, SPIKE),
+WEAPON("rapier", NoDes, 1, 0, 0, 0, 28, 20, 6, 4, 2, PIERCE, P_SABER, METAL, HI_METAL, RAPIER),
+WEAPON("crystal sword", NoDes, 1, 0, 0, 0, 120, 300, 8, 12, 0, SLASH|PIERCE, P_LONG_SWORD, GLASS, HI_GLASS, CRYSTAL_SWORD),
+WEAPON("high-elven warsword", "runed curved sword", 0, 0, 0, 0, 20, 150, 10, 10, 2, SLASH, P_SABER, MITHRIL, HI_SILVER, HIGH_ELVEN_WARSWORD),
+WEAPON("elven sickle", "runed sickle", 0, 1, 0, 0, 5, 4, 6, 3, 0, SLASH, P_AXE, WOOD, HI_WOOD, ELVEN_SICKLE),
+WEAPON("moon axe", "two-handed axe", 0, 0, 1, 0, 160, 40, 6, 6, 0, SLASH, P_AXE, SILVER, HI_SILVER, MOON_AXE),
+
 #undef WEAPON
 #undef PROJECTILE
 #undef BOW
@@ -524,6 +533,11 @@ DRGN_ARMR("green dragon scale mail",   1, POISON_RES,  900, 1, CLR_GREEN,
                                                     GREEN_DRAGON_SCALE_MAIL),
 DRGN_ARMR("yellow dragon scale mail",  1, ACID_RES,    900, 1, CLR_YELLOW,
                                                     YELLOW_DRAGON_SCALE_MAIL),
+/* Step9B: retain donor AC; native dragon armor above is unchanged. */
+DRGN_ARMR("glowing dragon scale mail", 1, STONE_RES, 900, 5, HI_GOLD,
+                                                    GLOWING_DRAGON_SCALE_MAIL),
+DRGN_ARMR("chromatic dragon scale mail", 1, POISON_RES, 2400, 5, CLR_MAGENTA,
+                                                    CHROMATIC_DRAGON_SCALE_MAIL),
 /* For now, only dragons leave these. */
 /* 3.4.1: dragon scales left classified as "non-magic"; they confer magical
    properties but are produced "naturally"; affects use as polypile fodder */
@@ -551,6 +565,10 @@ DRGN_ARMR("green dragon scales",       0, POISON_RES,  500, 7, CLR_GREEN,
                                                         GREEN_DRAGON_SCALES),
 DRGN_ARMR("yellow dragon scales",      0, ACID_RES,    500, 7, CLR_YELLOW,
                                                         YELLOW_DRAGON_SCALES),
+DRGN_ARMR("glowing dragon scales", 0, STONE_RES, 500, 9, HI_GOLD,
+                                                    GLOWING_DRAGON_SCALES),
+DRGN_ARMR("chromatic dragon scales", 0, 0, 1500, 9, CLR_MAGENTA,
+                                                    CHROMATIC_DRAGON_SCALES),
 #undef DRGN_ARMR
 /* other suits */
 ARMOR("plate mail", NoDes,
@@ -730,6 +748,28 @@ BOOTS("levitation boots", "snow boots",
 #undef SHIELD
 #undef GLOVES
 #undef BOOTS
+/* Step9C: dNetHack Mithardir shop/equipment dependencies, generation only
+   through the imported branch; see doc/step9c.md. */
+ARMOR("living armor", "giant sea anemone", 0, 1, 0, 0, 0, 6, 80, 500, 10, 0, ARM_SUIT, FLESH, CLR_ORANGE, LIVING_ARMOR),
+ARMOR("barnacle armor", "giant shell armor", 0, 1, 0, 0, 0, 10, 150, 1000, 7, 1, ARM_SUIT, SHELL, CLR_GRAY, BARNACLE_ARMOR),
+ARMOR("elven toga", NoDes, 1, 0, 0, 0, 0, 5, 5, 100, 10, 2, ARM_SUIT, CLOTH, CLR_GREEN, ELVEN_TOGA),
+ARMOR("war hat", "wide helm", 0, 0, 0, 0, 0, 0, 60, 30, 8, 2, ARM_HELM, IRON, HI_METAL, WAR_HAT),
+ARMOR("kite shield", NoDes, 1, 0, 0, 0, 0, 0, 100, 10, 8, 1, ARM_SHIELD, IRON, HI_METAL, KITE_SHIELD),
+ARMOR("high-elven helm", "runed helm", 0, 0, 0, 0, 0, 1, 15, 5, 9, 0, ARM_HELM, MITHRIL, HI_SILVER, HIGH_ELVEN_HELM),
+ARMOR("archaic helm", "helmet", 0, 0, 0, 0, 0, 1, 30, 12, 9, 0, ARM_HELM, COPPER, HI_COPPER, ARCHAIC_HELM),
+ARMOR("archaic plate mail", NoDes, 1, 0, 1, 0, 0, 5, 200, 400, 6, 3, ARM_SUIT, COPPER, HI_COPPER, ARCHAIC_PLATE_MAIL),
+ARMOR("high-elven plate", "runed plate mail", 0, 0, 1, 0, 0, 5, 110, 1200, 4, 3, ARM_SUIT, MITHRIL, HI_SILVER, HIGH_ELVEN_PLATE),
+ARMOR("buckler", NoDes, 1, 0, 0, 0, 0, 0, 30, 3, 9, 0, ARM_SHIELD, WOOD, HI_WOOD, BUCKLER),
+ARMOR("archaic gauntlets", NoDes, 1, 0, 0, 0, 0, 2, 25, 10, 8, 0, ARM_GLOVES, COPPER, HI_COPPER, ARCHAIC_GAUNTLETS),
+ARMOR("high-elven gauntlets", "runed gauntlets", 0, 0, 0, 0, 0, 2, 15, 50, 8, 0, ARM_GLOVES, MITHRIL, HI_SILVER, HIGH_ELVEN_GAUNTLETS),
+ARMOR("archaic boots", "boots", 0, 0, 0, 0, 0, 1, 75, 16, 8, 1, ARM_BOOTS, COPPER, HI_COPPER, ARCHAIC_BOOTS),
+ARMOR("gentleman's suit", "expensive clothes", 0, 0, 1, 0, 0, 5, 10, 1000, 10, 2, ARM_SUIT, CLOTH, CLR_BLACK, GENTLEMAN_S_SUIT),
+ARMOR("gentlewoman's dress", "expensive dress", 0, 0, 1, 0, 0, 6, 100, 1000, 10, 3, ARM_SUIT, BONE, CLR_RED, GENTLEWOMAN_S_DRESS),
+ARMOR("jacket", NoDes, 1, 0, 0, 0, 0, 0, 20, 10, 10, 2, ARM_SUIT, LEATHER, HI_LEATHER, JACKET),
+ARMOR("stilettos", "high-heeled shoes", 0, 0, 0, 0, 0, 1, 10, 60, 10, 0, ARM_BOOTS, METAL, HI_METAL, STILETTOS),
+ARMOR("victorian underwear", "white dress", 0, 0, 0, 0, 0, 5, 5, 10, 10, 3, ARM_SHIRT, CLOTH, CLR_WHITE, VICTORIAN_UNDERWEAR),
+ARMOR("black dress", NoDes, 1, 0, 1, 0, 0, 5, 5, 500, 10, 2, ARM_SHIRT, CLOTH, CLR_BLACK, BLACK_DRESS),
+
 #undef ARMOR
 
 /* rings ... */
@@ -1011,6 +1051,9 @@ TOOL("drum of earthquake","drum", 0, 0, 1, 1,  2, 25, 25, LEATHER, HI_LEATHER,
 WEPTOOL("pick-axe", NoDes,
         1, 0, 0, 20, 100,  50,  6,  3, WHACK,  P_PICK_AXE, IRON, HI_METAL,
                                                                 PICK_AXE),
+WEPTOOL("crystal pick", NoDes,
+        1, 0, 0, 0, 80, 500, 12, 10, WHACK, P_PICK_AXE, METAL, HI_METAL,
+                                                                CRYSTAL_PICK),
 WEPTOOL("grappling hook", NoDes,
         1, 0, 0,  5,  30,  50,  2,  6, WHACK,  P_FLAIL,    IRON, HI_METAL,
                                                              GRAPPLING_HOOK),
@@ -1030,6 +1073,42 @@ OBJECT(OBJ("Bell of Opening", "silver bell"),
        BITS(0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, P_NONE, SILVER),
        0, TOOL_CLASS, 0, 0, 10, 5000, 0, 0, 0, 0, 50, HI_SILVER,
                                                    BELL_OF_OPENING),
+/* Step9C: dNetHack Mithardir shop/equipment dependencies, generation only
+   through the imported branch; see doc/step9c.md. */
+OBJECT(OBJ("living mask","gilled jellyfish"),
+       BITS(0,0,0,0,1,0,0,0,0,0,0,P_NONE,FLESH),
+       MAGICAL_BREATHING,TOOL_CLASS,0,0,5,200,0,0,0,0,6,CLR_BLUE,LIVING_MASK),
+OBJECT(OBJ("mask",NoDes),
+       BITS(1,0,0,0,0,0,0,0,0,0,0,P_NONE,LEATHER),
+       0,TOOL_CLASS,0,0,10,80,0,0,0,0,6,CLR_WHITE,MASK),
+OBJECT(OBJ("syllable of strength: Aesh","bipartite glyph"),
+       BITS(0,1,0,0,1,0,0,0,0,0,0,P_NONE,MINERAL),
+       0,TOOL_CLASS,0,0,3,300,0,0,0,0,6,CLR_WHITE,SYLLABLE_OF_STRENGTH__AESH),
+OBJECT(OBJ("syllable of power: Krau","crossed glyph"),
+       BITS(0,1,0,0,1,0,0,0,0,0,0,P_NONE,MINERAL),
+       0,TOOL_CLASS,0,0,3,300,0,0,0,0,6,CLR_WHITE,SYLLABLE_OF_POWER__KRAU),
+OBJECT(OBJ("syllable of life: Hoon","knotted glyph"),
+       BITS(0,1,0,0,1,0,0,0,0,0,0,P_NONE,MINERAL),
+       0,TOOL_CLASS,0,0,3,300,0,0,0,0,6,CLR_WHITE,SYLLABLE_OF_LIFE__HOON),
+OBJECT(OBJ("syllable of grace: Uur","multilinear glyph"),
+       BITS(0,1,0,0,1,0,0,0,0,0,0,P_NONE,MINERAL),
+       0,TOOL_CLASS,0,0,3,300,0,0,0,0,6,CLR_WHITE,SYLLABLE_OF_GRACE__UUR),
+OBJECT(OBJ("syllable of thought: Naen","dotted glyph"),
+       BITS(0,1,0,0,1,0,0,0,0,0,0,P_NONE,MINERAL),
+       0,TOOL_CLASS,0,0,3,300,0,0,0,0,6,CLR_WHITE,SYLLABLE_OF_THOUGHT__NAEN),
+OBJECT(OBJ("syllable of spirit: Vaul","hanging glyph"),
+       BITS(0,1,0,0,1,0,0,0,0,0,0,P_NONE,MINERAL),
+       0,TOOL_CLASS,0,0,3,300,0,0,0,0,6,CLR_WHITE,SYLLABLE_OF_SPIRIT__VAUL),
+OBJECT(OBJ("First Word","blinding glyph"),
+       BITS(0,0,0,0,1,0,1,1,0,0,0,P_NONE,METAL),
+       0,TOOL_CLASS,0,0,3,3000,0,0,0,0,6,CLR_YELLOW,FIRST_WORD),
+OBJECT(OBJ("Dividing Word","cerulean glyph"),
+       BITS(0,0,0,0,1,0,1,1,0,0,0,P_NONE,METAL),
+       0,TOOL_CLASS,0,0,3,3000,0,0,0,0,6,HI_ZAP,DIVIDING_WORD),
+OBJECT(OBJ("Nurturing Word","verdant glyph"),
+       BITS(0,0,0,0,1,0,1,1,0,0,0,P_NONE,METAL),
+       0,TOOL_CLASS,0,0,3,3000,0,0,0,0,6,CLR_GREEN,NURTURING_WORD),
+
 #undef TOOL
 #undef WEPTOOL
 
@@ -1648,6 +1727,10 @@ OBJECT(OBJ("splash of acid venom", "splash of venom"),
        BITS(0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, P_NONE, LIQUID), 0,
        VENOM_CLASS, 500, 0, 1, 0, 6, 6, 0, 0, 0, HI_ORGANIC, ACID_VENOM),
         /* +d6 small or large */
+
+OBJECT(OBJ("freezing ice", "splash of ice"),
+       BITS(0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, P_NONE, LIQUID), 0,
+       VENOM_CLASS, 0, 0, 1, 0, 6, 6, 0, 0, 0, HI_ORGANIC, FREEZING_ICE),
 
 #if defined(OBJECTS_DESCR_INIT) || defined(OBJECTS_INIT)
 /* fencepost, the deadly Array Terminator -- name [1st arg] *must* be NULL */

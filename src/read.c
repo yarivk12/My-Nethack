@@ -13,6 +13,10 @@ staticfn void cap_spe(struct obj *);
 staticfn char *erode_obj_text(struct obj *, char *);
 staticfn char *hawaiian_design(struct obj *, char *);
 staticfn int read_ok(struct obj *);
+staticfn int mith_read_tile(struct obj *);
+staticfn int mith_learn_word(void);
+static unsigned mith_study_id;
+static int mith_study_delay;
 staticfn void stripspe(struct obj *);
 staticfn void p_glow1(struct obj *);
 staticfn void p_glow2(struct obj *, const char *);
@@ -318,7 +322,8 @@ read_ok(struct obj *obj)
     if (!obj)
         return GETOBJ_EXCLUDE;
 
-    if (obj->oclass == SCROLL_CLASS || obj->oclass == SPBOOK_CLASS)
+    if (obj->oclass == SCROLL_CLASS || obj->oclass == SPBOOK_CLASS
+        || is_mith_syllable(obj) || is_mith_slab(obj))
         return GETOBJ_SUGGEST;
 
     return GETOBJ_DOWNPLAY;
@@ -361,6 +366,9 @@ doread(void)
         return ECMD_CANCEL;
     otyp = scroll->otyp;
     scroll->pickup_prev = 0; /* no longer 'just picked up' */
+
+    if (is_mith_syllable(scroll) || is_mith_slab(scroll))
+        return mith_read_tile(scroll);
 
     /* outrumor has its own blindness check */
     if (otyp == FORTUNE_COOKIE) {
@@ -3406,6 +3414,97 @@ create_particular(void)
         return create_particular_creation(&d);
 
     return FALSE;
+}
+
+/* Keep an ID rather than a pointer that theft/destruction could invalidate.
+   Interrupted study resumes in this process; restoring starts a new study. */
+staticfn int
+mith_learn_word(void)
+{
+    struct obj *slab;
+    int idx;
+    boolean was_flying = Flying;
+
+    for (slab = gi.invent; slab; slab = slab->nobj)
+        if (slab->o_id == mith_study_id && is_mith_slab(slab))
+            break;
+    if (!slab) {
+        mith_study_id = 0;
+        mith_study_delay = 0;
+        return 0;
+    }
+    if (Confusion) {
+        nomul(-mith_study_delay);
+        gm.multi_reason = "studying a word";
+        mith_study_delay = 0;
+        mith_study_id = 0;
+        return 0;
+    }
+    if (mith_study_delay) {
+        --mith_study_delay;
+        return 1;
+    }
+    idx = slab->otyp - FIRST_WORD;
+    exercise(A_WIS, TRUE);
+    You("learn the %s of Creation!", OBJ_NAME(objects[slab->otyp]));
+    u.mith_words |= 1U << idx;
+    u.mith_word_timeout[idx] = 0;
+    makeknown(slab->otyp);
+    mith_study_id = 0;
+    useupall(slab);
+    if (!was_flying && Flying) {
+        float_up();
+        spoteffects(FALSE);
+    }
+    find_ac();
+    disp.botl = TRUE;
+    return 0;
+}
+
+staticfn int
+mith_read_tile(struct obj *tile)
+{
+    static const char *const syllable[6] = {
+        "Aesh", "Krau", "Hoon", "Uur", "Naen", "Vaul"
+    };
+    int idx, duration;
+
+    if (!tile->dknown) {
+        You("have never seen it!");
+        return ECMD_OK;
+    }
+    if (is_mith_slab(tile)) {
+        if (mith_study_delay && !Confusion && mith_study_id == tile->o_id)
+            You("continue your efforts to memorize the %s.",
+                OBJ_DESCR(objects[tile->otyp]));
+        else {
+            mith_study_delay = 99;
+            You("begin to study the %s.", OBJ_DESCR(objects[tile->otyp]));
+        }
+        mith_study_id = tile->o_id;
+        set_occupation(mith_learn_word, "studying", 0);
+        return ECMD_TIME;
+    }
+    if (!objects[tile->otyp].oc_name_known) {
+        You("don't know how to pronounce the glyph!");
+        return ECMD_OK;
+    }
+    idx = tile->otyp - SYLLABLE_OF_STRENGTH__AESH;
+    duration = tile->cursed ? 40 : tile->blessed ? 15 : 10;
+    pline("\"%s!\" The shard's glyph resonates and %s while the shard turns to dust.",
+          syllable[idx], tile->cursed ? "turns black"
+                         : tile->blessed ? "glows brightly" : "begins to glow");
+    /* Saturate instead of overflowing after arbitrarily many wizard wishes. */
+    u.mith_timers[idx] = min(u.mith_timers[idx], LARGEST_INT - duration)
+                         + duration;
+    if (!tile->cursed && u.mith_syllables[idx] < LARGEST_INT)
+        ++u.mith_syllables[idx];
+    if (!u.uconduct.literate++)
+        livelog_printf(LL_CONDUCT, "became literate by reading a ceramic syllable");
+    useup(tile);
+    find_ac();
+    disp.botl = TRUE;
+    return ECMD_TIME;
 }
 
 /*read.c*/

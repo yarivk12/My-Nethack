@@ -114,7 +114,7 @@ burnarmor(struct monst *victim)
         case 0:
             item = hitting_u ? uarmh : which_armor(victim, W_ARMH);
             if (item) {
-                mat_idx = objects[item->otyp].oc_material;
+                mat_idx = obj_material(item);
                 Sprintf(buf, "%s %s", materialnm[mat_idx],
                         helm_simple_name(item));
             }
@@ -1071,6 +1071,7 @@ floor_trigger(int ttyp)
     case SLP_GAS_TRAP:
     case RUST_TRAP:
     case FIRE_TRAP:
+    case ICE_TRAP:
     case PIT:
     case SPIKED_PIT:
     case HOLE:
@@ -1098,7 +1099,7 @@ boolean
 wearing_iron_shoes(struct monst *mtmp)
 {
     struct obj *armf = which_armor(mtmp, W_ARMF);
-    return armf && objects[armf->otyp].oc_material == IRON;
+    return armf && obj_material(armf) == IRON;
 }
 
 /* is trap ttmp harmless to monster mtmp? */
@@ -1141,6 +1142,8 @@ m_harmless_trap(struct monst *mtmp, struct trap *ttmp)
         if (mdat != &mons[PM_IRON_GOLEM])
             return TRUE;
         break;
+    case ICE_TRAP:
+        return resists_cold(mtmp) || defended(mtmp, AD_COLD);
     case FIRE_TRAP:
         if (resists_fire(mtmp) || defended(mtmp, AD_FIRE))
             return TRUE;
@@ -1651,7 +1654,10 @@ trapeffect_rust_trap(
             int dam = u.mhmax;
 
             You("are covered with rust!");
-            losehp(Maybe_Half_Phys(dam), "rusting away", KILLED_BY);
+            dam = Maybe_Half_Phys(dam);
+            if (u.mith_timers[MITH_VAUL])
+                dam = (dam + 1) / 2;
+            losehp(dam, "rusting away", KILLED_BY);
         } else if (u.umonnum == PM_GREMLIN && rn2(3)) {
             (void) split_mon(&gy.youmonst, (struct monst *) 0);
         }
@@ -1820,6 +1826,45 @@ trapeffect_fire_trap(
 
         return trapkilled ? Trap_Killed_Mon : mtmp->mtrapped
             ? Trap_Caught_Mon : Trap_Effect_Finished;
+    }
+    return Trap_Effect_Finished;
+}
+
+/* Pinned UnNetHack freezing cloud; this is not the slime restraint. */
+staticfn int
+trapeffect_ice_trap(struct monst *mtmp, struct trap *trap)
+{
+    boolean hero = mtmp == &gy.youmonst;
+    boolean visible = hero || canseemon(mtmp);
+    int damage = d(hero ? 4 : 2, 4), orig_damage = damage;
+
+    if (hero || cansee(trap->tx, trap->ty)) {
+        seetrap(trap);
+        pline("A freezing cloud shoots up from the %s!",
+              surface(trap->tx, trap->ty));
+    }
+    if (hero ? Cold_resistance : resists_cold(mtmp)) {
+        if (visible)
+            shieldeff(trap->tx, trap->ty);
+        damage = 0;
+    }
+    if (hero) {
+        if (damage)
+            losehp(damage, "freezing cloud", KILLED_BY_AN);
+        else
+            You("are uninjured.");
+        (void) destroy_items(&gy.youmonst, AD_COLD, orig_damage);
+    } else if (damage) {
+        if (thitm(0, mtmp, (struct obj *) 0, damage, FALSE))
+            return Trap_Killed_Mon;
+        if (!rn2(2)) {
+            int extra = destroy_items(mtmp, AD_COLD, orig_damage);
+            mtmp->mhp -= extra;
+            if (DEADMONSTER(mtmp)) {
+                monkilled(mtmp, "", AD_COLD);
+                return Trap_Killed_Mon;
+            }
+        }
     }
     return Trap_Effect_Finished;
 }
@@ -2900,6 +2945,13 @@ immune_to_trap(struct monst *mon, unsigned ttype)
             return TRAP_NOT_IMMUNE;
         FALLTHROUGH;
         /*FALLTHRU*/
+    case ICE_TRAP:
+        if (is_you ? !Cold_resistance : !resists_cold(mon))
+            return TRAP_NOT_IMMUNE;
+        for (obj = is_you ? gi.invent : mon->minvent; obj; obj = obj->nobj)
+            if (obj->oclass == POTION_CLASS)
+                return TRAP_NOT_IMMUNE;
+        return is_you ? TRAP_HIDDEN_IMMUNE : TRAP_CLEARLY_IMMUNE;
     case FIRE_TRAP: /* can always destroy items being carried */
         /* harmful if not resistant or if carrying anything that could burn */
         if (is_you ? !Fire_resistance : !resists_fire(mon))
@@ -2957,6 +3009,8 @@ trapeffect_selector(
         return trapeffect_slp_gas_trap(mtmp, trap, trflags);
     case RUST_TRAP:
         return trapeffect_rust_trap(mtmp, trap, trflags);
+    case ICE_TRAP:
+        return trapeffect_ice_trap(mtmp, trap);
     case FIRE_TRAP:
         return trapeffect_fire_trap(mtmp, trap, trflags);
     case PIT:
@@ -3940,6 +3994,10 @@ void
 float_up(void)
 {
     disp.botl = TRUE;
+    if (Frozen_feet) {
+        Frozen_feet = 0;
+        pline_The("ice falls off.");
+    }
     if (u.utrap) {
         if (u.utraptype == TT_PIT) {
             reset_utrap(FALSE);
@@ -4247,13 +4305,21 @@ dofiretrap(
      * to be done upon its contents.
      */
 
-    if ((box && !carried(box)) ? is_pool(box->ox, box->oy) : Underwater) {
+    if ((box && !carried(box)) ? is_pool(box->ox, box->oy)
+                               : (Underwater
+                                  || IS_PUDDLE(levl[u.ux][u.uy].typ))) {
         pline("A cascade of steamy bubbles erupts from %s!",
               the(box ? xname(box) : surface(u.ux, u.uy)));
         if (Fire_resistance)
             You("are uninjured.");
         else
             losehp(rnd(3), "boiling water", KILLED_BY);
+        if (IS_PUDDLE(levl[u.ux][u.uy].typ) && rn2(2)) {
+            pline_The("water evaporates!");
+            levl[u.ux][u.uy].typ = ROOM;
+            levl[u.ux][u.uy].flags = 0;
+            newsym(u.ux, u.uy);
+        }
         return;
     }
     pline("A %s %s from %s!", tower_of_flame, box ? "bursts" : "erupts",

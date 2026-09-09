@@ -326,10 +326,15 @@ dig(void)
             pline("This tree seems to be petrified.");
             return 0;
         }
-        if (IS_OBSTRUCTED(lev->typ) && !may_dig(dpx, dpy)
+        if (IS_OBSTRUCTED(lev->typ) && lev->typ != CRYSTALICEWALL
+            && !may_dig(dpx, dpy)
             && dig_typ(uwep, dpx, dpy) == DIGTYP_ROCK) {
             pline("This %s is too hard to %s.",
                   is_db_wall(dpx, dpy) ? "drawbridge" : "wall", verb);
+            return 0;
+        }
+        if (lev->typ == CRYSTALICEWALL && uwep->otyp != CRYSTAL_PICK) {
+            pline("This crystal ice is too hard to dig away.");
             return 0;
         }
     }
@@ -366,7 +371,9 @@ dig(void)
         10 + rn2(5) + abon() + uwep->spe - greatest_erosion(uwep) + u.udaminc;
     if (Race_if(PM_DWARF))
         svc.context.digging.effort *= 2;
-    if (lev->typ == DEADTREE)
+    if (lev->typ == DEADTREE || lev->typ == ICEWALL)
+        svc.context.digging.effort *= 2;
+    if (uwep->otyp == CRYSTAL_PICK)
         svc.context.digging.effort *= 2;
     if (svc.context.digging.down) {
         struct trap *ttmp = t_at(dpx, dpy);
@@ -464,6 +471,12 @@ dig(void)
                 place_object(bobj, dpx, dpy);
             }
             digtxt = "The boulder falls apart.";
+        } else if (IS_ANY_ICEWALL(lev->typ)) {
+            digtxt = lev->typ == CRYSTALICEWALL
+                ? "You shatter the crystal ice wall."
+                : "You shatter the ice wall.";
+            lev->typ = ICE;
+            lev->flags = 0;
         } else if (lev->typ == STONE || lev->typ == SCORR
                    || IS_TREE(lev->typ)) {
             if (Is_earthlevel(&u.uz)) {
@@ -1495,6 +1508,15 @@ mdig_tunnel(struct monst *mtmp)
         return FALSE;
     }
 
+    if (here->typ == CRYSTALICEWALL)
+        return FALSE; /* only a hero wielding a crystal pick can shatter it */
+    if (here->typ == ICEWALL && !(here->wall_info & W_NONDIGGABLE)) {
+        here->typ = ICE;
+        here->flags = 0;
+        newsym(mtmp->mx, mtmp->my);
+        recalc_block_point(mtmp->mx, mtmp->my);
+        return FALSE;
+    }
     /* Only rock, trees, and walls fall through to this point. */
     if ((here->wall_info & W_NONDIGGABLE) != 0) {
         impossible("mdig_tunnel:  %s at (%d,%d) is undiggable",
@@ -1722,6 +1744,10 @@ zap_dig(void)
             digdepth -= 2;
             if (maze_dig)
                 break;
+        } else if (IS_ANY_ICEWALL(room->typ)) {
+            if (cansee(zx, zy))
+                pline_The("ice glows then fades.");
+            break;
         } else if (maze_dig) {
             if (IS_WALL(room->typ)) {
                 if (!(room->wall_info & W_NONDIGGABLE)) {

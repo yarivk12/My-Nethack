@@ -19,7 +19,7 @@ for p in ['include/global.h','include/dungeon.h','src/save.c',
     assert read(p)==old(p),p
 assert '## Step 8: Ruins of Moria' in read('README.md')
 assert '439b8d63d3d1ca78fb08588dd43f61874114b21a' in read('README.md')
-assert '#define EDITLEVEL 3' in read('include/patchlevel.h')
+assert '#define EDITLEVEL 4' in read('include/patchlevel.h') # combined Step 9 ID epoch
 dungeon=read('dat/dungeon.lua')
 assert dungeon.count('name = "The Ruins of Moria"')==2
 assert re.search(r'name = "The Ruins of Moria",\s+base = 30,\s+range = 170,\s+direction = "up"',dungeon)
@@ -39,8 +39,8 @@ assert 'MORIA_PORTAL' in read('include/artilist.h')
 assert 'portal->dst.dnum = portal->dst.dlevel = -1' in read('src/artifact.c')
 assert read('src/do.c').index('moria_keep_level())') < read('src/do.c').index('delete_levelfile(l_idx);\n        svl.level_info[l_idx].flags = 0;')
 assert 'migrate_to_level(mtmp, ledger_no(&dest), MIGR_RANDOM' in read('src/do.c')
-assert 'if (!mtmp || is_swamp_fern(mtmp->data))' in read('src/explode.c')
-assert '&& !is_swamp_fern(mdef->data))\n        return ALLOW_M | ALLOW_TM;' in read('src/mon.c')
+assert 'if (!mtmp || is_swamp_fern(mtmp->data)\n                    || is_arctic_fern(mtmp->data))' in read('src/explode.c')
+assert '&& !is_swamp_fern(mdef->data) && !is_arctic_fern(mdef->data))\n        return ALLOW_M | ALLOW_TM;' in read('src/mon.c')
 assert 'sobj_at(IRON_SAFE, u.ux + u.dx, u.uy + u.dy));' in read('src/apply.c')
 assert 'case AD_PHYS: /* Moria spores:' in read('src/mhitu.c')
 assert 'mdamageu(mtmp, Maybe_Half_Phys(tmp));' in read('src/mhitu.c')

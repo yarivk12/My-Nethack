@@ -12,11 +12,14 @@ staticfn boolean veggy_item(struct obj * obj, int);
 staticfn int shkveg(void);
 staticfn void mkveggy_at(int, int);
 staticfn void mkshobj_at(const struct shclass *, int, int, boolean);
+staticfn void mith_shop_stock(int, struct obj *, int, int);
+staticfn void mith_init_services(struct monst *);
 staticfn void nameshk(struct monst *, const char *const *);
 staticfn int good_shopdoor(struct mkroom *, coordxy *, coordxy *);
 staticfn int shkinit(const struct shclass *, struct mkroom *);
 
 #define VEGETARIAN_CLASS (MAXOCLASSES + 1)
+#define MITH_TILE_CLASS (MAXOCLASSES + 2)
 
 /*
  *  Name prefix codes:
@@ -206,6 +209,105 @@ static const char *const shkhealthfoods[] = {
  * The second, usually shorter, store type name is used in automatically
  * generated annotations for #overview.  If Null, the first name gets used.
  */
+/* Mithardir merchant names and weighted equipment lists, pinned dNetHack. */
+static const char * const shkcrab[] = {
+    /* Crab scientific names */
+	"Potamon", "Ibericum", "Parathelphusa", "Convexa", "Johongarthia", "Lagostoma",
+	"Gecarcoidea", "Natalis",
+    0
+};
+static const char * const shkdeep[] = {
+    /* Deep Ones */
+	"Gilman", "Marsh", "Banks", "Waite", "Eliot", "Olmstead",
+    0
+};
+static const char * const shkselkie[] = {
+    /* Orkney http://www.contrib.andrew.cmu.edu/~grm/orkney.html */
+	"Crystie", "Marie", "Hector", "Inggagarth", "Cuthbert", "Marion",
+	"Ninian", "Margret", "Edduard", "Alisoun", "Androw", "Christeane",
+	"Henrie", "Sonneta", "Brandam", "Anne", "Malcolm", "Gelis", "Magnus",
+	"Katherein", "Edwart", "Katherine", "Johnne", "Cristiane", "Troelius",
+	"Helline", "Robertt", "Elspet", "Criste", "Alesoun", "Adam", "Helene",
+	"Williame", "Margrete", "Gibboun", "Mariota", "Niniane", "Margarete",
+	"Hugh", "Effe",
+    0
+};
+static const char * const shknaiad[] = {
+    /* Mythology */
+	"Aganippe", "Appias", "Bolbe", "Limnaee", "Pallas", "Tritonis",
+	"Abarbarea", "Aegina", "Asopis", "Chalcis", "Cleone", "Combe",
+	"Corcyra", "Euboea", "Gargaphia", "Harpina", "Ismene", "Nemea",
+	"Ornea", "Peirene", "Salamis", "Sinope", "Tanagra", "Thebe",
+	"Thespeia",
+    0
+};
+static const int garden_armors[] = {
+	WAR_HAT,
+	PLATE_MAIL,
+	SCALE_MAIL,
+	SCALE_MAIL,
+	KITE_SHIELD,
+	KITE_SHIELD,
+	LEATHER_CLOAK,
+	LEATHER_CLOAK,
+	LEATHER_ARMOR,
+	LEATHER_ARMOR,
+	LIVING_ARMOR,
+	LIVING_ARMOR,
+	BARNACLE_ARMOR
+};
+static const int garden_weapons[] = {
+	SPIKE,
+	SPEAR,
+	JAVELIN,
+	TRIDENT,
+	ELVEN_DAGGER,
+	RANSEUR
+};
+static const int sand_armors[] = {
+	ELVEN_LEATHER_HELM,
+	HIGH_ELVEN_HELM,
+	ARCHAIC_HELM,
+	LEATHER_ARMOR,
+	LEATHER_ARMOR,
+	ARCHAIC_PLATE_MAIL,
+	ELVEN_MITHRIL_COAT,
+	HIGH_ELVEN_PLATE,
+	ELVEN_CLOAK,
+	OILSKIN_CLOAK,
+	CLOAK_OF_INVISIBILITY,
+	BUCKLER,
+	ARCHAIC_GAUNTLETS,
+	LEATHER_GLOVES,
+	HIGH_ELVEN_GAUNTLETS,
+	ARCHAIC_BOOTS,
+	ELVEN_BOOTS
+};
+static const int sand_weapons[] = {
+	SPEAR,
+	PICK_AXE,
+	DWARVISH_MATTOCK,
+	TWO_HANDED_SWORD,
+	TRIDENT,
+	RAPIER,
+	LONG_SWORD,
+	CRYSTAL_SWORD,
+	HIGH_ELVEN_WARSWORD,
+	ELVEN_BROADSWORD
+};
+static const int fancy_clothes[] = {
+	ELVEN_TOGA,
+	GENTLEMAN_S_SUIT,
+	GENTLEWOMAN_S_DRESS,
+	JACKET,
+	FEDORA,
+	STILETTOS,
+	HAWAIIAN_SHIRT,
+	T_SHIRT,
+	VICTORIAN_UNDERWEAR,
+	BLACK_DRESS
+};
+
 const struct shclass shtypes[] = {
     { "general store", NULL,
       RANDOM_CLASS,
@@ -348,6 +450,19 @@ const struct shclass shtypes[] = {
         { 1, -SCR_LIGHT },
         { 1, -SPE_LIGHT } },
       shklight },
+    { "sea garden", NULL, ARMOR_CLASS, 0, D_SHOP,
+      { {40, ARMOR_CLASS}, {30, WEAPON_CLASS}, {19, -SLIME_MOLD},
+        {10, -LIVING_MASK}, {1, MITH_TILE_CLASS} }, shkcrab },
+    { "fishery", NULL, FOOD_CLASS, 0, D_SHOP,
+      { {64, -SLIME_MOLD}, {15, -CRAM_RATION}, {10, -POT_BOOZE},
+        {10, AMULET_CLASS}, {1, MITH_TILE_CLASS} }, shkdeep },
+    { "sand-walker's shop", NULL, WEAPON_CLASS, 0, D_SHOP,
+      { {35, ARMOR_CLASS}, {25, WEAPON_CLASS}, {7, -TINNING_KIT},
+        {7, -STETHOSCOPE}, {7, -CRYSTAL_BALL}, {7, -CAN_OF_GREASE},
+        {5, MITH_TILE_CLASS}, {7, -AMULET_OF_MAGICAL_BREATHING} }, shkselkie },
+    { "spa", NULL, POTION_CLASS, 0, D_SHOP,
+      { {22, -POT_OBJECT_DETECTION}, {22, -MIRROR}, {15, -TOWEL},
+        {40, ARMOR_CLASS}, {1, MITH_TILE_CLASS} }, shknaiad },
     /* sentinel */
     { (char *) 0, NULL,
       0,
@@ -453,12 +568,76 @@ mkveggy_at(int sx, int sy)
     return;
 }
 
+/* The four imported shops retain native billing and the Step 5 mimic cap.
+   Their equipment substitutions and food names follow pinned shknam.c. */
+staticfn void
+mith_shop_stock(int shop, struct obj *otmp, int x, int y)
+{
+    static const char *const seafood[] = {
+        "salted fish", "pickled fish", "fried squid", "baked clam",
+        "live oyster", "sea cucumber"
+    };
+    const int *list = 0;
+    int n = 0;
+    struct obj *replacement;
+    boolean weapon_stock;
+
+    if (!otmp || shop < SEAGARDEN || shop > NAIADSHOP)
+        return;
+    weapon_stock = (otmp->oclass == WEAPON_CLASS);
+    if (!otmp->oartifact) {
+        if (shop == SEAGARDEN && otmp->oclass == ARMOR_CLASS) {
+            list = garden_armors; n = SIZE(garden_armors);
+        } else if (shop == SEAGARDEN && otmp->oclass == WEAPON_CLASS) {
+            list = garden_weapons; n = SIZE(garden_weapons);
+        } else if (shop == SANDWALKER && otmp->oclass == ARMOR_CLASS) {
+            list = sand_armors; n = SIZE(sand_armors);
+        } else if (shop == SANDWALKER && otmp->oclass == WEAPON_CLASS) {
+            list = sand_weapons; n = SIZE(sand_weapons);
+        } else if (shop == NAIADSHOP && otmp->oclass == ARMOR_CLASS) {
+            list = fancy_clothes; n = SIZE(fancy_clothes);
+        }
+    }
+    if (list) {
+        replacement = mksobj_at(list[rn2(n)], x, y, TRUE, TRUE);
+        if (replacement) {
+            delobj(otmp);
+            otmp = replacement;
+            if (shop == SEAGARDEN) {
+                if (weapon_stock) {
+                    otmp->obranch_material = SHELL;
+                    if (rn2(3)) otmp->opoisoned = 1;
+                    else otmp->obranch_props |= OBP_ACID;
+                } else if (is_metallic(otmp) && !otmp->oartifact)
+                    otmp->obranch_material = SHELL;
+            } else if (shop == SANDWALKER && weapon_stock) {
+                if (!otmp->oartifact && otmp->otyp != CRYSTAL_SWORD)
+                    otmp->obranch_material = SILVER;
+                otmp->obranch_props |= OBP_ACID;
+            }
+        }
+    }
+    if (shop == SEAFOOD && otmp->oclass == AMULET_CLASS)
+        otmp->obranch_material = GOLD;
+    if (otmp->otyp == SLIME_MOLD) {
+        const char *food = 0;
+        if (shop == SEAGARDEN)
+            food = rn2(2) ? "algae mat" : "seaweed";
+        else if (shop == SEAFOOD)
+            food = seafood[rn2(SIZE(seafood))];
+        if (food)
+            otmp->spe = fruitadd((char *) food, (struct fruit *) 0);
+    }
+    otmp->owt = weight(otmp);
+}
+
 /* make an object of the appropriate type for a shop square */
 staticfn void
 mkshobj_at(const struct shclass *shp, int sx, int sy, boolean mkspecl)
 {
     struct monst *mtmp;
     struct permonst *ptr;
+    struct obj *stock = 0;
     int atype, mimic_chance = depth(&u.uz);
 
     if (mimic_chance > 10)
@@ -483,9 +662,10 @@ mkshobj_at(const struct shclass *shp, int sx, int sy, boolean mkspecl)
         if (atype == VEGETARIAN_CLASS)
             mkveggy_at(sx, sy);
         else if (atype < 0)
-            (void) mksobj_at(-atype, sx, sy, TRUE, TRUE);
+            stock = mksobj_at(-atype, sx, sy, TRUE, TRUE);
         else
-            (void) mkobj_at(atype, sx, sy, TRUE);
+            stock = mkobj_at(atype, sx, sy, TRUE);
+        mith_shop_stock(SHOPBASE + (int) (shp - shtypes), stock, sx, sy);
     }
 }
 
@@ -631,6 +811,29 @@ good_shopdoor(struct mkroom *sroom, coordxy *sx, coordxy *sy)
 }
 
 /* create a new shopkeeper in the given room */
+staticfn void
+mith_init_services(struct monst *shk)
+{
+    unsigned services;
+    int shop = ESHK(shk)->shoptype;
+    if (shop < SEAGARDEN || shop > NAIADSHOP)
+        return;
+    /* Use the donor code's probabilities, not its stale comment:
+       1/2 both, 1/8 premier only, 3/8 basic only. */
+    if (!rn2(2)) services = MITH_SHK_BASIC | MITH_SHK_PREMIUM;
+    else if (!rn2(4)) services = MITH_SHK_PREMIUM;
+    else services = MITH_SHK_BASIC;
+    if (!rn2(3)) services |= MITH_SHK_UNCURSE;
+    if (shop == SANDWALKER) {
+        if (rn2(3)) services |= MITH_SHK_APPRAISE;
+        if (!rn2(4)) services |= MITH_SHK_PROOF;
+        if (!rn2(4)) services |= MITH_SHK_ENCHANT;
+        if (rn2(4)) services |= MITH_SHK_COAT;
+    }
+    shk->mspare1 = (shk->mspare1 & ~MITH_SHK_MASK)
+                   | ((long) services << MITH_SHK_SHIFT);
+}
+
 staticfn int
 shkinit(const struct shclass *shp, struct mkroom *sroom)
 {
@@ -638,6 +841,7 @@ shkinit(const struct shclass *shp, struct mkroom *sroom)
     coordxy sx, sy;
     struct monst *shk;
     struct eshk *eshkp;
+    int species = PM_SHOPKEEPER;
 
     /* place the shopkeeper in the given room */
     sh = good_shopdoor(sroom, &sx, &sy);
@@ -667,7 +871,12 @@ shkinit(const struct shclass *shp, struct mkroom *sroom)
         (void) rloc(m_at(sx, sy), RLOC_NOMSG); /* insurance */
 
     /* now initialize the shopkeeper monster structure */
-    if (!(shk = makemon(&mons[PM_SHOPKEEPER], sx, sy, MM_ESHK)))
+    switch (sroom->rtype) {
+    case SEAGARDEN: species = PM_YURIAN; break;
+    case SANDWALKER: species = PM_SELKIE; break;
+    case NAIADSHOP: species = PM_OCEANID; break;
+    }
+    if (!(shk = makemon(&mons[species], sx, sy, MM_ESHK)))
         return -1;
     eshkp = ESHK(shk); /* makemon(...,MM_ESHK) allocates this */
     shk->isshk = shk->mpeaceful = 1;
@@ -686,6 +895,7 @@ shkinit(const struct shclass *shp, struct mkroom *sroom)
     eshkp->billct = eshkp->visitct = 0;
     eshkp->bill_p = (struct bill_x *) 0;
     eshkp->customer[0] = '\0';
+    mith_init_services(shk);
     mkmonmoney(shk, 1000L + 30L * (long) rnd(100)); /* initial capital */
     if (shp->shknms == shkrings)
         (void) mongets(shk, TOUCHSTONE);
@@ -694,6 +904,10 @@ shkinit(const struct shclass *shp, struct mkroom *sroom)
         (shp->shknms == shkgeneral && rn2(5)))
         (void) mongets(shk, SCR_CHARGING);
     nameshk(shk, shp->shknms);
+    /* Fishery keeps the donor's ordinary shopkeeper creation, then changes
+       species while preserving the native shop extension. */
+    if (sroom->rtype == SEAFOOD)
+        (void) newcham(shk, &mons[PM_DEEP_ONE], NO_NC_FLAGS);
 
     return sh;
 }
@@ -821,6 +1035,10 @@ saleable(struct monst *shkp, struct obj *obj)
         if (shp->iprobs[i].itype == VEGETARIAN_CLASS) {
             if (veggy_item(obj, 0))
                 return TRUE;
+        } else if (shp->iprobs[i].itype == MITH_TILE_CLASS) {
+            if (obj->otyp >= SYLLABLE_OF_STRENGTH__AESH
+                && obj->otyp <= SYLLABLE_OF_SPIRIT__VAUL)
+                return TRUE;
         } else if ((shp->iprobs[i].itype < 0)
                        ? shp->iprobs[i].itype == -obj->otyp
                        : shp->iprobs[i].itype == obj->oclass)
@@ -842,7 +1060,8 @@ get_shop_item(int type)
     for (j = rnd(100), i = 0; (j -= shp->iprobs[i].iprob) > 0; i++)
         continue;
 
-    return shp->iprobs[i].itype;
+    return (shp->iprobs[i].itype == MITH_TILE_CLASS)
+               ? -mith_tile_type() : shp->iprobs[i].itype;
 }
 
 /* version of shkname() for beginning of sentence */

@@ -4,6 +4,7 @@
 /* NetHack may be freely redistributed.  See license for details. */
 
 #include "hack.h"
+#include "artifact.h"
 
 #define MCASTU_ENUM
 enum mcast_spells {
@@ -86,12 +87,337 @@ cursetxt(struct monst *mtmp, boolean undirected)
 
 /* choose a spell for monster to cast */
 staticfn int
+mith_elder_spell(void)
+{
+    static const int spells[] = {
+        MCAST_DISAPPEAR, MCAST_CONFUSE_YOU, MCAST_BLIND_YOU,
+        MCAST_MITH_SLEEP, MCAST_MITH_CURE_FAR, MCAST_MITH_CURE_CLOSE,
+        MCAST_AGGRAVATION, MCAST_MITH_CURE_FAR
+    };
+
+    /* choose_magic_special first tests its unrelated 50% favored list. */
+    (void) rn2(2);
+    return spells[rnd(8) - 1];
+}
+
+staticfn int
+mith_spell_damage(struct monst *mtmp, struct attack *mattk)
+{
+    int die = mattk->damd ? mattk->damd : 6;
+
+    if (mith_mon_syllable(mtmp) == MITH_KRAU)
+        die = die * 3 / 2;
+    /* Pinned spell.h MAX_BONUS_DICE is 10; the later cap of 15 in
+       donor castmu never raises that limit. */
+    return d(min(10, mtmp->m_lev / 3 + 1) + mattk->damn, die);
+}
+
+staticfn void
+mith_mass_cure(struct monst *mtmp, boolean far, coordxy tx, coordxy ty)
+{
+    struct monst *cmon;
+    int n = min(10, mtmp->m_lev / 3 + 1);
+    coordxy x = far && (tx || ty) ? tx : mtmp->mx,
+            y = far && (tx || ty) ? ty : mtmp->my;
+
+    for (cmon = fmon; cmon; cmon = cmon->nmon) {
+        if ((!far || cmon != mtmp) && !DEADMONSTER(cmon)
+            && cmon->mhp < cmon->mhpmax
+            && cmon->mpeaceful == mtmp->mpeaceful
+            && dist2(x, y, cmon->mx, cmon->my) <= 10) {
+            cmon->mhp += d(n, 8);
+            if (cmon->mhp > cmon->mhpmax)
+                cmon->mhp = cmon->mhpmax;
+            if (canseemon(cmon))
+                pline_mon(cmon, "%s looks better.", Monnam(cmon));
+        }
+    }
+    if (mtmp->mtame && dist2(x, y, u.ux, u.uy) <= 10
+        && (Upolyd ? u.mh < u.mhmax : u.uhp < u.uhpmax)) {
+        healup(d(n, 8), 0, FALSE, FALSE);
+        You_feel("better.");
+    }
+}
+
+staticfn boolean
+mith_mm_useless(struct monst *caster, struct monst *target, int spell)
+{
+    struct monst *other;
+
+    switch (spell) {
+    case MCAST_CLONE_WIZ:
+        return TRUE;
+    case MCAST_SUMMON_MONS:
+        return caster->mpeaceful || caster->mtame;
+    case MCAST_CURE_SELF:
+        return caster->mhp == caster->mhpmax;
+    case MCAST_HASTE_SELF:
+        return caster->permspeed == MFAST;
+    case MCAST_DISAPPEAR:
+        return caster->minvis || caster->invis_blkd
+               || (caster->mtame && !See_invisible);
+    case MCAST_BLIND_YOU:
+        return !haseyes(target->data) || target->mblinded;
+    case MCAST_MITH_SLEEP:
+        return !linedup(target->mx, target->my, caster->mx, caster->my, 0);
+    case MCAST_MITH_CURE_CLOSE:
+    case MCAST_MITH_CURE_FAR:
+        if (caster->mhp < caster->mhpmax
+            || (caster->mtame && (Upolyd ? u.mh < u.mhmax : u.uhp < u.uhpmax)))
+            return FALSE;
+        for (other = fmon; other; other = other->nmon)
+            if (!DEADMONSTER(other) && other->mpeaceful == caster->mpeaceful
+                && other->mhp < other->mhpmax)
+                return FALSE;
+        return TRUE;
+    default:
+        return FALSE;
+    }
+}
+
+staticfn int
+mith_mm_choose_spell(struct monst *caster, struct monst *target)
+{
+    int i, value, maxlev = mcast_data[mon_wizard_spells[SIZE(mon_wizard_spells)-1]].level;
+
+    if (caster->data == &mons[PM_ALABASTER_ELF_ELDER])
+        return mith_elder_spell();
+    /* Mummies retain the native general wizard list. Its usefulness checks
+     * must inspect the actual monster target, not the hero's properties. */
+    value = rn2(caster->m_lev);
+    if (value > maxlev && rn2(maxlev))
+        value = rn2(maxlev);
+    for (i = SIZE(mon_wizard_spells) - 1; i >= 0; --i)
+        if (mcast_data[mon_wizard_spells[i]].level <= value
+            && !mith_mm_useless(caster, target, mon_wizard_spells[i]))
+            return mon_wizard_spells[i];
+    return MCAST_PSI_BOLT;
+}
+
+staticfn void
+mith_mm_curse(struct monst *target)
+{
+    struct obj *obj;
+    int count = 0, tries, index;
+    boolean resists = resist(target, 0, 0, FALSE) != 0;
+
+    if (MON_WEP(target) && MON_WEP(target)->oartifact == ART_MAGICBANE && rn2(20))
+        return;
+    for (obj = target->minvent; obj; obj = obj->nobj)
+        if (obj->oclass != COIN_CLASS)
+            ++count;
+    if (!count)
+        return;
+    if (resists)
+        shieldeff(target->mx, target->my);
+    for (tries = rnd(6 / (resists + 1)); tries > 0; --tries) {
+        index = rnd(count);
+        for (obj = target->minvent; obj; obj = obj->nobj)
+            if (obj->oclass != COIN_CLASS && !--index)
+                break;
+        if (!obj || obj->cursed
+            || (obj->oartifact && spec_ability(obj, SPFX_INTEL) && rn2(10) < 8))
+            continue;
+        if (obj->blessed)
+            unbless(obj);
+        else
+            curse(obj);
+    }
+}
+
+/* Native combat has no general castmm. Keep the new entry point confined to
+ * imported elders and syllable mummies, with no new native pet spellcasting. */
+int
+mith_castmm(struct monst *caster, struct monst *target, struct attack *attack)
+{
+    int spell = 0, tries, damage, result = M_ATTK_HIT;
+    int syllable = mith_mon_syllable(caster);
+    struct monst *other;
+    struct obj *armor;
+
+    if ((caster->data != &mons[PM_ALABASTER_ELF_ELDER] && syllable < 0)
+        || attack->adtyp != AD_SPEL || !caster->m_lev
+        || DEADMONSTER(caster) || DEADMONSTER(target) || helpless(caster))
+        return M_ATTK_MISS;
+    for (tries = 0; tries < 40; ++tries) {
+        spell = mith_mm_choose_spell(caster, target);
+        if (!mith_mm_useless(caster, target, spell))
+            break;
+    }
+    if (tries == 40 || caster->mcan
+        || (caster->mspec_used && syllable != MITH_NAEN))
+        return M_ATTK_MISS;
+    caster->mspec_used = syllable == MITH_NAEN ? 0
+                        : caster->m_lev < 8 ? 10 - caster->m_lev : 2;
+    if (syllable >= 0
+        ? rn2(caster->m_lev * 2) < ((syllable == MITH_NAEN ? 0 : 2)
+                                  + (caster->mconf ? 8 : 0))
+        : rn2(caster->m_lev * 10) < (caster->mconf ? 100 : 20))
+        return M_ATTK_MISS;
+    if (canseemon(caster))
+        pline_mon(caster, "%s casts a spell!", Monnam(caster));
+    /* Donor castmm rolls its basic spell dice even for a support spell. */
+    damage = mith_spell_damage(caster, attack);
+    switch (spell) {
+    case MCAST_PSI_BOLT:
+        if (canseemon(target))
+            pline_mon(target, "A psychic bolt strikes %s!", mon_nam(target));
+        if (resists_magm(target) || resist(target, 0, 0, FALSE))
+            damage = (damage + 1) / 2;
+        break;
+    case MCAST_CURE_SELF:
+        (void) m_cure_self(caster, 0);
+        damage = 0;
+        break;
+    case MCAST_HASTE_SELF:
+        mon_adjust_speed(caster, 1, (struct obj *) 0);
+        damage = 0;
+        break;
+    case MCAST_STUN_YOU:
+        if (resists_magm(target) || resist(target, 0, 0, FALSE))
+            shieldeff(target->mx, target->my);
+        else {
+            target->mstun = 1;
+            if (canseemon(target))
+                pline_mon(target, "%s reels!", Monnam(target));
+        }
+        damage = 0;
+        break;
+    case MCAST_WEAKEN_YOU:
+        if (resists_magm(target) || resist(target, 0, 0, FALSE)) {
+            shieldeff(target->mx, target->my);
+            damage = 0;
+        } else {
+            damage = rnd(4) * 5;
+            target->mhpmax = max(1, target->mhpmax - damage);
+            if (canseemon(target))
+                pline_mon(target, "%s suddenly seems weaker!", Monnam(target));
+        }
+        break;
+    case MCAST_DESTRY_ARMR:
+        if (resists_magm(target) || resist(target, 0, 0, FALSE)) {
+            shieldeff(target->mx, target->my);
+        } else if ((armor = some_armor(target)) != 0
+                   && objects[armor->otyp].oc_oprop != DISINT_RES
+                   && armor->otyp != CHROMATIC_DRAGON_SCALES
+                   && armor->otyp != CHROMATIC_DRAGON_SCALE_MAIL
+                   && !is_quest_artifact(armor) && !obj_resists(armor, 0, 90)) {
+            if (canseemon(target))
+                pline_mon(target, "%s armor crumbles!", s_suffix(mon_nam(target)));
+            m_useupall(target, armor);
+        }
+        damage = 0;
+        break;
+    case MCAST_CURSE_ITEMS:
+        mith_mm_curse(target);
+        damage = 0;
+        break;
+    case MCAST_SUMMON_MONS: {
+        /* Native nasty() reads data and remembered target from its caster.
+         * Supply a target proxy without changing the real hero memory. */
+        struct monst proxy = *caster;
+
+        proxy.mux = target->mx;
+        proxy.muy = target->my;
+        (void) nasty(&proxy);
+        damage = 0;
+        break;
+    }
+    case MCAST_DEATH_TOUCH:
+        damage = 0;
+        if (!nonliving(target->data) && !is_demon(target->data)
+            && (!(resists_magm(target) || resist(target, 0, 0, FALSE))
+                || rn2(caster->m_lev) > 12))
+            damage = target->mhp;
+        break;
+    case MCAST_DISAPPEAR:
+        mcast_disappear(caster);
+        damage = 0;
+        break;
+    case MCAST_CONFUSE_YOU:
+        if (resists_magm(target) || resist(target, 0, 0, FALSE)) {
+            shieldeff(target->mx, target->my);
+        } else {
+            target->mconf = 1;
+            if (canseemon(target))
+                pline_mon(target, "%s seems confused!", Monnam(target));
+        }
+        damage = 0;
+        break;
+    case MCAST_BLIND_YOU:
+        if (!resists_blnd(target)) {
+            target->mblinded = 127;
+            target->mcansee = 0;
+            if (canseemon(target))
+                pline_mon(target, "Scales cover %s eyes!", s_suffix(mon_nam(target)));
+        }
+        damage = 0;
+        break;
+    case MCAST_MITH_SLEEP:
+        if (linedup(target->mx, target->my, caster->mx, caster->my, 0)) {
+            gb.buzzer = caster;
+            dobuzz(BZ_M_SPELL(BZ_OFS_AD(AD_SLEE)), min(10, caster->m_lev / 3 + 1),
+                   caster->mx, caster->my, sgn(gt.tbx), sgn(gt.tby),
+                   FALSE, FALSE, FALSE);
+            gb.buzzer = 0;
+        }
+        damage = 0;
+        break;
+    case MCAST_MITH_CURE_CLOSE:
+    case MCAST_MITH_CURE_FAR:
+        mith_mass_cure(caster, spell == MCAST_MITH_CURE_FAR, target->mx, target->my);
+        damage = 0;
+        break;
+    case MCAST_AGGRAVATION:
+        for (other = fmon; other; other = other->nmon)
+            if (other != target && !DEADMONSTER(other)
+                && other->mpeaceful != target->mpeaceful) {
+                other->msleeping = 0;
+                if (!other->mcanmove && !rn2(5)) {
+                    other->mfrozen = 0;
+                    other->mcanmove = 1;
+                }
+            }
+        if (canseemon(target))
+            pline_mon(target, "%s draws attention!", Monnam(target));
+        damage = 0;
+        break;
+    }
+    if (damage > 0 && !DEADMONSTER(target)) {
+        target->mhp -= damage;
+        if (target->mhp <= 0)
+            monkilled(target, "", AD_SPEL);
+    }
+    if (DEADMONSTER(target))
+        result |= M_ATTK_DEF_DIED;
+    if (DEADMONSTER(caster))
+        result |= M_ATTK_AGR_DIED;
+    return result;
+}
+
+staticfn int
 choose_monster_spell(struct monst *mtmp, int adtyp)
 {
     int *list = NULL;
     int i, spellval, len = 0;
     int maxlev;
 
+    if (mtmp->data == &mons[PM_ALABASTER_ELF_ELDER] && adtyp == AD_SPEL)
+        return mith_elder_spell();
+
+    if (adtyp == AD_PUNI) {
+        static const int punisher_spells[] = {
+            MCAST_OPEN_WOUNDS, MCAST_PSI_BOLT, MCAST_HASTE_SELF,
+            MCAST_PARALYZE, MCAST_GEYSER, MCAST_FIRE_PILLAR,
+            MCAST_SUMMON_MONS, MCAST_AGGRAVATION, MCAST_DEATH_TOUCH,
+            MCAST_PUNISHMENT
+        };
+        int selected;
+        do {
+            selected = punisher_spells[rn2(SIZE(punisher_spells))];
+        } while (selected == MCAST_SUMMON_MONS && rn2(3));
+        return selected;
+    }
     /* which spell list to use? */
     if (adtyp == AD_SPEL) {
         list = mon_wizard_spells;
@@ -149,7 +475,8 @@ castmu(
      * attacking casts spells only a small portion of the time that an
      * attacking monster does.
      */
-    if ((mattk->adtyp == AD_SPEL || mattk->adtyp == AD_CLRC) && ml) {
+    if ((mattk->adtyp == AD_SPEL || mattk->adtyp == AD_CLRC
+         || mattk->adtyp == AD_PUNI) && ml) {
         int cnt = 40;
 
         do {
@@ -172,7 +499,8 @@ castmu(
     }
 
     /* monster unable to cast spells? */
-    if (mtmp->mcan || mtmp->mspec_used || !ml
+    if (mtmp->mcan || (mtmp->mspec_used
+                       && mith_mon_syllable(mtmp) != MITH_NAEN) || !ml
         || m_seenres(mtmp, cvt_adtyp_to_mseenres(mattk->adtyp))) {
         cursetxt(mtmp, is_undirected_spell(spellnum));
         return M_ATTK_MISS;
@@ -180,9 +508,12 @@ castmu(
 
     debugpline3("castmu:%s,lvl:%i,spell:%i", noit_Monnam(mtmp), ml, spellnum);
 
-    if (mattk->adtyp == AD_SPEL || mattk->adtyp == AD_CLRC) {
+    if (mattk->adtyp == AD_SPEL || mattk->adtyp == AD_CLRC
+         || mattk->adtyp == AD_PUNI) {
         /* monst->m_lev is unsigned (uchar), monst->mspec_used is int */
         mtmp->mspec_used = (int) ((mtmp->m_lev < 8) ? (10 - mtmp->m_lev) : 2);
+        if (mith_mon_syllable(mtmp) == MITH_NAEN)
+            mtmp->mspec_used = 0;
     }
 
     /* Monster can cast spells, but is casting a directed spell at the
@@ -205,7 +536,10 @@ castmu(
     }
 
     nomul(0);
-    if (rn2(ml * 10) < (mtmp->mconf ? 100 : 20)) { /* fumbled attack */
+    if (mith_mon_syllable(mtmp) >= 0
+        ? rn2(ml * 2) < ((mith_mon_syllable(mtmp) == MITH_NAEN ? 0 : 2)
+                         + (mtmp->mconf ? 8 : 0))
+        : rn2(ml * 10) < (mtmp->mconf ? 100 : 20)) { /* fumbled attack */
         Soundeffect(se_air_crackles, 60);
         if (canseemon(mtmp) && !Deaf) {
             set_msg_xy(mtmp->mx, mtmp->my);
@@ -231,17 +565,23 @@ castmu(
      */
     if (!foundyou) {
         dmg = 0;
-        if (mattk->adtyp != AD_SPEL && mattk->adtyp != AD_CLRC) {
+        if (mattk->adtyp != AD_SPEL && mattk->adtyp != AD_CLRC
+            && mattk->adtyp != AD_PUNI) {
             impossible(
               "%s casting non-hand-to-hand version of hand-to-hand spell %d?",
                        Monnam(mtmp), mattk->adtyp);
             return M_ATTK_MISS;
         }
+    } else if (mith_mon_syllable(mtmp) >= 0
+               || mtmp->data == &mons[PM_ALABASTER_ELF_ELDER]) {
+        dmg = mith_spell_damage(mtmp, mattk);
     } else if (mattk->damd)
         dmg = d((int) ((ml / 2) + mattk->damn), (int) mattk->damd);
     else
         dmg = d((int) ((ml / 2) + 1), 6);
     if (Half_spell_damage)
+        dmg = (dmg + 1) / 2;
+    if (u.mith_timers[MITH_VAUL])
         dmg = (dmg + 1) / 2;
 
     ret = M_ATTK_HIT;
@@ -288,11 +628,14 @@ castmu(
             dmg = 0;
         } else {
             dmg = d((int) mtmp->m_lev / 2 + 1, 6);
+            if (u.mith_timers[MITH_VAUL])
+                dmg = (dmg + 1) / 2;
             monstunseesu(M_SEEN_MAGR);
         }
         /* shower of magic missiles scuffs an engraving */
         mon_spell_hits_spot(mtmp, AD_MAGM, u.ux, u.uy);
         break;
+    case AD_PUNI: /* Sheol Punisher */
     case AD_SPEL: /* wizard spell */
     case AD_CLRC: /* clerical spell */
         mcast_spell(mtmp, dmg, spellnum);
@@ -478,6 +821,8 @@ mcast_weaken_you(struct monst *mtmp, int dmg)
             dmg = 1;
         if (Half_spell_damage)
             dmg = (dmg + 1) / 2;
+        if (u.mith_timers[MITH_VAUL])
+            dmg = (dmg + 1) / 2;
         losestr(rnd(dmg),
                 death_inflicted_by(kbuf, "strength loss", mtmp),
                 KILLED_BY);
@@ -514,6 +859,8 @@ mcast_stun_you(int dmg)
         dmg = d(ACURR(A_DEX) < 12 ? 6 : 4, 4);
         if (Half_spell_damage)
             dmg = (dmg + 1) / 2;
+        if (u.mith_timers[MITH_VAUL])
+            dmg = (dmg + 1) / 2;
         make_stunned((HStun & TIMEOUT) + (long) dmg, FALSE);
         monstunseesu(M_SEEN_MAGR);
     }
@@ -528,6 +875,8 @@ mcast_geyser(int dmg)
     pline("A sudden geyser slams into you from nowhere!");
     dmg = d(8, 6);
     if (Half_physical_damage)
+        dmg = (dmg + 1) / 2;
+    if (u.mith_timers[MITH_VAUL])
         dmg = (dmg + 1) / 2;
 #if 0   /* since inventory items aren't affected, don't include this */
         /* make floor items wet */
@@ -551,6 +900,8 @@ mcast_fire_pillar(struct monst *mtmp, int dmg)
         monstunseesu(M_SEEN_FIRE);
     }
     if (Half_spell_damage)
+        dmg = (dmg + 1) / 2;
+    if (u.mith_timers[MITH_VAUL])
         dmg = (dmg + 1) / 2;
     burn_away_slime();
     (void) burnarmor(&gy.youmonst);
@@ -585,6 +936,8 @@ mcast_lightning(struct monst *mtmp, int dmg)
         monstunseesu(M_SEEN_ELEC | M_SEEN_REFL);
     }
     if (Half_spell_damage)
+        dmg = (dmg + 1) / 2;
+    if (u.mith_timers[MITH_VAUL])
         dmg = (dmg + 1) / 2;
     (void) destroy_items(&gy.youmonst, AD_ELEC, orig_dmg);
     /* lightning might destroy iron bars if hero is on such a spot;
@@ -731,11 +1084,14 @@ mcast_blind_you(void)
     /* note: resists_blnd() doesn't apply here */
     if (!Blinded) {
         int num_eyes = eyecount(gy.youmonst.data);
+        long duration = Half_spell_damage ? 100L : 200L;
 
         pline("Scales cover your %s!", (num_eyes == 1)
                                        ? body_part(EYE)
                                        : makeplural(body_part(EYE)));
-        make_blinded(Half_spell_damage ? 100L : 200L, FALSE);
+        if (u.mith_timers[MITH_VAUL])
+            duration = (duration + 1L) / 2L;
+        make_blinded(duration, FALSE);
         if (!Blind)
             Your1(vision_clears);
     } else
@@ -759,6 +1115,8 @@ mcast_paralyze(struct monst *mtmp)
         dmg = 4 + (int) mtmp->m_lev;
         if (Half_spell_damage)
             dmg = (dmg + 1) / 2;
+        if (u.mith_timers[MITH_VAUL])
+            dmg = (dmg + 1) / 2;
         monstunseesu(M_SEEN_MAGR);
     }
     nomul(-dmg);
@@ -779,6 +1137,8 @@ mcast_confuse_you(struct monst *mtmp)
         int dmg = (int) mtmp->m_lev;
 
         if (Half_spell_damage)
+            dmg = (dmg + 1) / 2;
+        if (u.mith_timers[MITH_VAUL])
             dmg = (dmg + 1) / 2;
         make_confused(HConfusion + dmg, TRUE);
         if (Hallucination)
@@ -811,6 +1171,10 @@ mcast_spell(struct monst *mtmp, int dmg, int spellnum)
     }
 
     switch (spellnum) {
+    case MCAST_PUNISHMENT:
+        punish((struct obj *) 0);
+        dmg = 0;
+        break;
     case MCAST_DEATH_TOUCH:
         mcast_death_touch(mtmp);
         dmg = 0;
@@ -843,6 +1207,22 @@ mcast_spell(struct monst *mtmp, int dmg, int spellnum)
         break;
     case MCAST_DISAPPEAR: /* makes self invisible */
         mcast_disappear(mtmp);
+        dmg = 0;
+        break;
+    case MCAST_MITH_SLEEP:
+        if (lined_up(mtmp)) {
+            gb.buzzer = mtmp;
+            buzz(BZ_M_SPELL(BZ_OFS_AD(AD_SLEE)), min(10, mtmp->m_lev / 3 + 1),
+                 mtmp->mx, mtmp->my, sgn(gt.tbx), sgn(gt.tby));
+            gb.buzzer = 0;
+        }
+        stop_occupation();
+        dmg = 0;
+        break;
+    case MCAST_MITH_CURE_CLOSE:
+    case MCAST_MITH_CURE_FAR:
+        mith_mass_cure(mtmp, spellnum == MCAST_MITH_CURE_FAR,
+                       mtmp->mux, mtmp->muy);
         dmg = 0;
         break;
     case MCAST_STUN_YOU:
@@ -932,6 +1312,10 @@ spell_would_be_useless(struct monst *mtmp, int spellnum)
     switch (spellnum) {
     case MCAST_DEATH_TOUCH:
         if ((Antimagic || Hallucination) && !rn2(2))
+            return TRUE;
+        break;
+    case MCAST_MITH_SLEEP:
+        if (Sleepy || !lined_up(mtmp))
             return TRUE;
         break;
     case MCAST_GEYSER:

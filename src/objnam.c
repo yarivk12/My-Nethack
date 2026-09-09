@@ -255,7 +255,7 @@ obj_typename(int otyp)
         if (objects[otyp].oc_armcat == ARM_GLOVES
             || objects[otyp].oc_armcat == ARM_BOOTS)
             Strcpy(buf, "pair of ");
-        else if (otyp >= GRAY_DRAGON_SCALES && otyp <= YELLOW_DRAGON_SCALES)
+        else if (otyp >= GRAY_DRAGON_SCALES && otyp <= CHROMATIC_DRAGON_SCALES)
             Strcpy(buf, "set of ");
         FALLTHROUGH;
         /*FALLTHRU*/
@@ -718,7 +718,7 @@ xname_flags(
         break;
     case ARMOR_CLASS:
         /* depends on order of the dragon scales objects */
-        if (typ >= GRAY_DRAGON_SCALES && typ <= YELLOW_DRAGON_SCALES) {
+        if (typ >= GRAY_DRAGON_SCALES && typ <= CHROMATIC_DRAGON_SCALES) {
             Sprintf(buf, "set of %s", actualn);
             break;
         } else if (is_boots(obj) || is_gloves(obj)) {
@@ -802,10 +802,11 @@ xname_flags(
             char anbuf[10];
             const char *statue_pmname = obj_pmname(obj);
 
-            Snprintf(buf, bufspaceleft, "%s%s of %s%s",
+            Snprintf(buf, bufspaceleft, "%s%s%s of %s%s",
                      (Role_if(PM_ARCHEOLOGIST)
                       && (obj->spe & CORPSTAT_HISTORIC) != 0) ? "historic "
                        : "",
+                     (obj->obranch_props & OBP_FACELESS) ? "faceless " : "",
                      actualn,
                      type_is_pname(&mons[omndx]) ? ""
                        : the_unique_pm(&mons[omndx]) ? "the "
@@ -950,6 +951,38 @@ xname_flags(
 
     /* if the name should be plural, do that now, after overflow check;
        it could make buf[] become shorter */
+    if (dknown && (obj->obranch_material || obj->obranch_size
+                   || obj->obranch_props || is_mith_mask(obj))) {
+        char named[BUFSZ], prefix[BUFSZ] = "";
+
+        if (obj->obranch_size && obj->obranch_size != MZ_MEDIUM + 1)
+            Strcat(prefix, obj->obranch_size == MZ_HUGE + 1 ? "huge "
+                            : obj->obranch_size == MZ_LARGE + 1 ? "large "
+                            : "small ");
+        if ((obj->obranch_props & OBP_ANARCHIC) && known)
+            Strcat(prefix, "anarchic ");
+        if (obj->obranch_props & OBP_ACID)
+            Strcat(prefix, "acid-coated ");
+        if (obj->obranch_props & OBP_SLEEP)
+            Strcat(prefix, "sleep-coated ");
+        if (obj->obranch_props & OBP_BLIND)
+            Strcat(prefix, "blinding-coated ");
+        if (obj->obranch_props & OBP_PARALYZE)
+            Strcat(prefix, "paralyzing-coated ");
+        if (obj->obranch_props & OBP_FILTH)
+            Strcat(prefix, "filth-coated ");
+        if (obj->obranch_material) {
+            Strcat(prefix, materialnm[obj_material(obj)]);
+            Strcat(prefix, " ");
+        }
+        if (typ == MASK && obj->oeroded)
+            Strcat(prefix, "cracked ");
+        Snprintf(named, sizeof named, "%s%s", prefix, buf);
+        Snprintf(buf, (size_t) (buf_end - buf + 1), "%s", named);
+        ConcUpdate(buf);
+        if (typ == MASK && ismnum(omndx))
+            ConcatF1(buf, 0, " of %s", an(pmname(&mons[omndx], NEUTRAL)));
+    }
     if (pluralize) {
         obufp = makeplural(buf);
         buf[0] = '\0'; /* replace the whole string */
@@ -4363,6 +4396,29 @@ readobjnam_postparse1(struct _readobjnam_data *d)
         d->bp += 8;
     }
 
+    /* Preserve these complete symbiote names before "armor" class suffixes
+       or the "giant" monster prefix can consume part of the name. */
+    if (!strcmpi(d->bp, "living armor")
+        || !strcmpi(d->bp, "giant sea anemone")) {
+        d->typ = LIVING_ARMOR;
+        return 2; /* goto typfnd, with ordinary wish restrictions */
+    }
+    if (!strcmpi(d->bp, "barnacle armor")
+        || !strcmpi(d->bp, "giant shell armor")) {
+        d->typ = BARNACLE_ARMOR;
+        return 2;
+    }
+
+    /* These item names belong to the imported cave dragon.  Resolve them
+       before the native Caveman boss's "Chromatic Dragon" monster prefix
+       can consume the name and leave an unrecognized bare "scales". */
+    if (!strcmpi(d->bp, "chromatic dragon scales")
+        || !strcmpi(d->bp, "chromatic dragon scale mail")) {
+        d->typ = !strcmpi(d->bp, "chromatic dragon scales")
+                     ? CHROMATIC_DRAGON_SCALES : CHROMATIC_DRAGON_SCALE_MAIL;
+        return 2; /* goto typfnd, including normal non-wizard restrictions */
+    }
+
     /* Intercept pudding globs here; they're a valid wish target,
      * but we need them to not get treated like a corpse.
      * If a count is specified, it will be used to magnify weight
@@ -4508,7 +4564,7 @@ readobjnam_postparse1(struct _readobjnam_data *d)
 
     /* dragon scales - assumes order of dragons */
     if (!strcmpi(d->bp, "scales") && d->mntmp >= PM_GRAY_DRAGON
-        && d->mntmp <= PM_YELLOW_DRAGON) {
+        && d->mntmp <= PM_CAVE_CHROMATIC_DRAGON) {
         d->typ = GRAY_DRAGON_SCALES + d->mntmp - PM_GRAY_DRAGON;
         d->mntmp = NON_PM; /* no monster */
         return 2; /*goto typfnd;*/
@@ -5024,12 +5080,22 @@ readobjnam(char *bp, struct obj *no_wish)
     if (!d.oclass)
         d.oclass = wrpsym[rn2((int) sizeof wrpsym)];
  typfnd:
+    if (!wizard && d.mntmp == PM_CAVE_CHROMATIC_DRAGON)
+        d.mntmp = PM_GRAY_DRAGON + rn2(PM_YELLOW_DRAGON - PM_GRAY_DRAGON);
     if (d.typ)
         d.oclass = objects[d.typ].oc_class;
 
     /* handle some objects that are only allowed in wizard mode */
     if (d.typ && !wizard) {
         switch (d.typ) {
+        case CHROMATIC_DRAGON_SCALES:
+            d.typ = GRAY_DRAGON_SCALES
+                    + rn2(YELLOW_DRAGON_SCALES - GRAY_DRAGON_SCALES);
+            break;
+        case CHROMATIC_DRAGON_SCALE_MAIL:
+            d.typ = GRAY_DRAGON_SCALE_MAIL
+                    + rn2(YELLOW_DRAGON_SCALE_MAIL - GRAY_DRAGON_SCALE_MAIL);
+            break;
         case AMULET_OF_YENDOR:
             d.typ = FAKE_AMULET_OF_YENDOR;
             break;
@@ -5275,7 +5341,7 @@ readobjnam(char *bp, struct obj *no_wish)
             break;
         case SCALE_MAIL:
             /* Dragon mail - depends on the order of objects & dragons. */
-            if (d.mntmp >= PM_GRAY_DRAGON && d.mntmp <= PM_YELLOW_DRAGON)
+            if (d.mntmp >= PM_GRAY_DRAGON && d.mntmp <= PM_CAVE_CHROMATIC_DRAGON)
                 d.otmp->otyp = GRAY_DRAGON_SCALE_MAIL
                               + d.mntmp - PM_GRAY_DRAGON;
             break;

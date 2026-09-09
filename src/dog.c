@@ -1241,6 +1241,10 @@ tamedog(
         return FALSE;
     }
 
+    if (mtmp->data == &mons[PM_ICE_GOLEM]
+        || mtmp->data == &mons[PM_CRYSTAL_ICE_GOLEM])
+        return FALSE;
+
     if (!mtmp->mcanmove
         /* monsters with conflicting structures cannot be tamed
            [note: the various mextra structures don't actually conflict

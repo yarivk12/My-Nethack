@@ -88,7 +88,8 @@ experience(struct monst *mtmp, int nk)
     int i, tmp, tmp2;
 
     /* Reproducing fern spores must not become an experience farm. */
-    if (ptr == &mons[PM_SWAMP_FERN_SPORE])
+    if (ptr == &mons[PM_SWAMP_FERN_SPORE]
+        || ptr == &mons[PM_ARCTIC_FERN_SPORE])
         return 0;
 
     tmp = 1 + mtmp->m_lev * mtmp->m_lev;

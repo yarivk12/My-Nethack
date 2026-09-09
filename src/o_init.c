@@ -338,6 +338,8 @@ shuffle_all(void)
                           &first, &last);
         shuffle(first, last, TRUE);
     }
+    /* Mithardir tiles have their own six-way pronunciation shuffle. */
+    shuffle(SYLLABLE_OF_STRENGTH__AESH, SYLLABLE_OF_SPIRIT__VAUL, FALSE);
     /* do type ranges (helms, &c) */
     for (idx = 0; idx < SIZE(shuffle_types); idx++) {
         obj_shuffle_range(shuffle_types[idx], &first, &last);

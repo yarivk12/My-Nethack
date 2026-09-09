@@ -21,7 +21,7 @@ staticfn int mdamagem(struct monst *, struct monst *, struct attack *,
                     struct obj *, int);
 staticfn void mswingsm(struct monst *, struct monst *, struct obj *);
 staticfn int passivemm(struct monst *, struct monst *, boolean, int,
-                     struct obj *);
+                     struct obj *, int);
 
 staticfn void
 noises(struct monst *magr, struct attack *mattk)
@@ -381,6 +381,10 @@ mattackm(
             continue;
 
         mattk = getmattk(magr, mdef, i, res, &alt_attk);
+        if (mith_offhand_attack(magr->data, i)
+            && ((magr->misc_worn_check & W_ARMS)
+                || distmin(magr->mx, magr->my, mdef->mx, mdef->my) > 1))
+            continue;
         /* reduce verbosity for mind flayer attacking creature without a
            head (or worm's tail); this is similar to monster with multiple
            attacks after a wildmiss against displaced or invisible hero */
@@ -409,7 +413,9 @@ mattackm(
                     return M_ATTK_MISS;
             }
             possibly_unwield(magr, FALSE);
-            if ((mwep = MON_WEP(magr)) != 0) {
+            mwep = mith_offhand_attack(magr->data, i)
+                       ? mith_select_offhand(magr) : MON_WEP(magr);
+            if (mwep != 0) {
                 if (gv.vis)
                     mswingsm(magr, mdef, mwep);
                 tmp += hitval(mwep, mdef);
@@ -419,6 +425,7 @@ mattackm(
         case AT_CLAW:
         case AT_KICK:
         case AT_BITE:
+        case AT_REACH5:
         case AT_STNG:
         case AT_TUCH:
         case AT_BUTT:
@@ -426,7 +433,8 @@ mattackm(
             if (mattk->aatyp == AT_KICK && mtrapped_in_pit(magr))
                     continue;
             /* Nymph that teleported away on first attack? */
-            if (distmin(magr->mx, magr->my, mdef->mx, mdef->my) > 1)
+            if (distmin(magr->mx, magr->my, mdef->mx, mdef->my)
+                > (mattk->aatyp == AT_REACH5 ? 5 : 1))
                 /* Continue because the monster may have a ranged attack. */
                 continue;
             /* Monsters won't attack cockatrices physically if they
@@ -440,6 +448,8 @@ mattackm(
             }
             dieroll = rnd(20 + i);
             strike = (tmp > dieroll);
+            if (mith_displaced(mdef) && rn2(2))
+                strike = 0;
             /* KMH -- don't accumulate to-hit bonuses */
             if (mwep)
                 tmp -= hitval(mwep, mdef);
@@ -455,8 +465,8 @@ mattackm(
                 res[i] = hitmm(magr, mdef, mattk, mwep, dieroll);
                 if ((mdef->data == &mons[PM_BLACK_PUDDING]
                      || mdef->data == &mons[PM_BROWN_PUDDING])
-                    && (mwep && (objects[mwep->otyp].oc_material == IRON
-                                 || objects[mwep->otyp].oc_material == METAL))
+                    && (mwep && (obj_material(mwep) == IRON
+                                 || obj_material(mwep) == METAL))
                     && mdef->mhp > 1 && !mdef->mcan) {
                     struct monst *mclone;
 
@@ -476,6 +486,8 @@ mattackm(
         case AT_HUGS: /* automatic if prev two attacks succeed */
             strike = (i >= 2 && res[i - 1] == M_ATTK_HIT
                       && res[i - 2] == M_ATTK_HIT);
+            if (mith_displaced(mdef) && rn2(2))
+                strike = 0;
             if (strike) {
                 /* note: monsters with hug attacks don't wear cloaks or gloves
                    so this doesn't need a special case for hugging a shade
@@ -563,6 +575,14 @@ mattackm(
             }
             break;
 
+        case AT_MAGC:
+            /* Imported spell lists also work against other monsters.
+             * Spellcasting is not contact for passive retaliation. */
+            attk = 0;
+            res[i] = mith_castmm(magr, mdef, mattk);
+            strike = (res[i] & M_ATTK_HIT) != 0;
+            break;
+
         default: /* no attack */
             strike = 0;
             attk = 0;
@@ -572,7 +592,7 @@ mattackm(
         if (attk && !(res[i] & M_ATTK_AGR_DIED)
             && distmin(magr->mx, magr->my, mdef->mx, mdef->my) <= 1)
             res[i] = passivemm(magr, mdef, strike,
-                               (res[i] & M_ATTK_DEF_DIED), mwep);
+                               (res[i] & M_ATTK_DEF_DIED), mwep, mattk->aatyp);
 
         if (res[i] & M_ATTK_DEF_DIED)
             return res[i];
@@ -652,7 +672,7 @@ hitmm(
     boolean weaponhit = (mattk->aatyp == AT_WEAP
                          || (mattk->aatyp == AT_CLAW && mwep)),
             silverhit = (weaponhit && mwep
-                         && objects[mwep->otyp].oc_material == SILVER);
+                         && obj_material(mwep) == SILVER);
 
     pre_mm_attack(magr, mdef);
 
@@ -762,6 +782,8 @@ gazemm(struct monst *magr, struct monst *mdef, struct attack *mattk)
             pline("but nothing happens.");
         return M_ATTK_MISS;
     }
+    if (mattk->adtyp == AD_PLYS)
+        return mith_paralyze_gaze(magr, mdef, mattk);
     /* call mon_reflects 2x, first test, then, if visible, print message */
     if (magr->data == &mons[PM_MEDUSA] && mon_reflects(mdef, (char *) 0)) {
         if (canseemon(mdef))
@@ -1022,6 +1044,7 @@ mdamagem(
 {
     struct permonst *pa = magr->data, *pd = mdef->data;
     struct mhitm_data mhm;
+    mhm.weapon = mattk->aatyp == AT_WEAP ? mwep : MON_WEP(magr);
     mhm.damage = d((int) mattk->damn, (int) mattk->damd);
     mhm.hitflags = M_ATTK_MISS;
     mhm.permdmg = 0;
@@ -1059,7 +1082,7 @@ mdamagem(
     mhitm_adtyping(magr, mattk, mdef, &mhm);
 
     if (mhitm_knockback(magr, mdef, mattk, &mhm.hitflags,
-                        (MON_WEP(magr) != 0))
+                        mhm.weapon)
         && ((mhm.hitflags & (M_ATTK_DEF_DIED | M_ATTK_HIT)) != 0
             || mon_offmap(mdef)))
         return mhm.hitflags;
@@ -1070,6 +1093,16 @@ mdamagem(
     if (!mhm.damage)
         return mhm.hitflags;
 
+    if (mattk->adtyp == AD_PHYS || mattk->adtyp == AD_DRLI || mattk->adtyp == AD_VAMP
+        || mith_fey_weapon_attack(magr, mattk))
+        mhm.damage = mith_physical_damage(mdef,
+                           mattk->aatyp == AT_WEAP ? mwep : (struct obj *) 0,
+                           mattk->aatyp, mhm.damage);
+    mhm.damage += mith_iron_contact(magr, mdef, mattk->aatyp,
+                      (mattk->aatyp == AT_WEAP || mattk->aatyp == AT_CLAW)
+                          ? mwep : (struct obj *) 0);
+    if (mattk->aatyp == AT_WEAP || (mattk->aatyp == AT_CLAW && mwep))
+        mhm.damage += mith_weapon_effects(mwep, mdef, mhm.damage);
     mdef->mhp -= mhm.damage;
     if (mdef->mhp < 1) {
         if (m_at(mdef->mx, mdef->my) == magr) { /* see gulpmm() */
@@ -1115,6 +1148,8 @@ mdamagem(
         return (M_ATTK_DEF_DIED
                 | (grow_up(magr, mdef) ? 0 : M_ATTK_AGR_DIED));
     }
+    if (mattk->adtyp == AD_SLEE && mith_fey_weapon_attack(magr, mattk))
+        mith_coure_sleep(magr, mdef);
     return (mhm.hitflags == M_ATTK_AGR_DIED) ? M_ATTK_AGR_DIED : M_ATTK_HIT;
 }
 
@@ -1306,7 +1341,8 @@ passivemm(
     struct monst *mdef,
     boolean mhitb,
     int mdead,
-    struct obj *mwep)
+    struct obj *mwep,
+    int aatyp)
 {
     struct permonst *mddat = mdef->data;
     struct permonst *madat = magr->data;
@@ -1345,7 +1381,7 @@ passivemm(
         if (!rn2(30))
             erode_armor(magr, ERODE_CORRODE);
         if (!rn2(6))
-            acid_damage(MON_WEP(magr));
+            acid_damage(aatyp == AT_WEAP ? mwep : MON_WEP(magr));
         goto assess_dmg;
     case AD_ENCH: /* KMH -- remove enchantment (disenchanter) */
         if (mhitb && !mdef->mcan && mwep) {
@@ -1403,7 +1439,10 @@ passivemm(
             }
             if (canseemon(magr))
                 pline_mon(magr, "%s is suddenly very cold!", Monnam(magr));
-            healmon(mdef, tmp/2, tmp/2);
+            if (mdef->data == &mons[PM_ASPECT_OF_THE_SILENCE])
+                mith_cold_heal(mdef, tmp);
+            else
+                healmon(mdef, tmp/2, tmp/2);
             if (mdef->mhpmax > ((int) (mdef->m_lev + 1) * 8))
                 (void) split_mon(mdef, magr);
             break;

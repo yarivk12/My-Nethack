@@ -42,7 +42,8 @@ enum lvlinit_types {
     LVLINIT_MAZE,
     LVLINIT_MINES,
     LVLINIT_ROGUE,
-    LVLINIT_SWAMP
+    LVLINIT_SWAMP,
+    LVLINIT_SHEOL
 };
 
 /* max. nested depth of subrooms */
@@ -164,6 +165,8 @@ typedef struct {
     short lit;
     short eroded, locked, trapped, tknown, recharged, invis, greased, broken,
           achievement;
+    unsigned long branch_props;
+    uchar branch_material, branch_size;
 } object;
 
 typedef struct {

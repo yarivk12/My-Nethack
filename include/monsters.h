@@ -134,6 +134,15 @@
     /*
      * blobs
      */
+    /* Step9C: pinned dNetHack Mithardir; see doc/step9c.md. */
+    MON(NAM("crystal ooze"), S_BLOB,
+        LVL(8, 6, 8, 0, -5), (G_GENO|G_NOGEN),
+        A(ATTK(AT_TUCH, AD_PLYS, 4, 4), ATTK(AT_TUCH, AD_WRAP, 1, 1), ATTK(AT_NONE, AD_CORR, 0, 0), NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(3000, 800, MS_SILENT, MZ_LARGE), MR_FIRE|MR_COLD|MR_SLEEP|MR_POISON|MR_ACID|MR_STONE, MR_FIRE|MR_COLD|MR_SLEEP|MR_ACID,
+        M1_ACID | M1_NOEYES | M1_NOHEAD | M1_NOLIMBS | M1_SWIM | M1_HIDE | M1_MINDLESS | M1_OMNIVORE,
+        M2_NEUTER | M2_HOSTILE | M2_WANDER, 0,
+        10, CLR_CYAN, CRYSTAL_OOZE),
+
     MON(NAM("acid blob"), S_BLOB,
         LVL(1, 3, 8, 0, 0), (G_GENO | 2),
         A(ATTK(AT_NONE, AD_ACID, 1, 8),
@@ -164,6 +173,7 @@
             | M1_ACID,
         M2_WANDER | M2_HOSTILE | M2_NEUTER, 0,
         8, CLR_CYAN, GELATINOUS_CUBE),
+
     /*
      * cockatrice
      */
@@ -196,6 +206,15 @@
     /*
      * dogs & other canines
      */
+    /* Step9C: pinned dNetHack Mithardir; see doc/step9c.md. */
+    MON(NAM("seal"), S_DOG,
+        LVL(15, 18, 0, 50, -9), G_NOGEN,
+        A(ATTK(AT_BITE, AD_PHYS, 4, 8), NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(1450, 400, MS_SELL, MZ_HUMAN), 0, 0,
+        M1_ANIMAL | M1_NOHANDS | M1_OMNIVORE,
+        M2_STRONG | M2_NOPOLY | M2_COLLECT | M2_MAGIC | M2_PEACEFUL, M3_INFRAVISIBLE,
+        17, CLR_BROWN, SEAL),
+
     MON(NAM("jackal"), S_DOG,
         LVL(0, 12, 7, 0, 0), (G_GENO | G_SGROUP | 3),
         A(ATTK(AT_BITE, AD_PHYS, 1, 2),
@@ -318,6 +337,7 @@
         M2_NOPOLY | M2_HOSTILE | M2_STRONG | M2_PNAME | M2_MALE,
         M3_INFRAVISIBLE,
         14, CLR_RED, CERBERUS),
+
 #endif
     /*
      * eyes
@@ -339,6 +359,14 @@
         M1_FLY | M1_BREATHLESS | M1_NOLIMBS | M1_NOHEAD | M1_MINDLESS,
         M2_HOSTILE | M2_NEUTER | M2_NOPOLY, 0,
         2, CLR_YELLOW, SWAMP_FERN_SPORE),
+    /* Step9A: pinned UnNetHack branch dependency. */
+    MON(NAM("arctic fern spore"), S_EYE,
+        LVL(1, 3, 5, 0, 0), (G_NOCORPSE|G_NOGEN),
+        A(ATTK(AT_EXPL, AD_COLD, 2, 4), ATTK(AT_BOOM, AD_PHYS, 2, 4),
+          NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(10, 10, MS_SILENT, MZ_SMALL), MR_POISON|MR_COLD, 0,
+        M1_FLY|M1_BREATHLESS|M1_NOLIMBS|M1_NOHEAD|M1_MINDLESS,
+        M2_HOSTILE|M2_NEUTER|M2_NOPOLY, 0, 3, CLR_BLUE, ARCTIC_FERN_SPORE),
     MON(NAM("floating eye"), S_EYE,
         LVL(2, 1, 9, 10, 0), (G_GENO | 5),
         A(ATTK(AT_NONE, AD_PLYS, 0, 70),
@@ -387,6 +415,14 @@
     /*
      * felines
      */
+    /* Step9A: pinned UnNetHack branch dependency. */
+    MON(NAM("evil eye"), S_EYE,
+        LVL(10, 3, 4, 30, -11), (G_SHEOL|G_HELL|G_GENO|1),
+        A(ATTK(AT_GAZE, AD_LUCK, 0, 0), NO_ATTK, NO_ATTK,
+          NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(10, 0, MS_SILENT, MZ_SMALL), 0, 0,
+        M1_FLY|M1_BREATHLESS|M1_NOLIMBS|M1_NOHEAD|M1_MINDLESS,
+        M2_HOSTILE|M2_NOPOLY|M2_NEUTER, M3_INFRAVISIBLE, 12, CLR_BRIGHT_MAGENTA, EVIL_EYE),
     MON(NAM("kitten"), S_FELINE,
         LVL(2, 18, 6, 0, 0), (G_GENO | 1),
         A(ATTK(AT_BITE, AD_PHYS, 1, 6),
@@ -483,6 +519,26 @@
     /*
      * humanoids
      */
+    /* Step9C: pinned dNetHack Mithardir; see doc/step9c.md. */
+    MON(NAM("deep one"), S_HUMANOID,
+        LVL(7, 9, 5, 10, 0), (G_LGROUP|G_NOHELL|2 | G_NOGEN),
+        A(ATTK(AT_WEAP, AD_PHYS, 1, 6), ATTK(AT_WEAP, AD_PHYS, 1, 6), ATTK(AT_KICK, AD_PHYS, 2, 4), ATTK(AT_NONE, AD_SOUL, 0, 0), NO_ATTK, NO_ATTK),
+        SIZ(1450, 400, MS_HUMANOID, MZ_HUMAN), MR_COLD|MR_SLEEP, MR_SLEEP,
+        M1_HUMANOID | M1_AMPHIBIOUS | M1_SWIM | M1_OMNIVORE,
+        M2_HUMAN | M2_STRONG | M2_COLLECT | M2_GREEDY | M2_HOSTILE | M2_JEWELS | M2_MAGIC | M2_STALK, M3_INFRAVISIBLE | M3_INFRAVISION,
+        11, CLR_GREEN, DEEP_ONE),
+
+    MON(NAM("deeper one"), S_HUMANOID,
+        LVL(15, 12, 0, 30, 0), (G_SGROUP | G_NOHELL | 2 | G_NOGEN),
+        A(ATTK(AT_WEAP, AD_PHYS, 3, 4), ATTK(AT_WEAP, AD_PHYS, 3, 4),
+          ATTK(AT_KICK, AD_PHYS, 4, 6), ATTK(AT_NONE, AD_SOUL, 3, 4), NO_ATTK, NO_ATTK),
+        SIZ(2000, 500, MS_HUMANOID, MZ_HUMAN), MR_COLD | MR_SLEEP, MR_SLEEP,
+        M1_HUMANOID | M1_AMPHIBIOUS | M1_SWIM | M1_OMNIVORE,
+        M2_HUMAN | M2_STRONG | M2_COLLECT | M2_GREEDY | M2_HOSTILE
+            | M2_JEWELS | M2_MAGIC | M2_STALK | M2_LORD,
+        M3_INFRAVISIBLE | M3_INFRAVISION,
+        20, CLR_BRIGHT_GREEN, DEEPER_ONE),
+
     MON(NAM("hobbit"), S_HUMANOID,
         LVL(1, 9, 10, 0, 6), (G_GENO | 2),
         A(ATTK(AT_WEAP, AD_PHYS, 1, 6),
@@ -547,6 +603,7 @@
         M2_HOSTILE | M2_NASTY | M2_GREEDY | M2_JEWELS | M2_COLLECT,
         M3_INFRAVISIBLE | M3_INFRAVISION,
         19, CLR_BRIGHT_MAGENTA, MASTER_MIND_FLAYER),
+
     /*
      * imps & other minor demons/devils
      */
@@ -708,6 +765,24 @@
     /*
      * nymphs
      */
+    /* Step9C: pinned dNetHack Mithardir; see doc/step9c.md. */
+    /* Step9C: pinned dNetHack Mithardir; see doc/step9c.md. */
+    MON(NAM("selkie"), S_NYMPH,
+        LVL(15, 18, 0, 50, -9), G_NOGEN,
+        A(ATTK(AT_WEAP, AD_PHYS, 4, 4), ATTK(AT_CLAW, AD_SEDU, 0, 0), NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(1450, 400, MS_SELL, MZ_HUMAN), 0, 0,
+        M1_HUMANOID | M1_OMNIVORE,
+        M2_HUMAN | M2_STRONG | M2_NOPOLY | M2_COLLECT | M2_MAGIC | M2_PEACEFUL, M3_INFRAVISIBLE,
+        18, CLR_BROWN, SELKIE),
+
+    MON(NAM("oceanid"), S_NYMPH,
+        LVL(15, 18, 0, 50, -9), G_NOGEN,
+        A(ATTK(AT_WEAP, AD_PHYS, 1, 1), ATTK(AT_CLAW, AD_SEDU, 0, 0), ATTK(AT_CLAW, AD_SEDU, 0, 0), ATTK(AT_NONE, AD_RUST, 0, 0), NO_ATTK, NO_ATTK),
+        SIZ(1450, 400, MS_SELL, MZ_HUMAN), 0, 0,
+        M1_HUMANOID | M1_OMNIVORE,
+        M2_HUMAN | M2_STRONG | M2_NOPOLY | M2_COLLECT | M2_MAGIC | M2_PEACEFUL, M3_INFRAVISIBLE,
+        20, CLR_BLUE, OCEANID),
+
     MON(NAM("wood nymph"), S_NYMPH,
         LVL(3, 12, 9, 20, 0), (G_GENO | 2),
         A(ATTK(AT_CLAW, AD_SITM, 0, 0), ATTK(AT_CLAW, AD_SEDU, 0, 0),
@@ -730,6 +805,8 @@
         SIZ(WT_NYMPH, 300, MS_SEDUCE, MZ_HUMAN), 0, 0, M1_HUMANOID | M1_TPORT,
         M2_HOSTILE | M2_FEMALE | M2_COLLECT, M3_INFRAVISIBLE,
         5, CLR_BROWN, MOUNTAIN_NYMPH),
+
+
     /*
      * orcs
      */
@@ -955,6 +1032,15 @@
     /*
      * spiders & scorpions (keep webmaker() in sync if new critters are added)
      */
+    /* Step9C: pinned dNetHack Mithardir; see doc/step9c.md. */
+    MON(NAM("yurian"), S_SPIDER,
+        LVL(15, 9, -5, 0, -3), G_NOGEN,
+        A(ATTK(AT_CLAW, AD_PHYS, 8, 2), ATTK(AT_CLAW, AD_PHYS, 4, 2), ATTK(AT_CLAW, AD_PHYS, 2, 2), ATTK(AT_CLAW, AD_PHYS, 2, 2), NO_ATTK, NO_ATTK),
+        SIZ(1450, 400, MS_HUMANOID, MZ_HUMAN), 0, 0,
+        M1_OMNIVORE,
+        M2_STRONG | M2_NOPOLY | M2_COLLECT | M2_MAGIC | M2_PEACEFUL, 0,
+        18, HI_DOMESTIC, YURIAN),
+
     MON(NAM("cave spider"), S_SPIDER,
         LVL(1, 12, 3, 0, 0), (G_GENO | G_SGROUP | 2),
         A(ATTK(AT_BITE, AD_PHYS, 1, 2),
@@ -1068,6 +1154,15 @@
     /*
      * vortices
      */
+    /* Step9C: pinned dNetHack Mithardir; see doc/step9c.md. */
+    MON(NAM("singing sand"), S_VORTEX,
+        LVL(10, 20, 0, 30, -5), (G_NOGEN|G_NOCORPSE|G_NOGEN),
+        A(ATTK(AT_ENGL, AD_BLND, 2, 8), ATTK(AT_ENGL, AD_PHYS, 1, 10), NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(0, 0, MS_HUMANOID, MZ_HUGE), MR_SLEEP|MR_POISON|MR_STONE, 0,
+        M1_NOEYES | M1_NOHEAD | M1_NOLIMBS | M1_REGEN | M1_BREATHLESS | M1_FLY | M1_SEE_INVIS,
+        M2_STRONG | M2_NASTY | M2_NOPOLY | M2_COLLECT | M2_STALK, 0,
+        12, CLR_BROWN, SINGING_SAND),
+
     MON(NAM("fog cloud"), S_VORTEX,
         LVL(3, 1, 0, 0, 0), (G_GENO | G_NOCORPSE | 2),
         A(ATTK(AT_ENGL, AD_PHYS, 1, 6),
@@ -1126,6 +1221,7 @@
             | M1_MINDLESS | M1_UNSOLID,
         M2_HOSTILE | M2_NEUTER, M3_INFRAVISIBLE,
         10, CLR_YELLOW, FIRE_VORTEX),
+
     /*
      * worms
      */
@@ -1184,6 +1280,24 @@
      * lights
      */
     /* yellow light is visible and its suicidal explosion causes blindness */
+    /* Step9A: pinned UnNetHack branch dependency. */
+    MON(NAM("chillbug"), S_XAN,
+        LVL(10, 12, 0, 30, 0), (G_SHEOL|G_GENO|G_LGROUP|4),
+        A(ATTK(AT_BITE, AD_PHYS, 6, 5),
+          ATTK(AT_BITE, AD_PHYS, 6, 5), NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(400, 400, MS_BUZZ, MZ_SMALL), MR_POISON|MR_COLD|MR_ACID, 0,
+        M1_FLY|M1_ANIMAL|M1_NOHANDS|M1_POIS, M2_HOSTILE,
+        M3_BLINKER|M3_GROUPATTACK,
+        13, CLR_BRIGHT_BLUE, CHILLBUG),
+    /* Step9C: pinned dNetHack Mithardir; see doc/step9c.md. */
+    MON(NAM("mote of light"), S_LIGHT,
+        LVL(1, 24, -5, 100, -10), (G_NOGEN|G_NOCORPSE|G_NOGEN),
+        A(NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(0, 0, MS_SILENT, MZ_TINY), MR_SLEEP|MR_POISON, MR_SLEEP,
+        M1_NOEYES | M1_NOHEAD | M1_NOLIMBS | M1_UNSOLID | M1_REGEN | M1_BREATHLESS | M1_FLY,
+        M2_STRONG | M2_NASTY | M2_NOPOLY | M2_HOSTILE | M2_STALK, M3_INFRAVISIBLE | M3_INFRAVISION,
+        3, CLR_WHITE, MOTE_OF_LIGHT),
+
     MON(NAM("yellow light"), S_LIGHT,
         LVL(3, 15, 0, 0, 0), (G_NOCORPSE | G_GENO | 4),
         A(ATTK(AT_EXPL, AD_BLND, 10, 20),
@@ -1207,6 +1321,7 @@
             | M1_NOHEAD | M1_MINDLESS | M1_UNSOLID | M1_SEE_INVIS | M1_NOTAKE,
         M2_HOSTILE | M2_NEUTER, 0,
         7, CLR_BLACK, BLACK_LIGHT),
+
     /*
      * zruty
      */
@@ -1221,6 +1336,33 @@
     /*
      * Angels and other lawful minions
      */
+    /* Step9C: pinned dNetHack Mithardir; see doc/step9c.md. */
+    /* Step9C: pinned dNetHack Mithardir; see doc/step9c.md. */
+    /* Step9C: pinned dNetHack Mithardir; see doc/step9c.md. */
+    MON(NAM("Coure Eladrin"), S_ANGEL,
+        LVL(1, 24, -7, 100, -10), (G_NOGEN|G_NOCORPSE|1),
+        A(ATTK(AT_WEAP, AD_SLEE, 1, 4), ATTK(AT_WEAP, AD_SLEE, 1, 4), NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(20, 20, MS_HUMANOID, MZ_TINY), MR_SLEEP|MR_POISON, MR_SLEEP,
+        M1_HUMANOID | M1_FLY | M1_OMNIVORE | M1_SEE_INVIS,
+        M2_NASTY | M2_NOPOLY | M2_COLLECT | M2_STALK, M3_INFRAVISIBLE,
+        5, CLR_WHITE, COURE_ELADRIN),
+
+    MON(NAM("Noviere Eladrin"), S_ANGEL,
+        LVL(8, 14, 6, 20, -5), (G_NOGEN|G_NOCORPSE|1),
+        A(ATTK(AT_WEAP, AD_RUST, 1, 4), NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(1200, 350, MS_HUMANOID, MZ_HUMAN), MR_SLEEP|MR_POISON, MR_SLEEP,
+        M1_HUMANOID | M1_AMPHIBIOUS | M1_SWIM | M1_OMNIVORE | M1_SEE_INVIS,
+        M2_STRONG | M2_NASTY | M2_NOPOLY | M2_COLLECT | M2_STALK, M3_INFRAVISIBLE,
+        10, CLR_BLUE, NOVIERE_ELADRIN),
+
+    MON(NAM("Bralani Eladrin"), S_ANGEL,
+        LVL(10, 10, 6, 30, -5), (G_NOGEN|G_NOCORPSE|1),
+        A(ATTK(AT_WEAP, AD_PHYS, 1, 4), ATTK(AT_WEAP, AD_PHYS, 1, 4), ATTK(AT_WEAP, AD_PHYS, 1, 4), ATTK(AT_WEAP, AD_PHYS, 1, 4), NO_ATTK, NO_ATTK),
+        SIZ(900, 350, MS_HUMANOID, MZ_HUMAN), MR_SLEEP|MR_POISON, MR_SLEEP,
+        M1_HUMANOID | M1_FLY | M1_OMNIVORE | M1_SEE_INVIS,
+        M2_STRONG | M2_NASTY | M2_NOPOLY | M2_COLLECT | M2_STALK, M3_INFRAVISIBLE,
+        14, CLR_BROWN, BRALANI_ELADRIN),
+
     MON(NAM("couatl"), S_ANGEL,
         LVL(8, 10, 5, 30, 7), (G_NOHELL | G_SGROUP | G_NOCORPSE | 1),
         A(ATTK(AT_BITE, AD_DRST, 2, 4), ATTK(AT_BITE, AD_PHYS, 1, 3),
@@ -1259,6 +1401,28 @@
        except that they fly (without wings) and can cast spells; nethack's
        ki-rin doesn't leave its horn when killed, but it can use the horn
        while alive to cure itself of various maladies */
+    /* Step9A: pinned UnNetHack branch dependency. */
+    MON(NAM("dark Angel"), S_ANGEL,
+        LVL(14, 10, -4, 55, -12), (G_SHEOL|G_HELL|G_NOCORPSE|1),
+        A(ATTK(AT_WEAP, AD_PHYS, 1, 6), ATTK(AT_WEAP, AD_PHYS, 1, 6),
+          ATTK(AT_GAZE, AD_STUN, 1, 4), ATTK(AT_WEAP, AD_PHYS, 1, 6),
+          NO_ATTK, NO_ATTK),
+        SIZ(WT_HUMAN, 400, MS_CUSS, MZ_HUMAN),
+        MR_COLD|MR_ELEC|MR_SLEEP|MR_POISON, 0,
+        M1_FLY|M1_HUMANOID|M1_SEE_INVIS,
+        M2_HOSTILE|M2_NOPOLY|M2_MINION|M2_STALK|M2_STRONG|M2_NASTY|M2_COLLECT,
+        M3_INFRAVISION, 19, CLR_BLACK, DARK_ANGEL),
+    /* Step9A: pinned UnNetHack branch dependency. */
+    MON(NAM("weeping angel"), S_ANGEL,
+        LVL(12, 16, -5, 70, -7), (G_SHEOL|G_NOCORPSE|G_SGROUP|G_GENO|2),
+        A(ATTK(AT_GAZE, AD_BLNK, 0, 0), ATTK(AT_CLAW, AD_DREN, 2, 4),
+          ATTK(AT_CLAW, AD_DRLI, 2, 4), ATTK(AT_TUCH, AD_LVLT, 2, 3),
+          NO_ATTK, NO_ATTK),
+        SIZ(WT_HUMAN, 0, MS_SILENT, MZ_HUMAN),
+        MR_FIRE|MR_COLD|MR_SLEEP|MR_DISINT|MR_POISON|MR_ACID|MR_STONE, 0,
+        M1_BREATHLESS|M1_HUMANOID|M1_REGEN|M1_SEE_INVIS,
+        M2_NOPOLY|M2_NEUTER|M2_HOSTILE|M2_MAGIC,
+        M3_INFRAVISION, 18, CLR_GRAY, WEEPING_ANGEL),
     MON(NAM("ki-rin"), S_ANGEL,
         LVL(16, 18, -5, 90, 15), (G_NOHELL | G_NOCORPSE | 1),
         A(ATTK(AT_KICK, AD_PHYS, 2, 4), ATTK(AT_KICK, AD_PHYS, 2, 4),
@@ -1284,6 +1448,20 @@
     /*
      * Bats and birds
      */
+    /* Step9A: pinned UnNetHack branch dependency. */
+    MON(NAM("weeping archangel"), S_ANGEL,
+        LVL(17, 18, -5, 80, -10), (G_SHEOL|G_HELL|G_NOCORPSE|G_GENO|1),
+        A(ATTK(AT_GAZE, AD_BLNK, 0, 0), ATTK(AT_CLAW, AD_DREN, 2, 8),
+          ATTK(AT_CLAW, AD_DRLI, 2, 8), ATTK(AT_TUCH, AD_LVLT, 2, 6),
+          NO_ATTK, NO_ATTK),
+        SIZ(WT_HUMAN, 0, MS_SILENT, MZ_HUMAN),
+        MR_FIRE|MR_COLD|MR_SLEEP|MR_DISINT|MR_POISON|MR_ACID|MR_STONE, 0,
+        M1_BREATHLESS|M1_HUMANOID|M1_REGEN|M1_SEE_INVIS,
+        M2_NOPOLY|M2_NEUTER|M2_HOSTILE|M2_MAGIC|M2_NASTY,
+        M3_INFRAVISION, 23, CLR_BRIGHT_MAGENTA, WEEPING_ARCHANGEL),
+
+
+
     MON(NAM("bat"), S_BAT,
         LVL(0, 22, 8, 0, 0), (G_GENO | G_SGROUP | 1),
         A(ATTK(AT_BITE, AD_PHYS, 1, 4),
@@ -1447,6 +1625,13 @@
         M1_FLY | M1_THICK_HIDE | M1_NOHANDS | M1_CARNIVORE | M1_ACID,
         M2_HOSTILE | M2_STRONG | M2_GREEDY | M2_JEWELS, 0,
         13, CLR_YELLOW, BABY_YELLOW_DRAGON),
+    MON(NAM("baby glowing dragon"), S_DRAGON,
+        LVL(12, 9, 2, 10, 0), (G_GENO),
+        A(ATTK(AT_BITE, AD_PHYS, 2, 6),
+          NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(1500, 500, MS_ROAR, MZ_HUGE), MR_FIRE, 0,
+        M1_FLY|M1_THICK_HIDE|M1_NOHANDS|M1_CARNIVORE,
+        M2_HOSTILE|M2_STRONG|M2_GREEDY|M2_JEWELS, 0, 13, CLR_BROWN, BABY_GLOWING_DRAGON),
     MON(NAM("gray dragon"), S_DRAGON,
         LVL(15, 9, -1, 20, 4), (G_GENO | 1),
         A(ATTK(AT_BREA, AD_MAGM, 4, 6), ATTK(AT_BITE, AD_PHYS, 3, 8),
@@ -1578,6 +1763,30 @@
         M2_HOSTILE | M2_STRONG | M2_NASTY | M2_GREEDY | M2_JEWELS | M2_MAGIC,
         0,
         20, CLR_YELLOW, YELLOW_DRAGON),
+    MON(NAM("glowing dragon"), S_DRAGON,
+        LVL(15, 9, -1, 20, -4), (G_NOGEN|G_GENO|1),
+        A(ATTK(AT_BREA, AD_LAVA, 6, 8), ATTK(AT_BITE, AD_PHYS, 3, 8),
+          ATTK(AT_CLAW, AD_PHYS, 1, 4), ATTK(AT_CLAW, AD_PHYS, 1, 4),
+          NO_ATTK, NO_ATTK),
+        SIZ(WT_DRAGON, 1500, MS_ROAR, MZ_GIGANTIC), MR_FIRE, MR_FIRE,
+        M1_FLY|M1_THICK_HIDE|M1_NOHANDS|M1_SEE_INVIS|M1_OVIPAROUS|
+        M1_CARNIVORE,
+        M2_HOSTILE|M2_STRONG|M2_NASTY|M2_GREEDY|M2_JEWELS|M2_MAGIC,
+        0, 20, CLR_BROWN, GLOWING_DRAGON),
+    /* Distinct from the native Caveman quest's unique Chromatic Dragon. */
+    MON(NAM("chromatic cave dragon"), S_DRAGON,
+        LVL(16, 10, 0, 25, 0), (G_NOGEN),
+        A(ATTK(AT_BREA, AD_RBRE, 6, 8), ATTK(AT_BITE, AD_PHYS, 4, 8),
+          ATTK(AT_CLAW, AD_PHYS, 2, 8), ATTK(AT_BITE, AD_PHYS, 4, 8),
+          NO_ATTK, NO_ATTK),
+        SIZ(WT_DRAGON, 1600, MS_ROAR, MZ_GIGANTIC),
+        MR_FIRE|MR_COLD|MR_SLEEP|MR_DISINT|MR_ELEC|MR_POISON|MR_ACID|MR_STONE,
+        MR_FIRE|MR_COLD|MR_SLEEP|MR_DISINT|MR_ELEC|MR_POISON|MR_ACID|MR_STONE,
+        M1_FLY|M1_THICK_HIDE|M1_NOHANDS|M1_CARNIVORE|M1_SEE_INVIS|
+        M1_OVIPAROUS,
+        M2_NOPOLY|M2_HOSTILE|M2_STALK|M2_STRONG|M2_NASTY|
+        M2_GREEDY|M2_JEWELS|M2_MAGIC,
+        0, 21, CLR_MAGENTA, CAVE_CHROMATIC_DRAGON),
     /*
      * Elementals
      */
@@ -1692,6 +1901,14 @@
             | M1_NOTAKE,
         M2_HOSTILE | M2_NEUTER, 0,
         5, CLR_MAGENTA, VIOLET_FUNGUS),
+    /* Step9A: pinned UnNetHack branch dependency. */
+    MON(NAM("arctic fern sprout"), S_FUNGUS,
+        LVL(6, 2, 10, 0, 0), (G_GENO|G_NOCORPSE|G_NOGEN),
+        A(ATTK(AT_GAZE, AD_SPOR, 0, 0), NO_ATTK,
+          NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(20, 200, MS_SILENT, MZ_SMALL), MR_COLD, 0,
+        M1_BREATHLESS|M1_NOEYES|M1_NOLIMBS|M1_NOHEAD|M1_MINDLESS|M1_NOTAKE,
+        M2_HOSTILE|M2_NEUTER|M2_NOPOLY, M3_STATIONARY, 8, CLR_BRIGHT_BLUE, ARCTIC_FERN_SPROUT),
     MON(NAM("swamp fern sprout"), S_FUNGUS,
         LVL(6, 2, 10, 0, 0), (G_GENO | G_NOCORPSE | G_NOGEN),
         A(ATTK(AT_GAZE, AD_SPOR, 0, 0), NO_ATTK,
@@ -1714,6 +1931,14 @@
      * Gnomes
      *  Unlike plain human|elf|orc, plain "gnome" is an ordinary monster.
      */
+    /* Step9A: pinned UnNetHack branch dependency. */
+    MON(NAM("arctic fern"), S_FUNGUS,
+        LVL(12, 2, 10, 0, 0), (G_SHEOL|G_GENO|G_NOCORPSE|1),
+        A(ATTK(AT_GAZE, AD_SPOR, 0, 0), NO_ATTK,
+          NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(20, 200, MS_SILENT, MZ_SMALL), MR_COLD, 0,
+        M1_BREATHLESS|M1_NOEYES|M1_NOLIMBS|M1_NOHEAD|M1_MINDLESS|M1_NOTAKE,
+        M2_HOSTILE|M2_NEUTER|M2_NOPOLY, M3_STATIONARY, 14, CLR_BRIGHT_BLUE, ARCTIC_FERN),
     MON(NAM("gnome"), S_GNOME,
         LVL(1, 6, 10, 4, 0), (G_GENO | G_SGROUP | 1),
         A(ATTK(AT_WEAP, AD_PHYS, 1, 6),
@@ -1747,6 +1972,17 @@
      * giant Humanoids
      */
     /* plain giant is a placeholder for zombie and mummy corpses */
+    MON(NAM("deepest one"), S_GIANT,
+        LVL(30, 15, -5, 70, 0), (1 | G_NOHELL | G_NOGEN),
+        A(ATTK(AT_WEAP, AD_PHYS, 3, 8), ATTK(AT_WEAP, AD_PHYS, 3, 8),
+          ATTK(AT_KICK, AD_PHYS, 5, 6), ATTK(AT_NONE, AD_SOUL, 0, 0), NO_ATTK, NO_ATTK),
+        SIZ(4500, 1000, MS_HUMANOID, MZ_HUGE), MR_COLD | MR_SLEEP, MR_SLEEP,
+        M1_HUMANOID | M1_THICK_HIDE | M1_AMPHIBIOUS | M1_SWIM | M1_OMNIVORE,
+        M2_HUMAN | M2_GIANT | M2_STRONG | M2_COLLECT | M2_GREEDY
+            | M2_HOSTILE | M2_JEWELS | M2_MAGIC | M2_STALK | M2_PRINCE | M2_NASTY,
+        M3_INFRAVISIBLE | M3_INFRAVISION,
+        36, CLR_BRIGHT_GREEN, DEEPEST_ONE),
+
     MON(NAM("giant"), S_GIANT,
         LVL(6, 6, 0, 0, 2), (G_GENO | G_NOGEN | 1),
         A(ATTK(AT_WEAP, AD_PHYS, 2, 10),
@@ -1934,6 +2170,15 @@
     /*
      * Mummies
      */
+    /* Step9C: pinned dNetHack Mithardir; see doc/step9c.md. */
+    MON(NAM("Alabaster mummy"), S_MUMMY,
+        LVL(6, 12, 4, 30, -5), (G_GENO|G_NOCORPSE|G_NOGEN),
+        A(ATTK(AT_CLAW, AD_PHYS, 2, 4), ATTK(AT_CLAW, AD_PHYS, 2, 4), NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(1200, 175, MS_SILENT, MZ_HUMAN), MR_COLD|MR_SLEEP|MR_POISON, 0,
+        M1_HUMANOID | M1_POIS | M1_BREATHLESS | M1_MINDLESS,
+        M2_ELF | M2_UNDEAD | M2_HOSTILE, M3_INFRAVISION,
+        7, CLR_WHITE, ALABASTER_MUMMY),
+
     MON(NAM("kobold mummy"), S_MUMMY,
         LVL(3, 8, 6, 20, -2), (G_GENO | G_NOCORPSE | 1),
         A(ATTK(AT_CLAW, AD_PHYS, 1, 4),
@@ -2002,6 +2247,7 @@
         M2_UNDEAD | M2_HOSTILE | M2_GIANT | M2_STRONG | M2_JEWELS,
         M3_INFRAVISION,
         10, CLR_CYAN, GIANT_MUMMY),
+
     /*
      * Nagas
      */
@@ -2039,6 +2285,15 @@
         M1_NOLIMBS | M1_SLITHY | M1_THICK_HIDE | M1_NOTAKE | M1_OMNIVORE,
         M2_STRONG, 0,
         4, CLR_GREEN, GUARDIAN_NAGA_HATCHLING),
+    /* Step9A: pinned UnNetHack branch dependency. */
+    MON(NAM("white naga hatchling"), S_NAGA,
+        LVL(3, 10, 6, 0, 0), (G_GENO),
+        A(ATTK(AT_BITE, AD_PHYS, 1, 4),
+          NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(500, 100, MS_MUMBLE, MZ_LARGE),
+        MR_COLD|MR_POISON, MR_COLD|MR_POISON,
+        M1_NOLIMBS|M1_SLITHY|M1_THICK_HIDE|M1_NOTAKE|M1_ACID|M1_CARNIVORE,
+        M2_STRONG, 0, 4, CLR_WHITE, WHITE_NAGA_HATCHLING),
     MON(NAM("red naga"), S_NAGA,
         LVL(6, 12, 4, 0, -4), (G_GENO | 1),
         A(ATTK(AT_BITE, AD_PHYS, 2, 4), ATTK(AT_BREA, AD_FIRE, 2, 6),
@@ -2085,6 +2340,16 @@
     /*
      * Ogres
      */
+    /* Step9A: pinned UnNetHack branch dependency. */
+    MON(NAM("white naga"), S_NAGA,
+        LVL(13, 14, 2, 40, 5), (G_SHEOL|G_GENO|1),
+        A(ATTK(AT_BITE, AD_PHYS, 2, 6), ATTK(AT_SPIT, AD_COLD, 0, 0),
+          NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(2600, 400, MS_MUMBLE, MZ_HUGE),
+        MR_COLD|MR_POISON, MR_POISON|MR_COLD,
+        M1_NOLIMBS|M1_SLITHY|M1_THICK_HIDE|M1_OVIPAROUS|M1_ACID|M1_NOTAKE|
+        M1_CARNIVORE,
+        M2_STRONG, 0, 15, CLR_WHITE, WHITE_NAGA),
     MON(NAM("ogre"), S_OGRE,
         LVL(5, 10, 5, 0, -3), (G_SGROUP | G_GENO | 1),
         A(ATTK(AT_WEAP, AD_PHYS, 2, 5),
@@ -2114,6 +2379,15 @@
      *
      * must be in the same order as the pudding globs in objects.c
      */
+    /* Step9C: pinned dNetHack Mithardir; see doc/step9c.md. */
+    MON(NAM("living mirage"), S_PUDDING,
+        LVL(12, 9, 6, 0, -10), (G_NOGEN|G_NOCORPSE),
+        A(ATTK(AT_TUCH, AD_DESC, 6, 8), NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(140, 0, MS_SILENT, MZ_GIGANTIC), MR_ELEC|MR_POISON|MR_STONE, 0,
+        M1_NOEYES | M1_NOHEAD | M1_NOLIMBS | M1_AMORPHOUS | M1_BREATHLESS | M1_MINDLESS | M1_OMNIVORE,
+        M2_NEUTER | M2_HOSTILE, M3_CLOSE | M3_WAITFORU,
+        14, CLR_BLUE, LIVING_MIRAGE),
+
     MON(NAM("gray ooze"), S_PUDDING,
         LVL(3, 1, 8, 0, 0), (G_GENO | G_NOCORPSE | 2),
         A(ATTK(AT_BITE, AD_RUST, 2, 8),
@@ -2160,6 +2434,17 @@
     /*
      * Quantum mechanics
      */
+    /* Step9A: pinned UnNetHack branch dependency. */
+    MON(NAM("blue slime"), S_PUDDING,
+        LVL(11, 6, 6, 20, 0), (G_SHEOL|G_GENO|1),
+        A(ATTK(AT_TUCH, AD_FREZ, 1, 8), NO_ATTK,
+          NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(400, 150, MS_SILENT, MZ_LARGE),
+        MR_COLD|MR_POISON|MR_ACID|MR_STONE, MR_COLD,
+        M1_BREATHLESS|M1_AMORPHOUS|M1_NOEYES|M1_NOLIMBS|M1_NOHEAD|
+        M1_MINDLESS|M1_OMNIVORE|M1_ACID|M1_POIS,
+        M2_HOSTILE|M2_NEUTER, 0, 12, CLR_BRIGHT_BLUE, BLUE_SLIME),
+
     MON(NAM("quantum mechanic"), S_QUANTMECH,
         LVL(7, 12, 3, 10, 0), (G_GENO | 3),
         A(ATTK(AT_CLAW, AD_TLPT, 1, 4),
@@ -2200,6 +2485,24 @@
      *  Note: in the real world, most snakes are oviparous but some aren't;
      *  we treat all of these as if they are.
      */
+    /* Step9C: pinned dNetHack Mithardir; see doc/step9c.md. */
+    /* Step9C: pinned dNetHack Mithardir; see doc/step9c.md. */
+    MON(NAM("wraithworm"), S_SNAKE,
+        LVL(5, 12, 5, 0, -5), (G_GENO|G_NOGEN),
+        A(ATTK(AT_BITE, AD_DRLI, 1, 8), ATTK(AT_GAZE, AD_PLYS, 2, 4), NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(150, 80, MS_HISS, MZ_MEDIUM), MR_POISON|MR_COLD, MR_POISON|MR_COLD,
+        M1_NOLIMBS | M1_OVIPAROUS | M1_POIS | M1_SLITHY | M1_SWIM | M1_ANIMAL | M1_CARNIVORE | M1_CONCEAL | M1_NOTAKE,
+        M2_NASTY | M2_HOSTILE, 0,
+        8, CLR_GRAY, WRAITHWORM),
+
+    MON(NAM("first wraithworm"), S_SNAKE,
+        LVL(10, 12, 3, 0, -10), (G_NOGEN|G_UNIQ),
+        A(ATTK(AT_REACH5, AD_DRLI, 1, 8), ATTK(AT_GAZE, AD_PLYS, 2, 4), NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(150, 80, MS_HISS, MZ_GIGANTIC), MR_POISON|MR_COLD, MR_POISON|MR_COLD,
+        M1_NOLIMBS | M1_OVIPAROUS | M1_POIS | M1_SLITHY | M1_SWIM | M1_WALLWALK | M1_ANIMAL | M1_CARNIVORE | M1_NOTAKE,
+        M2_NASTY | M2_HOSTILE, M3_STATIONARY,
+        13, CLR_BRIGHT_MAGENTA, FIRST_WRAITHWORM),
+
     MON(NAM("garter snake"), S_SNAKE,
         LVL(1, 8, 8, 0, 0), (G_LGROUP | G_GENO | 1),
         A(ATTK(AT_BITE, AD_PHYS, 1, 2),
@@ -2255,6 +2558,8 @@
             | M1_CARNIVORE | M1_OVIPAROUS | M1_NOTAKE,
         M2_HOSTILE, 0,
         10, CLR_BLUE, COBRA),
+
+
     /*
      * Trolls
      */
@@ -2303,6 +2608,15 @@
     /*
      * Umber hulk
      */
+    /* Step9C: pinned dNetHack Mithardir; see doc/step9c.md. */
+    MON(NAM("aspect of The Silence"), S_UMBER,
+        LVL(33, 12, -3, 99, -5), (G_NOGEN|G_NOCORPSE),
+        A(ATTK(AT_TENT, AD_VAMP, 1, 4), ATTK(AT_TENT, AD_DESC, 3, 4), ATTK(AT_TENT, AD_DISN, 1, 4), ATTK(AT_TENT, AD_DISE, 1, 4), ATTK(AT_NONE, AD_COLD, 2, 8), NO_ATTK),
+        SIZ(0, 0, MS_SILENT, MZ_HUGE), MR_DISINT|MR_STONE, 0,
+        M1_HUMANOID | M1_NOLIMBS | M1_BREATHLESS | M1_FLY | M1_WALLWALK | M1_SEE_INVIS,
+        M2_DEMON | M2_NEUTER | M2_NASTY | M2_NOPOLY | M2_HOSTILE, 0,
+        38, CLR_BLACK, ASPECT_OF_THE_SILENCE),
+
     MON(NAM("umber hulk"), S_UMBER,
         LVL(9, 6, 2, 25, 0), (G_GENO | 2),
         A(ATTK(AT_CLAW, AD_PHYS, 3, 4), ATTK(AT_CLAW, AD_PHYS, 3, 4),
@@ -2311,6 +2625,7 @@
         SIZ(1200, 500, MS_SILENT, MZ_LARGE), 0, 0, M1_TUNNEL | M1_CARNIVORE,
         M2_STRONG, M3_INFRAVISIBLE,
         12, CLR_BROWN, UMBER_HULK),
+
     /*
      * Vampires
      */
@@ -2542,6 +2857,15 @@
     /*
      * golems
      */
+    /* Step9C: pinned dNetHack Mithardir; see doc/step9c.md. */
+    MON(NAM("sentinel of Mithardir"), S_GOLEM,
+        LVL(14, 6, 5, 50, 0), (G_NOCORPSE|G_NOGEN),
+        A(ATTK(AT_CLAW, AD_PHYS, 3, 8), ATTK(AT_MAGC, AD_ELEC, 3, 4), ATTK(AT_NONE, AD_ELEC, 0, 4), NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(4500, 0, MS_SILENT, MZ_LARGE), MR_SLEEP|MR_POISON|MR_STONE|MR_ELEC|MR_COLD, 0,
+        M1_HUMANOID | M1_THICK_HIDE | M1_BREATHLESS | M1_MINDLESS,
+        M2_STRONG | M2_HOSTILE, 0,
+        17, CLR_GRAY, SENTINEL_OF_MITHARDIR),
+
     MON(NAM("straw golem"), S_GOLEM,
         LVL(3, 12, 10, 0, 0), (G_NOCORPSE | 1),
         A(ATTK(AT_CLAW, AD_PHYS, 1, 2), ATTK(AT_CLAW, AD_PHYS, 1, 2),
@@ -2633,6 +2957,44 @@
      *  the '@' class does not obey rule #2.
      *  Plain "human" is a placeholder, not a normal monster.
      */
+    /* Step9A: pinned UnNetHack branch dependency. */
+    MON(NAM("ice golem"), S_GOLEM,
+        LVL(22, 8, -5, 60, 0), (G_SHEOL|G_NOCORPSE|1),
+        A(ATTK(AT_WEAP, AD_PHYS, 7, 10), ATTK(AT_BREA, AD_COLD, 8, 8),
+          NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(2000, 0, MS_SILENT, MZ_LARGE),
+        MR_COLD|MR_ELEC|MR_SLEEP|MR_POISON, 0,
+        M1_BREATHLESS|M1_MINDLESS|M1_HUMANOID|M1_THICK_HIDE|M1_POIS,
+        M2_NOPOLY|M2_HOSTILE|M2_STRONG|M2_COLLECT, 0, 26, CLR_BRIGHT_CYAN, ICE_GOLEM),
+    /* Step9A: pinned UnNetHack branch dependency. */
+    MON(NAM("crystal ice golem"), S_GOLEM,
+        LVL(28, 9, -10, 30, 0), (G_SHEOL|G_NOCORPSE|G_SGROUP|5),
+        A(ATTK(AT_WEAP, AD_PHYS, 10, 13), ATTK(AT_BREA, AD_RBRE, 10, 10),
+          NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(2000, 0, MS_SILENT, MZ_LARGE),
+        MR_DISINT|MR_COLD|MR_ELEC|MR_SLEEP|MR_POISON, 0,
+        M1_BREATHLESS|M1_MINDLESS|M1_HUMANOID|M1_THICK_HIDE|M1_POIS,
+        M2_NOPOLY|M2_HOSTILE|M2_STRONG|M2_COLLECT|M2_NEUTER,
+        0, 33, CLR_BRIGHT_BLUE, CRYSTAL_ICE_GOLEM),
+
+    /* Step9C: pinned dNetHack Mithardir; see doc/step9c.md. */
+    /* Step9C: pinned dNetHack Mithardir; see doc/step9c.md. */
+    MON(NAM("Alabaster elf"), S_HUMAN,
+        LVL(7, 12, 10, 10, -8), (G_GENO|G_LGROUP|G_NOGEN),
+        A(ATTK(AT_WEAP, AD_PHYS, 2, 4), ATTK(AT_WEAP, AD_PHYS, 2, 4), ATTK(AT_WEAP, AD_PHYS, 2, 4), NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(1200, 350, MS_SILENT, MZ_HUMAN), MR_SLEEP, MR_SLEEP,
+        M1_HUMANOID | M1_OMNIVORE | M1_SEE_INVIS,
+        M2_ELF | M2_NOPOLY | M2_COLLECT, M3_INFRAVISIBLE,
+        10, CLR_WHITE, ALABASTER_ELF),
+
+    MON(NAM("Alabaster elf-elder"), S_HUMAN,
+        LVL(10, 6, 10, 10, -8), (G_GENO|G_NOGEN),
+        A(ATTK(AT_WEAP, AD_PHYS, 2, 4), ATTK(AT_MAGC, AD_SPEL, 0, 4), NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(1200, 350, MS_SILENT, MZ_HUMAN), MR_SLEEP, MR_SLEEP,
+        M1_HUMANOID | M1_OMNIVORE | M1_SEE_INVIS,
+        M2_ELF | M2_NOPOLY | M2_COLLECT, M3_INFRAVISIBLE,
+        12, HI_ZAP, ALABASTER_ELF_ELDER),
+
     MON(NAM("human"), S_HUMAN, /* for corpses */
         LVL(0, 12, 10, 0, 0), G_NOGEN,
         A(ATTK(AT_WEAP, AD_PHYS, 1, 6),
@@ -2869,6 +3231,16 @@
         12, CLR_GREEN, WATCH_CAPTAIN),
     /* Unique humans not tied to quests.
      */
+    /* Step9A: pinned UnNetHack branch dependency. */
+    MON(NAM("Executioner"), S_HUMAN,
+        LVL(30, 18, -2, 60, 0), (G_NOGEN|G_UNIQ),
+        A(ATTK(AT_WEAP, AD_PHYS, 5, 10), ATTK(AT_WEAP, AD_PHYS, 5, 10),
+          NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(WT_HUMAN, 400, MS_HISS, MZ_HUMAN),
+        MR_POISON|MR_STONE|MR_COLD|MR_FIRE, 0,
+        M1_SWIM|M1_HUMANOID|M1_OMNIVORE|M1_REGEN|M1_SEE_INVIS,
+        M2_NOPOLY|M2_HUMAN|M2_HOSTILE|M2_STRONG|M2_NASTY|M2_PRINCE|M2_MALE,
+        M3_INFRAVISIBLE, 35, HI_LORD, EXECUTIONER),
     MON(NAM("Medusa"), S_HUMAN,
         LVL(20, 12, 2, 50, -15), (G_NOGEN | G_UNIQ),
         A(ATTK(AT_WEAP, AD_PHYS, 2, 4), ATTK(AT_CLAW, AD_PHYS, 1, 8),
@@ -2934,6 +3306,7 @@
         M2_UNDEAD | M2_NOPOLY | M2_WANDER | M2_STALK | M2_HOSTILE,
         M3_INFRAVISION,
         10, DRAGON_SILVER, SHADOW),
+
     MON(NAM("ghost"), S_GHOST,
         LVL(10, 3, -5, 50, -5), (G_NOCORPSE | G_NOGEN),
         A(ATTK(AT_TUCH, AD_PHYS, 1, 1),
@@ -3261,6 +3634,15 @@
      * monster type, not a specific monster (for <mx,my>) or the relevant
      * location, and therefore doesn't know whether water is involved.
      */
+    /* Step9C: pinned dNetHack Mithardir; see doc/step9c.md. */
+    MON(NAM("water dolphin"), S_EEL,
+        LVL(8, 21, -3, 20, -5), (G_NOHELL|G_NOCORPSE|G_NOGEN),
+        A(ATTK(AT_BUTT, AD_PHYS, 2, 8), NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(3000, 0, MS_SILENT, MZ_LARGE), 0, 0,
+        M1_NOLIMBS | M1_SLITHY | M1_THICK_HIDE | M1_AMPHIBIOUS | M1_SWIM | M1_OMNIVORE | M1_SEE_INVIS,
+        M2_STRONG | M2_NASTY | M2_NOPOLY | M2_COLLECT | M2_STALK, M3_INFRAVISIBLE,
+        10, CLR_BLUE, WATER_DOLPHIN),
+
     MON(NAM("jellyfish"), S_EEL,
         LVL(3, 3, 6, 0, 0), (G_GENO | G_NOGEN),
         A(ATTK(AT_STNG, AD_DRST, 3, 3),
@@ -3323,6 +3705,7 @@
         M2_NOPOLY | M2_HOSTILE | M2_STRONG,
         M3_INFRAVISIBLE | M3_INFRAVISION,
         28, HI_LORD, WATCHER_IN_THE_WATER),
+
     /*
      * lizards, &c
      */
@@ -3396,6 +3779,18 @@
      * dummy monster needed for visual interface
      * (marking it unique prevents figurines)
      */
+    /* Step9A: pinned UnNetHack branch dependency. */
+    MON(NAM("Punisher"), S_STATUE,
+        LVL(24, 25, -15, 95, 15), (G_NOGEN|G_NOCORPSE|1),
+        A(ATTK(AT_MAGC, AD_PUNI, 0, 0), NO_ATTK,
+          NO_ATTK, NO_ATTK,
+          NO_ATTK, NO_ATTK),
+        SIZ(1500, 500, MS_SILENT, MZ_LARGE),
+        MR_STONE|MR_DISINT|MR_COLD|MR_FIRE|MR_ELEC|MR_SLEEP|MR_POISON, 0,
+        M1_BREATHLESS|M1_THICK_HIDE|M1_HUMANOID|M1_SEE_INVIS,
+        M2_NOPOLY|M2_NEUTER|M2_HOSTILE,
+        M3_INFRAVISION|M3_NOREGEN|M3_STATIONARY,
+        27, CLR_BLACK, PUNISHER),
     MON(NAM("long worm tail"), S_WORM_TAIL,
         LVL(0, 0, 0, 0, 0), (G_NOGEN | G_NOCORPSE | G_UNIQ),
         A(NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
@@ -3789,6 +4184,7 @@
             | M2_NASTY | M2_COLLECT | M2_MAGIC,
         M3_WANTSARTI | M3_WAITFORU,
         17, HI_LORD, SCORPIUS),
+
     MON(NAM("Master Assassin"), S_HUMAN,
         LVL(15, 12, 0, 30, 18), (G_NOGEN | G_UNIQ),
         A(ATTK(AT_WEAP, AD_DRST, 2, 6), ATTK(AT_WEAP, AD_PHYS, 2, 8),
@@ -3981,6 +4377,8 @@
                                        | M2_STRONG | M2_COLLECT | M2_MAGIC,
         M3_INFRAVISIBLE,
         8, HI_DOMESTIC, APPRENTICE),
+
+
 
     /*
      * mons_init() in monst.c adds a terminator here, mons[NUMMONS].

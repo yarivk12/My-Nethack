@@ -859,6 +859,8 @@ dragon_armor_handling(
         break;
     case YELLOW_DRAGON_SCALES:
     case YELLOW_DRAGON_SCALE_MAIL:
+    case GLOWING_DRAGON_SCALES:
+    case GLOWING_DRAGON_SCALE_MAIL:
         if (puton) {
             EStone_resistance |= W_ARM;
         } else {
@@ -878,6 +880,25 @@ dragon_armor_handling(
             ESlow_digestion &= ~W_ARM;
         }
         break;
+    case CHROMATIC_DRAGON_SCALES:
+    case CHROMATIC_DRAGON_SCALE_MAIL: {
+        static const int powers[] = {
+            FIRE_RES, COLD_RES, SLEEP_RES, DISINT_RES, SHOCK_RES,
+            POISON_RES, ACID_RES, STONE_RES, REFLECTING, ANTIMAGIC
+        };
+        int i;
+        for (i = 0; i < SIZE(powers); ++i) {
+            if (puton)
+                u.uprops[powers[i]].extrinsic |= W_ARM;
+            else
+                u.uprops[powers[i]].extrinsic &= ~W_ARM;
+        }
+        if (!puton) {
+            wielding_corpse(uwep, otmp, on_purpose);
+            wielding_corpse(uswapwep, otmp, on_purpose);
+        }
+        break;
+    }
     default:
         break;
     }
@@ -1512,7 +1533,7 @@ Blindf_off(struct obj *otmp)
         if (was_blind) {
             /* "still cannot see" makes no sense when removing lenses
                since they can't have been the cause of your blindness */
-            if (otmp->otyp != LENSES)
+            if (otmp->otyp != LENSES && !is_mith_mask(otmp))
                 You("still cannot see.");
         } else {
             changed = TRUE; /* !was_blind */
@@ -2032,6 +2053,13 @@ canwearobj(struct obj *otmp, long *mask, boolean noisy)
     int err = 0;
     const char *which;
 
+    if (!mith_armor_size_fits(otmp, gy.youmonst.data)) {
+        if (noisy)
+            pline("%s %s the wrong size for you.", Yname2(otmp),
+                  otense(otmp, "are"));
+        return 0;
+    }
+
     /* this is the same check as for 'W' (dowear), but different message,
        in case we get here via 'P' (doputon) */
     if (verysmall(gy.youmonst.data) || nohands(gy.youmonst.data)) {
@@ -2219,7 +2247,7 @@ accessory_or_armor_on(struct obj *obj)
     ring = (obj->oclass == RING_CLASS || obj->otyp == MEAT_RING);
     amulet = (obj->oclass == AMULET_CLASS);
     eyewear = (obj->otyp == BLINDFOLD || obj->otyp == TOWEL
-               || obj->otyp == LENSES);
+               || obj->otyp == LENSES || is_mith_mask(obj));
     /* checks which are performed prior to actually touching the item */
     if (armor) {
         if (!canwearobj(obj, &mask, TRUE))
@@ -2341,7 +2369,7 @@ accessory_or_armor_on(struct obj *obj)
                     else
                         already_wearing("some lenses");
                 } else {
-                    already_wearing(something); /* ??? */
+                    already_wearing(is_mith_mask(ublindf) ? "a mask" : something);
                 }
                 return ECMD_OK;
             }
@@ -2500,6 +2528,11 @@ find_ac(void)
     if (HProtection & INTRINSIC)
         uac -= u.ublessed;
     uac -= u.uspellprot;
+    uac -= min(u.mith_syllables[MITH_UUR], AC_MAX);
+    if (u.mith_timers[MITH_UUR])
+        uac -= 10;
+    if (u.mith_words & MITH_DIVIDING)
+        uac -= 3;
 
     /* put a cap on armor class [5.0: was +127,-128, now reduced to +/- 99 */
     if (abs(uac) > AC_MAX)
@@ -3419,7 +3452,7 @@ equip_ok(struct obj *obj, boolean removing, boolean accessory)
         && obj->oclass != AMULET_CLASS) {
         /* ... except for a few wearable exceptions outside these classes */
         if (obj->otyp != MEAT_RING && obj->otyp != BLINDFOLD
-            && obj->otyp != TOWEL && obj->otyp != LENSES)
+            && obj->otyp != TOWEL && obj->otyp != LENSES && !is_mith_mask(obj))
             return GETOBJ_EXCLUDE;
     }
 

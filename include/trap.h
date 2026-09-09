@@ -90,7 +90,8 @@ enum trap_types {
     TRAPPED_DOOR = 24, /* part of door; not present on map as a trap */
     TRAPPED_CHEST = 25, /* part of object; not on map */
 
-    TRAPNUM = 26
+    ICE_TRAP = 26, /* Sheol freezing cloud */
+    TRAPNUM = 27
 };
 
 /* some trap-related function return results */

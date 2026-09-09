@@ -1180,6 +1180,33 @@ mksobj_init(struct obj **obj, boolean artif)
 }
 
 /* mksobj(): create a specific type of object; result is always non-Null */
+/* Donor TILE class weights, isolated from ordinary object generation. */
+int
+mith_tile_type(void)
+{
+    static const int weights[6] = { 167, 166, 167, 167, 167, 166 };
+    int roll = rn2(1000), i;
+
+    for (i = 0; i < 6; ++i) {
+        if (roll < weights[i])
+            return SYLLABLE_OF_STRENGTH__AESH + i;
+        roll -= weights[i];
+    }
+    return SYLLABLE_OF_SPIRIT__VAUL;
+}
+
+/* Selection does not reserve: creation below is the persistent event. */
+int
+mith_slab_type(void)
+{
+    int choices[3], n = 0, i;
+
+    for (i = 0; i < 3; ++i)
+        if (!(u.mith_slabs & (1U << i)))
+            choices[n++] = FIRST_WORD + i;
+    return n ? choices[rn2(n)] : STRANGE_OBJECT;
+}
+
 struct obj *
 mksobj(int otyp, boolean init, boolean artif)
 {
@@ -1198,6 +1225,14 @@ mksobj(int otyp, boolean init, boolean artif)
     otmp->corpsenm = NON_PM;
     otmp->lua_ref_cnt = 0;
     otmp->pickup_prev = 0;
+
+    if (is_mith_slab(otmp))
+        u.mith_slabs |= 1U << (otyp - FIRST_WORD);
+    if (otyp == MOON_AXE) {
+        int phase = phase_of_the_moon();
+
+        otmp->usecount = phase <= 4 ? phase : 8 - phase;
+    }
 
     if (init)
         mksobj_init(&otmp, artif);
@@ -1909,6 +1944,27 @@ weight(struct obj *obj)
 {
     int wt = (int) objects[obj->otyp].oc_weight; /* weight of 1 'otyp' */
 
+    if (obj->obranch_material) {
+        /* Pinned donor densities in local material order (SHELL appended). */
+        static const int density[] = {
+            5, 10, 15, 10, 10, 10, 10, 15, 30, 25, 35, 80,
+            70, 80, 90, 120, 120, 40, 20, 60, 55, 50, 25
+        };
+
+        wt = wt * density[obj_material(obj)]
+             / density[objects[obj->otyp].oc_material];
+    }
+    if (obj->otyp == MOON_AXE)
+        wt = wt / 4 * max(1, min(obj->usecount, 4));
+    if (obj->obranch_size && obj->obranch_size != MZ_MEDIUM + 1) {
+        int delta = (int) obj->obranch_size - 1 - MZ_MEDIUM,
+            factor = abs(delta) + 1;
+
+        if (obj->oclass != ARMOR_CLASS && obj->oclass != WEAPON_CLASS)
+            factor *= factor;
+        wt = delta > 0 ? wt * factor : wt / factor + 1;
+    }
+
     if (obj->quan < 1L) {
         impossible("Calculating weight of %ld %s?",
                    obj->quan, simpleonames(obj));
@@ -2290,7 +2346,7 @@ boolean
 is_flammable(struct obj *otmp)
 {
     int otyp = otmp->otyp;
-    int omat = objects[otyp].oc_material;
+    int omat = obj_material(otmp);
 
     /* Candles can be burned, but they're not flammable in the sense that
      * they can't get fire damage and it makes no sense for them to be
@@ -2308,11 +2364,9 @@ is_flammable(struct obj *otmp)
 boolean
 is_rottable(struct obj *otmp)
 {
-    int otyp = otmp->otyp;
-
-    return (boolean) ((objects[otyp].oc_material <= WOOD
-                       && objects[otyp].oc_material != LIQUID)
-                      || objects[otyp].oc_material == DRAGON_HIDE);
+    return (boolean) ((obj_material(otmp) <= WOOD
+                       && obj_material(otmp) != LIQUID)
+                      || obj_material(otmp) == DRAGON_HIDE);
 }
 
 /*

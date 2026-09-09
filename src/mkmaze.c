@@ -347,6 +347,12 @@ bad_location(
                       || !((levl[x][y].typ == CORR
                             && svl.level.flags.is_maze_lev)
                            || levl[x][y].typ == ROOM
+                           /* Imported walkable terrain is legal for the
+                              donor's hidden portals and arrival regions. */
+                           || levl[x][y].typ == PUDDLE
+                           || levl[x][y].typ == SAND
+                           || levl[x][y].typ == SOIL
+                           || levl[x][y].typ == GRASS
                            || levl[x][y].typ == AIR));
 }
 
@@ -565,6 +571,52 @@ baalz_fixup(void)
     gb.bughack.inarea.y2 = gb.bughack.delarea.y2 = 0;
 }
 
+/* Pinned dNetHack's post-map Mithardir cleanup. Keep objects and monsters
+   out of overwritten rock; remove dangling Wastes wall fragments. */
+staticfn void
+mith_finish_wastes(void)
+{
+    int x, y, walls, i;
+    static const int dx[4] = { -1, 0, 1, 0 };
+    static const int dy[4] = { 0, -1, 0, 1 };
+    boolean desert = In_mithardir_desert(&u.uz);
+    struct monst *mon;
+    struct obj *otmp, *next;
+
+    if (!In_mithardir(&u.uz) || (!desert && u.uz.dlevel != 1))
+        return;
+    for (x = 0; x < COLNO; ++x) {
+        for (y = 0; y < ROWNO; ++y) {
+            /* Column zero is NetHack's non-playable vision boundary.
+               Lighting it can make view_from() request newsym(0, y). */
+            levl[x][y].lit = (x != 0);
+            if (!ACCESSIBLE(levl[x][y].typ)) {
+                if ((mon = m_at(x, y)) != 0)
+                    (void) rloc(mon, RLOC_NOMSG);
+                for (otmp = svl.level.objects[x][y]; otmp; otmp = next) {
+                    next = otmp->nexthere;
+                    (void) rloco(otmp);
+                }
+            }
+            if (desert && IS_WALL(levl[x][y].typ)) {
+                walls = 0;
+                for (i = 0; i < 4; ++i)
+                    if (isok(x + dx[i], y + dy[i])
+                        && IS_WALL(levl[x + dx[i]][y + dy[i]].typ))
+                        ++walls;
+                if (walls < 2) {
+                    levl[x][y].typ = STONE;
+                    if (walls == 1) {
+                        x = max(0, x - 1);
+                        y = max(0, y - 1);
+                    }
+                }
+            }
+        }
+    }
+    wallification(1, 0, COLNO - 1, ROWNO - 1);
+}
+
 /* this is special stuff that the level compiler cannot (yet) handle */
 void
 fixup_special(void)
@@ -644,6 +696,8 @@ fixup_special(void)
     if (!added_branch && Is_branchlev(&u.uz)) {
         place_lregion(0, 0, 0, 0, 0, 0, 0, 0, LR_BRANCH, (d_level *) 0);
     }
+
+    mith_finish_wastes();
 
     /* Still need to add some stuff to level file */
     if (Is_medusa_level(&u.uz)) {

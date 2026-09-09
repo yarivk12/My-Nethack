@@ -308,7 +308,11 @@ onscary(coordxy x, coordxy y, struct monst *mtmp)
 void
 mon_regen(struct monst *mon, boolean digest_meal)
 {
-    if (svm.moves % 20 == 0 || regenerates(mon->data))
+    if (mith_mon_syllable(mon) == MITH_HOON)
+        healmon(mon, 10, 0);
+    if (!(mon->data->mflags3 & M3_NOREGEN)
+        && (svm.moves % 20 == 0 || regenerates(mon->data)
+            || ((mon->data->mflags3 & M3_BLINKER) && !mon->mflee)))
         healmon(mon, 1, 0);
     if (mon->mspec_used)
         mon->mspec_used--;
@@ -622,6 +626,8 @@ mind_blast(struct monst *mtmp)
             dmg = rnd(15);
             if (Half_spell_damage)
                 dmg = (dmg + 1) / 2;
+            if (u.mith_timers[MITH_VAUL])
+                dmg = (dmg + 1) / 2;
             losehp(dmg, "psychic blast", KILLED_BY_AN);
         }
     }
@@ -660,7 +666,7 @@ m_everyturn_effect(struct monst *mtmp)
         /* don't leave a vapor cloud if some other gas cloud is already
            present, or when flowing under closed doors so that visibility
            changes aren't mixed with messages about doing such */
-        if (!closed_door(x, y) && !visible_region_at(x, y))
+        if (!closed_door(x, y) && !region_blocks_light(x, y))
             create_gas_cloud(x, y, 1, 0); /* harmless vapor */
     }
 }
@@ -693,6 +699,119 @@ m_postmove_effect(struct monst *mtmp)
 /* The whole dochugw/m_move/distfleeck/mfndpos section is serious spaghetti
  * code. --KAA
  */
+staticfn void
+sheol_share_hp(struct monst *mon1, struct monst *mon2)
+{
+    struct monst *tmp;
+    char nam[BUFSZ];
+    int oldhp;
+
+    Strcpy(nam, makeplural(pmname(mon1->data, NEUTRAL)));
+
+    /* Share same damage with another monster. */
+
+    if (mon1->mhp == mon2->mhp) {
+        return;
+    }
+
+    if (mon1->mhp < mon2->mhp) {
+        tmp = mon1;
+        mon1 = mon2;
+        mon2 = tmp;
+    }
+
+    /* Some statuses block sharing, but only if
+     * that's on the contributing side.
+     *
+     * The contributing side does the action, the other
+     * one is just a passive receiver. */
+    if (mon1->mfrozen || mon1->msleeping) {
+        return;
+    }
+
+    /* It doesn't always happen, only 1/2 of time. */
+    if (rn2(2)) {
+        return;
+    }
+
+    /* If the other monster is frozen or sleeping, the
+     * status is exchanged. After all, the monster with more
+     * hp is more likely to survive. The woken up creature
+     * is put into fleeing. */
+    if (!mon2->mcanmove) {
+        mon1->mcanmove = mon2->mcanmove;
+        mon1->mfrozen = mon2->mfrozen;
+        mon2->mcanmove = 1;
+        mon2->mfrozen = 0;
+        mon2->mflee = 1;
+        mon2->mfleetim = 0;
+        /* TODO: come up with a better message for frozen/sleeping
+         * status exchange. */
+        if (cansee(mon1->mx, mon1->my) &&
+            cansee(mon2->mx, mon2->my)) {
+            pline("The %s appear to share their wounds.", nam);
+        }
+        return;
+    }
+    if (mon2->msleeping) {
+        mon1->msleeping = mon2->msleeping;
+        mon2->msleeping = 0;
+        mon2->mflee = 1;
+        mon2->mfleetim = 0;
+        if (cansee(mon1->mx, mon1->my) &&
+            cansee(mon2->mx, mon2->my)) {
+            pline("The %s appear to share their wounds.", nam);
+        }
+        return;
+    }
+
+    oldhp = mon2->mhp;
+    mon2->mhp = (mon2->mhp + mon1->mhp) / 2;
+    if (mon2->mhp > mon2->mhpmax) {
+        mon2->mhp = mon2->mhpmax;
+    }
+
+    mon1->mhp -= (mon2->mhp - oldhp);
+    if (oldhp != mon2->mhp &&
+        cansee(mon1->mx, mon1->my) &&
+        cansee(mon2->mx, mon2->my)) {
+        pline("The %s appear to share their wounds.", nam);
+    }
+}
+
+staticfn void
+sheol_chillbug_turn(struct monst *mtmp)
+{
+    struct monst *other;
+
+    if (mtmp->mhp < mtmp->mhpmax / 2) {
+        for (other = fmon; other; other = other->nmon)
+            if (other->data == mtmp->data && !DEADMONSTER(other)) {
+                other->mflee = 1;
+                other->mfleetim = 0;
+            }
+    }
+    /* Existing saved mspec_used stores the elapsed attack-cycle equivalent:
+     * 14 - cooldown is turns since attack; donor reattack threshold is 5..14.
+     * Chillbugs do not otherwise use spell cooldowns. */
+    if (mtmp->mspec_used <= rn2(10)) {
+        for (other = fmon; other; other = other->nmon)
+            if (other->data == mtmp->data && !DEADMONSTER(other)) {
+                other->mflee = 0;
+                other->mspec_used = 14;
+            }
+    }
+    for (other = fmon; other; other = other->nmon)
+        if (other != mtmp && other->data == mtmp->data
+            && !DEADMONSTER(other) && !DEADMONSTER(mtmp)
+            && (!!other->mtame == !!mtmp->mtame)
+            && abs(other->mx - mtmp->mx) <= 1
+            && abs(other->my - mtmp->my) <= 1) {
+            sheol_share_hp(mtmp, other);
+            break;
+        }
+}
+
 int
 dochug(struct monst *mtmp)
 {
@@ -761,6 +880,11 @@ dochug(struct monst *mtmp)
     if (DEADMONSTER(mtmp))
         return 1; /* m_respond gaze can kill medusa */
 
+    if (mtmp->data->mflags3 & M3_GROUPATTACK) {
+        sheol_chillbug_turn(mtmp);
+        if (!mtmp->mcanmove || mtmp->msleeping)
+            return 0;
+    }
     /* fleeing monsters might regain courage */
     if (mtmp->mflee && !mtmp->mfleetim && mtmp->mhp == mtmp->mhpmax
         && !rn2(25))
@@ -905,7 +1029,8 @@ dochug(struct monst *mtmp)
 
             for (a = &mdat->mattk[0]; a < &mdat->mattk[NATTK]; a++) {
                 if (a->aatyp == AT_MAGC
-                    && (a->adtyp == AD_SPEL || a->adtyp == AD_CLRC)) {
+                    && (a->adtyp == AD_SPEL || a->adtyp == AD_CLRC
+                       || a->adtyp == AD_PUNI)) {
                     if ((castmu(mtmp, a, FALSE, FALSE) & M_ATTK_HIT)) {
                         status = MMOVE_DONE; /* bypass m_move() */
                         break;
@@ -1739,7 +1864,8 @@ m_move(struct monst *mtmp, int after)
     long flag;
     coordxy omx = mtmp->mx, omy = mtmp->my;
 
-    if (mtmp->data->mflags3 & M3_STATIONARY)
+    if ((mtmp->data->mflags3 & M3_STATIONARY)
+        || (is_weeping(mtmp->data) && canseemon(mtmp)))
         return MMOVE_NOTHING;
     if (IS_BOG(levl[omx][omy].typ) && rn2(3)
         && !is_flyer(mtmp->data) && !is_floater(mtmp->data)
@@ -1747,6 +1873,11 @@ m_move(struct monst *mtmp, int after)
         && !amphibious(mtmp->data))
         return MMOVE_NOTHING;
 
+    if (mon_frozen_feet(mtmp)) {
+        set_mon_frozen_feet(mtmp, mon_frozen_feet(mtmp) - 1);
+        if (mon_frozen_feet(mtmp))
+            return MMOVE_NOTHING;
+    }
     if (mtmp->mtrapped) {
         int i = mintrap(mtmp, NO_TRAP_FLAGS);
 

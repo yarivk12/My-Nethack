@@ -733,6 +733,10 @@ LUA_FILES = $(DAT)asmodeus.lua $(DAT)baalz.lua $(DAT)bigrm-1.lua \
 	$(DAT)moria1-1.lua $(DAT)moria2-1.lua $(DAT)moria3-1.lua \
 	$(DAT)moria4-1.lua $(DAT)moria4-2.lua $(DAT)moria4-3.lua $(DAT)moria4-4.lua \
 	$(DAT)moria5-1.lua $(DAT)moria6-1.lua $(DAT)moria6-2.lua \
+	$(DAT)sheolfil.lua $(DAT)sheolmid.lua $(DAT)palace_f.lua $(DAT)palace_e.lua \
+	$(DAT)drgnA.lua $(DAT)drgnB.lua $(DAT)drgnC.lua $(DAT)drgnD.lua \
+	$(DAT)chalv2.lua $(DAT)ossa1.lua $(DAT)mith1.lua $(DAT)mith2.lua $(DAT)mith3.lua \
+	$(DAT)cat1.lua $(DAT)cat2.lua $(DAT)cat3.lua \
 	$(DAT)bigrm-2.lua $(DAT)bigrm-3.lua $(DAT)bigrm-4.lua \
 	$(DAT)bigrm-5.lua $(DAT)bigrm-6.lua $(DAT)bigrm-7.lua \
 	$(DAT)bigrm-8.lua $(DAT)bigrm-9.lua $(DAT)castle.lua \

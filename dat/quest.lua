@@ -32,6 +32,12 @@ questtext = {
       goal_alt = "goal_next"
    },
    common = {
+      -- Step9C: pinned dNetHack 17bc64f77ac566e7b90c0c6c6652e2a5f3a995c0,
+      -- dat/quest.txt common message 00202.
+      mithardir_silence = {
+         output = "text",
+         text = [[A terrible silence has fallen!]],
+      },
       TEST_PATTERN = {
          output = "text",
          text = [[%p:	return(plname);

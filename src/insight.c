@@ -3344,6 +3344,8 @@ mstatusline(struct monst *mtmp)
         Strcat(info, ", scared");
     if (mtmp->mtrapped)
         Strcat(info, ", trapped");
+    if (mon_frozen_feet(mtmp))
+        Strcat(info, ", frozen in ice");
     if (mtmp->mspeed)
         Strcat(info, (mtmp->mspeed == MFAST) ? ", fast"
                       : (mtmp->mspeed == MSLOW) ? ", slow"
@@ -3454,6 +3456,8 @@ ustatusline(void)
         Sprintf(eos(info), ", slippery %s", fingers_or_gloves(TRUE));
     if (u.utrap)
         Strcat(info, ", trapped");
+    if (Frozen_feet)
+        Strcat(info, ", frozen in ice");
     if (Fast)
         Strcat(info, Very_fast ? ", very fast" : ", fast");
     if (u.uundetected)

@@ -5,9 +5,116 @@
 
 #include "hack.h"
 
+/* The selected Mithardir forms share the donor's transformation behavior,
+   but are not lycanthropes and must not acquire lycanthropy/summoning rules. */
+staticfn int
+mith_fey_counter(int type)
+{
+    switch (type) {
+    case PM_COURE_ELADRIN: return PM_MOTE_OF_LIGHT;
+    case PM_MOTE_OF_LIGHT: return PM_COURE_ELADRIN;
+    case PM_NOVIERE_ELADRIN: return PM_WATER_DOLPHIN;
+    case PM_WATER_DOLPHIN: return PM_NOVIERE_ELADRIN;
+    case PM_BRALANI_ELADRIN: return PM_SINGING_SAND;
+    case PM_SINGING_SAND: return PM_BRALANI_ELADRIN;
+    case PM_SELKIE: return PM_SEAL;
+    case PM_SEAL: return PM_SELKIE;
+    default: return NON_PM;
+    }
+}
+
+staticfn boolean
+mith_fey_change_ready(struct monst *mon)
+{
+    int type = monsndx(mon->data);
+
+    switch (type) {
+    case PM_COURE_ELADRIN:
+    case PM_NOVIERE_ELADRIN:
+    case PM_BRALANI_ELADRIN:
+        if (2 * mon->mhp >= mon->mhpmax || !rn2(2))
+            return FALSE;
+        if (type == PM_NOVIERE_ELADRIN && !is_pool(mon->mx, mon->my))
+            return FALSE; /* donor excludes shallow water */
+        return !Protection_from_shape_changers;
+    case PM_MOTE_OF_LIGHT:
+    case PM_WATER_DOLPHIN:
+    case PM_SINGING_SAND:
+        if (2 * mon->mhp <= mon->mhpmax)
+            return FALSE;
+        return !rn2(30) || mon->mhp >= mon->mhpmax;
+    case PM_SELKIE:
+        return !rn2(night() ? (flags.moonphase == FULL_MOON ? 3 : 30)
+                             : (flags.moonphase == FULL_MOON ? 10 : 50))
+               && !Protection_from_shape_changers;
+    case PM_SEAL:
+        return !rn2(30);
+    default:
+        return FALSE;
+    }
+}
+
+staticfn void
+mith_fey_shift(struct monst *mon, int target)
+{
+    struct permonst *old = mon->data;
+    struct obj *obj;
+    boolean elemental = (target == PM_MOTE_OF_LIGHT
+                         || target == PM_WATER_DOLPHIN
+                         || target == PM_SINGING_SAND);
+
+    if (canseemon(mon) && !Hallucination)
+        pline("%s changes into %s.", Monnam(mon),
+              an(pmname(&mons[target], Mgender(mon))));
+    set_mon_data(mon, &mons[target]);
+    mon->msleeping = mon->mfrozen = 0;
+    mon->mcanmove = 1;
+    healmon(mon, (mon->mhpmax - mon->mhp) / 4, 0);
+    if (emits_light(old) != emits_light(mon->data)) {
+        if (emits_light(old))
+            del_light_source(LS_MONSTER, monst_to_any(mon));
+        if (emits_light(mon->data))
+            new_light_source(mon->mx, mon->my, emits_light(mon->data),
+                             LS_MONSTER, monst_to_any(mon));
+    }
+    if (elemental) {
+        /* Elemental forms retain equipment, unequipped, instead of destroying
+           it as ordinary polymorph into a body of another size would do. */
+        for (obj = mon->minvent; obj; obj = obj->nobj) {
+            long mask = obj->owornmask;
+
+            if ((mask & W_ARM) && obj->lamplit && artifact_light(obj))
+                end_burn(obj, FALSE);
+            if (obj == MON_WEP(mon))
+                setmnotwielded(mon, obj);
+            obj->owornmask = 0;
+            mon->misc_worn_check &= ~mask;
+            if (mask)
+                update_mon_extrinsics(mon, obj, FALSE, TRUE);
+        }
+        mon->weapon_check = NO_WEAPON_WANTED;
+    } else if (target == PM_COURE_ELADRIN || target == PM_NOVIERE_ELADRIN
+               || target == PM_BRALANI_ELADRIN) {
+        m_dowear(mon, TRUE);
+        mon->weapon_check = NEED_HTH_WEAPON;
+        (void) mon_wield_item(mon);
+    } else {
+        mon_break_armor(mon, FALSE);
+    }
+    possibly_unwield(mon, FALSE);
+    newsym(mon->mx, mon->my);
+}
+
 void
 were_change(struct monst *mon)
 {
+    int other = mith_fey_counter(monsndx(mon->data));
+
+    if (other != NON_PM) {
+        if (mith_fey_change_ready(mon))
+            mith_fey_shift(mon, other);
+        return;
+    }
     if (!is_were(mon->data))
         return;
 

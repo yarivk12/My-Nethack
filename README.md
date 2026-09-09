@@ -12,8 +12,12 @@ kept current with every project commit.
 The completed project includes the frozen dungeon-depth foundation, the Step 5
 shop milestone, the Step 6/7 NerfHack dungeon enrichment, and the Step 8
 Ruins of Moria integration. Step 8 is committed as `Add Ruins of Moria` and
-tagged `step8-ruins-of-moria`; this README is updated with every project
-commit.
+tagged `step8-ruins-of-moria`. Step 9A–9C now adds the implemented and manually
+validated Sheol, Dragon Caves and Mithardir as an **intermediate deterministic
+checkpoint**, `Add Sheol, Dragon Caves and Mithardir`. Their temporary DoD
+parents remain DL108, DL109 and DL110 respectively; final randomized placement
+is pending a later closeout commit. Step 9D was canceled. No final Step 9 tag
+is created for this checkpoint.
 
 ## Frozen structural baseline
 
@@ -33,6 +37,12 @@ save-format fields; its `EDITLEVEL` advance to 2 was required because stored
 monster, object, and dungeon IDs changed. Step 8 also adds no save-format
 fields; `EDITLEVEL` advances to 3 because stored monster, object, artifact,
 dungeon and terrain IDs changed.
+
+The combined Step 9 save epoch is `EDITLEVEL = 4`. Mithardir adds saved hero
+syllable counters/timers, Word knowledge/cooldowns and slab-generation state,
+plus scoped object material, size and property metadata. Pre-Step 9 saves and
+bones are unsupported; there is no migration. The frozen DoD length, ledger
+capacity and ordinary depth semantics remain unchanged.
 
 ## Step 5: shop optimization
 
@@ -121,7 +131,93 @@ validation was removed before release, and no per-floor random roll remains.
 The six branch floors occupy the entrance depth minus one through minus six
 and return to the saved DoD entrance; Castle remains DL200.
 
-## Validation
+## Step 9A–9C: INTERMEDIATE / DETERMINISTIC VALIDATION MILESTONE
+
+All three branches are implemented, have passed their automated gates, and
+have passed user manual validation. This checkpoint deliberately preserves
+their tested entrance depths before final randomization; **DL108–110 are
+temporary validation placements, not final production placement**.
+
+### Step 9A: Sheol
+
+Donor: UnNetHack, pinned commit
+`439b8d63d3d1ca78fb08588dd43f61874114b21a`. One optional descending branch has
+6–8 levels and four Lua resources: procedural frozen passages, the middle
+map, the palace entrance and the Executioner's palace. Imported content
+includes 15 monster definitions/dependencies, cold fern and weeping-angel
+behavior, blue-slime movement freezing, white-naga frost spit, ice traps,
+opaque ice walls, transparent crystal ice walls, fire/digging interactions,
+the crystal pick, and the Executioner encounter and donor rewards.
+
+Sheol is implemented and manually validated at the **temporary fixed DoD108**
+parent. It returns through ordinary branch stairs; the donor's Valley shortcut
+is excluded. Final random placement remains pending. See [Step 9A](doc/step9a.md).
+
+### Step 9B: Dragon Caves
+
+Donor: the same UnNetHack commit,
+`439b8d63d3d1ca78fb08588dd43f61874114b21a`. One optional four-level descending
+branch uses all four donor maps, dragon/worm populations, bogs, trees, traps
+and hoard tables. It adds baby/adult glowing dragons and non-unique chromatic
+cave dragons, lava breath and terrain interactions, glowing/chromatic scales
+and mail, worn powers/light, armor conversions, and finite scale drops across
+corpse revival. The native Caveman Chromatic Dragon remains unchanged. The
+donor's apparent dragon shop compiles as an ordinary room, preserved here.
+
+Dragon Caves is implemented and manually validated at the **temporary fixed
+DoD109** parent. Final random placement remains pending. See
+[Step 9B](doc/step9b.md).
+
+### Step 9C: Mithardir
+
+Donor: dNetHack (`Chris-plus-alphanumericgibberish/dnethack`), pinned commit
+`17bc64f77ac566e7b90c0c6c6652e2a5f3a995c0`. One optional ten-level branch
+contains Elshava and its eight shops/services, three Wastes floors, three
+Last Spire maps and three generated Catacombs floors. Eight Lua resources
+include the DoD approach. Directed portals, the Last Spire shortcut, white-dust
+storms, shallow-water freezing/thawing, terrain effects and generated terminal
+rooms preserve the selected donor content with documented native adaptations.
+
+The import adds 22 monster definitions and 36 object types, including Alabaster
+creatures, Eladrin forms, First Wraithworm, Aspect of The Silence, living armor
+and masks, sized/material-specific equipment, six ceramic syllables and three
+Word slabs. Syllable effects, Word study/powers, boss encounters, rewards and
+shop services persist through saves. The Second and Third Keys of Chaos work
+as ordinary keys; they add no endgame gate. Donor-global quests, roles, sanity,
+insight and ascension requirements are excluded.
+
+Mithardir is implemented and manually validated through the **temporary fixed
+DoD110** approach portal. Final random placement remains pending. See
+[Step 9C](doc/step9c.md) for provenance, mechanics, adaptations and test evidence.
+
+### Scope and checkpoint validation
+
+Step 9D, Neutral Quest / Lost Cities, was **canceled before production
+integration** and is not part of this milestone. Its [read-only audit](doc/step9d.md)
+is historical only. **DL111 is not reserved for Step 9**; the existing scheduler
+can use it for earlier enrichment. Only DL108–110 are reserved for this
+checkpoint. Steps 5–8 occurrence rules and randomized placement remain intact,
+with Castle at DL200. The combined Step 9 `EDITLEVEL` is 4.
+
+User manual validation of 9A, 9B and 9C passed. Automated validation passed
+x64 and Win32 Release builds, focused donor/content/runtime gates, complete
+branch traversal and save/reload checks, cumulative prior-milestone regressions,
+depth-range and ledger/recovery checks, DLB resource-byte verification, tile
+indices/capacity and `git diff --check`. The final reservation cleanup passed
+2,000 scheduler samples and four fresh wizard topologies per architecture,
+confirming fixed parents, varying earlier branches, no collisions and DL111
+reuse. Quick source/package checks were repeated for this checkpoint; the
+already-passing long suite was not rerun for documentation-only publication.
+The validated gameplay source is unchanged by this checkpoint closeout.
+Publication also preserves significant ASCII map padding with scoped Git
+whitespace rules and a source guard for whitespace outside map literals.
+
+See the [checkpoint record](doc/step9.md) and
+[wizard verification findings and fixes](doc/step9-playtest.md). Final randomized
+production placement and the final Step 9 milestone tag remain for a later,
+separately authorized closeout commit.
+
+## Validation through Step 8
 
 The final Step 8 change set contains focused source/content/runtime tests,
 topology smoke tests, and packaging checks. Validation included:

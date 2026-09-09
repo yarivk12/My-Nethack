@@ -820,6 +820,9 @@ init_dungeon_levels(
 
     lua_len(L, -1);
     nlevels = (int) lua_tointeger(L, -1);
+    /* Check before indexing the cumulative prototype arrays. */
+    if (nlevels < 0 || nlevels > LEV_LIMIT - pd->n_levs)
+        panic("init_dungeon: too many special levels");
     pd->tmpdungeon[dngidx].levels = nlevels;
     lua_pop(L, 1);
     for (f = 0; f < nlevels; f++) {
@@ -872,8 +875,6 @@ init_dungeon_levels(
         lua_pop(L, 1);
     }
     pd->n_levs += nlevels;
-    if (pd->n_levs > LEV_LIMIT)
-        panic("init_dungeon: too many special levels");
 }
 
 staticfn void
@@ -897,6 +898,8 @@ init_dungeon_branches(
 
     lua_len(L, -1);
     nbranches = (int) lua_tointeger(L, -1);
+    if (nbranches < 0 || nbranches > BRANCH_LIMIT - pd->n_brs)
+        panic("init_dungeon: too many branches");
     pd->tmpdungeon[dngidx].branches = nbranches;
     lua_pop(L, 1);
     for (f = 0; f < nbranches; f++) {
@@ -938,8 +941,6 @@ init_dungeon_branches(
         lua_pop(L, 1);
     }
     pd->n_brs += nbranches;
-    if (pd->n_brs > BRANCH_LIMIT)
-        panic("init_dungeon: too many branches");
 }
 
 staticfn void
@@ -1575,6 +1576,10 @@ step6b_schedule(void)
     int moria_dnum = dname_to_dnum("The Ruins of Moria");
     int dlevel, bigrooms = 0, target_bigrooms;
 
+    /* Step9A-C manual-test parents; Step9D was canceled before integration. */
+    for (dlevel = 108; dlevel <= 110; ++dlevel)
+        used[dlevel] = TRUE;
+
     for (slev = svs.sp_levchn; slev; slev = slev->next)
         if (slev->dlevel.dnum == dod
             && slev->dlevel.dlevel >= STEP6B_MIN_LEVEL
@@ -1670,10 +1675,43 @@ step6b_schedule(void)
 
 /* are "lev1" and "lev2" actually the same? */
 boolean
+In_sheol(d_level *lev)
+{
+    return lev->dnum >= 0 && lev->dnum < svn.n_dgns
+        && !strcmp(svd.dungeons[lev->dnum].dname, "Sheol");
+}
+
+boolean
+In_dragon_caves(d_level *lev)
+{
+    return lev->dnum >= 0 && lev->dnum < svn.n_dgns
+        && !strcmp(svd.dungeons[lev->dnum].dname, "The Dragon Caves");
+}
+
+boolean
 on_level(d_level *lev1, d_level *lev2)
 {
     return (boolean) (lev1->dnum == lev2->dnum
                       && lev1->dlevel == lev2->dlevel);
+}
+
+boolean
+In_mithardir(const d_level *lev)
+{
+    return lev->dnum >= 0 && lev->dnum < svn.n_dgns
+        && !strcmp(svd.dungeons[lev->dnum].dname, "Mithardir");
+}
+
+boolean
+In_mithardir_desert(const d_level *lev)
+{
+    return In_mithardir(lev) && lev->dlevel >= 2 && lev->dlevel <= 4;
+}
+
+boolean
+In_mithardir_catacombs(const d_level *lev)
+{
+    return In_mithardir(lev) && lev->dlevel > 4;
 }
 
 #ifndef SFCTOOL
@@ -2000,6 +2038,16 @@ surface(coordxy x, coordxy y)
             ? "bottom" : hliquid("water");
     else if (IS_BOG(levtyp))
         return "muddy swamp";
+    else if (IS_PUDDLE(levtyp))
+        return "shallow water";
+    else if (IS_SAND(levtyp))
+        return "white dust";
+    else if (levtyp == SOIL)
+        return "soil";
+    else if (levtyp == GRASS)
+        return "grass";
+    else if (IS_ANY_ICEWALL(levtyp))
+        return levtyp == CRYSTALICEWALL ? "crystal ice wall" : "ice wall";
     else if (is_ice(x, y))
         return "ice";
     else if (is_lava(x, y))

@@ -15,9 +15,9 @@ parts = re.findall(r"(?m)^#define STEP6B_(?:MIN|MAX)_LEVEL[^\n]*",
                    (repo / "src/dungeon.c").read_text())
 assert len(parts) == 2
 for path, names in {
-    "src/dungeon.c": ["depth", "step6b_depth_used", "step6b_pick_depth",
+    "src/dungeon.c": ["depth", "In_sheol", "step6b_depth_used", "step6b_pick_depth",
                       "step6b_add_level", "step6b_schedule"],
-    "src/makemon.c": ["uncommon"],
+    "src/makemon.c": ["sheol_mon_allowed", "uncommon"],
     "src/light.c": ["candle_light_range"],
     "src/timeout.c": ["begin_burn", "end_burn"],
     "src/shk.c": ["cost_per_charge"],

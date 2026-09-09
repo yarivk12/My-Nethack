@@ -1155,6 +1155,19 @@ use_mirror(struct obj *obj)
         else
             You_hear("%s stop moving.", something);
         paralyze_monst(mtmp, (int) mtmp->mfrozen + tmp);
+    } else if (monable && mtmp->data == &mons[PM_EVIL_EYE]) {
+        if (vis) {
+            pline("%s sees its own glare in your mirror.", Monnam(mtmp));
+            pline("%s is cancelled!", Monnam(mtmp));
+        }
+        mtmp->mcan = 1;
+        monflee(mtmp, 0, FALSE, TRUE);
+    } else if (monable && is_weeping(mtmp->data)) {
+        if (vis)
+            pline("%s stares at its reflection with a stony expression.",
+                  Monnam(mtmp));
+        mtmp->mcanmove = 0;
+        mtmp->mfrozen = 1;
     } else if (monable && mtmp->data == &mons[PM_UMBER_HULK]) {
         if (vis)
             pline("%s confuses itself!", Monnam(mtmp));
@@ -4262,6 +4275,8 @@ doapply(void)
     switch (obj->otyp) {
     case BLINDFOLD:
     case LENSES:
+    case LIVING_MASK:
+    case MASK:
         if (obj == ublindf) {
             if (!cursed(obj))
                 Blindf_off(obj);
@@ -4271,7 +4286,7 @@ doapply(void)
             You("are already %s.",
                 (ublindf->otyp == TOWEL) ? "covered by a towel"
                 : (ublindf->otyp == BLINDFOLD) ? "wearing a blindfold"
-                  : "wearing lenses");
+                  : is_mith_mask(ublindf) ? "wearing a mask" : "wearing lenses");
         }
         break;
     case CREAM_PIE:
@@ -4307,6 +4322,7 @@ doapply(void)
     case SKELETON_KEY:
         res = (pick_lock(obj, 0, 0, NULL) != 0) ? ECMD_TIME : ECMD_OK;
         break;
+    case CRYSTAL_PICK:
     case PICK_AXE:
     case DWARVISH_MATTOCK:
         res = use_pick_axe(obj);

@@ -103,7 +103,8 @@ set_uasmon(void)
        key off of it but include different monster forms...] */
     PROPSET(PASSES_WALLS, passes_walls(mdat));
     PROPSET(REGENERATION, regenerates(mdat));
-    PROPSET(REFLECTING, (mdat == &mons[PM_SILVER_DRAGON]));
+    PROPSET(REFLECTING, (mdat == &mons[PM_SILVER_DRAGON]
+                        || mdat == &mons[PM_CAVE_CHROMATIC_DRAGON]));
     PROPSET(BLINDED, !haseyes(mdat));
     PROPSET(BLND_RES, (dmgtype_fromattack(mdat, AD_BLND, AT_EXPL)
                        || dmgtype_fromattack(mdat, AD_BLND, AT_GAZE)));
@@ -1007,6 +1008,12 @@ polymon(int mntmp)
         /* probably should burn webs too if PM_FIRE_ELEMENTAL */
         reset_utrap(TRUE);
     }
+    if (Frozen_feet && (flaming(gy.youmonst.data)
+                       || is_whirly(gy.youmonst.data)
+                       || amorphous(gy.youmonst.data))) {
+        Frozen_feet = 0;
+        You("are no longer stuck in ice.");
+    }
     if (webmaker(gy.youmonst.data) && u.utrap && u.utraptype == TT_WEB) {
         You("orient yourself on the web.");
         reset_utrap(TRUE);
@@ -1421,6 +1428,7 @@ int
 dobreathe(void)
 {
     struct attack *mattk;
+    struct attack imported;
 
     if (Strangled) {
         You_cant("breathe.  Sorry.");
@@ -1437,6 +1445,12 @@ dobreathe(void)
         return ECMD_CANCEL;
 
     mattk = attacktype_fordmg(gy.youmonst.data, AT_BREA, AD_ANY);
+    if (mattk && (gy.youmonst.data == &mons[PM_CAVE_CHROMATIC_DRAGON]
+                 || gy.youmonst.data == &mons[PM_CRYSTAL_ICE_GOLEM])) {
+        imported = *mattk;
+        imported.adtyp = cave_breath_type(gy.youmonst.data, mattk->adtyp);
+        mattk = &imported;
+    }
     if (!mattk)
         impossible("bad breath attack?"); /* mouthwash needed... */
     else if (!u.dx && !u.dy && !u.dz)
@@ -2226,6 +2240,12 @@ armor_to_dragon(int atyp)
     case YELLOW_DRAGON_SCALE_MAIL:
     case YELLOW_DRAGON_SCALES:
         return PM_YELLOW_DRAGON;
+    case GLOWING_DRAGON_SCALE_MAIL:
+    case GLOWING_DRAGON_SCALES:
+        return PM_GLOWING_DRAGON;
+    case CHROMATIC_DRAGON_SCALE_MAIL:
+    case CHROMATIC_DRAGON_SCALES:
+        return PM_CAVE_CHROMATIC_DRAGON;
     default:
         return NON_PM;
     }

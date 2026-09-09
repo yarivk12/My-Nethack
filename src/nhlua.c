@@ -382,6 +382,12 @@ static const struct {
                 { 'T', TREE },
                 { 't', DEADTREE },
                 { 'M', BOG },
+                { 'U', ICEWALL },
+                { 'Y', CRYSTALICEWALL },
+                { 'Q', PUDDLE }, /* donor w conflicts with MATCH_WALL */
+                { 's', SAND },
+                { 'e', SOIL },
+                { 'G', GRASS },
                 { 'F', IRONBARS }, /* Fe = iron */
                 { 'x', MAX_TYPE }, /* "see-through" */
                 { 'B', CROSSWALL }, /* hack: boundary location */

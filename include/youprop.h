@@ -201,7 +201,7 @@
 
 #define HDisplaced u.uprops[DISPLACED].intrinsic /* timed from corpse */
 #define EDisplaced u.uprops[DISPLACED].extrinsic /* worn cloak */
-#define Displaced (HDisplaced || EDisplaced)
+#define Displaced (HDisplaced || EDisplaced || u.mith_timers[MITH_VAUL])
 
 #define HStealth u.uprops[STEALTH].intrinsic
 #define EStealth u.uprops[STEALTH].extrinsic
@@ -232,6 +232,17 @@
 
 /* HLevitation has I_SPECIAL set if levitating due to blessed potion
    which allows player to use the '>' command to end levitation early */
+/* Step9: existing saved spare fields hold movement-only ice restraint.
+ * Monster bits 5..6 independently count imported-dragon revivals (0,1,2+).
+ * Setters preserve the other state; no new save fields are needed. */
+#define Frozen_feet (u.uspare1)
+#define mon_frozen_feet(mon) ((mon)->mspare1 & 31L)
+#define set_mon_frozen_feet(mon, value) \
+    ((mon)->mspare1 = ((mon)->mspare1 & ~31L) | ((long) (value) & 31L))
+#define dragon_revivals(mon) (((mon)->mspare1 >> 5) & 3L)
+#define set_dragon_revivals(mon, value) \
+    ((mon)->mspare1 = ((mon)->mspare1 & ~96L) | (((long) (value) & 3L) << 5))
+
 #define HLevitation u.uprops[LEVITATION].intrinsic
 #define ELevitation u.uprops[LEVITATION].extrinsic
 /* BLevitation has I_SPECIAL set if trapped in the floor,
@@ -251,7 +262,8 @@
    FROMOUTSIDE set if inside solid rock (or in water on Plane of Water) */
 #define BFlying u.uprops[FLYING].blocked
 #define Flying                                                      \
-    ((HFlying || EFlying || (u.usteed && is_flyer(u.usteed->data))) \
+    ((HFlying || EFlying || (u.mith_words & MITH_FIRST) \
+      || (u.usteed && is_flyer(u.usteed->data))) \
      && !BFlying)
 /* May touch surface; does not override any others */
 

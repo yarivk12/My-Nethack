@@ -2379,11 +2379,29 @@ back_to_glyph(coordxy x, coordxy y)
     case TREE:
         idx = S_tree;
         break;
+    case ICEWALL:
+        idx = S_icewall;
+        break;
+    case CRYSTALICEWALL:
+        idx = S_crystalicewall;
+        break;
     case DEADTREE:
         idx = S_deadtree;
         break;
     case BOG:
         idx = S_bog;
+        break;
+    case PUDDLE:
+        idx = S_puddle;
+        break;
+    case SAND:
+        idx = S_sand;
+        break;
+    case SOIL:
+        idx = S_soil;
+        break;
+    case GRASS:
+        idx = S_grass;
         break;
     case POOL:
     case MOAT:
@@ -2715,7 +2733,7 @@ map_glyphinfo(
 const int zapcolors[NUM_ZAP] = {
     zap_color_missile,    zap_color_fire,  zap_color_frost,
     zap_color_sleep,      zap_color_death, zap_color_lightning,
-    zap_color_poison_gas, zap_color_acid,
+    zap_color_poison_gas, zap_color_acid, zap_color_lava,
 };
 const int altarcolors[] = {
     altar_color_unaligned, altar_color_chaotic, altar_color_neutral,
@@ -3155,7 +3173,8 @@ static const char *const type_names[MAX_TYPE] = {
     "LAVAWALL",
     "IRON_BARS", "DOOR", "CORR", "ROOM", "STAIRS", "LADDER", "FOUNTAIN",
     "THRONE", "SINK", "GRAVE", "ALTAR", "ICE", "DRAWBRIDGE_DOWN", "AIR",
-    "CLOUD"
+    "CLOUD", "DEADTREE", "BOG", "ICEWALL", "CRYSTALICEWALL",
+    "PUDDLE", "SAND", "SOIL", "GRASS"
 };
 
 staticfn const char *

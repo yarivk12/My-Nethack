@@ -16,6 +16,8 @@ void free_region(NhRegion *);
 #ifndef SFCTOOL
 boolean inside_gas_cloud(genericptr, genericptr);
 boolean expire_gas_cloud(genericptr, genericptr);
+boolean inside_dust_cloud(genericptr, genericptr);
+boolean expire_dust_cloud(genericptr, genericptr);
 boolean inside_rect(NhRect *, int, int);
 NhRegion *create_region(NhRect *, int);
 void add_rect_to_reg(NhRegion *, NhRect *);
@@ -46,7 +48,11 @@ static const callback_proc callbacks[] = {
 #define INSIDE_GAS_CLOUD 0
     inside_gas_cloud,
 #define EXPIRE_GAS_CLOUD 1
-    expire_gas_cloud
+    expire_gas_cloud,
+#define INSIDE_DUST_CLOUD 2
+    inside_dust_cloud,
+#define EXPIRE_DUST_CLOUD 3
+    expire_dust_cloud
 };
 
 /* Should be inlined. */
@@ -324,7 +330,7 @@ add_region(NhRegion *reg)
                 }
             }
             if (reg->visible) {
-                if (is_inside)
+                if (is_inside && reg->inside_f != INSIDE_DUST_CLOUD)
                     block_point(i, j);
                 if (cansee(i, j))
                     newsym(i, j);
@@ -698,7 +704,9 @@ visible_region_summary(winid win)
            adding 1 is intended to make the display be less confusing */
         Sprintf(buf, "%5ld", reg->ttl + 1L);
         damg = reg->arg.a_int;
-        if (damg)
+        if (reg->inside_f == INSIDE_DUST_CLOUD)
+            Sprintf(typbuf, "dust storm (%d)", damg);
+        else if (damg)
             Sprintf(typbuf, "poison gas (%d)", damg);
         else
             Strcpy(typbuf, "vapor");
@@ -726,6 +734,21 @@ visible_region_at(coordxy x, coordxy y)
             return gr.regions[i];
     }
     return (NhRegion *) 0;
+}
+
+/* Donor dust is a visible overlay, not an opaque poison-gas cloud.  Check
+   every region so a dust overlay cannot hide an overlapping gas blocker. */
+boolean
+region_blocks_light(coordxy x, coordxy y)
+{
+    int i;
+
+    for (i = 0; i < svn.n_regions; ++i)
+        if (gr.regions[i]->visible && gr.regions[i]->ttl != -2L
+            && gr.regions[i]->inside_f != INSIDE_DUST_CLOUD
+            && inside_region(gr.regions[i], x, y))
+            return TRUE;
+    return FALSE;
 }
 
 void
@@ -1402,6 +1425,158 @@ region_safety(void)
     /* maybe cure blindness too */
     if (BlindedTimeout == 1L)
         make_blinded(0L, TRUE);
+}
+/* Step9C: pinned dNetHack dust storms. Callback indices are appended so
+   native gas indices stay stable. Center and damage use existing saved data. */
+NhRegion *
+create_dust_cloud(coordxy x, coordxy y, int radius, int damage)
+{
+    NhRegion *cloud;
+    NhRect rect;
+    int i;
+
+    if (!isok(x, y) || radius < 1 || radius > 6 || damage < 1 || damage > 6)
+        return (NhRegion *) 0;
+    cloud = create_region((NhRect *) 0, 0);
+    rect.lx = rect.hx = x;
+    rect.ly = y - (radius - 1);
+    rect.hy = y + (radius - 1);
+    for (i = 0; i < radius; ++i) {
+        add_rect_to_reg(cloud, &rect);
+        --rect.lx;
+        ++rect.hx;
+        ++rect.ly;
+        --rect.hy;
+    }
+    cloud->ttl = d(3, 3);
+    clear_heros_fault(cloud);
+    cloud->inside_f = INSIDE_DUST_CLOUD;
+    cloud->expire_f = EXPIRE_DUST_CLOUD;
+    cloud->arg = cg.zeroany;
+    cloud->arg.a_int = damage;
+    cloud->visible = TRUE;
+    cloud->glyph = cmap_to_glyph(S_dustcloud);
+    add_region(cloud);
+    return cloud;
+}
+
+boolean
+expire_dust_cloud(genericptr_t p1, genericptr_t p2 UNUSED)
+{
+    NhRegion *reg = (NhRegion *) p1;
+    int damage = reg->arg.a_int;
+    coordxy x = (reg->bounding_box.lx + reg->bounding_box.hx) / 2,
+            y = (reg->bounding_box.ly + reg->bounding_box.hy) / 2;
+    coordxy nx = x - 1 + rn2(3), ny = y - 1 + rn2(3);
+
+    if (!isok(nx, ny) || !ZAP_POS(levl[nx][ny].typ))
+        nx = x, ny = y;
+    if (damage % 2) {
+        damage += rn2(damage < 5 ? 3 : 2);
+        (void) create_dust_cloud(nx, ny, damage, damage);
+    } else if (damage > 2) {
+        damage -= rn2(2) * 2;
+        (void) create_dust_cloud(nx, ny, damage, damage);
+    }
+    return TRUE;
+}
+
+boolean
+inside_dust_cloud(genericptr_t p1, genericptr_t p2)
+{
+    NhRegion *reg = (NhRegion *) p1;
+    struct monst *mon = (struct monst *) p2;
+    int dam = reg->arg.a_int, adtyp = AD_PHYS;
+
+    if (!mon) {
+        if (gy.youmonst.data == &mons[PM_SENTINEL_OF_MITHARDIR])
+            healup(dam, 0, FALSE, FALSE);
+        if (nonliving(gy.youmonst.data) || Breathless)
+            return FALSE;
+        if (!Blind)
+            make_blinded(1L, FALSE);
+        You("are covered with dust and can barely breathe!");
+        if (dam > 3 && !rn2(20) && !Sick_resistance) {
+            make_sick(Sick ? Sick / 2L + 1L : ACURR(A_CON) * 300L,
+                      "white spores", TRUE, SICK_NONVOMITABLE);
+            dam = rnd(dam);
+        } else if (!rn2(10) && !mith_anhydrous(gy.youmonst.data)) {
+            pline("Salt dust burns your %s!", makeplural(body_part(LUNG)));
+            You("cough and spit blood!");
+            dam = rnd(dam) + 5;
+        } else {
+            dam = rnd(dam);
+        }
+        losehp(dam, "dust storm", KILLED_BY_AN);
+        nomul(0);
+        return FALSE;
+    }
+    if (mon->data == &mons[PM_SENTINEL_OF_MITHARDIR])
+        mon->mhp = min(mon->mhp + dam, mon->mhpmax);
+    if (nonliving(mon->data) || breathless(mon->data))
+        return FALSE;
+    if (haseyes(mon->data) && mon->mcansee)
+        mon->mblinded = 1, mon->mcansee = 0;
+    if (!rn2(20) && mon->data->mlet != S_FUNGUS
+        && mon->data != &mons[PM_GHOUL]) {
+        if (canseemon(mon))
+            pline("%s looks sick!", Monnam(mon));
+        dam = rnd(dam) + 5 + mon->m_lev;
+        adtyp = AD_DRST;
+    } else if (!rn2(10) && !mith_anhydrous(mon->data)) {
+        if (canseemon(mon))
+            pline("%s coughs!", Monnam(mon));
+        dam = rnd(dam) + 5;
+    } else {
+        if (canseemon(mon))
+            pline("%s struggles to breathe!", Monnam(mon));
+        dam = rnd(dam);
+    }
+    mon->mhp -= dam;
+    if (DEADMONSTER(mon))
+        monkilled(mon, "dust cloud", adtyp);
+    return DEADMONSTER(mon) ? TRUE : FALSE;
+}
+
+void
+mith_dust_storm(void)
+{
+    coordxy x, y;
+    struct trap *trap;
+
+    if (In_mithardir_desert(&u.uz))
+        for (trap = gf.ftrap; trap; trap = trap->ntrap)
+            if (trap->ttyp == MAGIC_PORTAL && !trap->tseen
+                && distmin(u.ux, u.uy, trap->tx, trap->ty) < 3)
+                seetrap(trap);
+
+    for (x = 1; x < COLNO; ++x)
+        for (y = 0; y < ROWNO; ++y) {
+            if (!IS_SAND(levl[x][y].typ))
+                continue;
+            wipe_engr_at(x, y, rnd(3), FALSE);
+            trap = t_at(x, y);
+            if (trap && is_pit(trap->ttyp) && !rn2(200)) {
+                del_engr_at(x, y);
+                if (u_at(x, y) && u.utrap && u.utraptype == TT_PIT) {
+                    pline_The("pit fills in!");
+                    reset_utrap(TRUE);
+                    nomul(-3);
+                    gm.multi_reason = "stuck in the sand";
+                }
+                (void) delfloortrap(trap);
+                bury_objs(x, y);
+                newsym(x, y);
+            } else if (!rn2(6000)) {
+                unearth_objs(x, y);
+                newsym(x, y);
+            } else if (!rn2(2000)) {
+                bury_objs(x, y);
+                newsym(x, y);
+            }
+            if (In_mithardir_desert(&u.uz) && !rn2(6000))
+                (void) create_dust_cloud(x, y, 1, 1);
+        }
 }
 #endif /* !SFCTOOL */
 

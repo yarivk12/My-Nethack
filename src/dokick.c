@@ -91,6 +91,8 @@ kickdmg(struct monst *mon, boolean clumsy)
     if (uarmf)
         dmg += uarmf->spe;
     dmg += u.udaminc; /* add ring(s) of increase damage */
+    dmg += mith_aesh_bonus();
+    dmg = mith_physical_damage(mon, uarmf, AT_KICK, dmg);
     if (dmg > 0)
         mon->mhp -= dmg;
     if (!DEADMONSTER(mon) && martial() && !bigmonst(mon->data) && !rn2(3)

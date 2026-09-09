@@ -22,7 +22,7 @@ staticfn void cprefx(int);
 staticfn boolean temp_givit(int, struct permonst *);
 staticfn void givit(int, struct permonst *);
 staticfn void eye_of_newt_buzz(void);
-staticfn void cpostfx(int);
+staticfn void cpostfx(int, struct obj *);
 staticfn void use_up_tin(struct obj *) NONNULLARG1;
 staticfn void consume_tin(const char *);
 staticfn void start_tin(struct obj *);
@@ -565,7 +565,7 @@ done_eating(boolean message)
     }
 
     if (piece->otyp == CORPSE || piece->globby)
-        cpostfx(piece->corpsenm);
+        cpostfx(piece->corpsenm, piece);
     else
         fpostfx(piece);
 
@@ -1131,7 +1131,7 @@ DISABLE_WARNING_FORMAT_NONLITERAL
 
 /* called after completely consuming a corpse */
 staticfn void
-cpostfx(int pm)
+cpostfx(int pm, struct obj *food)
 {
     int tmp = 0;
     int catch_lycanthropy = NON_PM;
@@ -1282,6 +1282,18 @@ cpostfx(int pm)
     case PM_PESTILENCE:
     case PM_FAMINE:
         /* life-saved; don't attempt to confer any intrinsics */
+        break;
+    case PM_EVIL_EYE:
+        if (food && food->blessed) {
+            You_feel("more fortunate.");
+            change_luck(rnd(3));
+        } else if (food && food->cursed) {
+            You_feel("less fortunate.");
+            change_luck(-rnd(3));
+        } else {
+            You_feel("your fortunes in flux.");
+            change_luck(2 - rn2(4));
+        }
         break;
     case PM_MIND_FLAYER:
     case PM_MASTER_MIND_FLAYER:
@@ -1615,7 +1627,7 @@ consume_tin(const char *mesg)
         /* cprefx() or cpostfx() might use up tin to keep it out of bones */
         cprefx(mnum);
         if (svc.context.tin.tin)
-            cpostfx(mnum);
+            cpostfx(mnum, svc.context.tin.tin);
         if (!svc.context.tin.tin)
             return;
 
@@ -3966,7 +3978,7 @@ int
 Finish_digestion(void)
 {
     if (gc.corpsenm_digested != NON_PM) {
-        cpostfx(gc.corpsenm_digested);
+        cpostfx(gc.corpsenm_digested, (struct obj *) 0);
         gc.corpsenm_digested = NON_PM;
     }
     return 0;

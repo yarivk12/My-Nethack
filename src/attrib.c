@@ -388,6 +388,8 @@ poisoned(
         loss = thrown_weapon ? rnd(6) : rn1(10, 6);
         if ((blast || cloud) && Half_gas_damage) /* worn towel */
             loss = (loss + 1) / 2;
+        if (u.mith_timers[MITH_VAUL])
+            loss = (loss + 1) / 2;
         losehp(loss, pkiller, kprefix); /* poison damage */
     } else {
         /* attribute loss; if typ is A_STR, reduction in current and
@@ -489,7 +491,8 @@ void
 exercise(int i, boolean inc_or_dec)
 {
     debugpline0("Exercise:");
-    if (i == A_INT || i == A_CHA)
+    /* The imported weeping angel's mental gaze is the sole INT exerciser. */
+    if (i == A_CHA)
         return; /* can't exercise these */
 
     /* no physical exercise while polymorphed; the body's temporary */
@@ -1203,6 +1206,10 @@ acurr(int chridx)
 
     assert(chridx >= 0 && chridx < A_MAX);
     tmp = u.abon.a[chridx] + u.atemp.a[chridx] + u.acurr.a[chridx];
+    tmp += !!(u.mith_words & MITH_FIRST) + !!(u.mith_words & MITH_DIVIDING)
+           + !!(u.mith_words & MITH_NURTURING);
+    if (chridx == A_CHA && uarmf && uarmf->otyp == STILETTOS)
+        tmp += 1 + uarmf->spe;
 
     /* for Strength:  3 <= result <= 125;
        for all others:  3 <= result <= 25 */

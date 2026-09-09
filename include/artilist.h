@@ -311,6 +311,16 @@ static NEARDATA struct artifact artilist[] = {
       NO_ATTK, NO_DFNS, NO_CARY, MORIA_PORTAL, A_NEUTRAL, NON_PM, NON_PM,
       0, 0, 7000L, NO_COLOR, EARTHSTONE),
 
+    /* Mithardir rewards; ordinary keys, no vanilla endgame gating. */
+    A("The Second Key of Chaos", SKELETON_KEY,
+      (SPFX_NOGEN | SPFX_RESTR), 0, 0,
+      NO_ATTK, NO_DFNS, NO_CARY, 0, A_CHAOTIC, NON_PM, NON_PM,
+      0, 0, 1500L, NO_COLOR, SECOND_KEY_OF_CHAOS),
+    A("The Third Key of Chaos", SKELETON_KEY,
+      (SPFX_NOGEN | SPFX_RESTR), 0, 0,
+      NO_ATTK, NO_DFNS, NO_CARY, 0, A_CHAOTIC, NON_PM, NON_PM,
+      0, 0, 1500L, NO_COLOR, THIRD_KEY_OF_CHAOS),
+
 #if !defined(ARTI_ENUM) && !defined(DUMP_ARTI_ENUM)
     /*
      *  terminator; otyp must be zero

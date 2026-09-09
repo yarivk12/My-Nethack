@@ -74,10 +74,14 @@ enum roomtype_types {
     TOOLSHOP   = 22,
     BOOKSHOP   = 23,
     FODDERSHOP = 24, /* health food store */
-    CANDLESHOP = 25
+    CANDLESHOP = 25,
+    SEAGARDEN  = 26, /* Mithardir only; no ordinary generation probability */
+    SEAFOOD    = 27,
+    SANDWALKER = 28,
+    NAIADSHOP  = 29
 };
 
-#define MAXRTYPE (CANDLESHOP) /* maximum valid room type */
+#define MAXRTYPE (NAIADSHOP) /* maximum valid room type */
 #define UNIQUESHOP (CANDLESHOP) /* shops here & above not randomly gen'd. */
 
 /* Special type for search_special() */

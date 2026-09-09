@@ -42,6 +42,7 @@ hitmsg(struct monst *mtmp, struct attack *mattk)
     } else {
         switch (mattk->aatyp) {
         case AT_BITE:
+        case AT_REACH5:
             verb = "bites";
             break;
         case AT_KICK:
@@ -434,6 +435,21 @@ getmattk(
     }
 
     /* elementals on their home plane do double damage */
+    if (magr != &gy.youmonst && indx == 1
+        && mith_mon_syllable(magr) >= 0) {
+        int syllable = mith_mon_syllable(magr);
+
+        if (syllable == MITH_KRAU || syllable == MITH_NAEN
+            || ((syllable == MITH_HOON || syllable == MITH_VAUL)
+                && (magr->m_id & 1))) {
+            *alt_attk_buf = *attk;
+            attk = alt_attk_buf;
+            attk->aatyp = AT_MAGC;
+            attk->adtyp = AD_SPEL;
+            attk->damn = 0;
+            attk->damd = 4;
+        }
+    }
     if (attk != alt_attk_buf && is_home_elemental(mptr)) {
         *alt_attk_buf = *attk;
         attk = alt_attk_buf;
@@ -508,6 +524,9 @@ mattacku(struct monst *mtmp)
             skipnonmagc = FALSE;
 
     calc_mattacku_vars(mtmp, &ranged, &range2, &foundyou, &youseeit);
+
+    if (mtmp->data->mflags3 & M3_GROUPATTACK)
+        mtmp->mspec_used = 14;
 
     if (!ranged)
         nomul(0);
@@ -784,6 +803,9 @@ mattacku(struct monst *mtmp)
         }
         mon_currwep = (struct obj *) 0;
         mattk = getmattk(mtmp, &gy.youmonst, i, sum, &alt_attk);
+        if (mith_offhand_attack(mtmp->data, i)
+            && (range2 || (mtmp->misc_worn_check & W_ARMS)))
+            continue;
         if ((u.uswallow && mattk->aatyp != AT_ENGL)
             || (skipnonmagc && mattk->aatyp != AT_MAGC)
             || (gs.skipdrin && mattk->aatyp == AT_TENT
@@ -794,13 +816,17 @@ mattacku(struct monst *mtmp)
         case AT_CLAW: /* "hand to hand" attacks */
         case AT_KICK:
         case AT_BITE:
+        case AT_REACH5:
         case AT_STNG:
         case AT_TUCH:
         case AT_BUTT:
         case AT_TENT:
             if (mattk->aatyp == AT_KICK && mtrapped_in_pit(mtmp))
                 continue;
-            if (!range2 && (!MON_WEP(mtmp) || mtmp->mconf || Conflict
+            if ((!range2 || (mattk->aatyp == AT_REACH5
+                              && distmin(mtmp->mx, mtmp->my,
+                                         mtmp->mux, mtmp->muy) <= 5))
+                && (!MON_WEP(mtmp) || mtmp->mconf || Conflict
                             || !touch_petrifies(gy.youmonst.data))) {
                 if (foundyou) {
                     if (tmp > (j = rnd(20 + i))) {
@@ -898,7 +924,8 @@ mattacku(struct monst *mtmp)
                         break;
                 }
                 if (foundyou) {
-                    mon_currwep = MON_WEP(mtmp);
+                    mon_currwep = mith_offhand_attack(mtmp->data, i)
+                                      ? mith_select_offhand(mtmp) : MON_WEP(mtmp);
                     if (mon_currwep) {
                         boolean bash = (is_pole(mon_currwep)
                                         && !is_art(mon_currwep,
@@ -924,7 +951,8 @@ mattacku(struct monst *mtmp)
             }
             break;
         case AT_MAGC:
-            if (range2)
+            if (range2 && mtmp->data != &mons[PM_ALABASTER_ELF_ELDER]
+                && mith_mon_syllable(mtmp) < 0)
                 sum[i] = buzzmu(mtmp, mattk);
             else
                 sum[i] = castmu(mtmp, mattk, TRUE, foundyou);
@@ -1145,8 +1173,9 @@ hitmu(struct monst *mtmp, struct attack *mattk)
 {
     struct permonst *mdat = mtmp->data;
     struct permonst *olduasmon = gy.youmonst.data;
-    int res;
+    int res, mortality = u.umortality;
     struct mhitm_data mhm;
+    mhm.weapon = mattk->aatyp == AT_WEAP ? mon_currwep : MON_WEP(mtmp);
     mhm.hitflags = M_ATTK_MISS;
     mhm.permdmg = 0;
     mhm.specialdmg = 0;
@@ -1191,7 +1220,7 @@ hitmu(struct monst *mtmp, struct attack *mattk)
     mhitm_adtyping(mtmp, mattk, &gy.youmonst, &mhm);
 
     (void) mhitm_knockback(mtmp, &gy.youmonst, mattk, &mhm.hitflags,
-                           (MON_WEP(mtmp) != 0));
+                           mhm.weapon);
 
     if (mhm.done)
         return mhm.hitflags;
@@ -1218,6 +1247,17 @@ hitmu(struct monst *mtmp, struct attack *mattk)
             || (Role_if(PM_CLERIC) && uarmh && is_quest_artifact(uarmh)
                 && mon_hates_blessings(mtmp)))
             mhm.damage = (mhm.damage + 1) / 2;
+
+        if (mattk->adtyp == AD_PHYS || mattk->adtyp == AD_DRLI || mattk->adtyp == AD_VAMP
+            || mith_fey_weapon_attack(mtmp, mattk))
+            mhm.damage = mith_physical_damage(&gy.youmonst,
+                              mattk->aatyp == AT_WEAP ? mhm.weapon : (struct obj *) 0,
+                              mattk->aatyp, mhm.damage);
+        mhm.damage += mith_iron_contact(mtmp, &gy.youmonst, mattk->aatyp,
+                          mattk->aatyp == AT_WEAP ? mhm.weapon : (struct obj *) 0);
+        if (mattk->aatyp == AT_WEAP)
+            mhm.damage += mith_weapon_effects(mhm.weapon, &gy.youmonst,
+                                              mhm.damage);
 
         if (mhm.permdmg) { /* Death's life force drain */
             int lowerlimit, *hpmax_p;
@@ -1256,9 +1296,13 @@ hitmu(struct monst *mtmp, struct attack *mattk)
         }
 
         mdamageu(mtmp, mhm.damage);
+        if (mattk->adtyp == AD_SLEE && mith_fey_weapon_attack(mtmp, mattk)
+            && u.umortality == mortality)
+            mith_coure_sleep(mtmp, &gy.youmonst);
     }
 
-    if (mhm.damage)
+    if (mhm.damage && (mattk->aatyp != AT_REACH5
+                       || monnear(mtmp, u.ux, u.uy)))
         res = passiveum(olduasmon, mtmp, mattk);
     else
         res = M_ATTK_HIT;
@@ -1344,6 +1388,12 @@ gulpmu(struct monst *mtmp, struct attack *mattk)
             You("are released from the %s!",
                 (u.utraptype == TT_WEB) ? "web" : "trap");
             reset_utrap(FALSE);
+        }
+
+        if (Frozen_feet) {
+            You("break free from the ice!");
+            Frozen_feet = 0;
+            disp.botl = TRUE;
         }
 
         i = number_leashed();
@@ -1680,12 +1730,16 @@ staticfn boolean
 fern_release(struct monst *mtmp)
 {
     coord cc;
-    boolean sprout = (mtmp->data == &mons[PM_SWAMP_FERN_SPROUT]);
+    boolean sprout = mtmp->data == &mons[PM_SWAMP_FERN_SPROUT]
+                      || mtmp->data == &mons[PM_ARCTIC_FERN_SPROUT];
+    int spore = (mtmp->data == &mons[PM_ARCTIC_FERN]
+                 || mtmp->data == &mons[PM_ARCTIC_FERN_SPROUT])
+                    ? PM_ARCTIC_FERN_SPORE : PM_SWAMP_FERN_SPORE;
 
     return !mtmp->mcan && distu(mtmp->mx, mtmp->my) <= 96
            && (sprout ? !rn2(4) : !rn2(2))
-           && enexto(&cc, mtmp->mx, mtmp->my, &mons[PM_SWAMP_FERN_SPORE])
-           && makemon(&mons[PM_SWAMP_FERN_SPORE], cc.x, cc.y, NO_MM_FLAGS);
+           && enexto(&cc, mtmp->mx, mtmp->my, &mons[spore])
+           && makemon(&mons[spore], cc.x, cc.y, NO_MM_FLAGS);
 }
 
 int
@@ -1713,6 +1767,38 @@ gazemu(struct monst *mtmp, struct attack *mattk)
         return 0;
     }
 
+    if ((mattk->adtyp == AD_LUCK || mattk->adtyp == AD_BLNK)
+        && !cancelled && mcanseeu && !mtmp->mspec_used && rn2(5)) {
+        if (mattk->adtyp == AD_BLNK) {
+            if (!Reflecting) {
+                pline("%s reflection in your mind weakens you.",
+                      s_suffix(Monnam(mtmp)));
+                stop_occupation();
+                exercise(A_INT, TRUE);
+                mdamageu(mtmp, d(1, 4));
+            } else if (flags.verbose && !rn2(10)) {
+                pline("%s is covering its face.", Monnam(mtmp));
+            }
+        } else {
+            pline("%s glares ominously at you!", Monnam(mtmp));
+            mtmp->mspec_used += d(2, 6);
+            if (uwep && uwep->otyp == MIRROR && uwep->blessed) {
+                pline("%s sees its own glare in your mirror.", Monnam(mtmp));
+                mtmp->mcan = 1;
+                monflee(mtmp, 0, FALSE, TRUE);
+            } else if ((uwep && !uwep->cursed && confers_luck(uwep))
+                       || (stone_luck(TRUE) > 0 && rn2(4))) {
+                pline("Luckily, you are not affected.");
+            } else {
+                You_feel("your luck running out.");
+                change_luck(-1);
+            }
+            stop_occupation();
+        }
+        return M_ATTK_HIT;
+    }
+    if (mattk->adtyp == AD_LUCK || mattk->adtyp == AD_BLNK)
+        return M_ATTK_MISS;
     if (m_seenres(mtmp, cvt_adtyp_to_mseenres(mattk->adtyp)))
         return M_ATTK_MISS;
 
@@ -1852,6 +1938,10 @@ gazemu(struct monst *mtmp, struct attack *mattk)
                 }
             }
         }
+        break;
+    case AD_PLYS:
+        if (!cancelled && mcanseeu)
+            return mith_paralyze_gaze(mtmp, &gy.youmonst, mattk);
         break;
     case AD_FIRE:
         if (mcanseeu && !mtmp->mspec_used && rn2(5)) {
@@ -2447,6 +2537,8 @@ ranged_attk_available(struct monst *mtmp)
     int i, typ = -1;
     struct permonst *ptr = mtmp->data;
 
+    if (attacktype(ptr, AT_REACH5))
+        return TRUE;
     for (i = 0; i < NATTK; i++) {
         if (DISTANCE_ATTK_TYPE(ptr->mattk[i].aatyp)
             && (typ = get_atkdam_type(ptr->mattk[i].adtyp)) >= 0
@@ -2509,7 +2601,7 @@ passiveum(
         if (!rn2(30))
             erode_armor(mtmp, ERODE_CORRODE);
         if (!rn2(6))
-            acid_damage(MON_WEP(mtmp));
+            acid_damage(mattk->aatyp == AT_WEAP ? mon_currwep : MON_WEP(mtmp));
         return assess_dmg(mtmp, tmp);
     case AD_STON: /* cockatrice */
     {
@@ -2517,7 +2609,7 @@ passiveum(
              wornitems = mtmp->misc_worn_check;
 
         /* wielded weapon gives same protection as gloves here */
-        if (MON_WEP(mtmp) != 0)
+        if ((mattk->aatyp == AT_WEAP ? mon_currwep : MON_WEP(mtmp)) != 0)
             wornitems |= W_ARMG;
 
         if (!resists_ston(mtmp)

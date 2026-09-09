@@ -173,6 +173,9 @@ enum ms_sounds {
 #define M3_INFRAVISIBLE 0x0200 /* visible by infravision */
 
 #define M3_DISPLACES    0x0400 /* moves monsters out of its way */
+#define M3_BLINKER      0x1000 /* Sheol chillbug health sharing */
+#define M3_GROUPATTACK  0x2000 /* Sheol chillbug group tactics */
+#define M3_NOREGEN      0x4000 /* Punisher has no natural HP regeneration */
 #define M3_STATIONARY   0x0800 /* rooted Moria plants; can still attack */
 
 #define MZ_TINY         0 /* < 2' */
@@ -192,6 +195,7 @@ enum ms_sounds {
 #define MH_ORC          M2_ORC
 
 /* for mons[].geno (constant during game) */
+#define G_SHEOL         0x2000 /* generated only in Sheol (or G_HELL) */
 #define G_UNIQ          0x1000 /* generated only once */
 #define G_NOHELL        0x0800 /* not generated in "hell" */
 #define G_HELL          0x0400 /* generated only in "hell" */

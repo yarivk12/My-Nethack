@@ -76,6 +76,7 @@ staticfn void clear_no_charge_obj(struct monst *, struct obj *);
 staticfn void clear_no_charge(struct monst *, struct obj *);
 staticfn void clear_no_charge_pets(struct monst *);
 staticfn long check_credit(long, struct monst *);
+staticfn void mith_other_services(struct monst *);
 staticfn void pay(long, struct monst *);
 staticfn long get_cost(struct obj *, struct monst *);
 staticfn long set_cost(struct obj *, struct monst *);
@@ -859,16 +860,18 @@ u_entered_shop(char *enterstring)
         struct obj *pick = carrying(PICK_AXE),
                    *mattock = carrying(DWARVISH_MATTOCK);
 
+        if (!pick)
+            pick = carrying(CRYSTAL_PICK);
         if (pick || mattock) {
             cnt = 1;               /* so far */
             if (pick && mattock) { /* carrying both types */
                 tool = "digging tool";
                 cnt = 2; /* `more than 1' is all that matters */
             } else if (pick) {
-                tool = "pick-axe";
+                tool = pick->otyp == CRYSTAL_PICK ? "crystal pick" : "pick-axe";
                 /* hack: `pick' already points somewhere into inventory */
                 while ((pick = pick->nobj) != 0)
-                    if (pick->otyp == PICK_AXE)
+                    if (is_pick(pick))
                         ++cnt;
             } else { /* assert(mattock != 0) */
                 tool = "mattock";
@@ -908,6 +911,7 @@ u_entered_shop(char *enterstring)
         } else {
             should_block =
                 (Fast && (sobj_at(PICK_AXE, u.ux, u.uy)
+                          || sobj_at(CRYSTAL_PICK, u.ux, u.uy)
                           || sobj_at(DWARVISH_MATTOCK, u.ux, u.uy)));
         }
         if (should_block)
@@ -1917,6 +1921,8 @@ dopay(void)
             You("do not owe %s anything.", shkname(shkp));
             if (!umoney)
                 pline(no_money, stashed_gold ? " seem to" : "");
+            if (eshkp->shoptype >= SEAGARDEN && eshkp->shoptype <= NAIADSHOP)
+                mith_other_services(shkp);
         } else if (ltmp) {
             pline("%s is after blood, not gold!", shkname(shkp));
             if (umoney < ltmp / 2L || (umoney < ltmp && stashed_gold)) {
@@ -2046,6 +2052,9 @@ dopay(void)
         free((genericptr_t) ibill), ibill = NULL;
         nhUse(ibill);
     }
+    if (paid && !eshkp->billct && !eshkp->debit
+        && eshkp->shoptype >= SEAGARDEN && eshkp->shoptype <= NAIADSHOP)
+        mith_other_services(shkp);
     return paid ? ECMD_TIME : ECMD_OK;
 }
 
@@ -4984,8 +4993,10 @@ shk_move(struct monst *shkp)
         } else {
             uondoor = u_at(eshkp->shd.x, eshkp->shd.y);
             if (uondoor) {
-                badinv = (carrying(PICK_AXE) || carrying(DWARVISH_MATTOCK)
+                badinv = (carrying(PICK_AXE) || carrying(CRYSTAL_PICK)
+                          || carrying(DWARVISH_MATTOCK)
                           || (Fast && (sobj_at(PICK_AXE, u.ux, u.uy)
+                          || sobj_at(CRYSTAL_PICK, u.ux, u.uy)
                                   || sobj_at(DWARVISH_MATTOCK, u.ux, u.uy))));
                 if (satdoor && badinv)
                     return 0;
@@ -5539,6 +5550,268 @@ static const char *Izchak_speaks[] = {
     "%s comments about the Valley of the Dead as being a gateway."
 };
 
+/* Narrow dNetHack services: only the four Mithardir merchant types. */
+staticfn long
+mith_service_price(long charge, long lower, long upper)
+{
+    int cha = ACURR(A_CHA), factor, raw;
+    long bonus;
+    factor = cha > 21 ? 11 : cha > 18 ? 12 : cha > 15 ? 13
+             : cha > 12 ? 14 : cha > 10 ? 15 : cha > 8 ? 16
+             : cha > 7 ? 17 : cha > 6 ? 18 : cha > 5 ? 19
+             : cha > 4 ? 20 : 21;
+    charge = charge * factor / 10;
+    if (upper >= 0) {
+        raw = ABASE(A_CHA) + ABON(A_CHA) + ATEMP(A_CHA);
+        bonus = (upper / 50) * max(0, raw - 10);
+        upper = max(lower, upper - bonus);
+        charge = min(charge, upper);
+    }
+    return max(charge, lower);
+}
+
+staticfn boolean
+mith_service_pay(struct monst *shkp, long charge)
+{
+    char prompt[BUFSZ];
+    Sprintf(prompt, "It'll cost you %ld zorkmid%s. Interested?",
+            charge, plur(charge));
+    if (yn_function(prompt, "yn", 'n', TRUE) != 'y')
+        return FALSE;
+    if (charge > money_cnt(gi.invent) + ESHK(shkp)->credit) {
+        verbalize("Cash on the spot. You don't have enough.");
+        return FALSE;
+    }
+    charge = check_credit(charge, shkp);
+    if (charge > 0) (void) money2mon(shkp, charge);
+    disp.botl = TRUE;
+    return TRUE;
+}
+
+staticfn void
+mith_service_identify(struct monst *shkp)
+{
+    struct obj *otmp;
+    unsigned services = mith_shk_services(shkp);
+    boolean guess, ripoff;
+    char kind;
+    long charge;
+    int mult;
+    while ((otmp = getobj("have identified", any_obj_ok, GETOBJ_PROMPT)) != 0) {
+        guess = !saleable(shkp, otmp);
+        if (guess)
+            verbalize("I don't handle that sort of item, but I could try...");
+        if ((services & (MITH_SHK_BASIC | MITH_SHK_PREMIUM))
+            == (MITH_SHK_BASIC | MITH_SHK_PREMIUM)) {
+            kind = yn_function("Basic service or premier?", "bp", '\0', FALSE);
+            if (kind != 'b' && kind != 'p') return;
+        } else kind = (services & MITH_SHK_BASIC) ? 'b' : 'p';
+        ripoff = otmp->dknown && objects[otmp->otyp].oc_name_known
+                 && (kind == 'b'
+                     || (otmp->bknown && otmp->rknown && otmp->known));
+        if (ripoff && ACURR(A_CHA) - rnl(3) > 7) {
+            verbalize("That item's already identified!");
+            return;
+        }
+        mult = (ripoff || kind == 'b') ? 1 : 2;
+        switch (otmp->oclass) {
+        case AMULET_CLASS: charge = 375; break;
+        case WEAPON_CLASS: charge = 75; break;
+        case ARMOR_CLASS: charge = 100; break;
+        case FOOD_CLASS: charge = 25; break;
+        case SCROLL_CLASS: case POTION_CLASS: charge = 150; break;
+        case SPBOOK_CLASS: charge = 250; break;
+        case RING_CLASS: charge = 300; break;
+        case WAND_CLASS: charge = 200; break;
+        case TOOL_CLASS: charge = 50; break;
+        case GEM_CLASS: charge = 500; break;
+        default: charge = 75; break;
+        }
+        /* Donor TILE_CLASS is a narrowly imported group of native tools. */
+        if (otmp->otyp >= SYLLABLE_OF_STRENGTH__AESH
+            && otmp->otyp <= NURTURING_WORD)
+            charge = 75;
+        charge *= mult;
+        if (otmp->oartifact) charge = charge * 3 / 2;
+        charge = mith_service_price(charge, 25, 750);
+        if (!mith_service_pay(shkp, charge)) return;
+        if (kind == 'b' && (Hallucination || Confusion)) {
+            if (Hallucination) verbalize("It's a pot of flowers.");
+            else pline("%s tells you, but you forget.", Monnam(shkp));
+            return;
+        }
+        if (guess && rn2(kind == 'b' ? 4 : 2)) {
+            verbalize("Sorry. I guess it's not your lucky day.");
+            return;
+        }
+        if (kind == 'p') (void) identify(otmp);
+        else {
+            makeknown(otmp->otyp);
+            otmp->dknown = 1;
+            prinv((char *) 0, otmp, 0L);
+        }
+        update_inventory();
+    }
+}
+
+staticfn void
+mith_service_uncurse(struct monst *shkp)
+{
+    struct obj *otmp = getobj("uncurse", any_obj_ok, GETOBJ_PROMPT);
+    long charge;
+    if (!otmp) return;
+    charge = get_cost(otmp, shkp);
+    if (otmp->oartifact) charge = charge * 3 / 2;
+    charge = mith_service_price(charge, 50, 250);
+    if (!mith_service_pay(shkp, charge)) return;
+    if (!otmp->bknown && !Role_if(PM_CLERIC)
+        && !(ACURR(A_CHA) - rnl(3) > 7)) {
+        verbalize("See, nice and uncursed!");
+        otmp->bknown = 0;
+    } else if (Confusion) {
+        You("accidentally ask for the item to be cursed.");
+        curse(otmp);
+    } else if (Hallucination) {
+        if (!rn2(4)) bless(otmp);
+        else You("point to the wrong item.");
+    } else {
+        verbalize("All done - safe to handle, now!");
+        uncurse(otmp);
+    }
+    update_inventory();
+}
+
+staticfn int
+mith_service_weapon_ok(struct obj *otmp)
+{
+    return !otmp ? GETOBJ_EXCLUDE : (otmp->oclass == WEAPON_CLASS
+                                   || otmp->oclass == TOOL_CLASS)
+                                  ? GETOBJ_SUGGEST : GETOBJ_EXCLUDE;
+}
+
+staticfn void
+mith_service_weapon(struct monst *shkp)
+{
+    struct obj *otmp = getobj("improve", mith_service_weapon_ok, GETOBJ_PROMPT);
+    unsigned services = mith_shk_services(shkp);
+    unsigned long coating = 0;
+    long charge;
+    winid win;
+    anything any;
+    menu_item *selected = 0;
+    int count, service = 0, i;
+    const char *names[] = { "Ward against damage", "Enchant", "Poison",
+        "Drug", "Stain", "Envenom", "Diseased filth", "Acid coating" };
+    const char keys[] = "wepdsvfa";
+    boolean offer[8];
+    if (!otmp) return;
+    offer[0] = !!(services & MITH_SHK_PROOF);
+    offer[1] = !!(services & MITH_SHK_ENCHANT);
+    offer[2] = offer[7] = !!(services & MITH_SHK_COAT);
+    offer[3] = offer[2] && !(offer[0] && offer[1]
+                           && (services & MITH_SHK_PREMIUM)
+                           && (services & MITH_SHK_UNCURSE));
+    offer[4] = offer[5] = offer[2] && !(offer[0] && offer[1]);
+    offer[6] = offer[2] && !(services & (MITH_SHK_UNCURSE | MITH_SHK_PROOF
+                                       | MITH_SHK_ENCHANT));
+    win = create_nhwindow(NHW_MENU);
+    start_menu(win, MENU_BEHAVE_STANDARD);
+    for (i = 0; i < 8; ++i) if (offer[i]) {
+        any = cg.zeroany; any.a_int = i + 1;
+        add_menu(win, &nul_glyphinfo, &any, keys[i], 0, ATR_NONE, NO_COLOR,
+                 names[i], MENU_ITEMFLAGS_NONE);
+    }
+    end_menu(win, "Weapon-works:");
+    count = select_menu(win, PICK_ONE, &selected);
+    if (count > 0) service = selected[0].item.a_int;
+    if (selected) free((genericptr_t) selected);
+    destroy_nhwindow(win);
+    if (!service) return;
+    if (service == 1) {
+        charge = 500L * (otmp->oeroded + otmp->oeroded2 + 1);
+        if (otmp->oartifact) charge = charge * 3 / 2;
+        charge = mith_service_price(charge, 200, 1500);
+    } else if (service == 2) {
+        charge = (long) (otmp->spe + 1) * (otmp->spe + 1) * 62;
+        if (otmp->spe < 0) charge = 100;
+        if (otmp->oartifact) charge *= 2;
+        charge = mith_service_price(charge, 50, -1);
+    } else {
+        charge = (service == 4 || service == 5) ? 45L + 5L * otmp->quan
+                  : service == 7 ? 900L + 100L * otmp->quan
+                  : 90L + 10L * otmp->quan;
+    }
+    if (!mith_service_pay(shkp, charge)) return;
+    if (service == 1) {
+        otmp->oeroded = otmp->oeroded2 = 0;
+        otmp->rknown = otmp->oerodeproof = 1;
+    } else if (service == 2) {
+        if (otmp->oclass == TOOL_CLASS && !is_weptool(otmp)) {
+            verbalize("All done!");
+        } else if (otmp->spe >= 5) {
+            verbalize("I tried, but I can't enchant this any higher!");
+        } else if (otmp->otyp == WORM_TOOTH) {
+            otmp->otyp = CRYSKNIFE;
+            otmp->cursed = 0;
+            otmp->owt = weight(otmp);
+        } else ++otmp->spe;
+    } else {
+        switch (service) {
+        case 4: coating = OBP_SLEEP; break;
+        case 5: coating = OBP_BLIND; break;
+        case 6: coating = OBP_PARALYZE; break;
+        case 7: coating = OBP_FILTH; break;
+        case 8: coating = OBP_ACID; break;
+        }
+        otmp->opoisoned = (service == 3);
+        otmp->obranch_props = (otmp->obranch_props & ~OBP_COATINGS) | coating;
+    }
+    update_inventory();
+}
+
+staticfn void
+mith_other_services(struct monst *shkp)
+{
+    unsigned services = mith_shk_services(shkp);
+    winid win;
+    anything any;
+    menu_item *selected = 0;
+    int n, choice = 0, i;
+    const char *names[] = { "Identify", "Uncurse", "Weapon-works", "Guide to portal" };
+    const char keys[] = "iuwo";
+    boolean offer[4];
+    if (!shkp->mpeaceful || !inhishop(shkp)
+        || !strchr(u.ushops, ESHK(shkp)->shoproom)
+        || Deaf || muteshk(shkp)) return;
+    if (yn_function("Do you wish to try our other services?", "yn", 'n', TRUE)
+        != 'y') return;
+    offer[0] = !!(services & (MITH_SHK_BASIC | MITH_SHK_PREMIUM));
+    offer[1] = !!(services & MITH_SHK_UNCURSE);
+    offer[2] = ESHK(shkp)->shoptype == SANDWALKER
+               && !!(services & (MITH_SHK_PROOF | MITH_SHK_ENCHANT | MITH_SHK_COAT));
+    offer[3] = In_mithardir(&u.uz);
+    win = create_nhwindow(NHW_MENU);
+    start_menu(win, MENU_BEHAVE_STANDARD);
+    for (i = 0; i < 4; ++i) if (offer[i]) {
+        any = cg.zeroany; any.a_int = i + 1;
+        add_menu(win, &nul_glyphinfo, &any, keys[i], 0, ATR_NONE, NO_COLOR,
+                 names[i], MENU_ITEMFLAGS_NONE);
+    }
+    end_menu(win, "Services available:");
+    n = select_menu(win, PICK_ONE, &selected);
+    if (n > 0) choice = selected[0].item.a_int;
+    if (selected) free((genericptr_t) selected);
+    destroy_nhwindow(win);
+    switch (choice) {
+    case 1: mith_service_identify(shkp); break;
+    case 2: mith_service_uncurse(shkp); break;
+    case 3: mith_service_weapon(shkp); break;
+    case 4:
+        if (mith_service_pay(shkp, 500)) (void) trap_detect((struct obj *) 0);
+        break;
+    }
+}
+
 void
 shk_chat(struct monst *shkp)
 {
@@ -5620,6 +5893,8 @@ shk_chat(struct monst *shkp)
         if (!Deaf && !muteshk(shkp))
             pline("%s talks about the problem of shoplifters.", Shknam(shkp));
     }
+    if (eshk->shoptype >= SEAGARDEN && eshk->shoptype <= NAIADSHOP)
+        mith_other_services(shkp);
 }
 
 RESTORE_WARNING_FORMAT_NONLITERAL
@@ -5872,7 +6147,8 @@ block_entry(coordxy x, coordxy y)
 
     if (shkp->mx == sx && shkp->my == sy && !helpless(shkp)
         && (x == sx - 1 || x == sx + 1 || y == sy - 1 || y == sy + 1)
-        && (Invis || carrying(PICK_AXE) || carrying(DWARVISH_MATTOCK)
+        && (Invis || carrying(PICK_AXE) || carrying(CRYSTAL_PICK)
+                          || carrying(DWARVISH_MATTOCK)
             || u.usteed)) {
         pline("%s%s blocks your way!", Shknam(shkp),
               Invis ? " senses your motion and" : "");

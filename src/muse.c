@@ -694,7 +694,7 @@ find_defensive(struct monst *mtmp, boolean tryescape)
         }
         nomore(MUSE_SCR_TELEPORTATION);
         if (obj->otyp == SCR_TELEPORTATION && mtmp->mcansee
-            && haseyes(mtmp->data)
+            && haseyes(mtmp->data) && !is_weeping(mtmp->data)
             && (!obj->cursed || (!(mtmp->isshk && inhishop(mtmp))
                                  && !mtmp->isgd && !mtmp->ispriest))) {
             /* see WAN_TELEPORTATION case above */
@@ -739,7 +739,7 @@ find_defensive(struct monst *mtmp, boolean tryescape)
             }
         }
         nomore(MUSE_SCR_CREATE_MONSTER);
-        if (obj->otyp == SCR_CREATE_MONSTER) {
+        if (obj->otyp == SCR_CREATE_MONSTER && !is_weeping(mtmp->data)) {
             gm.m.defensive = obj;
             gm.m.has_defense = MUSE_SCR_CREATE_MONSTER;
         }
@@ -1621,6 +1621,8 @@ mbhitm(struct monst *mtmp, struct obj *otmp)
                 pline_The("wand hits you!");
                 tmp = d(2, 12);
                 if (Half_spell_damage)
+                    tmp = (tmp + 1) / 2;
+                if (u.mith_timers[MITH_VAUL])
                     tmp = (tmp + 1) / 2;
                 losehp(tmp, "wand", KILLED_BY_AN);
                 learnit = TRUE;
@@ -2818,12 +2820,14 @@ mon_reflects(struct monst *mon, const char *str)
         return TRUE;
     } else if ((orefl = which_armor(mon, W_ARM))
                && (orefl->otyp == SILVER_DRAGON_SCALES
-                   || orefl->otyp == SILVER_DRAGON_SCALE_MAIL)) {
+                   || orefl->otyp == SILVER_DRAGON_SCALE_MAIL
+                   || Is_chromatic_armor(orefl))) {
         if (str)
             pline(str, s_suffix(mon_nam(mon)), "armor");
         return TRUE;
     } else if (mon->data == &mons[PM_SILVER_DRAGON]
-               || mon->data == &mons[PM_CHROMATIC_DRAGON]) {
+               || mon->data == &mons[PM_CHROMATIC_DRAGON]
+               || mon->data == &mons[PM_CAVE_CHROMATIC_DRAGON]) {
         /* Silver dragons only reflect when mature; babies do not */
         if (str)
             pline(str, s_suffix(mon_nam(mon)), "scales");
@@ -2857,7 +2861,8 @@ ureflects(const char *fmt, const char *str)
         if (fmt && str)
             pline(fmt, str, uskin ? "luster" : "armor");
         return TRUE;
-    } else if (gy.youmonst.data == &mons[PM_SILVER_DRAGON]) {
+    } else if (gy.youmonst.data == &mons[PM_SILVER_DRAGON]
+               || gy.youmonst.data == &mons[PM_CAVE_CHROMATIC_DRAGON]) {
         if (fmt && str)
             pline(fmt, str, "scales");
         return TRUE;

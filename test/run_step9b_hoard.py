@@ -10,7 +10,9 @@ try:
     game.send('#levelchange\n');game.wait('To what experience level');game.send('30\n');game.settle()
     game.lua('nh.debug_flags({hunger=false})')
     caves=game.dungeon_number('The Dragon Caves')
-    game.send('\x16');game.wait('To what level');game.send('109\n',1);game.settle()
+    parent=game.branch_depth('The Dragon Caves')
+    assert 30<=parent<=199
+    game.send('\x16');game.wait('To what level');game.send(str(parent)+'\n',1);game.settle()
     game.stair('down',True,caves)
     game.lua('nh.debug_flags({mongen=false});nh.debug_flags({mongen=true})')
     def census(label):

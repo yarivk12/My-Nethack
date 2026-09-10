@@ -14,9 +14,19 @@ out.mkdir(parents=True, exist_ok=True)
 parts = re.findall(r"(?m)^#define STEP6B_(?:MIN|MAX)_LEVEL[^\n]*",
                    (repo / "src/dungeon.c").read_text())
 assert len(parts) == 2
+# The extracted production bodies keep their source order.  The scheduler's
+# depth-used predicate calls these Step 9 classifiers before their bodies
+# appear below, so preserve the production forward declarations in the
+# standalone fixture too.
+parts.extend([
+    "staticfn boolean step6b_step9_branch(const branch *);",
+    "staticfn boolean step6b_step9_approach(const s_level *);",
+])
 for path, names in {
     "src/dungeon.c": ["depth", "In_sheol", "step6b_depth_used", "step6b_pick_depth",
-                      "step6b_add_level", "step6b_schedule"],
+                      "step6b_add_level", "step6b_step9_branch",
+                      "step6b_step9_approach", "step6b_rebase_level",
+                      "step6b_rebase_branch", "step6b_schedule"],
     "src/makemon.c": ["sheol_mon_allowed", "uncommon"],
     "src/light.c": ["candle_light_range"],
     "src/timeout.c": ["begin_burn", "end_burn"],

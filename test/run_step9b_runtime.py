@@ -10,9 +10,10 @@ try:
     game.send('#levelchange\n');game.wait('To what experience level')
     game.send('30\n');game.settle()
     game.lua('nh.debug_flags({hunger=false})')
-    assert game.branch_depth('The Dragon Caves')==109
+    parent=game.branch_depth('The Dragon Caves')
+    assert 30<=parent<=199
     caves=game.dungeon_number('The Dragon Caves')
-    game.send('\x16');game.wait('To what level');game.send('109\n',1);game.settle()
+    game.send('\x16');game.wait('To what level');game.send(str(parent)+'\n',1);game.settle()
     game.stair('down',True,caves)
     def check():
         game.lua(Path(__file__).with_name('test_step9b.lua').read_text())
@@ -30,7 +31,7 @@ try:
     print('PASS Dragon Caves terminal map save/restore',flush=True)
     for level in range(3,0,-1):
         assert game.stair('up')[:2]==(caves,level)
-    assert game.stair('up',True,0)[:2]==(0,109)
-    print('PASS four descending Dragon Caves maps, complete round trip to DoD109',flush=True)
+    assert game.stair('up',True,0)[:2]==(0,parent)
+    print('PASS four descending Dragon Caves maps, complete round trip to DoD%d' % parent,flush=True)
 finally:
     game.close()

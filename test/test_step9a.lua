@@ -17,7 +17,7 @@ if u.dlevel==1 then
  local returns=0
  for _,s in ipairs(stairs) do
   if s.dnum~=u.dnum then
-   assert(s.up and s.dnum==0 and s.dlevel==108)
+   assert(s.up and s.dnum==0 and s.dlevel>=30 and s.dlevel<=199)
    returns=returns+1
   end
  end

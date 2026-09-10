@@ -1,15 +1,12 @@
-# Step9C: Mithardir — deterministic integration validated
+# Step9C: Mithardir — final production parent placement
 
 Implementation baseline: `phase0/dod-length` at
-`5ce8b8193e4c581dd293ccac2bd0cafb4da89e96`. Step9A and Step9B gates passed before
-this phase. Their implementation is preserved. Temporary Mithardir
-parent is connected at DoD110. The Step9C automated gate passed. The user
-subsequently canceled Step9D and closed scope at Steps9A–9C. This remains
-an intermediate deterministic checkpoint. User manual validation of all three
-branches now passed, and the combined checkpoint commit, cumulative README
-update and branch push are authorized. Final randomization/tagging remains
-deferred. Historical restrictions and pending-work statements below describe
-earlier gates; [step9.md](step9.md) records the current checkpoint status.
+`5ce8b8193e4c581dd293ccac2bd0cafb4da89e96`. Production code selects
+Mithardir's parent once from the shared persistent DL30–199 scheduler.
+Historical user manual validation used temporary DoD110; the detailed
+fixed-parent findings below are historical. Step9D remains canceled. The final
+compiled closeout matrix passes on x64 and Win32; [step9.md](step9.md) records
+the authoritative status.
 
 Donor: `Chris-plus-alphanumericgibberish/dnethack`, requested `master`, resolved
 to immutable commit **17bc64f77ac566e7b90c0c6c6652e2a5f3a995c0**. Use this same
@@ -1329,8 +1326,11 @@ of the immediately preceding armor-size builds; the subsequent two-call kick
 fix does not affect traversal and passed its focused checks and both builds.
 No traversal result is being relabelled as a different executable version.
 The final package bytes, tile checks, focused regressions and `git diff --check`
-pass. **Step9C gate: PASS. Step9D may proceed.**
+passed for the historical fixed-parent checkpoint. **Historical Step9C gate:
+PASS. Step9D remains canceled.**
 
-README is unchanged, HEAD remains
-`5ce8b8193e4c581dd293ccac2bd0cafb4da89e96`, and nothing is staged. No commit,
-tag, push or final Step9 randomization was performed.
+The statements above are historical checkpoint evidence. The current working
+tree routes Mithardir through the randomized DL30–199 parent scheduler. The
+final native, Release, package and non-PTY comparison gates pass on x64 and
+Win32; the combined Step 9 commit, tag and push are the remaining publication
+actions for this revision.

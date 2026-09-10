@@ -69,6 +69,10 @@ staticfn boolean step6b_room_marker(const s_level *);
 staticfn boolean step6b_depth_used(int);
 staticfn int step6b_pick_depth(boolean *, boolean);
 staticfn void step6b_add_level(const char *, int, char, uchar);
+staticfn boolean step6b_step9_branch(const branch *);
+staticfn boolean step6b_step9_approach(const s_level *);
+staticfn void step6b_rebase_level(s_level *, int);
+staticfn void step6b_rebase_branch(branch *);
 staticfn void earth_sense(void);
 staticfn boolean init_dungeon_dungeons(lua_State *, struct proto_dungeon *,
                                       int);
@@ -1508,13 +1512,35 @@ step6b_depth_used(int dlevel)
     branch *br;
 
     for (slev = svs.sp_levchn; slev; slev = slev->next)
-        if (slev->dlevel.dnum == dod && slev->dlevel.dlevel == dlevel)
+        if (!step6b_step9_approach(slev)
+            && slev->dlevel.dnum == dod && slev->dlevel.dlevel == dlevel)
             return TRUE;
     for (br = svb.branches; br; br = br->next)
-        if ((br->end1.dnum == dod && br->end1.dlevel == dlevel)
-            || (br->end2.dnum == dod && br->end2.dlevel == dlevel))
+        if (step6b_step9_branch(br))
+            continue;
+        else if ((br->end1.dnum == dod && br->end1.dlevel == dlevel)
+                 || (br->end2.dnum == dod && br->end2.dlevel == dlevel))
             return TRUE;
     return FALSE;
+}
+
+staticfn boolean
+step6b_step9_branch(const branch *br)
+{
+    const int dod = dname_to_dnum("The Dungeons of Doom");
+
+    return br && br->end1.dnum == dod
+        && (br->end2.dnum == dname_to_dnum("Sheol")
+            || br->end2.dnum == dname_to_dnum("The Dragon Caves")
+            || br->end2.dnum == dname_to_dnum("Mithardir"));
+}
+
+staticfn boolean
+step6b_step9_approach(const s_level *slev)
+{
+    return slev
+        && slev->dlevel.dnum == dname_to_dnum("The Dungeons of Doom")
+        && !strcmp(slev->proto, "chalv2");
 }
 
 DISABLE_WARNING_UNREACHABLE_CODE
@@ -1560,33 +1586,74 @@ step6b_add_level(const char *proto, int dlevel, char boneid, uchar rndlevs)
     add_level(new_level);
 }
 
-/* Choose all Step 6B locations once during new-game dungeon initialization.
- * The resulting level-chain entries and Temple branch are part of the normal
- * saved dungeon state, so revisits and save/reload never reroll them. */
+staticfn void
+step6b_rebase_level(s_level *slev, int dlevel)
+{
+    s_level *prev, *curr;
+
+    if (!slev)
+        return;
+    for (prev = (s_level *) 0, curr = svs.sp_levchn; curr;
+         prev = curr, curr = curr->next)
+        if (curr == slev) {
+            if (prev)
+                prev->next = curr->next;
+            else
+                svs.sp_levchn = curr->next;
+            break;
+        }
+    slev->dlevel.dlevel = (xint16) dlevel;
+    add_level(slev);
+}
+
+staticfn void
+step6b_rebase_branch(branch *br)
+{
+    int dnum = br->end2.dnum;
+
+    svd.dungeons[dnum].depth_start =
+        depth(&br->end1) + (br->type == BR_PORTAL
+                                ? 0
+                                : (br->end1_up ? -1 : 1))
+        - (svd.dungeons[dnum].entry_lev - 1);
+}
+
+/* Choose all Step 6B and final Step 9 locations once during new-game dungeon
+ * initialization.  The resulting level-chain entries and branch endpoints are
+ * part of the normal saved dungeon state, so revisits and save/reload never
+ * reroll them. */
 staticfn void
 step6b_schedule(void)
 {
     boolean used[MAXLEVEL + 1] = { FALSE };
     branch *temple = (branch *) 0, *tomb = (branch *) 0,
-           *moria = (branch *) 0, *br;
-    s_level *slev;
+           *moria = (branch *) 0, *sheol = (branch *) 0,
+           *dragon_caves = (branch *) 0, *mithardir = (branch *) 0,
+           *br;
+    s_level *slev, *mithardir_approach = (s_level *) 0;
     int dod = dname_to_dnum("The Dungeons of Doom");
     int temple_dnum = dname_to_dnum("The Temple of Moloch");
     int tomb_dnum = dname_to_dnum("The Lost Tomb");
     int moria_dnum = dname_to_dnum("The Ruins of Moria");
     int dlevel, bigrooms = 0, target_bigrooms;
 
-    /* Step9A-C manual-test parents; Step9D was canceled before integration. */
-    for (dlevel = 108; dlevel <= 110; ++dlevel)
-        used[dlevel] = TRUE;
-
     for (slev = svs.sp_levchn; slev; slev = slev->next)
-        if (slev->dlevel.dnum == dod
+        if (!step6b_step9_approach(slev)
+            && slev->dlevel.dnum == dod
             && slev->dlevel.dlevel >= STEP6B_MIN_LEVEL
             && slev->dlevel.dlevel <= STEP6B_MAX_LEVEL)
             used[slev->dlevel.dlevel] = TRUE;
 
     for (br = svb.branches; br; br = br->next) {
+        if (step6b_step9_branch(br)) {
+            if (br->end2.dnum == dname_to_dnum("Sheol"))
+                sheol = br;
+            else if (br->end2.dnum == dname_to_dnum("The Dragon Caves"))
+                dragon_caves = br;
+            else if (br->end2.dnum == dname_to_dnum("Mithardir"))
+                mithardir = br;
+            continue;
+        }
         if (br->end2.dnum == temple_dnum && br->end1.dnum == dod)
             temple = br;
         else if (br->end2.dnum == tomb_dnum && br->end1.dnum == dod)
@@ -1602,6 +1669,35 @@ step6b_schedule(void)
             && br->end2.dlevel <= STEP6B_MAX_LEVEL)
             used[br->end2.dlevel] = TRUE;
     }
+
+    for (slev = svs.sp_levchn; slev; slev = slev->next)
+        if (step6b_step9_approach(slev)) {
+            mithardir_approach = slev;
+            break;
+        }
+
+    if (!sheol || !dragon_caves || !mithardir || !mithardir_approach)
+        panic("Missing Step 9 branch");
+
+    /* Step9 parent branches use the shared persistent scheduler. */
+    dlevel = step6b_pick_depth(used, FALSE);
+    sheol->end1.dlevel = (xint16) dlevel;
+    used[dlevel] = TRUE;
+    insert_branch(sheol, TRUE);
+    step6b_rebase_branch(sheol);
+
+    dlevel = step6b_pick_depth(used, FALSE);
+    dragon_caves->end1.dlevel = (xint16) dlevel;
+    used[dlevel] = TRUE;
+    insert_branch(dragon_caves, TRUE);
+    step6b_rebase_branch(dragon_caves);
+
+    dlevel = step6b_pick_depth(used, FALSE);
+    mithardir->end1.dlevel = (xint16) dlevel;
+    step6b_rebase_level(mithardir_approach, dlevel);
+    used[dlevel] = TRUE;
+    insert_branch(mithardir, TRUE);
+    step6b_rebase_branch(mithardir);
 
     /* Always choose the Temple entrance from the same free pool. */
     if (temple) {

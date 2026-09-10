@@ -114,6 +114,10 @@ void port_help(void);
 #endif
 void windows_raw_print(const char *str);
 
+#ifdef STEP9_TOPOLOGY_TEST
+extern int step9_topology_test_main(void);
+#endif
+
 extern const char *known_handling[];     /* symbols.c */
 extern const char *known_restrictions[]; /* symbols.c */
 
@@ -303,6 +307,16 @@ _CrtSetReportFile(_CRT_ASSERT, _CRTDBG_FILE_STDERR);*/
     }
 
     copy_hack_content();
+
+#ifdef STEP9_TOPOLOGY_TEST
+#ifdef DLB
+    if (getenv("NETHACK_STEP9_TOPOLOGY_TEST")) {
+        if (!dlb_init())
+            return EXIT_FAILURE;
+        return step9_topology_test_main();
+    }
+#endif
+#endif
 
     /*
      * It seems you really want to play.

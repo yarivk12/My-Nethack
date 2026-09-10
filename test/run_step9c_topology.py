@@ -12,10 +12,14 @@ for directory in Path(output).iterdir():
     if not directory.is_dir():
         continue
     text=(directory/'topology.txt').read_text()
-    assert re.findall(r'Portal to Mithardir: (\d+)',text)==['110'],text
-    assert re.findall(r'Mithardir: levels (\d+) to (\d+)',text)==[('110','119')],text
-    assert re.findall(r'chalv2: (\d+)',text)==['110'],text
-    for name,depth in [('ossa1',110),('mith1',111),('mith2',112),('mith3',113),
-                       ('cat1',114),('cat2',115),('cat3',116)]:
+    parent=int(re.findall(r'Portal to Mithardir: (\d+)',text)[0])
+    assert 30<=parent<=199
+    assert re.findall(r'Mithardir: levels (\d+) to (\d+)',text)==[
+        (str(parent),str(parent+9))],text
+    assert re.findall(r'chalv2: (\d+)',text)==[str(parent)],text
+    for offset,name in enumerate(['ossa1','mith1','mith2','mith3',
+                                  'cat1','cat2','cat3']):
+        depth=parent+offset
         assert re.findall(r'\b'+name+r': (\d+)',text)==[str(depth)],(name,text)
-    print('PASS exactly one ten-level Mithardir via DoD110 portal; seven fixed maps and three generated floors:',directory.name)
+    print('PASS exactly one ten-level Mithardir via randomized portal parent',
+          parent,'with seven fixed maps and three generated floors:',directory.name)

@@ -1,10 +1,10 @@
-# Step 9A: Sheol (deterministic validation phase)
+# Step 9A: Sheol — final production parent placement
 
-Current checkpoint status: automated gate and user manual validation **PASS**.
-Sheol remains temporarily fixed at DoD108. The user authorized the combined
-9A–9C checkpoint commit, cumulative README update and branch push; final
-randomization/tagging remains deferred. The implementation-phase restrictions
-and results below are historical; [step9.md](step9.md) records current status.
+Current production code selects Sheol's parent once from the shared persistent
+DL30–199 scheduler. Historical user manual validation used temporary DoD108;
+the detailed fixed-parent findings below are historical. The final compiled
+closeout matrix passes on x64 and Win32; [step9.md](step9.md) records the
+authoritative status.
 
 ## Baseline and authority
 
@@ -15,8 +15,9 @@ and results below are historical; [step9.md](step9.md) records current status.
   `439b8d63d3d1ca78fb08588dd43f61874114b21a` (the Step 8 donor).
 - Source inspected using `git show`/`git grep` and a `git archive` of that
   revision, extracted outside this repository in `../step9-audit`.
-- No README update, commit, tag, push, or final randomized Step 9 placement
-  belongs to this phase. Step 9A must pass before Step 9B production work.
+- The historical phase plan preceded the combined Step 9A–9C publication.
+  The final closeout removes the temporary parent and validates the shared
+  randomized scheduler across both Release architectures.
 
 ## Donor dependency audit before production edits
 

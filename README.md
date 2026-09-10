@@ -12,12 +12,14 @@ kept current with every project commit.
 The completed project includes the frozen dungeon-depth foundation, the Step 5
 shop milestone, the Step 6/7 NerfHack dungeon enrichment, and the Step 8
 Ruins of Moria integration. Step 8 is committed as `Add Ruins of Moria` and
-tagged `step8-ruins-of-moria`. Step 9A–9C now adds the implemented and manually
-validated Sheol, Dragon Caves and Mithardir as an **intermediate deterministic
-checkpoint**, `Add Sheol, Dragon Caves and Mithardir`. Their temporary DoD
-parents remain DL108, DL109 and DL110 respectively; final randomized placement
-is pending a later closeout commit. Step 9D was canceled. No final Step 9 tag
-is created for this checkpoint.
+tagged `step8-ruins-of-moria`. Step 9A–9C adds Sheol, Dragon Caves and
+Mithardir. Their production parents now use the shared persistent scheduler,
+each selecting one distinct legal Dungeons of Doom depth from DL30–199;
+DL108–111 have no fixed Step 9 reservation. Step 9D was canceled. The final
+architecture/runtime/package closeout has passed on x64 and Win32: the native
+fresh-topology fixtures, focused regressions, donor/package checks, tile checks
+and non-PTY Mithardir suite all pass. The exact commit, annotated tag and
+atomic publication are recorded below after the final Release rebuild.
 
 ## Frozen structural baseline
 
@@ -131,12 +133,13 @@ validation was removed before release, and no per-floor random roll remains.
 The six branch floors occupy the entrance depth minus one through minus six
 and return to the saved DoD entrance; Castle remains DL200.
 
-## Step 9A–9C: INTERMEDIATE / DETERMINISTIC VALIDATION MILESTONE
+## Step 9A–9C: FINAL PRODUCTION PARENT PLACEMENT
 
-All three branches are implemented, have passed their automated gates, and
-have passed user manual validation. This checkpoint deliberately preserves
-their tested entrance depths before final randomization; **DL108–110 are
-temporary validation placements, not final production placement**.
+All three branches are implemented and have passed their historical manual
+validation at temporary fixed parents. The production code now removes those
+fixed placements: each branch is selected once from the shared persistent
+DL30–199 scheduler, with collision avoidance against the existing Step 5–8
+reservations and against the other two Step 9 parents.
 
 ### Step 9A: Sheol
 
@@ -149,9 +152,10 @@ behavior, blue-slime movement freezing, white-naga frost spit, ice traps,
 opaque ice walls, transparent crystal ice walls, fire/digging interactions,
 the crystal pick, and the Executioner encounter and donor rewards.
 
-Sheol is implemented and manually validated at the **temporary fixed DoD108**
-parent. It returns through ordinary branch stairs; the donor's Valley shortcut
-is excluded. Final random placement remains pending. See [Step 9A](doc/step9a.md).
+Sheol was manually validated at the **temporary fixed DoD108** parent. Its
+production parent is now randomized persistently in DL30–199. It returns
+through ordinary branch stairs; the donor's Valley shortcut is excluded. See
+[Step 9A](doc/step9a.md).
 
 ### Step 9B: Dragon Caves
 
@@ -164,8 +168,8 @@ and mail, worn powers/light, armor conversions, and finite scale drops across
 corpse revival. The native Caveman Chromatic Dragon remains unchanged. The
 donor's apparent dragon shop compiles as an ordinary room, preserved here.
 
-Dragon Caves is implemented and manually validated at the **temporary fixed
-DoD109** parent. Final random placement remains pending. See
+Dragon Caves was manually validated at the **temporary fixed DoD109** parent.
+Its production parent is now randomized persistently in DL30–199. See
 [Step 9B](doc/step9b.md).
 
 ### Step 9C: Mithardir
@@ -186,36 +190,35 @@ shop services persist through saves. The Second and Third Keys of Chaos work
 as ordinary keys; they add no endgame gate. Donor-global quests, roles, sanity,
 insight and ascension requirements are excluded.
 
-Mithardir is implemented and manually validated through the **temporary fixed
-DoD110** approach portal. Final random placement remains pending. See
-[Step 9C](doc/step9c.md) for provenance, mechanics, adaptations and test evidence.
+Mithardir was manually validated through the **temporary fixed DoD110**
+approach portal. Its production parent and DoD approach map are now rebased
+together and randomized persistently in DL30–199. See
+[Step 9C](doc/step9c.md) for provenance, mechanics, adaptations and test
+evidence.
 
 ### Scope and checkpoint validation
 
 Step 9D, Neutral Quest / Lost Cities, was **canceled before production
 integration** and is not part of this milestone. Its [read-only audit](doc/step9d.md)
 is historical only. **DL111 is not reserved for Step 9**; the existing scheduler
-can use it for earlier enrichment. Only DL108–110 are reserved for this
-checkpoint. Steps 5–8 occurrence rules and randomized placement remain intact,
-with Castle at DL200. The combined Step 9 `EDITLEVEL` is 4.
+can use it for earlier enrichment. DL108–110 are also ordinary candidates when
+otherwise eligible. Steps 5–8 occurrence rules and randomized placement remain
+intact, with Castle at DL200. The combined Step 9 `EDITLEVEL` is 4.
 
-User manual validation of 9A, 9B and 9C passed. Automated validation passed
-x64 and Win32 Release builds, focused donor/content/runtime gates, complete
-branch traversal and save/reload checks, cumulative prior-milestone regressions,
-depth-range and ledger/recovery checks, DLB resource-byte verification, tile
-indices/capacity and `git diff --check`. The final reservation cleanup passed
-2,000 scheduler samples and four fresh wizard topologies per architecture,
-confirming fixed parents, varying earlier branches, no collisions and DL111
-reuse. Quick source/package checks were repeated for this checkpoint; the
-already-passing long suite was not rerun for documentation-only publication.
-The validated gameplay source is unchanged by this checkpoint closeout.
+User manual validation of 9A, 9B and 9C passed at the historical fixed parents.
+This closeout's donor/source boundary checks, scheduler contract, prior Step
+7/8 source checks, Python syntax checks and `git diff --check` pass. Fresh
+native production topologies pass eight samples on both x64 and Win32; the
+focused Step 9A/9B suites and the non-PTY Mithardir native/comparison suite
+also pass on both architectures. The final Release/package and tile gates are
+recorded in the closeout report.
 Publication also preserves significant ASCII map padding with scoped Git
 whitespace rules and a source guard for whitespace outside map literals.
 
-See the [checkpoint record](doc/step9.md) and
-[wizard verification findings and fixes](doc/step9-playtest.md). Final randomized
-production placement and the final Step 9 milestone tag remain for a later,
-separately authorized closeout commit.
+See the [closeout record](doc/step9.md) and
+[wizard verification findings and fixes](doc/step9-playtest.md). The final
+publication is made only after the exact staged delta and Release artifacts
+are rechecked.
 
 ## Validation through Step 8
 

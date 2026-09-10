@@ -57,9 +57,17 @@ for ident in ['GLOWING_DRAGON_SCALE_MAIL','GLOWING_DRAGON_SCALES']:
 assert artifact==old('src/artifact.c'),'artifact changes beyond Step9B worn glowing armor light'
 assert '#define EDITLEVEL 4' in read('include/patchlevel.h')
 assert len(re.findall(r'name\s*=\s*"Sheol"',read('dat/dungeon.lua')))==2
-assert 'name="Sheol", base=108, direction="down"' in read('dat/dungeon.lua')
+dungeon = read('dat/dungeon.lua')
+assert 'name="Sheol", base=30, range=170, direction="down"' in dungeon
+assert 'name="The Dragon Caves", base=30, range=170, direction="down"' in dungeon
+assert 'name="Mithardir", base=30, range=170, branchtype="portal"' in dungeon
 assert 'base = 6, range = 2' in read('dat/dungeon.lua')
-assert 'for (dlevel = 108; dlevel <= 110; ++dlevel)\n        used[dlevel] = TRUE;' in read('src/dungeon.c')
+schedule = read('src/dungeon.c')
+assert 'Step9 parent branches use the shared persistent scheduler' in schedule
+assert 'for (dlevel = 108; dlevel <= 110; ++dlevel)' not in schedule
+assert 'step6b_rebase_branch(sheol)' in schedule
+assert 'step6b_rebase_branch(dragon_caves)' in schedule
+assert 'step6b_rebase_branch(mithardir)' in schedule
 assert 'base = 107' not in read('dat/dungeon.lua')
 assert not (repo/'dat/tomb-2.lua').exists()
 assert 'MONSPELL(PUNISHMENT,' in read('include/mcastu.h')
@@ -68,7 +76,7 @@ assert 'case CRYSTAL_PICK:' in read('src/apply.c')
 assert '#define Frozen_feet (u.uspare1)' in read('include/youprop.h')
 assert '#define mon_frozen_feet(mon) ((mon)->mspare1 & 31L)' in read('include/youprop.h')
 assert '#define set_mon_frozen_feet(mon, value)' in read('include/youprop.h')
-print('PASS README/save/structural/shop/endgame boundaries, one 6..8-level Sheol, temporary reservations and compatibility epoch')
+print('PASS README/save/structural/shop/endgame boundaries, one 6..8-level Sheol, randomized Step9 parents and compatibility epoch')
 # These map-data spaces must survive publication; outside the actual map
 # literals, retain the whitespace check relaxed by the path-specific Git rule.
 for name in ['cat1', 'cat3', 'chalv2', 'drgnA', 'drgnB', 'drgnC', 'drgnD',

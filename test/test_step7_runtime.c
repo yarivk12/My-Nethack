@@ -16,7 +16,8 @@ struct instance_globals_saved_m svm;
 struct instance_globals_saved_n svn;
 static unsigned rng_state;
 static int light_count, timer_count, light_radius;
-static branch temple, tomb, moria;
+static branch temple, tomb, moria, sheol, dragon_caves, mithardir;
+static s_level mithardir_approach;
 
 void panic(const char *fmt, ...) { fprintf(stderr, "%s\n", fmt); abort(); }
 void impossible(const char *fmt, ...) { fprintf(stderr, "%s\n", fmt); abort(); }
@@ -26,7 +27,11 @@ int rn2(int n) { rng_state = rng_state * 1664525U + 1013904223U;
 int dname_to_dnum(const char *s) {
     return !strcmp(s,"The Dungeons of Doom") ? 0
         : !strcmp(s,"The Temple of Moloch") ? 1
-        : !strcmp(s,"The Lost Tomb") ? 2 : 3;
+        : !strcmp(s,"The Lost Tomb") ? 2
+        : !strcmp(s,"The Ruins of Moria") ? 3
+        : !strcmp(s,"Sheol") ? 4
+        : !strcmp(s,"The Dragon Caves") ? 5
+        : !strcmp(s,"Mithardir") ? 6 : -1;
 }
 s_level *find_level(const char *s) {
     s_level *p; for (p=svs.sp_levchn; p; p=p->next)
@@ -65,29 +70,61 @@ long stop_timer(short fn, anything *a) {
 #include "step7_functions.h"
 
 static void topology(void) {
-    int sample, level, seen[201]={0}, moria_seen[201]={0}, variations=0;
+    int sample, level, seen[201]={0}, moria_seen[201]={0},
+        step9_seen[201]={0}, variations=0;
     for (sample=1; sample<=2000; sample++) {
         int used[201]={0}, big=0, giant=0, zoo=0, dragon=0;
-        /* Step 9's temporary validation corridor is reserved before the
-           unchanged Step 6/7/8 scheduler. Keep all prior assertions below. */
-        used[108]=used[109]=used[110]=1;
         s_level *p, *next;
         rng_state=(unsigned)sample;
         memset(&svd,0,sizeof svd); memset(&temple,0,sizeof temple);
         memset(&tomb,0,sizeof tomb);
+        memset(&mithardir_approach,0,sizeof mithardir_approach);
         svd.dungeons[0].num_dunlevs=200; svd.dungeons[0].depth_start=1;
         svd.dungeons[1].entry_lev=svd.dungeons[2].entry_lev=1;
+        svd.dungeons[3].entry_lev=6;
+        svd.dungeons[4].entry_lev=svd.dungeons[5].entry_lev=
+            svd.dungeons[6].entry_lev=1;
         temple.end1.dlevel=30; temple.end2.dnum=1; temple.end2.dlevel=1;
         tomb.end1.dlevel=31; tomb.end2.dnum=2; tomb.end2.dlevel=1;
         memset(&moria, 0, sizeof moria);
         moria.end1.dlevel=45; moria.end1_up=TRUE;
         moria.end2.dnum=3; moria.end2.dlevel=6;
-        svd.dungeons[3].entry_lev=6;
-        temple.next=&tomb; tomb.next=&moria; svb.branches=&temple;
+        memset(&sheol, 0, sizeof sheol);
+        sheol.end1.dlevel=108; sheol.end2.dnum=4; sheol.end2.dlevel=1;
+        memset(&dragon_caves, 0, sizeof dragon_caves);
+        dragon_caves.end1.dlevel=109;
+        dragon_caves.end2.dnum=5; dragon_caves.end2.dlevel=1;
+        memset(&mithardir, 0, sizeof mithardir);
+        mithardir.end1.dlevel=110; mithardir.end2.dnum=6;
+        mithardir.end2.dlevel=1; mithardir.type=BR_PORTAL;
+        strcpy(mithardir_approach.proto,"chalv2");
+        mithardir_approach.dlevel.dnum=0;
+        mithardir_approach.dlevel.dlevel=110;
+        svs.sp_levchn=&mithardir_approach;
+        temple.next=&tomb; tomb.next=&moria; moria.next=&sheol;
+        sheol.next=&dragon_caves; dragon_caves.next=&mithardir;
+        svb.branches=&temple;
         step6b_add_level("medusa",196,'M',0);
         step6b_add_level("castle",200,'C',0);
         if (sample%2) step6b_add_level("bigrm",12,'B',14);
         step6b_schedule();
+        assert(sheol.end1.dlevel>=30 && sheol.end1.dlevel<=199);
+        assert(dragon_caves.end1.dlevel>=30
+               && dragon_caves.end1.dlevel<=199);
+        assert(mithardir.end1.dlevel>=30 && mithardir.end1.dlevel<=199);
+        assert(sheol.end1.dlevel != dragon_caves.end1.dlevel
+               && sheol.end1.dlevel != mithardir.end1.dlevel
+               && dragon_caves.end1.dlevel != mithardir.end1.dlevel);
+        assert(svd.dungeons[4].depth_start==sheol.end1.dlevel+1);
+        assert(svd.dungeons[5].depth_start==dragon_caves.end1.dlevel+1);
+        assert(svd.dungeons[6].depth_start==mithardir.end1.dlevel);
+        assert(mithardir_approach.dlevel.dlevel==mithardir.end1.dlevel);
+        assert(!used[sheol.end1.dlevel]++);
+        assert(!used[dragon_caves.end1.dlevel]++);
+        assert(!used[mithardir.end1.dlevel]++);
+        step9_seen[sheol.end1.dlevel]++;
+        step9_seen[dragon_caves.end1.dlevel]++;
+        step9_seen[mithardir.end1.dlevel]++;
         assert(temple.end1.dlevel>=30 && temple.end1.dlevel<=199);
         assert(tomb.end1.dlevel>=30 && tomb.end1.dlevel<=199);
         assert(tomb.end1.dlevel!=temple.end1.dlevel);
@@ -103,6 +140,8 @@ static void topology(void) {
         seen[tomb.end1.dlevel]++;
         for (p=svs.sp_levchn;p;p=p->next) {
             level=p->dlevel.dlevel;
+            if (!strcmp(p->proto,"chalv2"))
+                continue; /* the Mithardir approach shares its parent */
             assert(!used[level]++);
             if (!strcmp(p->proto,"bigrm")) { big++; assert(p->rndlevs==14); }
             if (!strcmp(p->proto,"x6b-giant")) giant++;
@@ -111,14 +150,20 @@ static void topology(void) {
             if (!strncmp(p->proto,"x6b-",4)) assert(level>=30 && level<=199);
         }
         assert(big>=3 && big<=5 && giant==1 && (zoo==2 || zoo==3) && dragon==1);
-        for (p=svs.sp_levchn;p;p=next) { next=p->next; free(p); }
+        for (p=svs.sp_levchn;p;p=next) {
+            next=p->next;
+            if (p != &mithardir_approach)
+                free(p);
+        }
         svs.sp_levchn=NULL;
     }
     for (level=30;level<=199;level++) variations+=(moria_seen[level]>0);
     assert(variations>100);
+    for (level=108; level<=111; level++)
+        assert(step9_seen[level]>0);
     assert(seen[111]>0 && moria_seen[111]>0);
-    puts("PASS canceled Step9D parent DL111 is available to the existing scheduler");
-    printf("PASS: 2000 production scheduler samples; %d distinct Moria depths; Step 6 counts/collisions/depth semantics\n",variations);
+    puts("PASS Step9A-C randomized parents use the existing scheduler; Step9D is absent");
+    printf("PASS: 2000 production scheduler samples; %d distinct Moria depths; Step 6/9 counts/collisions/depth semantics\n",variations);
 }
 
 static void database(void) {

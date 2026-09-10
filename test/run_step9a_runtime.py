@@ -23,13 +23,14 @@ def main():
         game.send('30\n')
         game.settle()
         game.lua('nh.debug_flags({hunger=false})')
-        assert game.branch_depth('Sheol') == 108
+        parent = game.branch_depth('Sheol')
+        assert 30 <= parent <= 199
         sheol = game.dungeon_number('Sheol')
         game.send('\x16')
         game.wait('To what level')
-        game.send('108\n', 1)
+        game.send(str(parent) + '\n', 1)
         game.settle()
-        assert game.state()[:2] == (0, 108)
+        assert game.state()[:2] == (0, parent)
         assert game.stair('down', True, sheol)[:2] == (sheol, 1)
         game.lua(Path(__file__).with_name('test_step9a.lua').read_text())
         secure_floor()
@@ -63,8 +64,8 @@ nh.pline(string.format("DOWN_COUNT %d",n))''')
         print('PASS terminal save/restore', flush=True)
         for level in range(count-1, 0, -1):
             assert game.stair('up')[:2] == (sheol, level)
-        assert game.stair('up', True, 0)[:2] == (0, 108)
-        print('PASS Sheol', count, 'levels; complete round trip to DoD108', flush=True)
+        assert game.stair('up', True, 0)[:2] == (0, parent)
+        print('PASS Sheol', count, 'levels; complete round trip to DoD%d' % parent, flush=True)
     finally:
         game.close()
 

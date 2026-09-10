@@ -5,7 +5,7 @@ local stairs=nh.stairways();local up,down=0,0
 for _,s in ipairs(stairs) do
  if s.up then
   up=up+1
-  if u.dlevel==1 then assert(s.dnum~=u.dnum and s.dlevel==109)
+  if u.dlevel==1 then assert(s.dnum~=u.dnum and s.dlevel>=30 and s.dlevel<=199)
   else assert(s.dnum==u.dnum and s.dlevel==u.dlevel-1) end
  else
   down=down+1;assert(s.dnum==u.dnum and s.dlevel==u.dlevel+1)

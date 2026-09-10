@@ -27,7 +27,7 @@ assert block(read('include/monsters.h'),'MON(NAM("Chromatic Dragon"),') == \
        block(old('include/monsters.h'),'MON(NAM("Chromatic Dragon"),')
 assert read('dat/Cav-goal.lua')==old('dat/Cav-goal.lua')
 assert project('src/read.c', read('src/read.c'))==old('src/read.c')
-assert 'name="The Dragon Caves", base=109, direction="down"' in read('dat/dungeon.lua')
+assert 'name="The Dragon Caves", base=30, range=170, direction="down"' in read('dat/dungeon.lua')
 assert 'AD_LAVA' in read('include/monattk.h')
 assert 'dragon_revivals' in read('include/youprop.h')
 source=read('src/dungeon.c')

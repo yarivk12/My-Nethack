@@ -26,7 +26,7 @@ TTTTT..........-----T..................------..........................--
 ]=]})
 des.stair("up")
 des.stair("down")
--- Donor Valley portal omitted; return through the DoD109 branch stair.
+-- Donor Valley portal omitted; return through the DoD parent branch stair.
 des.object({class="*"})
 des.object({class="*"})
 des.object({class="*"})

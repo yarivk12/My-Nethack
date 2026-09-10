@@ -163,8 +163,10 @@ try:
     game.send('30\n');game.settle()
     game.lua('nh.debug_flags({hunger=false})')
     mith=game.dungeon_number('Mithardir')
-    game.send('\x16');game.wait('To what level');game.send('110\n',1);game.settle()
-    assert game.state()[:2]==(0,110)
+    parent=game.branch_depth('Mithardir')
+    assert 30<=parent<=199
+    game.send('\x16');game.wait('To what level');game.send(str(parent)+'\n',1);game.settle()
+    assert game.state()[:2]==(0,parent)
     portal(0,(mith,1));boundary_vision();restore()
     portal(0,(mith,2));portal(1,(mith,3));portal(1,(mith,4));restore()
     secure();assert game.stair('down')[:2]==(mith,5)
@@ -185,7 +187,7 @@ assert(n>100,"Catacomb generator did not run")
     for level in range(9,6,-1):
         secure();assert game.stair('up')[:2]==(mith,level)
     portal(0,(mith,4));portal(0,(mith,3));portal(0,(mith,2))
-    portal(0,(mith,1));portal(1,(0,110))
-    print('PASS all ten Mithardir floors, Catacombs, directed Spire shortcut and return to DoD110', flush=True)
+    portal(0,(mith,1));portal(1,(0,parent))
+    print('PASS all ten Mithardir floors, Catacombs, directed Spire shortcut and return to DoD%d' % parent, flush=True)
 finally:
     game.close()

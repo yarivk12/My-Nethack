@@ -1,23 +1,23 @@
-# Step 9B: Dragon Caves — dependency audit and implementation
+# Step 9B: Dragon Caves — final production parent placement
 
-Current checkpoint status: automated gate and user manual validation **PASS**.
-Dragon Caves remains temporarily fixed at DoD109. The user authorized the
-combined 9A–9C checkpoint commit, cumulative README update and branch push;
-final randomization/tagging remains deferred. The audit and ordered results
-below are historical. In particular, the old DL108–111 reservation became
-DL108–110 after Step9D was canceled; [step9.md](step9.md) records current status.
+Current production code selects Dragon Caves' parent once from the shared
+persistent DL30–199 scheduler. Historical user manual validation used
+temporary DoD109; the detailed fixed-parent findings below are historical.
+The final compiled closeout matrix passes on x64 and Win32;
+[step9.md](step9.md) records the authoritative status.
 
 ## Authority and gate
 
-Local branch `phase0/dod-length`; unchanged HEAD
-`5ce8b8193e4c581dd293ccac2bd0cafb4da89e96`. The initially clean Step8 tree now
-contains the approved-scope, uncommitted Step9A implementation. Its gate passed
-before Step9B production edits. Do not discard it or update README.
+Local branch `phase0/dod-length`; the historical implementation baseline was
+`5ce8b8193e4c581dd293ccac2bd0cafb4da89e96`. The combined closeout includes
+the approved Step9A–9C implementation, randomized placement and final README
+publication.
 
 Donor: `UnNetHack/UnNetHack`, **439b8d63d3d1ca78fb08588dd43f61874114b21a**.
 Read the immutable exported files in `../step9-audit/unnethack-pinned` and use
 `git show` from the external donor clone for automated comparisons. No revision
-switch, legacy level compiler, commit, tag or push belongs to this phase.
+switch or legacy level compiler is used; the combined closeout handles commit,
+tag and publication after validation.
 
 ## Exact source-derived structure
 

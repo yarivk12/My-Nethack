@@ -1,12 +1,12 @@
-# Step 9A–9C wizard verification report — deterministic checkpoint
+# Step 9A–9C wizard verification report — historical validation record
 
-Current status: Step9A, Step9B and Step9C automated gates and user manual
-validation all **PASS**. Both final Release builds, cumulative regressions,
-topology and package checks pass; [step9.md](step9.md) records the final evidence.
-The user authorized a checkpoint commit and branch publication with the
-cumulative README. Sheol/Dragon Caves/Mithardir remain temporarily fixed at
-DoD108/109/110. Final randomization and tagging are deferred. Step9D was
-canceled before production integration, and DL111 is not reserved.
+Historical status: Step9A, Step9B and Step9C automated gates and user manual
+validation passed at temporary DoD108/109/110 parents. The production code now
+randomizes all three parents persistently in DL30–199. The final x64/Win32
+Release, native-topology, focused regression, package and non-PTY Mithardir
+matrix passes; [step9.md](step9.md) records the authoritative closeout
+evidence. Step9D was canceled before production integration, and DL111 is not
+reserved.
 
 The ordered entries below preserve findings, fixes and test outcomes from the
 implementation process. Earlier pending-work and publication restrictions are
@@ -560,10 +560,9 @@ integration was started. Final manual-validation/publication instructions
 remain separate from these passing automated gates.
 
 Steps9A–9C manual-test closeout is complete. The user retained fixed parents
-DL108–110. The unused DL111 reservation was removed; both 2,000-sample
-scheduler suites confirm it can again host earlier randomized enrichment.
-Both final Release solutions, four fresh topologies per architecture,
-prior-milestone/depth/ledger/recovery checks, package-byte checks, tile tables
-and whitespace/scope review pass. The final result and log inventory are
-in [step9.md](step9.md). Nothing was committed or published; Step9D remains
-canceled and the builds are ready for new wizard-mode manual test games.
+DL108–110 for the historical manual route. The unused DL111 reservation was
+removed; scheduler suites confirm it can again host earlier randomized
+enrichment. Both final Release solutions, eight fresh native topologies per
+architecture, focused regressions, package-byte checks, tile tables and
+whitespace/scope review pass. The final result and log inventory are in
+[step9.md](step9.md). Step9D remains canceled.

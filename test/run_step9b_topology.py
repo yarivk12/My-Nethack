@@ -11,7 +11,10 @@ subprocess.run([sys.executable,'-B',str(Path(__file__).with_name('run_step9a_top
 for directory in Path(output).iterdir():
     if not directory.is_dir():continue
     text=(directory/'topology.txt').read_text()
-    assert re.findall(r'Stair to The Dragon Caves: (\d+)',text)==['109'],text
-    assert re.findall(r'The Dragon Caves: levels (\d+) to (\d+)',text)==[('110','113')],text
-    assert re.findall(r'drgn([ABCD]): (\d+)',text)==list(zip('ABCD',map(str,range(110,114)))),text
-    print('PASS exactly one four-level descending Dragon Caves at DoD109:',directory.name)
+    parent=int(re.findall(r'Stair to The Dragon Caves: (\d+)',text)[0])
+    assert 30<=parent<=199
+    assert re.findall(r'The Dragon Caves: levels (\d+) to (\d+)',text)==[
+        (str(parent+1),str(parent+4))],text
+    assert re.findall(r'drgn([ABCD]): (\d+)',text)==[
+        (name,str(parent+index)) for index,name in enumerate('ABCD',1)],text
+    print('PASS exactly one randomized four-level Dragon Caves parent:',parent,directory.name)

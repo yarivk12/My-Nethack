@@ -12,9 +12,9 @@ dungeon = {
       alignment = "unaligned",
       themerooms = "themerms.lua",
       branches = {
-         { name="Sheol", base=108, direction="down" },
-         { name="The Dragon Caves", base=109, direction="down" },
-         { name="Mithardir", base=110, branchtype="portal" },
+         { name="Sheol", base=30, range=170, direction="down" },
+         { name="The Dragon Caves", base=30, range=170, direction="down" },
+         { name="Mithardir", base=30, range=170, branchtype="portal" },
          {
             name = "The Gnomish Mines",
             base = 2,

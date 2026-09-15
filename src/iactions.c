@@ -312,7 +312,7 @@ itemactions(struct obj *otmp)
     else if (otmp->otyp == CREAM_PIE)
         ia_addmenu(win, IA_APPLY_OBJ, 'a',
                    "Hit yourself with this cream pie");
-    else if (otmp->otyp == BULLWHIP)
+    else if (otmp->otyp == BULLWHIP || otmp->otyp == VIPERWHIP)
         ia_addmenu(win, IA_APPLY_OBJ, 'a', "Lash out with this whip");
     else if (otmp->otyp == GRAPPLING_HOOK)
         ia_addmenu(win, IA_APPLY_OBJ, 'a',
@@ -326,8 +326,9 @@ itemactions(struct obj *otmp)
     else if (otmp->otyp == CAN_OF_GREASE)
         ia_addmenu(win, IA_APPLY_OBJ, 'a', "Use the can to grease an item");
     else if (otmp->otyp == LOCK_PICK
-             || otmp->otyp == CREDIT_CARD
-             || otmp->otyp == SKELETON_KEY)
+              || otmp->otyp == CREDIT_CARD
+              || otmp->otyp == SKELETON_KEY
+              || otmp->otyp == UNIVERSAL_KEY)
         ia_addmenu(win, IA_APPLY_OBJ, 'a', "Use this tool to pick a lock");
     else if (otmp->otyp == TINNING_KIT)
         ia_addmenu(win, IA_APPLY_OBJ, 'a', "Use this kit to tin a corpse");

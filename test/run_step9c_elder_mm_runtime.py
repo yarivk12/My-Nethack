@@ -14,12 +14,15 @@ class ObservedGame(Game):
 
 release,output=sys.argv[1:3]
 caster=sys.argv[3] if len(sys.argv)>3 else 'Alabaster elf-elder'
-assert caster in ('Alabaster elf-elder','Alabaster mummy')
+assert caster in ('Alabaster elf-elder','Alabaster mummy','ogre mage','star spawn')
 evidence=r'Scales cover (?:the )?iron golem.s eyes|iron golem seems confused'
-if caster=='Alabaster mummy':
+if caster in ('Alabaster mummy','ogre mage','star spawn'):
     evidence=r'A psychic bolt strikes (?:the )?iron golem|iron golem reels|iron golem suddenly seems weaker'
 game=ObservedGame(release,output)
 try:
+    # The first status row can arrive before startup has finished redrawing.
+    # Wait for the console to settle before sending the first wizard command.
+    game.settle()
     game.send('#levelchange\n');game.wait('To what experience level')
     game.send('30\n');game.settle()
     game.lua('nh.debug_flags({hunger=false,mongen=false});u.clear_inventory()')

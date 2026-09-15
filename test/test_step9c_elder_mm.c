@@ -24,7 +24,7 @@ static struct { int level,flags; } mcast_data[]={
 #undef Upolyd
 #define Upolyd FALSE
 static int selected, selections, damage_calls, beam_calls, heal_calls, far_heal;
-static int magic_resist, blind_resist, resist_roll, fumble, aligned=1;
+static int magic_resist, elemental_resist, blind_resist, resist_roll, fumble, aligned=1;
 static coordxy heal_x,heal_y;
 static struct monst *beam_victim;
 static int kill_beam_target,kill_beam_caster;
@@ -33,9 +33,16 @@ static int armor_resist,quest_armor,removed,curses,summons,deaths,lifesave;
 static struct monst *real_caster;
 int rn2(int n) { assert(n>0);return fumble ? 0 : n-1; }
 int rnd(int n) { return rn2(n)+1; }
+int d(int n, int s) { return n * s; }
 int sgn(int n) { return n<0 ? -1 : n>0; }
 boolean resists_magm(struct monst *m) { (void)m;return (boolean)magic_resist; }
 boolean resists_blnd(struct monst *m) { (void)m;return (boolean)blind_resist; }
+boolean resists_drli(struct monst *m) { (void)m;return FALSE; }
+boolean Resists_Elem(struct monst *m, int p) { (void)m;(void)p;return (boolean)elemental_resist; }
+void newsym(coordxy x, coordxy y) { (void)x;(void)y; }
+NhRegion *create_gas_cloud(coordxy x, coordxy y, int s, int d) {
+    (void)x;(void)y;(void)s;(void)d;return (NhRegion *)0;
+}
 int resist(struct monst *m,char c,int damage,int tell) { (void)m;(void)c;(void)damage;(void)tell;return resist_roll; }
 void shieldeff(coordxy x,coordxy y) { (void)x;(void)y; }
 boolean linedup(coordxy ax,coordxy ay,coordxy bx,coordxy by,int boulders) {
@@ -52,7 +59,9 @@ void dobuzz(int type,int dice,coordxy x,coordxy y,int dx,int dy,
 }
 static int mith_elder_spell(void) { return selected; }
 static int mith_spell_damage(struct monst *m,struct attack *a) {
-    assert(m && a->adtyp==AD_SPEL);++damage_calls;return 11;
+    assert(m && (a->adtyp==AD_SPEL || a->adtyp==AD_FIRE || a->adtyp==AD_COLD
+                 || a->adtyp==AD_ELEC || a->adtyp==AD_MAGM));
+    ++damage_calls;return 11;
 }
 static void mcast_disappear(struct monst *m) { m->minvis=1; }
 static void mith_mass_cure(struct monst *m,boolean far,coordxy x,coordxy y) {
@@ -74,7 +83,8 @@ int nasty(struct monst *m) {
     ++summons;return 1;
 }
 void monkilled(struct monst *m,const char *reason,int type) {
-    assert(!*reason && type==AD_SPEL);++deaths;
+    assert(!*reason && (type==AD_SPEL || type==AD_FIRE || type==AD_COLD
+                        || type==AD_ELEC || type==AD_MAGM));++deaths;
     if(lifesave) { m->mhp=20;m->mhpmax=max(20,m->mhpmax); }
 }
 static int test_choose_spell(struct monst *,struct monst *);
@@ -174,5 +184,32 @@ int main(void) {
     caster.mtame=1;
     assert(mith_mm_useless(&caster,&target,MCAST_SUMMON_MONS));
     puts("PASS mummy spell effects, actual native-list selection, Naen cooldown/fumble, cancellation, target proxy, death immunity and lifesaving");
+    {
+        static const int lakes[] = { PM_FLASHING_LAKE, PM_FROSTED_LAKE,
+                                     PM_SMOLDERING_LAKE, PM_SPARKLING_LAKE };
+        static const int damage_types[] = { AD_ELEC, AD_COLD, AD_FIRE, AD_MAGM };
+
+        for (i = 0; i < SIZE(lakes); ++i) {
+            struct attack elemental = { AT_MAGC, 0, 0, 6 };
+
+            elemental.adtyp = (uchar) damage_types[i];
+            caster = make_mon(lakes[i], 10);
+            caster.m_lev = 24;
+            target = make_mon(PM_ORC, 12);
+            damage_calls = 0;
+            magic_resist = elemental_resist = 0;
+            assert(mith_castmm(&caster, &target, &elemental) == M_ATTK_HIT);
+            assert(target.mhp == 29 && damage_calls == 1);
+            target.mhp = 40;
+            if (elemental.adtyp == AD_MAGM)
+                magic_resist = 1;
+            else
+                elemental_resist = 1;
+            assert(mith_castmm(&caster, &target, &elemental) == M_ATTK_HIT);
+            assert(target.mhp == 40);
+        }
+        magic_resist = elemental_resist = 0;
+        puts("PASS lake active monster-target elemental casts and full resistance handling");
+    }
     return 0;
 }

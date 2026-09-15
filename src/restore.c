@@ -1213,6 +1213,16 @@ getlev(NHFILE *nhfp, int pid, xint16 lev)
     for (mtmp = fmon; mtmp; mtmp = mtmp->nmon) {
         if ((mtmp->mstate & TERRAIN_FALLOUT_MASK) != 0)
             gp.pending_terrain_effects |= (mtmp->mstate & TERRAIN_FALLOUT_MASK);
+        if (ghostly && mtmp->data == &mons[PM_WITCH_S_FAMILIAR]
+            && mtmp->mspare1) {
+            unsigned mapped_witch_id;
+
+            if (lookup_id_mapping((unsigned) mtmp->mspare1,
+                                  &mapped_witch_id))
+                mtmp->mspare1 = (long) mapped_witch_id;
+            else
+                mtmp->mspare1 = 0L;
+        }
         if (mtmp->isshk)
             set_residency(mtmp, FALSE);
         /* set some monst fields to sane values when coming from a bones file */

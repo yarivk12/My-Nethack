@@ -83,6 +83,14 @@ int main(void) {
     assert(mith_physical_damage(&mon, &weapon, AT_WEAP, 20) == 40);
     weapon.otyp = LONG_SWORD;
     assert(mith_physical_damage(&mon, &weapon, AT_WEAP, 20) == 5);
+    mon.data = &mons[PM_ARA_KAMEREL];
+    assert(mith_physical_damage(&mon, &weapon, AT_WEAP, 20) == 1);
+    weapon.otyp = MACE;
+    assert(mith_physical_damage(&mon, &weapon, AT_WEAP, 20) == 31);
+    mon.data = &mons[PM_ARGENTUM_GOLEM];
+    assert(mith_physical_damage(&mon, &weapon, AT_WEAP, 20) == 31);
+    weapon.otyp = LONG_SWORD;
+    assert(mith_physical_damage(&mon, &weapon, AT_WEAP, 20) == 1);
     mon.data = &mons[PM_ASPECT_OF_THE_SILENCE];
     assert(mith_physical_damage(&mon, &weapon, AT_WEAP, 40) == 4);
     mon.data = &mons[PM_LIVING_MIRAGE];

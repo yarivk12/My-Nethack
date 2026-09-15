@@ -1240,6 +1240,12 @@ makemaz(const char *s)
         Strcat(protofile, LEV_EXT);
         gi.in_mk_themerooms = FALSE;
         if (load_special(protofile)) {
+            if (!strcmp(protofile, "out1.lua")
+                || !strcmp(protofile, "out2.lua")
+                || !strcmp(protofile, "out3.lua")
+                || !strcmp(protofile, "out4.lua"))
+                place_neutral_features();
+            step10c_post_load_content(&u.uz);
             /* some levels can end up with monsters
                on dead mon list, including light source monsters */
             dmonsfree();

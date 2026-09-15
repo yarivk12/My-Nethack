@@ -106,6 +106,10 @@ enum misc_arti_nums {
     NROFARTIFACTS = (AFTER_LAST_ARTIFACT - 1)
 };
 
+/* Step 10 keeps serialized IDs append-only.  obj.oartifact is a char;
+ * use the signed-char limit even on ports where plain char is unsigned. */
+typedef char artifact_id_must_fit_saved_char[(NROFARTIFACTS <= 127) ? 1 : -1];
+
 /* related to breadcrumb struct */
 enum bcargs {override_restriction = -1};
 

@@ -35,11 +35,13 @@ staticfn int invoke_energy_boost(struct obj *) NONNULLARG1;
 staticfn int invoke_untrap(struct obj *) NONNULLARG1;
 staticfn int invoke_charge_obj(struct obj *) NONNULLARG1;
 staticfn int invoke_create_portal(struct obj *) NONNULLARG1;
+staticfn int invoke_silver_key_portal(struct obj *) NONNULLARG1;
 staticfn int invoke_create_ammo(struct obj *) NONNULLARG1;
 staticfn int invoke_banish(struct obj *) NONNULLARG1;
 staticfn int invoke_fling_poison(struct obj *) NONNULLARG1;
 staticfn int invoke_storm_spell(struct obj *) NONNULLARG1;
 staticfn int invoke_blinding_ray(struct obj *) NONNULLARG1;
+staticfn int invoke_altmode(struct obj *) NONNULLARG1;
 staticfn int arti_invoke_cost_pw(struct obj *) NONNULLARG1;
 staticfn boolean arti_invoke_cost(struct obj *) NONNULLARG1;
 staticfn int arti_invoke(struct obj *);
@@ -385,6 +387,22 @@ artifact_exists(
                 otmp->age = 0;
                 if (otmp->otyp == RIN_INCREASE_DAMAGE)
                     otmp->spe = 0;
+                switch (m) {
+                case ART_MIRROR_BRAND:
+                    otmp->obranch_material = mod ? SILVER : 0;
+                    break;
+                case ART_SANSARA_MIRROR:
+                    otmp->obranch_material = mod ? GOLD : 0;
+                    break;
+                case ART_SOULMIRROR:
+                    otmp->obranch_material = mod ? MITHRIL : 0;
+                    break;
+                case ART_SILVER_KEY:
+                    otmp->obranch_material = mod ? SILVER : 0;
+                    break;
+                default:
+                    break;
+                }
                 if (mod) { /* means being created rather than un-created */
                     /* one--and only one--of these should always be set */
                     if ((flgs & (ONAME_VIA_NAMING | ONAME_WISH | ONAME_GIFT
@@ -530,6 +548,14 @@ confers_luck(struct obj *obj)
         return TRUE;
 
     return (boolean) (obj->oartifact && spec_ability(obj, SPFX_LUCK));
+}
+
+/* Soulmirror's pinned +7 is artifact-specific; ordinary PLATE_MAIL keeps its
+   normal native armor value. */
+int
+artifact_arm_bonus(struct obj *obj)
+{
+    return obj && is_art(obj, ART_SOULMIRROR) ? 7 : 0;
 }
 
 /* used to check whether a monster is getting reflection from an artifact */
@@ -844,6 +870,12 @@ set_artifact_intrinsic(
         else
             EEnergy_regeneration &= ~wp_mask;
     }
+    if (spfx & SPFX_PCTRL) {
+        if (on)
+            EPolymorph_control |= wp_mask;
+        else
+            EPolymorph_control &= ~wp_mask;
+    }
     if (spfx & SPFX_HSPDAM) {
         if (on)
             EHalf_spell_damage |= wp_mask;
@@ -864,11 +896,17 @@ set_artifact_intrinsic(
             u.xray_range = -1;
         gv.vision_full_recalc = 1;
     }
-    if ((spfx & SPFX_REFLECT) && (wp_mask & W_WEP)) {
+    if ((spfx & SPFX_REFLECT) && (wp_mask & (W_WEP | W_ARMOR))) {
         if (on)
             EReflecting |= wp_mask;
         else
             EReflecting &= ~wp_mask;
+    }
+    if (spfx & SPFX_DISPL) {
+        if (on)
+            EDisplaced |= wp_mask;
+        else
+            EDisplaced &= ~wp_mask;
     }
     if (spfx & SPFX_PROTECT) {
         if (on)
@@ -1260,11 +1298,15 @@ Mb_hit(struct monst *magr, /* attacker */
             youdefend = (mdef == &gy.youmonst),
             resisted = FALSE, do_stun, do_confuse, result;
     int attack_indx, fakeidx, scare_dieroll = MB_MAX_DIEROLL / 2;
+    int dnum = 1, dsize = 4;
+    boolean mirror_brand = is_art(mb, ART_MIRROR_BRAND);
 
     result = FALSE; /* no message given yet */
     /* the most severe effects are less likely at higher enchantment */
     if (mb->spe >= 3)
         scare_dieroll /= (1 << (mb->spe / 3));
+    if (mirror_brand)
+        dnum = 2, dsize = 10;
     /* if target successfully resisted the artifact damage bonus,
        reduce overall likelihood of the assorted special effects */
     if (!gs.spec_dbon_applies)
@@ -1284,18 +1326,18 @@ Mb_hit(struct monst *magr, /* attacker */
        [note that a successful save against AD_STUN doesn't actually
        prevent the target from ending up stunned] */
     attack_indx = MB_INDEX_PROBE;
-    *dmgptr += rnd(4); /* (2..3)d4 */
+    *dmgptr += mirror_brand ? d(dnum, dsize) : rnd(4);
     if (do_stun) {
         attack_indx = MB_INDEX_STUN;
-        *dmgptr += rnd(4); /* (3..4)d4 */
+        *dmgptr += mirror_brand ? d(dnum, dsize) : rnd(4);
     }
     if (dieroll <= scare_dieroll) {
         attack_indx = MB_INDEX_SCARE;
-        *dmgptr += rnd(4); /* (3..5)d4 */
+        *dmgptr += mirror_brand ? d(dnum, dsize) : rnd(4);
     }
     if (dieroll <= (scare_dieroll / 2)) {
         attack_indx = MB_INDEX_CANCEL;
-        *dmgptr += rnd(4); /* (4..6)d4 */
+        *dmgptr += mirror_brand ? d(dnum, dsize) : rnd(4);
     }
 
     /* give the hit message prior to inflicting the effects */
@@ -1468,6 +1510,10 @@ artifact_hit(
      * handled.  Messages are done in this function, however.
      */
     *dmgptr += spec_dbon(otmp, mdef, *dmgptr);
+    /* The local representation of the donor's second beam is a bounded
+       artifact-only damage increment when its alternate mode is active. */
+    if (is_art(otmp, ART_INFINITY_S_MIRRORED_ARC) && otmp->usecount)
+        *dmgptr += d(3, 3);
 
     if (youattack && youdefend) {
         impossible("attacking yourself with weapon?");
@@ -1863,6 +1909,143 @@ invoke_charge_obj(struct obj *obj)
     return ECMD_TIME;
 }
 
+boolean
+silver_key_destination_valid(const d_level *target,
+                             const struct silver_key_domain *domain)
+{
+    if (!target || !domain
+        || target->dnum < 0 || target->dnum >= MAXDUNGEON
+        || target->dlevel < 1 || target->dlevel > MAXLEVEL
+        || domain->approach.dnum < 0
+        || domain->approach.dnum >= MAXDUNGEON
+        || domain->approach.dlevel < 1
+        || domain->approach.dlevel > MAXLEVEL
+        || domain->neutral_dnum < 0
+        || domain->neutral_dnum >= MAXDUNGEON
+        || domain->lost_cities_dnum < 0
+        || domain->lost_cities_dnum >= MAXDUNGEON
+        || domain->dispensary.dnum < 0
+        || domain->dispensary.dnum >= MAXDUNGEON
+        || domain->dispensary.dlevel < 1
+        || domain->dispensary.dlevel > MAXLEVEL)
+        return FALSE;
+
+    /* The Dispensary is an exact level identity and may share Neutral's dnum;
+     * the other three domains must remain distinct. */
+    if (domain->approach.dnum == domain->neutral_dnum
+        || domain->approach.dnum == domain->lost_cities_dnum
+        || domain->neutral_dnum == domain->lost_cities_dnum
+        || domain->approach.dnum == domain->dispensary.dnum
+        || domain->lost_cities_dnum == domain->dispensary.dnum)
+        return FALSE;
+
+    if (target->dnum == domain->approach.dnum)
+        return (boolean) (target->dlevel == domain->approach.dlevel);
+    if (target->dnum == domain->dispensary.dnum
+        && target->dlevel == domain->dispensary.dlevel)
+        return TRUE;
+    if (target->dnum == domain->neutral_dnum)
+        return (boolean) (target->dlevel <= 7);
+    if (target->dnum == domain->lost_cities_dnum)
+        return (boolean) (target->dlevel <= 13);
+    return FALSE;
+}
+
+boolean
+silver_key_choose_destination(const d_level *candidates, int candidate_count,
+                              int choice,
+                              const struct silver_key_domain *domain,
+                              d_level *target)
+{
+    if (target)
+        target->dnum = target->dlevel = -1;
+    if (!target || !candidates || candidate_count <= 0
+        || choice < 0 || choice >= candidate_count
+        || !silver_key_destination_valid(&candidates[choice], domain))
+        return FALSE;
+    *target = candidates[choice];
+    return TRUE;
+}
+
+staticfn int
+invoke_silver_key_portal(struct obj *obj)
+{
+    struct silver_key_domain domain;
+    d_level candidates[4], raw[4], target;
+    const char *labels[4];
+    int i, count = 0, n;
+    winid win;
+    anything any;
+    menu_item *selected = (menu_item *) 0;
+
+    if (u.uhave.amulet || In_endgame(&u.uz) || !next_to_u()
+        || !step10c_silver_key_domain(&domain)) {
+        You_feel("the Silver Key turn, but find no door it can open.");
+        return ECMD_TIME;
+    }
+
+    raw[0] = domain.approach;
+    raw[1].dnum = domain.neutral_dnum;
+    raw[1].dlevel = 1;
+    raw[2].dnum = domain.lost_cities_dnum;
+    raw[2].dlevel = svd.dungeons[domain.lost_cities_dnum].entry_lev;
+    raw[3] = domain.dispensary;
+    labels[0] = "the DoD Approach";
+    labels[1] = "Gate Town";
+    labels[2] = "the Lost Cities";
+    labels[3] = "the Dispensary";
+
+    for (i = 0; i < SIZE(raw); ++i) {
+        int ledger;
+
+        if (!silver_key_destination_valid(&raw[i], &domain)
+            || on_level(&raw[i], &u.uz))
+            continue;
+        ledger = ledger_no(&raw[i]);
+        if (ledger < 1 || ledger > maxledgerno()
+            || !(svl.level_info[ledger].flags & VISITED))
+            continue;
+        candidates[count] = raw[i];
+        labels[count++] = labels[i];
+    }
+    if (!count) {
+        You_feel("the Silver Key turn, but find no door it can open.");
+        return ECMD_TIME;
+    }
+
+    win = create_nhwindow(NHW_MENU);
+    start_menu(win, MENU_BEHAVE_STANDARD);
+    for (i = 0; i < count; ++i) {
+        any = cg.zeroany;
+        any.a_int = i + 1;
+        add_menu(win, &nul_glyphinfo, &any, 0, 0, ATR_NONE, NO_COLOR,
+                 labels[i], MENU_ITEMFLAGS_NONE);
+    }
+    end_menu(win, "Turn the Silver Key toward which door?");
+    n = select_menu(win, PICK_ONE, &selected);
+    destroy_nhwindow(win);
+    if (n <= 0) {
+        if (selected)
+            free((genericptr_t) selected);
+        nothing_special(obj);
+        return ECMD_TIME;
+    }
+    i = selected[0].item.a_int - 1;
+    free((genericptr_t) selected);
+    if (!silver_key_choose_destination(candidates, count, i, &domain,
+                                       &target)) {
+        You_feel("the Silver Key turn, but find no door it can open.");
+        return ECMD_TIME;
+    }
+
+    if (!Blind)
+        You("are surrounded by a silver shimmer!");
+    else
+        You_feel("weightless for a moment.");
+    goto_level(&target, FALSE, FALSE, FALSE);
+    return ECMD_TIME;
+}
+
 staticfn int
 invoke_create_portal(struct obj *obj)
 {
@@ -2146,6 +2329,15 @@ arti_invoke(struct obj *obj)
         return ECMD_TIME;
     }
 
+    /* Readability is the Necronomicon's authoritative interface.  Neither
+     * this harmless direction nor the dormant Silver Key path uses cooldown. */
+    if (is_art(obj, ART_NECRONOMICON)) {
+        pline("The Necronomicon must be read, not invoked.");
+        return ECMD_TIME;
+    }
+    if (is_art(obj, ART_SILVER_KEY))
+        return invoke_silver_key_portal(obj);
+
     /* It's a special power, not "just" a property */
     if (oart->inv_prop > LAST_PROP) {
         if (!arti_invoke_cost(obj))
@@ -2204,6 +2396,7 @@ arti_invoke(struct obj *obj)
             /*FALLTHRU*/
         case FIRESTORM: res = invoke_storm_spell(obj); break;
         case BLINDING_RAY: res = invoke_blinding_ray(obj); break;
+        case ALTMODE: res = invoke_altmode(obj); break;
         default:
             impossible("Unknown invoke power %d.", oart->inv_prop);
             break;
@@ -2262,6 +2455,20 @@ arti_invoke(struct obj *obj)
         }
     }
 
+    return ECMD_TIME;
+}
+
+staticfn int
+invoke_altmode(struct obj *obj)
+{
+    if (!is_art(obj, ART_INFINITY_S_MIRRORED_ARC)) {
+        pline1(nothing_happens);
+        return ECMD_TIME;
+    }
+    obj->usecount = obj->usecount ? 0 : 1;
+    obj->age = svm.moves;
+    You("slide the mirrored arc, %s the second beam-path.",
+        obj->usecount ? "opening" : "closing off");
     return ECMD_TIME;
 }
 
@@ -2392,6 +2599,7 @@ abil_to_spfx(long *abil)
         { &EWarn_of_mon, SPFX_WARN },
         { &EWarning, SPFX_WARN },
         { &EEnergy_regeneration, SPFX_EREGEN },
+        { &EPolymorph_control, SPFX_PCTRL },
         { &EHalf_spell_damage, SPFX_HSPDAM },
         { &EHalf_physical_damage, SPFX_HPHDAM },
         { &EReflecting, SPFX_REFLECT },

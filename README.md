@@ -196,6 +196,31 @@ together and randomized persistently in DL30–199. See
 [Step 9C](doc/step9c.md) for provenance, mechanics, adaptations and test
 evidence.
 
+### Step 10: Neutral Quest / Lost Cities
+
+Step 10 ships the Neutral Quest branch, including the randomized,
+collision-safe DoD approach, paired Gate Town/Outlands portals, the Spire and
+Sum of All, Lost Cities with its alternate maps and R'lyeh terminal, and the
+randomly attached Dispensary. The implementation preserves the established
+dungeon ledger and display-depth rules, packages all 26 Lua resources, and
+keeps Castle at DoD DL200.
+
+The milestone includes the authored and procedural level content: room fill
+and population, shops, shopkeepers, stock and billing, monsters, objects and
+metadata, traps, flags, portals, stairs, holes, rewards, artifacts, terrain,
+lighting, water, and branch-specific environment mechanics. Paired portal
+arrival and return semantics, save/restore/revisit, recovery, generated
+identity/glyph/tile invariants, and the complete combat attack-handler audit
+are covered by the final x64 validation gate. The audit covers 73 monsters,
+209 attack entries, 68 distinct attack/damage combinations, 67 supported
+combinations, and one intentionally inert marker.
+
+Standing validation rule: generated gameplay must be proven semantically, not
+merely buildable, loadable, or topologically connected. Future generated
+content gates must cover room fill/population, shops, shopkeepers, stock and
+billing, monsters, object metadata, traps, flags, rewards, procedural
+payloads, and combat behavior.
+
 ### Scope and checkpoint validation
 
 Step 9D, Neutral Quest / Lost Cities, was **canceled before production

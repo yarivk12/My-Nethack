@@ -16896,7 +16896,2790 @@ Z = (195, 195, 195)
   ....BPPPPPPE....
   ................
 }
-# tile 882 (invisible monster, nogender)
+# tile 882 (ogre mage,male)
+{
+  ................
+  ................
+  ....CLLLC.......
+  ..LCKKLKKCL.....
+  ...LAALAALJA....
+  ...CLLLLLCJA....
+  ....CAAACJAAA...
+  ....LDDDLAAAA...
+  ..CLJLLLKALCAA.A
+  .CLLAJJJJALLCAAA
+  .LLCLAAAALCLLAA.
+  .LAACLLLLCAALAA.
+  .LC.HHHBHHACLAAA
+  .LL.JJJJJJALLAAA
+  ....CJJJCLAAAAAA
+  ..LLLLL.LLLLLAA.
+}
+# tile 883 (ogre mage,female)
+{
+  ................
+  ................
+  ....CLLLC.......
+  ..LCKKLKKCL.....
+  ...LAALAALJA....
+  ...CLLLLLCJA....
+  ....CAAACJAAA...
+  ....LDDDLAAAA...
+  ..CLJLLLKALCAA.A
+  .CLLAJJJJALLCAAA
+  .LLCLAAAALCLLAA.
+  .LAACLLLLCAALAA.
+  .LC.HHHBHHACLAAA
+  .LL.JJJJJJALLAAA
+  ....CJJJCLAAAAAA
+  ..LLLLL.LLLLLAA.
+}
+# Step 10B2-1 intentionally reuses the native Aleax silhouette for Rilmani.
+# tile 884 (plumach rilmani,male)
+{
+  ................
+  ......BBBB..I...
+  ..I..BF...B.....
+  ....BF.HHA.B....
+  ...BF.HHHHA.B.I.
+  ...BF.LFLFA.FB..
+  .I.BF.LLLLA.FB..
+  ...BF.ALLA.FB...
+  ..BF.LLAALL.ABA.
+  .BF.LLLLLLLLAFB.
+  .BF.LALLLLALAFB.
+  .BF.LAJJKJALAFB.
+  ..BF..LJJLAAABA.
+  ...BF.LLALAABA..
+  ..BF.LLAALLAFB..
+  ................
+}
+# tile 885 (plumach rilmani,female)
+{
+  ................
+  ......BBBB..I...
+  ..I..BF...B.....
+  ....BF.HHA.B....
+  ...BF.HHHHA.B.I.
+  ...BF.LFLFA.FB..
+  .I.BF.LLLLA.FB..
+  ...BF.ALLA.FB...
+  ..BF.LJAAJL.ABA.
+  .BF.LLJJJJLLAFB.
+  .BF.LAJKJJALAFB.
+  .BF.LAJJKJALAFB.
+  ..BF..LJJLAAABA.
+  ...BF.LLALAABA..
+  ..BF.LLAALLAFB..
+  ................
+}
+# tile 886 (ferrumach rilmani,male)
+{
+  ................
+  ......BBBB..I...
+  ..I..BF...B.....
+  ....BF.HHA.B....
+  ...BF.HHHHA.B.I.
+  ...BF.LFLFA.FB..
+  .I.BF.LLLLA.FB..
+  ...BF.ALLA.FB...
+  ..BF.LLAALL.ABA.
+  .BF.LLLLLLLLAFB.
+  .BF.LALLLLALAFB.
+  .BF.LAJJKJALAFB.
+  ..BF..LJJLAAABA.
+  ...BF.LLALAABA..
+  ..BF.LLAALLAFB..
+  ................
+}
+# tile 887 (ferrumach rilmani,female)
+{
+  ................
+  ......BBBB..I...
+  ..I..BF...B.....
+  ....BF.HHA.B....
+  ...BF.HHHHA.B.I.
+  ...BF.LFLFA.FB..
+  .I.BF.LLLLA.FB..
+  ...BF.ALLA.FB...
+  ..BF.LJAAJL.ABA.
+  .BF.LLJJJJLLAFB.
+  .BF.LAJKJJALAFB.
+  .BF.LAJJKJALAFB.
+  ..BF..LJJLAAABA.
+  ...BF.LLALAABA..
+  ..BF.LLAALLAFB..
+  ................
+}
+# tile 888 (cuprilach rilmani,male)
+{
+  ................
+  ......BBBB..I...
+  ..I..BF...B.....
+  ....BF.HHA.B....
+  ...BF.HHHHA.B.I.
+  ...BF.LFLFA.FB..
+  .I.BF.LLLLA.FB..
+  ...BF.ALLA.FB...
+  ..BF.LLAALL.ABA.
+  .BF.LLLLLLLLAFB.
+  .BF.LALLLLALAFB.
+  .BF.LAJJKJALAFB.
+  ..BF..LJJLAAABA.
+  ...BF.LLALAABA..
+  ..BF.LLAALLAFB..
+  ................
+}
+# tile 889 (cuprilach rilmani,female)
+{
+  ................
+  ......BBBB..I...
+  ..I..BF...B.....
+  ....BF.HHA.B....
+  ...BF.HHHHA.B.I.
+  ...BF.LFLFA.FB..
+  .I.BF.LLLLA.FB..
+  ...BF.ALLA.FB...
+  ..BF.LJAAJL.ABA.
+  .BF.LLJJJJLLAFB.
+  .BF.LAJKJJALAFB.
+  .BF.LAJJKJALAFB.
+  ..BF..LJJLAAABA.
+  ...BF.LLALAABA..
+  ..BF.LLAALLAFB..
+  ................
+}
+# tile 890 (argenach rilmani,male)
+{
+  ................
+  ......BBBB..I...
+  ..I..BF...B.....
+  ....BF.HHA.B....
+  ...BF.HHHHA.B.I.
+  ...BF.LFLFA.FB..
+  .I.BF.LLLLA.FB..
+  ...BF.ALLA.FB...
+  ..BF.LLAALL.ABA.
+  .BF.LLLLLLLLAFB.
+  .BF.LALLLLALAFB.
+  .BF.LAJJKJALAFB.
+  ..BF..LJJLAAABA.
+  ...BF.LLALAABA..
+  ..BF.LLAALLAFB..
+  ................
+}
+# tile 891 (argenach rilmani,female)
+{
+  ................
+  ......BBBB..I...
+  ..I..BF...B.....
+  ....BF.HHA.B....
+  ...BF.HHHHA.B.I.
+  ...BF.LFLFA.FB..
+  .I.BF.LLLLA.FB..
+  ...BF.ALLA.FB...
+  ..BF.LJAAJL.ABA.
+  .BF.LLJJJJLLAFB.
+  .BF.LAJKJJALAFB.
+  .BF.LAJJKJALAFB.
+  ..BF..LJJLAAABA.
+  ...BF.LLALAABA..
+  ..BF.LLAALLAFB..
+  ................
+}
+# tile 892 (aurumach rilmani,male)
+{
+  ................
+  ......BBBB..I...
+  ..I..BF...B.....
+  ....BF.HHA.B....
+  ...BF.HHHHA.B.I.
+  ...BF.LFLFA.FB..
+  .I.BF.LLLLA.FB..
+  ...BF.ALLA.FB...
+  ..BF.LLAALL.ABA.
+  .BF.LLLLLLLLAFB.
+  .BF.LALLLLALAFB.
+  .BF.LAJJKJALAFB.
+  ..BF..LJJLAAABA.
+  ...BF.LLALAABA..
+  ..BF.LLAALLAFB..
+  ................
+}
+# tile 893 (aurumach rilmani,female)
+{
+  ................
+  ......BBBB..I...
+  ..I..BF...B.....
+  ....BF.HHA.B....
+  ...BF.HHHHA.B.I.
+  ...BF.LFLFA.FB..
+  .I.BF.LLLLA.FB..
+  ...BF.ALLA.FB...
+  ..BF.LJAAJL.ABA.
+  .BF.LLJJJJLLAFB.
+  .BF.LAJKJJALAFB.
+  .BF.LAJJKJALAFB.
+  ..BF..LJJLAAABA.
+  ...BF.LLALAABA..
+  ..BF.LLAALLAFB..
+  ................
+}
+# Step 10B2-1 Kamerel intentionally reuse reflective humanoid silhouettes;
+# Hudor uses the native water-elemental silhouette for its aquatic body.
+# tile 894 (amm kamerel,male)
+{
+  ................
+  ......BBBB..I...
+  ..I..BF...B.....
+  ....BF.HHA.B....
+  ...BF.HHHHA.B.I.
+  ...BF.LFLFA.FB..
+  .I.BF.LLLLA.FB..
+  ...BF.ALLA.FB...
+  ..BF.LLAALL.ABA.
+  .BF.LLLLLLLLAFB.
+  .BF.LALLLLALAFB.
+  .BF.LAJJKJALAFB.
+  ..BF..LJJLAAABA.
+  ...BF.LLALAABA..
+  ..BF.LLAALLAFB..
+  ................
+}
+# tile 895 (amm kamerel,female)
+{
+  ................
+  ......BBBB..I...
+  ..I..BF...B.....
+  ....BF.HHA.B....
+  ...BF.HHHHA.B.I.
+  ...BF.LFLFA.FB..
+  .I.BF.LLLLA.FB..
+  ...BF.ALLA.FB...
+  ..BF.LJAAJL.ABA.
+  .BF.LLJJJJLLAFB.
+  .BF.LAJKJJALAFB.
+  .BF.LAJJKJALAFB.
+  ..BF..LJJLAAABA.
+  ...BF.LLALAABA..
+  ..BF.LLAALLAFB..
+  ................
+}
+# tile 896 (hudor kamerel,male)
+{
+  ................
+  ....PBBB..E.....
+  .E.PBABAE...E...
+  ...BBBBBB.......
+  ..PBBAABBB.E..E.
+  E.BBBAABEB......
+  ..BABAABEB.E....
+  ..BABBBBEB...AA.
+  ..BAPBBEAB.AAAA.
+  E.BABBBBABAAAA..
+  ..BABEABABAAAA..
+  ..BABEABABAAAAA.
+  ....BEABAAAAAAA.
+  .E.PBEABBAAAAAA.
+  ..PBBEABBBA.....
+  ................
+}
+# tile 897 (hudor kamerel,female)
+{
+  ................
+  ....PBBB..E.....
+  .E.PBABAE...E...
+  ...BBBBBB.......
+  ..PBBAABBB.E..E.
+  E.BBBAABEB......
+  ..BABAABEB.E....
+  ..BABBBBEB...AA.
+  ..BAPBBEAB.AAAA.
+  E.BABBBBABAAAA..
+  ..BABEABABAAAA..
+  ..BABEABABAAAAA.
+  ....BEABAAAAAAA.
+  .E.PBEABBAAAAAA.
+  ..PBBEABBBA.....
+  ................
+}
+# tile 898 (sharab kamerel,male)
+{
+  ................
+  ......BBBB..I...
+  ..I..BF...B.....
+  ....BF.HHA.B....
+  ...BF.HHHHA.B.I.
+  ...BF.LFLFA.FB..
+  .I.BF.LLLLA.FB..
+  ...BF.ALLA.FB...
+  ..BF.LLAALL.ABA.
+  .BF.LLLLLLLLAFB.
+  .BF.LALLLLALAFB.
+  .BF.LAJJKJALAFB.
+  ..BF..LJJLAAABA.
+  ...BF.LLALAABA..
+  ..BF.LLAALLAFB..
+  ................
+}
+# tile 899 (sharab kamerel,female)
+{
+  ................
+  ......BBBB..I...
+  ..I..BF...B.....
+  ....BF.HHA.B....
+  ...BF.HHHHA.B.I.
+  ...BF.LFLFA.FB..
+  .I.BF.LLLLA.FB..
+  ...BF.ALLA.FB...
+  ..BF.LJAAJL.ABA.
+  .BF.LLJJJJLLAFB.
+  .BF.LAJKJJALAFB.
+  .BF.LAJJKJALAFB.
+  ..BF..LJJLAAABA.
+  ...BF.LLALAABA..
+  ..BF.LLAALLAFB..
+  ................
+}
+# tile 900 (ara kamerel,male)
+{
+  ................
+  ......BBBB..I...
+  ..I..BF...B.....
+  ....BF.HHA.B....
+  ...BF.HHHHA.B.I.
+  ...BF.LFLFA.FB..
+  .I.BF.LLLLA.FB..
+  ...BF.ALLA.FB...
+  ..BF.LLAALL.ABA.
+  .BF.LLLLLLLLAFB.
+  .BF.LALLLLALAFB.
+  .BF.LAJJKJALAFB.
+  ..BF..LJJLAAABA.
+  ...BF.LLALAABA..
+  ..BF.LLAALLAFB..
+  ................
+}
+# tile 901 (ara kamerel,female)
+{
+  ................
+  ......BBBB..I...
+  ..I..BF...B.....
+  ....BF.HHA.B....
+  ...BF.HHHHA.B.I.
+  ...BF.LFLFA.FB..
+  .I.BF.LLLLA.FB..
+  ...BF.ALLA.FB...
+  ..BF.LJAAJL.ABA.
+  .BF.LLJJJJLLAFB.
+  .BF.LAJKJJALAFB.
+  .BF.LAJJKJALAFB.
+  ..BF..LJJLAAABA.
+  ...BF.LLALAABA..
+  ..BF.LLAALLAFB..
+  ................
+}
+# Step 10B2-1 argentum golem intentionally reuses the native iron-golem art.
+# tile 902 (argentum golem,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 903 (argentum golem,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# Step 10B2-2 dolls intentionally reuse the native human-sized golem art.
+# tile 904 (living doll,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 905 (living doll,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 906 (living lectern,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 907 (living lectern,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 908 (parasitized doll,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 909 (parasitized doll,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# Step 10B2-2 dervishes and lakes intentionally reuse a native construct silhouette.
+# tile 910 (bestial dervish,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 911 (bestial dervish,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 912 (ethereal dervish,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 913 (ethereal dervish,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 914 (flashing lake,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 915 (flashing lake,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 916 (frosted lake,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 917 (frosted lake,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 918 (smoldering lake,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 919 (smoldering lake,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 920 (sparkling lake,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 921 (sparkling lake,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# Step 10B2-2 physical morphs intentionally reuse a native construct silhouette.
+# tile 922 (blood shower,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 923 (blood shower,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 924 (many-taloned thing,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 925 (many-taloned thing,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 926 (deep blue cube,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 927 (deep blue cube,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 928 (pitch black cube,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 929 (pitch black cube,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 930 (prayerful thing,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 931 (prayerful thing,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 932 (hemorrhagic thing,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 933 (hemorrhagic thing,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# Step 10B2-2 remaining morphs intentionally reuse a native construct silhouette.
+# tile 934 (many-eyed seeker,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 935 (many-eyed seeker,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 936 (voice in the dark,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 937 (voice in the dark,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 938 (tiny being of light,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 939 (tiny being of light,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 940 (man-faced millipede,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 941 (man-faced millipede,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 942 (mirrored moonflower,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 943 (mirrored moonflower,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 944 (crimson writher,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 945 (crimson writher,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 946 (radiant pyramid,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 947 (radiant pyramid,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# Step 10B2-2 complex species intentionally reuse a native construct silhouette.
+# tile 948 (Kuker,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 949 (Kuker,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 950 (lurking one,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 951 (lurking one,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 952 (small goat spawn,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 953 (small goat spawn,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 954 (goat spawn,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 955 (goat spawn,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 956 (giant goat spawn,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 957 (giant goat spawn,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 958 (blessed,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 959 (blessed,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 960 (mouth of the goat,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 961 (mouth of the goat,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 962 (apprentice witch,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 963 (apprentice witch,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 964 (witch,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 965 (witch,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 966 (coven leader,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 967 (coven leader,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 968 (The Good Neighbor,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 969 (The Good Neighbor,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 970 (Hmnyw-Pharaoh,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 971 (Hmnyw-Pharaoh,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 972 (migo worker,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 973 (migo worker,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 974 (migo soldier,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 975 (migo soldier,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 976 (migo philosopher,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 977 (migo philosopher,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 978 (migo queen,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 979 (migo queen,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 980 (byakhee,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 981 (byakhee,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 982 (dark young,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 983 (dark young,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 984 (deep dweller,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 985 (deep dweller,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 986 (deminymph,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 987 (deminymph,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 988 (gnoll ghoul,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 989 (gnoll ghoul,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 990 (gug,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 991 (gug,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 992 (Illurien of the Myriad Glimpses,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 993 (Illurien of the Myriad Glimpses,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 994 (nightgaunt,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 995 (nightgaunt,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 996 (oread,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 997 (oread,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 998 (minotaur priestess,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 999 (minotaur priestess,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 1000 (priest of an unknown god,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 1001 (priest of an unknown god,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 1002 (shoggoth,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 1003 (shoggoth,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 1004 (star spawn,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 1005 (star spawn,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 1006 (Shattered Ziggurat cultist,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 1007 (Shattered Ziggurat cultist,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 1008 (Shattered Ziggurat knight,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 1009 (Shattered Ziggurat knight,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 1010 (Shattered Ziggurat wizard,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 1011 (Shattered Ziggurat wizard,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 1012 (hunting horror,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 1013 (hunting horror,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 1014 (blasphemous lurker,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 1015 (blasphemous lurker,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 1016 (alhoon,male)
+{
+  ................
+  .......IIIIC....
+  .....IIIIIIC....
+  ....IIIIIIIC....
+  ...IGIIIIGC.....
+  ...IIGINGIC.....
+  .EEEIIIIICEEEE..
+  ..EEIAIAIEEEE...
+  ...EIAIAIEEE....
+  ....IAIAIEEE....
+  ....EFIFIEEE.AA.
+  ....CBIBBEEEAAA.
+  ...IIIBBEEEEAAA.
+  ....EEBEEEEAAA..
+  ...EEECEEEAA....
+  ....IIC.IIA.....
+}
+# tile 1017 (alhoon,female)
+{
+  ................
+  .......IIIIC....
+  .....IIIIIIC....
+  ....IIIIIIIC....
+  ...IGIIIIGC.....
+  ...IIGINGIC.....
+  .EEEIIIIICEEEE..
+  ..EEIAIAIEEEE...
+  ...EIAIAIEEE....
+  ....IAIAIEEE....
+  ....EFIFIEEE.AA.
+  ....CBIBBEEEAAA.
+  ...IIIBBEEEEAAA.
+  ....EEBEEEEAAA..
+  ...EEECEEEAA....
+  ....IIC.IIA.....
+}
+# tile 1018 (Center of All,male)
+{
+  ................
+  ......BBBB..I...
+  ..I..BF...B.....
+  ....BF.HHA.B....
+  ...BF.HHHHA.B.I.
+  ...BF.LFLFA.FB..
+  .I.BF.LLLLA.FB..
+  ...BF.ALLA.FB...
+  ..BF.LLAALL.ABA.
+  .BF.LLLLLLLLAFB.
+  .BF.LALLLLALAFB.
+  .BF.LAJJKJALAFB.
+  ..BF..LJJLAAABA.
+  ...BF.LLALAABA..
+  ..BF.LLAALLAFB..
+  ................
+}
+# tile 1019 (Center of All,female)
+{
+  ................
+  ......BBBB..I...
+  ..I..BF...B.....
+  ....BF.HHA.B....
+  ...BF.HHHHA.B.I.
+  ...BF.LFLFA.FB..
+  .I.BF.LLLLA.FB..
+  ...BF.ALLA.FB...
+  ..BF.LJAAJL.ABA.
+  .BF.LLJJJJLLAFB.
+  .BF.LAJKJJALAFB.
+  .BF.LAJJKJALAFB.
+  ..BF..LJJLAAABA.
+  ...BF.LLALAABA..
+  ..BF.LLAALLAFB..
+  ................
+}
+# tile 1020 (Father Dagon,male)
+{
+  ................
+  .......IIIIC....
+  .....IIIIIIC....
+  ....IIIIIIIC....
+  ...IGIIIIGC.....
+  ...IIGINGIC.....
+  ....IIIIIC......
+  ....IAIAIF......
+  ....IAIAIF......
+  ....IAIAIFI.....
+  .....FIFIFIC.AA.
+  ....CBIBBF.CAAA.
+  ...IIIBBFFACAAA.
+  ......BBFCAAAA..
+  ......CFFCAA....
+  ....IIC.IIA.....
+}
+# tile 1021 (Father Dagon,female)
+{
+  ................
+  .......IIIIC....
+  .....IIIIIIC....
+  ....IIIIIIIC....
+  ...IGIIIIGC.....
+  ...IIGINGIC.....
+  ....IIIIIC......
+  ....IAIAIF......
+  ....IAIAIF......
+  ....IAIAIFI.....
+  .....FIFIFIC.AA.
+  ....CBIBBF.CAAA.
+  ...IIIBBFFACAAA.
+  ......BBFCAAAA..
+  ......CFFCAA....
+  ....IIC.IIA.....
+}
+# tile 1022 (Mother Hydra,male)
+{
+  ................
+  .......IIIIC....
+  .....IIIIIIC....
+  ....IIIIIIIC....
+  ...IGIIIIGC.....
+  ...IIGINGIC.....
+  ....IIIIIC......
+  ....IAIAIF......
+  ....IAIAIF......
+  ....IAIAIFI.....
+  .....FIFIFIC.AA.
+  ....CBIBBF.CAAA.
+  ...IIIBBFFACAAA.
+  ......BBFCAAAA..
+  ......CFFCAA....
+  ....IIC.IIA.....
+}
+# tile 1023 (Mother Hydra,female)
+{
+  ................
+  .......IIIIC....
+  .....IIIIIIC....
+  ....IIIIIIIC....
+  ...IGIIIIGC.....
+  ...IIGINGIC.....
+  ....IIIIIC......
+  ....IAIAIF......
+  ....IAIAIF......
+  ....IAIAIFI.....
+  .....FIFIFIC.AA.
+  ....CBIBBF.CAAA.
+  ...IIIBBFFACAAA.
+  ......BBFCAAAA..
+  ......CFFCAA....
+  ....IIC.IIA.....
+}
+# tile 1024 (Great Cthulhu,male)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 1025 (Great Cthulhu,female)
+{
+  ................
+  ......PBP.......
+  ......HBH...B...
+  ......PBP...JP..
+  ......PBP...BP..
+  ...PPPAAAAPABP..
+  ..PBJBBBBBJBAP.A
+  ..PPPPPPPPPPPA.A
+  .B.A........A..A
+  .BP.AAAAAAAAA.AA
+  .BP.ABP.APBP.AAA
+  .BJ.ABP.APBP.AAA
+  ..P.ABP.APBP.AAA
+  ....PJP.APJP.AA.
+  ....PBP.APBP.A..
+  ................
+}
+# tile 1026 (witch's familiar,male)
+{
+  ................
+  ................
+  ................
+  ................
+  ................
+  ................
+  ..K..K.JKKKKK...
+  ..KKKKJKKKJKKK..
+  ..JAKAKJKJJKKKJ.
+  ..GAGAKJKJJKKKK.
+  ..AKAKJKKAKKAKKA
+  .KKJJJJKAJKAAKKA
+  .PJJAAKKAJJAJKA.
+  ..AA.KKAA..JKA..
+  ..........JJA...
+  ................
+}
+# tile 1027 (witch's familiar,female)
+{
+  ................
+  ................
+  ................
+  ................
+  ................
+  ................
+  ..K..K.JKKKKK...
+  ..KKKKJKKKJKKK..
+  ..JAKAKJKJJKKKJ.
+  ..GAGAKJKJJKKKK.
+  ..AKAKJKKAKKAKKA
+  .KKJJJJKAJKAAKKA
+  .PJJAAKKAJJAJKA.
+  ..AA.KKAA..JKA..
+  ..........JJA...
+  ................
+}
+# tile 1028 (invisible monster, nogender)
 {
   ................
   ................

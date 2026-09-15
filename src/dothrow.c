@@ -513,7 +513,8 @@ dofire(void)
             if (uwep && is_pole(uwep)) {
                 return use_pole(uwep, TRUE);
             /* if we're wielding a bullwhip, apply it */
-            } else if (uwep && uwep->otyp == BULLWHIP) {
+            } else if (uwep && (uwep->otyp == BULLWHIP
+                                || uwep->otyp == VIPERWHIP)) {
                 return use_whip(uwep);
             } else if (iflags.fireassist
                        && uswapwep && is_pole(uswapwep)

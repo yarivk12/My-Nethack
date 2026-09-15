@@ -16,6 +16,7 @@
 #define STEP6B_ROOM_PREFIX "x6b-"
 #define STEP6B_MIN_LEVEL 30
 #define STEP6B_MAX_LEVEL 199
+#define STEP10C_DISPENSARY_LEVEL 8
 
 struct proto_dungeon {
     struct tmpdungeon tmpdungeon[MAXDUNGEON];
@@ -69,10 +70,13 @@ staticfn boolean step6b_room_marker(const s_level *);
 staticfn boolean step6b_depth_used(int);
 staticfn int step6b_pick_depth(boolean *, boolean);
 staticfn void step6b_add_level(const char *, int, char, uchar);
-staticfn boolean step6b_step9_branch(const branch *);
-staticfn boolean step6b_step9_approach(const s_level *);
+staticfn boolean step6b_scheduled_branch(const branch *);
+staticfn boolean step6b_scheduled_approach(const s_level *);
 staticfn void step6b_rebase_level(s_level *, int);
 staticfn void step6b_rebase_branch(branch *);
+staticfn branch *step10c_internal_branch(int, int);
+staticfn void step10c_select_alternates(int);
+staticfn boolean step10c_internal_depth(d_level *, int *);
 staticfn void earth_sense(void);
 staticfn boolean init_dungeon_dungeons(lua_State *, struct proto_dungeon *,
                                       int);
@@ -1297,7 +1301,7 @@ init_dungeons(void)
      * dungeon arrays.
      */
 
-    if (svn.n_dgns >= MAXDUNGEON)
+    if (svn.n_dgns > MAXDUNGEON)
         panic("init_dungeons: too many dungeons");
 
     tidx = lua_gettop(L);
@@ -1460,6 +1464,10 @@ ledger_to_dlev(xint16 ledgerno)
 int
 depth(d_level *lev)
 {
+    int internal_depth;
+
+    if (step10c_internal_depth(lev, &internal_depth))
+        return internal_depth;
     return svd.dungeons[lev->dnum].depth_start + lev->dlevel - 1;
 }
 
@@ -1512,11 +1520,11 @@ step6b_depth_used(int dlevel)
     branch *br;
 
     for (slev = svs.sp_levchn; slev; slev = slev->next)
-        if (!step6b_step9_approach(slev)
+        if (!step6b_scheduled_approach(slev)
             && slev->dlevel.dnum == dod && slev->dlevel.dlevel == dlevel)
             return TRUE;
     for (br = svb.branches; br; br = br->next)
-        if (step6b_step9_branch(br))
+        if (step6b_scheduled_branch(br))
             continue;
         else if ((br->end1.dnum == dod && br->end1.dlevel == dlevel)
                  || (br->end2.dnum == dod && br->end2.dlevel == dlevel))
@@ -1525,22 +1533,24 @@ step6b_depth_used(int dlevel)
 }
 
 staticfn boolean
-step6b_step9_branch(const branch *br)
+step6b_scheduled_branch(const branch *br)
 {
     const int dod = dname_to_dnum("The Dungeons of Doom");
 
     return br && br->end1.dnum == dod
         && (br->end2.dnum == dname_to_dnum("Sheol")
             || br->end2.dnum == dname_to_dnum("The Dragon Caves")
-            || br->end2.dnum == dname_to_dnum("Mithardir"));
+            || br->end2.dnum == dname_to_dnum("Mithardir")
+            || br->end2.dnum == dname_to_dnum("Neutral Quest"));
 }
 
 staticfn boolean
-step6b_step9_approach(const s_level *slev)
+step6b_scheduled_approach(const s_level *slev)
 {
     return slev
         && slev->dlevel.dnum == dname_to_dnum("The Dungeons of Doom")
-        && !strcmp(slev->proto, "chalv2");
+        && (!strcmp(slev->proto, "chalv2")
+            || !strcmp(slev->proto, "neulev"));
 }
 
 DISABLE_WARNING_UNREACHABLE_CODE
@@ -1618,6 +1628,84 @@ step6b_rebase_branch(branch *br)
         - (svd.dungeons[dnum].entry_lev - 1);
 }
 
+/* The Dispensary is a branch floor inside Neutral Quest rather than a third
+ * dungeon record.  Its branch endpoint is the persistent parent choice. */
+staticfn branch *
+step10c_internal_branch(int neutral_dnum, int parent_level)
+{
+    branch *br, *new_branch;
+    int next_id = 0;
+
+    if (neutral_dnum < 0 || parent_level < 2 || parent_level > 6)
+        panic("Invalid Step 10C Dispensary parent");
+    for (br = svb.branches; br; br = br->next) {
+        if (br->id >= next_id)
+            next_id = br->id + 1;
+        if (br->end1.dnum == neutral_dnum
+            && br->end2.dnum == neutral_dnum
+            && br->end2.dlevel == STEP10C_DISPENSARY_LEVEL)
+            return br;
+    }
+    new_branch = (branch *) alloc(sizeof *new_branch);
+    (void) memset((genericptr_t) new_branch, 0, sizeof *new_branch);
+    new_branch->id = next_id;
+    new_branch->type = BR_STAIR;
+    new_branch->end1.dnum = new_branch->end2.dnum = neutral_dnum;
+    new_branch->end1.dlevel = (xint16) parent_level;
+    new_branch->end2.dlevel = STEP10C_DISPENSARY_LEVEL;
+    new_branch->end1_up = FALSE;
+    insert_branch(new_branch, FALSE);
+    return new_branch;
+}
+
+/* Preserve concrete alternate names in the normal saved special-level chain;
+ * do not use Lua's independently seeded math.random generator. */
+staticfn void
+step10c_select_alternates(int lost_cities_dnum)
+{
+    static const char *const first[] = {
+        "leth-a-1", "leth-c-1", "leth-d-1", "nkai-a-1"
+    };
+    static const char *const second[] = {
+        "leth-a-2", "leth-c-2", "leth-d-2", "nkai-a-2"
+    };
+    s_level *slev;
+    int i, found = 0;
+
+    for (i = 0; i < SIZE(first); ++i)
+        for (slev = svs.sp_levchn; slev; slev = slev->next)
+            if (slev->dlevel.dnum == lost_cities_dnum
+                && !strcmp(slev->proto, first[i])) {
+                if (rn2(2))
+                    Strcpy(slev->proto, second[i]);
+                found++;
+                break;
+            }
+    if (found != SIZE(first))
+        panic("Missing Step 10C Lost Cities alternate");
+}
+
+/* Same-dnum branch children normally share their dungeon depth progression.
+ * The Dispensary instead displays one floor below its selected parent. */
+staticfn boolean
+step10c_internal_depth(d_level *lev, int *depthp)
+{
+    branch *br;
+
+    if (lev->dlevel != STEP10C_DISPENSARY_LEVEL)
+        return FALSE;
+    for (br = svb.branches; br; br = br->next)
+        if (br->end1.dnum == br->end2.dnum
+            && br->end2.dnum == lev->dnum
+            && br->end2.dlevel == lev->dlevel
+            && br->end2.dlevel == STEP10C_DISPENSARY_LEVEL) {
+            *depthp = svd.dungeons[lev->dnum].depth_start
+                      + br->end1.dlevel;
+            return TRUE;
+        }
+    return FALSE;
+}
+
 /* Choose all Step 6B and final Step 9 locations once during new-game dungeon
  * initialization.  The resulting level-chain entries and branch endpoints are
  * part of the normal saved dungeon state, so revisits and save/reload never
@@ -1629,29 +1717,36 @@ step6b_schedule(void)
     branch *temple = (branch *) 0, *tomb = (branch *) 0,
            *moria = (branch *) 0, *sheol = (branch *) 0,
            *dragon_caves = (branch *) 0, *mithardir = (branch *) 0,
+           *neutral = (branch *) 0,
+           *lost_cities = (branch *) 0,
            *br;
-    s_level *slev, *mithardir_approach = (s_level *) 0;
+    s_level *slev, *mithardir_approach = (s_level *) 0,
+            *neutral_approach = (s_level *) 0;
     int dod = dname_to_dnum("The Dungeons of Doom");
     int temple_dnum = dname_to_dnum("The Temple of Moloch");
     int tomb_dnum = dname_to_dnum("The Lost Tomb");
     int moria_dnum = dname_to_dnum("The Ruins of Moria");
+    int neutral_dnum = dname_to_dnum("Neutral Quest");
+    int lost_cities_dnum = dname_to_dnum("The Lost Cities");
     int dlevel, bigrooms = 0, target_bigrooms;
 
     for (slev = svs.sp_levchn; slev; slev = slev->next)
-        if (!step6b_step9_approach(slev)
+        if (!step6b_scheduled_approach(slev)
             && slev->dlevel.dnum == dod
             && slev->dlevel.dlevel >= STEP6B_MIN_LEVEL
             && slev->dlevel.dlevel <= STEP6B_MAX_LEVEL)
             used[slev->dlevel.dlevel] = TRUE;
 
     for (br = svb.branches; br; br = br->next) {
-        if (step6b_step9_branch(br)) {
+        if (step6b_scheduled_branch(br)) {
             if (br->end2.dnum == dname_to_dnum("Sheol"))
                 sheol = br;
             else if (br->end2.dnum == dname_to_dnum("The Dragon Caves"))
                 dragon_caves = br;
             else if (br->end2.dnum == dname_to_dnum("Mithardir"))
                 mithardir = br;
+            else if (br->end2.dnum == neutral_dnum)
+                neutral = br;
             continue;
         }
         if (br->end2.dnum == temple_dnum && br->end1.dnum == dod)
@@ -1660,6 +1755,9 @@ step6b_schedule(void)
             tomb = br;
         else if (br->end2.dnum == moria_dnum && br->end1.dnum == dod)
             moria = br;
+        else if (br->end1.dnum == neutral_dnum
+                 && br->end2.dnum == lost_cities_dnum)
+            lost_cities = br;
         else if (br->end1.dnum == dod
                  && br->end1.dlevel >= STEP6B_MIN_LEVEL
                  && br->end1.dlevel <= STEP6B_MAX_LEVEL)
@@ -1671,13 +1769,18 @@ step6b_schedule(void)
     }
 
     for (slev = svs.sp_levchn; slev; slev = slev->next)
-        if (step6b_step9_approach(slev)) {
-            mithardir_approach = slev;
-            break;
-        }
+        if (step6b_scheduled_approach(slev))
+            if (!strcmp(slev->proto, "chalv2"))
+                mithardir_approach = slev;
+            else if (!strcmp(slev->proto, "neulev"))
+                neutral_approach = slev;
 
-    if (!sheol || !dragon_caves || !mithardir || !mithardir_approach)
-        panic("Missing Step 9 branch");
+    if (!sheol || !dragon_caves || !mithardir || !mithardir_approach
+        || !neutral || !neutral_approach || neutral_dnum < 0
+        || lost_cities_dnum < 0 || !lost_cities)
+        panic("Missing scheduled Step 9/10 branch");
+    if (svn.n_dgns > MAXDUNGEON)
+        panic("Step 10C exceeds MAXDUNGEON");
 
     /* Step9 parent branches use the shared persistent scheduler. */
     dlevel = step6b_pick_depth(used, FALSE);
@@ -1766,6 +1869,19 @@ step6b_schedule(void)
     svd.dungeons[tomb_dnum].depth_start = depth(&tomb->end1)
         + (tomb->type == BR_PORTAL ? 0 : (tomb->end1_up ? -1 : 1))
         - (svd.dungeons[tomb_dnum].entry_lev - 1);
+
+    /* Preserve every established Step 6-9 reservation's precedence.  The
+     * Neutral adventure then claims one remaining ordinary parent from the
+     * same ledger before its own persistent subchoices are made. */
+    dlevel = step6b_pick_depth(used, FALSE);
+    neutral->end1.dlevel = (xint16) dlevel;
+    step6b_rebase_level(neutral_approach, dlevel);
+    used[dlevel] = TRUE;
+    insert_branch(neutral, TRUE);
+    step6b_rebase_branch(neutral);
+    step6b_rebase_branch(lost_cities);
+    step10c_select_alternates(lost_cities_dnum);
+    (void) step10c_internal_branch(neutral_dnum, rn2(5) + 2);
 }
 #endif /* !SFCTOOL */
 
@@ -1892,7 +2008,7 @@ prev_level(boolean at_stairs)
     if (at_stairs && stway)
         stway->u_traversed = TRUE;
 
-    if (at_stairs && stway && stway->tolev.dnum != u.uz.dnum) {
+    if (at_stairs && stway) {
         /* Taking an up dungeon branch. */
         /* KMH -- Upwards branches are okay if not level 1 */
         /* (Just make sure it doesn't go above depth 1) */
@@ -4135,6 +4251,108 @@ boolean
 moria_sky(const d_level *lev)
 {
     return moria_level(lev) >= 5;
+}
+
+/* Resolve Step 10's production identity from the native saved dungeon and
+ * special-level records.  Relative dungeon floors remain stable when the
+ * scheduler moves neulev's DoD parent and across save/restore or revisits. */
+enum step10b_level_context
+step10c_level_context(const d_level *lev)
+{
+    s_level *approach;
+    int neutral_dnum, lost_cities_dnum;
+
+    if (!lev || lev->dnum < 0 || lev->dnum >= svn.n_dgns
+        || lev->dlevel < 1)
+        return STEP10B_CTX_NONE;
+    approach = find_level("neulev");
+    if (approach && lev->dnum == approach->dlevel.dnum
+        && lev->dlevel == approach->dlevel.dlevel)
+        return STEP10B_CTX_APPROACH;
+
+    neutral_dnum = dname_to_dnum("Neutral Quest");
+    if (lev->dnum == neutral_dnum) {
+        switch (lev->dlevel) {
+        case 1: return STEP10B_CTX_GATE;
+        case 2: return STEP10B_CTX_OUTLANDS_1;
+        case 3: return STEP10B_CTX_OUTLANDS_2;
+        case 4: return STEP10B_CTX_OUTLANDS_3;
+        case 5: return STEP10B_CTX_OUTLANDS_4;
+        case 6: return STEP10B_CTX_SPIRE;
+        case 7: return STEP10B_CTX_SUM;
+        case STEP10C_DISPENSARY_LEVEL: return STEP10B_CTX_DISPENSARY;
+        default: return STEP10B_CTX_NONE;
+        }
+    }
+
+    lost_cities_dnum = dname_to_dnum("The Lost Cities");
+    if (lev->dnum == lost_cities_dnum) {
+        if (lev->dlevel == 13)
+            return STEP10B_CTX_RLYEH;
+        if (lev->dlevel <= 12)
+            return STEP10B_CTX_LOST_CITIES;
+    }
+    return STEP10B_CTX_NONE;
+}
+
+boolean
+step10c_silver_key_domain(struct silver_key_domain *domain)
+{
+    s_level *approach;
+    int neutral_dnum, lost_cities_dnum;
+
+    if (!domain)
+        return FALSE;
+    (void) memset((genericptr_t) domain, 0, sizeof *domain);
+    approach = find_level("neulev");
+    neutral_dnum = dname_to_dnum("Neutral Quest");
+    lost_cities_dnum = dname_to_dnum("The Lost Cities");
+    if (!approach || neutral_dnum < 0 || lost_cities_dnum < 0)
+        return FALSE;
+    domain->approach = approach->dlevel;
+    domain->neutral_dnum = (xint16) neutral_dnum;
+    domain->lost_cities_dnum = (xint16) lost_cities_dnum;
+    domain->dispensary.dnum = (xint16) neutral_dnum;
+    domain->dispensary.dlevel = STEP10C_DISPENSARY_LEVEL;
+    return TRUE;
+}
+
+/* Apply transient level state from the authoritative Step 10 identity.  The
+ * flag itself remains part of the native level save record. */
+void
+step10c_set_level_flags(const d_level *lev)
+{
+    enum step10b_level_context context = step10c_level_context(lev);
+
+    svl.level.flags.lethe = (context == STEP10B_CTX_LOST_CITIES
+                             || context == STEP10B_CTX_RLYEH);
+}
+
+/* Finish content which needs native auxiliary state after a special map has
+ * been loaded.  No new ownership or save format is introduced here. */
+void
+step10c_post_load_content(const d_level *lev)
+{
+    enum step10b_level_context context = step10c_level_context(lev);
+    struct trap *trap;
+    struct monst *mon;
+    s_level *special;
+
+    if (context != STEP10B_CTX_NONE) {
+        for (trap = gf.ftrap; trap; trap = trap->ntrap)
+            if (trap->ttyp == MAGIC_PORTAL)
+                trap->tseen = 1;
+    }
+
+    special = Is_special((d_level *) lev);
+    if (context == STEP10B_CTX_LOST_CITIES && special
+        && !strcmp(special->proto, "lethe-e")) {
+        for (mon = fmon; mon; mon = mon->nmon)
+            if (mon->ispriest && has_epri(mon)) {
+                (void) step10b_designate_bridge_priest(mon);
+                break;
+            }
+    }
 }
 
 struct permonst *

@@ -483,6 +483,7 @@ struct levelflags {
     Bitfield(noautosearch, 1); /* automatic searching disabled */
     Bitfield(fumaroles, 1);    /* lava emits poison gas at random */
     Bitfield(stormy, 1);       /* clouds create lightning bolts at random */
+    Bitfield(lethe, 1);        /* Step 10: amnesiac water, not new terrain */
 
     schar temperature;         /* +1 == hot, -1 == cold */
     long stasis_until;         /* wand of stasis effect lasts until when? */

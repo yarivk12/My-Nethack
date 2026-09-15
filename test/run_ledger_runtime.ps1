@@ -21,7 +21,11 @@ $dungeon = [IO.File]::ReadAllText((Join-Path $repo 'src/dungeon.c'))
 $proto = [regex]::Match($dungeon, '(?ms)^struct proto_dungeon \{.*?^\};').Value
 $branchMacro = [regex]::Match($dungeon, '(?ms)^#define dlev_in_current_branch.*?\r?\n\r?\n').Value
 if (!$proto -or !$branchMacro) { throw 'Missing production type or branch macro' }
-$parts = @($proto, $branchMacro)
+$dispensaryMacro = [regex]::Match($dungeon, '(?m)^#define STEP10C_DISPENSARY_LEVEL[^\r\n]*').Value
+if (!$dispensaryMacro) { throw 'Missing production Dispensary level macro' }
+$parts = @($proto, $branchMacro, $dispensaryMacro)
+if (!$parts) { throw 'Missing production fixture parts' }
+$parts += Get-FunctionText 'src/dungeon.c' 'step10c_internal_depth'
 foreach ($name in @('ledger_no','maxledgerno','ledger_to_dnum','ledger_to_dlev','depth','find_branch','lev_by_name')) {
     $parts += Get-FunctionText 'src/dungeon.c' $name
 }

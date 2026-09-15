@@ -8,6 +8,7 @@ import re
 import subprocess
 import sys
 from step9c_source_projection import project
+from test_step10b_source import project as step10b_project
 
 repo=Path(__file__).resolve().parents[1]
 base="9191de7079624e94acdde19d07814a0f03ce9450"
@@ -18,7 +19,7 @@ def now(path):
 for path in ["src/mklev.c","src/mkroom.c","src/shknam.c","include/dungeon.h",
              "include/global.h","src/save.c","src/restore.c","src/bones.c",
              "dat/bigrm-14.lua"]:
-    current = project(path, now(path))
+    current = project(path, step10b_project(path, now(path)))
     if path == "src/mklev.c":
         # Step 9 adds an ice-trap branch to the trap selector. Normalize only
         # these exact additions; retain the whole-file Step 5 shop contract.
@@ -82,7 +83,28 @@ for path,pattern,expected in [
       "oceanid", "yurian", "Coure Eladrin", "Noviere Eladrin", "Bralani Eladrin",
       "mote of light", "water dolphin", "singing sand", "living mirage", "wraithworm",
       "Alabaster elf", "Alabaster elf-elder", "sentinel of Mithardir", "Alabaster mummy",
-      "first wraithworm", "aspect of The Silence"}),
+      "first wraithworm", "aspect of The Silence", "ogre mage",
+      "plumach rilmani", "ferrumach rilmani", "cuprilach rilmani",
+      "argenach rilmani", "aurumach rilmani", "amm kamerel",
+      "hudor kamerel", "sharab kamerel", "ara kamerel", "argentum golem",
+      "living doll", "living lectern", "parasitized doll",
+      "bestial dervish", "ethereal dervish", "flashing lake",
+      "frosted lake", "smoldering lake", "sparkling lake", "blood shower",
+      "many-taloned thing", "deep blue cube", "pitch black cube",
+      "prayerful thing", "hemorrhagic thing", "many-eyed seeker",
+      "voice in the dark", "tiny being of light", "man-faced millipede",
+      "mirrored moonflower", "crimson writher", "radiant pyramid", "Kuker",
+      "lurking one", "small goat spawn", "goat spawn", "giant goat spawn",
+      "blessed", "mouth of the goat", "apprentice witch", "witch",
+      "coven leader", "The Good Neighbor", "Hmnyw-Pharaoh", "migo worker",
+      "migo soldier", "migo philosopher", "migo queen", "byakhee",
+      "dark young", "deep dweller", "deminymph", "gnoll ghoul", "gug",
+      "Illurien of the Myriad Glimpses", "nightgaunt", "oread",
+      "minotaur priestess", "priest of an unknown god", "shoggoth",
+      "star spawn", "Shattered Ziggurat cultist",
+      "Shattered Ziggurat knight", "Shattered Ziggurat wizard",
+      "hunting horror", "blasphemous lurker", "alhoon", "Center of All",
+      "Father Dagon", "Mother Hydra", "Great Cthulhu", "witch's familiar"}),
     ("include/objects.h",r'TOOL\("([^"\n]+)"',{"magic candle", "crystal pick"})]:
     before=set(re.findall(pattern,old(path))); after=set(re.findall(pattern,now(path)))
     assert after-before==expected and before<=after,path
@@ -94,8 +116,8 @@ assert 'tomb-2' not in dungeon
 assert 'base = 200' in dungeon
 for path in ["sys/unix/Makefile.top","sys/windows/Makefile.nmake","sys/windows/vs/files.props"]:
     assert "tomb-1.lua" in now(path) and "tomb-2" not in now(path)
-assert "#define EDITLEVEL 4" in now("include/patchlevel.h")
-print("PASS source: protected Step 5/6, vanilla wishing/lamp rub, exact Step 7/8/9 additions, classic one-level Tomb/manifests, combined Step 9 save epoch")
+assert "#define EDITLEVEL 5" in now("include/patchlevel.h") # Step 10 save epoch
+print("PASS source: protected Step 5/6, vanilla wishing/lamp rub, exact Step 7/8/9 additions, classic one-level Tomb/manifests, Step 10 save epoch")
 
 for arg in sys.argv[1:]:
     data=Path(arg).read_bytes(); stream=io.BytesIO(data)

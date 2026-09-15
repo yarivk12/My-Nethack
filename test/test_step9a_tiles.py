@@ -13,7 +13,8 @@ generated=(repo/'src/tile.c').read_text(encoding='utf8')
 
 def tiles(source):
     return [(int(i),name,''.join(body.split())) for i,name,body in
-            re.findall(r'# tile (\d+) \(([^\n]+)\)\s*\{([^}]+)\}',source)]
+            re.findall(r'# tile (\d+) \(([^\n]+)\)\s*'
+                       r'(?:#_[^\n]*\s*)?\{([^}]+)\}',source)]
 
 for file in ['monsters.txt','objects.txt','other.txt']:
     path='win/share/'+file

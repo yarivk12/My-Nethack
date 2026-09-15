@@ -62,5 +62,8 @@ native = baseline.split('int\ndmgval(', 1)[1].split('    if (Is_weapon) {', 1)[0
 native = native[native.index('    if (bigmonst(ptr))'):]
 local = source.split('tmp = mith_weapon_dice(otmp, bigmonst(ptr));', 1)[1]
 local = local.split('    if (Is_weapon) {', 1)[0]
+local = local.replace('        case SCYTHE:\n', '')
+local = local.replace('    if (otyp == VIPERWHIP)\n'
+                      '        tmp *= max(1, otmp->usecount);\n', '')
 assert local.replace('\n    } else if', '    if', 1) == native
-print('PASS native base-damage dice unchanged')
+print('PASS native base-damage dice unchanged outside scoped scythe additions')

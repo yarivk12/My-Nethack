@@ -117,6 +117,15 @@ void windows_raw_print(const char *str);
 #ifdef STEP9_TOPOLOGY_TEST
 extern int step9_topology_test_main(void);
 #endif
+#ifdef STEP10C_C_TEST
+extern int step10c_c_test_main(void);
+#endif
+#ifdef STEP10C_D_TEST
+extern int step10c_d_test_main(void);
+#endif
+#ifdef STEP10QA2_TEST
+extern int step10qa2_test_main(void);
+#endif
 
 extern const char *known_handling[];     /* symbols.c */
 extern const char *known_restrictions[]; /* symbols.c */
@@ -314,6 +323,36 @@ _CrtSetReportFile(_CRT_ASSERT, _CRTDBG_FILE_STDERR);*/
         if (!dlb_init())
             return EXIT_FAILURE;
         return step9_topology_test_main();
+    }
+#endif
+#endif
+
+#ifdef STEP10C_C_TEST
+#ifdef DLB
+    if (getenv("NETHACK_STEP10C_C_TEST")) {
+        if (!dlb_init())
+            return EXIT_FAILURE;
+        return step10c_c_test_main();
+    }
+#endif
+#endif
+
+#ifdef STEP10C_D_TEST
+#ifdef DLB
+    if (getenv("NETHACK_STEP10C_D_TEST")) {
+        if (!dlb_init())
+            return EXIT_FAILURE;
+        return step10c_d_test_main();
+    }
+#endif
+#endif
+
+#ifdef STEP10QA2_TEST
+#ifdef DLB
+    if (getenv("NETHACK_STEP10QA2_TEST")) {
+        if (!dlb_init())
+            return EXIT_FAILURE;
+        return step10qa2_test_main();
     }
 #endif
 #endif

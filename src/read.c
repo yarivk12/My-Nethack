@@ -13,6 +13,8 @@ staticfn void cap_spe(struct obj *);
 staticfn char *erode_obj_text(struct obj *, char *);
 staticfn char *hawaiian_design(struct obj *, char *);
 staticfn int read_ok(struct obj *);
+staticfn int read_necronomicon(struct obj *);
+staticfn int choose_necronomicon_operation(void);
 staticfn int mith_read_tile(struct obj *);
 staticfn int mith_learn_word(void);
 static unsigned mith_study_id;
@@ -77,6 +79,142 @@ learnscroll(struct obj *sobj)
        we couldn't be reading this scroll otherwise */
     if (sobj->oclass != SPBOOK_CLASS)
         (void) learnscrolltyp(sobj->otyp);
+}
+
+int
+necronomicon_operation_pw_cost(int operation)
+{
+    switch (operation) {
+    case NECRONOMICON_SUMMON_BYAKHEE:
+        return 20;
+    case NECRONOMICON_SUMMON_NIGHTGAUNT:
+        return 10;
+    case NECRONOMICON_DETECT_MONSTERS:
+        return SPELL_LEV_PW(1);
+    case NECRONOMICON_HEALTH_RECOVERY:
+        return 0;
+    default:
+        return -1;
+    }
+}
+
+int
+necronomicon_operation_monster(int operation)
+{
+    switch (operation) {
+    case NECRONOMICON_SUMMON_BYAKHEE:
+        return PM_BYAKHEE;
+    case NECRONOMICON_SUMMON_NIGHTGAUNT:
+        return PM_NIGHTGAUNT;
+    default:
+        return NON_PM;
+    }
+}
+
+staticfn int
+choose_necronomicon_operation(void)
+{
+    static const struct {
+        int operation;
+        char accelerator;
+        const char *description;
+    } passages[] = {
+        { NECRONOMICON_SUMMON_BYAKHEE, 'a', "Call down a byakhee" },
+        { NECRONOMICON_SUMMON_NIGHTGAUNT, 'b', "Invoke a night-gaunt" },
+        { NECRONOMICON_DETECT_MONSTERS, 'c',
+          "Study secrets of monster detection" },
+        { NECRONOMICON_HEALTH_RECOVERY, 'd',
+          "Study secrets of health and recovery" },
+    };
+    winid tmpwin = create_nhwindow(NHW_MENU);
+    menu_item *selected = (menu_item *) 0;
+    anything any;
+    int i, n, operation = 0;
+
+    start_menu(tmpwin, MENU_BEHAVE_STANDARD);
+    for (i = 0; i < SIZE(passages); ++i) {
+        any = cg.zeroany;
+        any.a_int = passages[i].operation;
+        add_menu(tmpwin, &nul_glyphinfo, &any, passages[i].accelerator, 0,
+                 ATR_NONE, NO_COLOR, passages[i].description,
+                 MENU_ITEMFLAGS_NONE);
+    }
+    end_menu(tmpwin, "Which passage will you read?");
+    n = select_menu(tmpwin, PICK_ONE, &selected);
+    if (n > 0) {
+        operation = selected[0].item.a_int;
+        free((genericptr_t) selected);
+    }
+    destroy_nhwindow(tmpwin);
+    return operation;
+}
+
+staticfn int
+read_necronomicon(struct obj *book)
+{
+    struct monst *mtmp;
+    int operation, pw_cost, pm;
+
+    discover_artifact(ART_NECRONOMICON);
+    fully_identify_obj(book);
+    update_inventory();
+
+    if (Confusion) {
+        pline(Hallucination
+                  ? "The squirming passages refuse to stay alphabetized."
+                  : "The tangled passages make no sense while you are confused.");
+        exercise(A_WIS, FALSE);
+        return ECMD_TIME;
+    }
+
+    operation = choose_necronomicon_operation();
+    if (!operation)
+        return ECMD_CANCEL;
+    if (!u.uconduct.literate++)
+        livelog_printf(LL_CONDUCT,
+                       "became literate by reading the Necronomicon");
+
+    pw_cost = necronomicon_operation_pw_cost(operation);
+    if (pw_cost < 0) {
+        impossible("invalid Necronomicon operation %d", operation);
+        return ECMD_TIME;
+    }
+    if (u.uen < pw_cost) {
+        You("lack the magical energy to complete that passage.");
+        exercise(A_WIS, FALSE);
+        return ECMD_TIME;
+    }
+
+    pm = necronomicon_operation_monster(operation);
+    if (pm != NON_PM) {
+        mtmp = makemon(&mons[pm], u.ux, u.uy, MM_ADJACENTOK);
+        if (!mtmp) {
+            pline("The invocation echoes, but nothing answers.");
+            return ECMD_TIME;
+        }
+        u.uen -= pw_cost;
+        disp.botl = TRUE;
+        (void) tamedog(mtmp, (struct obj *) 0, FALSE);
+        pline("A%s answers the passage.",
+              operation == NECRONOMICON_SUMMON_BYAKHEE
+                  ? " byakhee" : " night-gaunt");
+        exercise(A_WIS, FALSE);
+        return ECMD_TIME;
+    }
+
+    switch (operation) {
+    case NECRONOMICON_DETECT_MONSTERS:
+        u.uen -= pw_cost;
+        disp.botl = TRUE;
+        (void) spelleffects(SPE_DETECT_MONSTERS, FALSE, TRUE);
+        return ECMD_TIME;
+    case NECRONOMICON_HEALTH_RECOVERY:
+        use_unicorn_horn(&book);
+        return ECMD_TIME;
+    default:
+        impossible("unimplemented Necronomicon operation %d", operation);
+        return ECMD_TIME;
+    }
 }
 
 /* max spe is +99, min is -99 */
@@ -584,6 +722,9 @@ doread(void)
         }
     }
 
+    if (is_art(scroll, ART_NECRONOMICON))
+        return read_necronomicon(scroll);
+
     confused = (Confusion != 0);
 #ifdef MAIL_STRUCTURES
     if (otyp == SCR_MAIL) {
@@ -1046,6 +1187,18 @@ forget(int howmuch)
     /* [perhaps ought to forget having seen every monster on every level] */
     for (mtmp = gm.migrating_mons; mtmp; mtmp = mtmp->nmon)
         mtmp->meverseen = 0;
+}
+
+/* Illurien's donor memory loss is percentage-based.  Native amnesia is
+   intentionally narrower, so apply it probabilistically and cap the caller's
+   percentage at the potion's cursed ceiling rather than importing
+   donor-global memory state. */
+void
+step10b_forget_memories(int percent)
+{
+    percent = max(0, min(25, percent));
+    if (percent && rn2(100) < percent)
+        forget(0);
 }
 
 /* monster is hit by scroll of taming's effect */

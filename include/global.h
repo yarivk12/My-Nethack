@@ -405,7 +405,40 @@ extern struct nomakedefs_s nomakedefs;
 /* room for "name-role-race-gend-algn" plus 1 character playmode code */
 #define PL_NSIZ_PLUS (PL_NSIZ + 4 * (1 + 3) + 1) /* 49 */
 
-#define MAXDUNGEON 16 /* current maximum number of dungeons */
+#define MAXDUNGEON 18 /* Step 10 capacity; topology is registered separately */
+
+/* Controlled return values for dormant Step 10B Neutral selector branches. */
+#define STEP10B_NEUTRAL_QUADRUPED (-10)
+#define STEP10B_CENTER_NEUTRAL 1
+#define STEP10B_CENTER_LOST_CITIES 2
+#define STEP10B_KEY_SECOND 1
+#define STEP10B_KEY_THIRD 2
+#define STEP10B_KEY_ORDINARY 3
+#define STEP10B_CTHULHU_GAS_RADIUS 2
+#define STEP10B_CTHULHU_CLOUD_SIZE 5
+#define STEP10B_CTHULHU_GAS_DAMAGE 30
+#define STEP10B_CTHULHU_GAS_TTL 30
+
+/* Step 10B4 behavior context is deliberately nonpersistent.  Step 10C will
+ * map real branch/level identities to these values at the call sites. */
+enum step10b_level_context {
+    STEP10B_CTX_NONE = 0,
+    STEP10B_CTX_GATE,
+    STEP10B_CTX_OUTLANDS_1,
+    STEP10B_CTX_OUTLANDS_2,
+    STEP10B_CTX_OUTLANDS_3,
+    STEP10B_CTX_OUTLANDS_4,
+    STEP10B_CTX_SPIRE,
+    STEP10B_CTX_SUM,
+    STEP10B_CTX_LOST_CITIES,
+    STEP10B_CTX_RLYEH,
+    STEP10B_CTX_APPROACH,
+    STEP10B_CTX_DISPENSARY
+};
+
+#define STEP10B_LETHE_DESTROYED (-1)
+/* Donor SCR_RESISTANCE has no local object ID; B4 may not add one. */
+#define STEP10B_SCR_RESISTANCE (-1)
 #define MAXLEVEL 200  /* max number of levels in one dungeon */
 #define MAXSTAIRS 1   /* max # of special stairways in a dungeon */
 #define ALIGNWEIGHT 4 /* generation weight of alignment */

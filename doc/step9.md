@@ -60,7 +60,7 @@ the now-passed manual validation.
 
 ## Closeout validation status
 
-| Check | Result / evidence in external `../step9-audit` directory |
+| Check | Result / evidence in external `../_qa/step9-audit` directory |
 | --- | --- |
 | Shared randomized-parent contract | PASS, `test/test_step9_scheduler_contract.py`; legal DL30–199 entries, no fixed DL108–110 loop, DL111 not reserved |
 | Pinned donor/source boundaries | PASS, Step 9A and 9B source checks against the pinned UnNetHack revision; prior Step 7/8 source checks PASS |
@@ -74,7 +74,7 @@ the now-passed manual validation.
 The status records checks observed for the final working tree. Earlier
 per-phase notes about fixed parents describe historical manual validation; they
 do not override the production scheduler. External binaries, saves and logs
-remain in `../step9-audit` and are not committed.
+remain in `../_qa/step9-audit` and are not committed.
 
 ## Checkpoint publication validation
 

@@ -63,6 +63,16 @@ for sample in range(count):
         raise AssertionError("Missing " + needle + "\n" + text)
     try:
         wait_for("Dlvl:1")
+        # Startup can leave the welcome page active after the status row is
+        # drawn.  Drain it before the first extended command; otherwise a
+        # delayed dismissal space can be interpreted as a game command by
+        # WinPTY and consume the following #wizwhere input.
+        time.sleep(1)
+        for _ in range(4):
+            if "--More--" not in "\n".join(screen.display):
+                break
+            p.write(" ")
+            time.sleep(1)
         p.write("#wizwhere\n")
         text = wait_for("Floating branches")
         # Complete rendering of the final page before reading it.

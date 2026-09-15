@@ -110,6 +110,29 @@ staticfn void propagate_chain_lightning(struct chain_lightning_queue *,
 /* since the spellbook itself doesn't blow up, don't say just "explodes" */
 static const char explodes[] = "radiates explosive energy";
 
+int
+step10b_hero_spell_chance(enum step10b_level_context context, int chance,
+                          int spell_level)
+{
+    int penalty = 0;
+
+    switch (context) {
+    case STEP10B_CTX_GATE:       penalty = 10; break;
+    case STEP10B_CTX_OUTLANDS_1: penalty = 20; break;
+    case STEP10B_CTX_OUTLANDS_2: penalty = 30; break;
+    case STEP10B_CTX_OUTLANDS_3: penalty = 40; break;
+    case STEP10B_CTX_OUTLANDS_4: penalty = 50; break;
+    case STEP10B_CTX_SUM:
+        return chance + 100 - 10 * spell_level;
+    /* The current B4 contract explicitly gives heroes no Spire penalty.
+     * The donor's chance=0 behavior is intentionally not imported. */
+    case STEP10B_CTX_SPIRE:
+    default:
+        return chance;
+    }
+    return chance - penalty * spell_level;
+}
+
 /* convert a letter into a number in the range 0..51, or -1 if not a letter */
 staticfn int
 spell_let_to_idx(char ilet)
@@ -384,6 +407,15 @@ learn(void)
     booktype = book->otyp;
     if (booktype == SPE_BOOK_OF_THE_DEAD) {
         deadbook(book);
+        return 0;
+    }
+    if (booktype == SPE_SECRETS) {
+        pline("The ragged pages hint at secrets beyond mortal spellcraft.");
+        makeknown((int) booktype);
+        if (costly)
+            check_unpaid(book);
+        svc.context.spbook.book = 0;
+        svc.context.spbook.o_id = 0;
         return 0;
     }
 
@@ -2298,6 +2330,10 @@ percent_success(int spell)
     }
     if (u.mith_timers[MITH_NAEN])
         chance = 100;
+
+    /* Step 10C-D supplies the real production level identity. */
+    chance = step10b_hero_spell_chance(step10c_level_context(&u.uz), chance,
+                                      spellev(spell));
 
     /* Clamp to percentile */
     if (chance > 100)

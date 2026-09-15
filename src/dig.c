@@ -26,6 +26,12 @@ enum dig_types {
     DIGTYP_TREE
 };
 
+int
+step10b_tree_cut_sticks(enum step10b_level_context context, int dice_total)
+{
+    return step10b_is_outlands_context(context) ? max(0, dice_total - 1) : 0;
+}
+
 staticfn boolean
 rm_waslit(void)
 {
@@ -490,10 +496,23 @@ dig(void)
                 }
             }
             if (digtyp == DIGTYP_TREE) {
+                enum step10b_level_context context = step10c_level_context(&u.uz);
+                int numsticks = step10b_tree_cut_sticks(
+                    context, step10b_is_outlands_context(context) ? d(2, 4) : 0);
+
                 digtxt = "You cut down the tree.";
                 lev->typ = ROOM, lev->flags = 0;
-                if (!rn2(5))
+                if (!step10b_is_outlands_context(context) && !rn2(5))
                     (void) rnd_treefruit_at(dpx, dpy);
+                while (numsticks-- > 0) {
+                    struct obj *stick = mksobj_at(
+                        rn2(2) ? QUARTERSTAFF : CLUB, dpx, dpy, FALSE, FALSE);
+
+                    stick->obranch_material = WOOD;
+                    stick->spe = 0;
+                    stick->blessed = stick->cursed = FALSE;
+                    stick->owt = weight(stick);
+                }
                 if (Race_if(PM_ELF) || Role_if(PM_RANGER))
                     adjalign(-1);
             } else {

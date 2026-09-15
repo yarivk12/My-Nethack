@@ -625,6 +625,36 @@ mon_arrive(struct monst *mtmp, int when)
     mtmp->mstate &= ~MON_STILL_ARRIVING;
 }
 
+void
+step10b_pet_separation_catchup(struct monst *mtmp, int imv,
+                               enum step10b_level_context context)
+{
+    /* Gate Town is a pet-safe separation zone: neither time nor hunger can
+     * make an absent companion wild. */
+    if (mtmp->mtame && context != STEP10B_CTX_GATE) {
+        int wilder = (imv + 75) / 150;
+
+        if (mtmp->mtame > wilder)
+            mtmp->mtame -= wilder;
+        else if (mtmp->mtame > rn2(wilder))
+            mtmp->mtame = 0;
+        else
+            mtmp->mtame = mtmp->mpeaceful = 0;
+    }
+    if (mtmp->mtame && !mtmp->isminion
+        && (carnivorous(mtmp->data) || herbivorous(mtmp->data))) {
+        struct edog *edog = EDOG(mtmp);
+
+        if (context == STEP10B_CTX_GATE) {
+            if (edog->hungrytime < svm.moves + 500)
+                edog->hungrytime = svm.moves + 500;
+        } else if ((svm.moves > edog->hungrytime + 500 && mtmp->mhp < 3)
+                   || (svm.moves > edog->hungrytime + 750)) {
+            mtmp->mtame = mtmp->mpeaceful = 0;
+        }
+    }
+}
+
 /* heal monster for time spent elsewhere */
 void
 mon_catchup_elapsed_time(
@@ -689,27 +719,9 @@ mon_catchup_elapsed_time(
     else
         mtmp->mspec_used -= imv;
 
-    /* reduce tameness for every 150 moves you are separated */
-    if (mtmp->mtame) {
-        int wilder = (imv + 75) / 150;
-        if (mtmp->mtame > wilder)
-            mtmp->mtame -= wilder; /* less tame */
-        else if (mtmp->mtame > rn2(wilder))
-            mtmp->mtame = 0; /* untame */
-        else
-            mtmp->mtame = mtmp->mpeaceful = 0; /* hostile! */
-    }
-    /* check to see if it would have died as a pet; if so, go wild instead
-     * of dying the next time we call dog_move()
-     */
-    if (mtmp->mtame && !mtmp->isminion
-        && (carnivorous(mtmp->data) || herbivorous(mtmp->data))) {
-        struct edog *edog = EDOG(mtmp);
-
-        if ((svm.moves > edog->hungrytime + 500 && mtmp->mhp < 3)
-            || (svm.moves > edog->hungrytime + 750))
-            mtmp->mtame = mtmp->mpeaceful = 0;
-    }
+    /* Step 10C-D resolves the real production level identity. */
+    step10b_pet_separation_catchup(mtmp, imv,
+                                   step10c_level_context(&u.uz));
 
     if (!mtmp->mtame && mtmp->mleashed) {
         /* leashed monsters should always be with hero, consequently

@@ -164,6 +164,7 @@ extern boolean defends(int, struct obj *);
 extern boolean defends_when_carried(int, struct obj *);
 extern boolean protects(struct obj *, boolean);
 extern void set_artifact_intrinsic(struct obj *, boolean, long);
+extern int artifact_arm_bonus(struct obj *);
 extern int touch_artifact(struct obj *, struct monst *) NONNULLARG2;
 extern int spec_abon(struct obj *, struct monst *) NONNULLARG2;
 extern int spec_dbon(struct obj *, struct monst *, int) NONNULLARG2;
@@ -174,6 +175,12 @@ extern void dump_artifact_info(winid);
 extern boolean artifact_hit(struct monst *, struct monst *, struct obj *,
                             int *, int) NONNULLARG2;
 extern int doinvoke(void);
+extern int necronomicon_operation_pw_cost(int);
+extern int necronomicon_operation_monster(int);
+extern boolean silver_key_destination_valid(
+    const d_level *, const struct silver_key_domain *);
+extern boolean silver_key_choose_destination(
+    const d_level *, int, int, const struct silver_key_domain *, d_level *);
 extern boolean finesse_ahriman(struct obj *);
 extern int arti_speak(struct obj *);
 extern boolean artifact_light(struct obj *);
@@ -558,6 +565,7 @@ extern int wiz_mgender(void);
 /* ### dig.c ### */
 
 extern int dig_typ(struct obj *, coordxy, coordxy);
+extern int step10b_tree_cut_sticks(enum step10b_level_context, int);
 extern boolean is_digging(void);
 extern int holetime(void);
 extern enum digcheck_result dig_check(struct monst *, coordxy, coordxy);
@@ -596,6 +604,7 @@ extern int wiz_debug_cmd_bury(void);
 /* ### display.c ### */
 
 extern int tp_sensemon(struct monst *) NONNULLARG1;
+extern int step10b_terrain_color(enum step10b_level_context, int, int);
 extern int sensemon(struct monst *) NONNULLARG1;
 extern int mon_warning(struct monst *) NONNULLARG1;
 extern int mon_visible(struct monst *) NONNULLARG1;
@@ -810,6 +819,9 @@ extern void update_mlstmv(void);
 extern void losedogs(void);
 extern void mon_arrive(struct monst *, int) NONNULLARG1;
 extern void mon_catchup_elapsed_time(struct monst *, long) NONNULLARG1;
+extern void step10b_pet_separation_catchup(struct monst *, int,
+                                           enum step10b_level_context)
+                                           NONNULLARG1;
 extern void keepdogs(boolean);
 extern void migrate_to_level(struct monst *, xint16, xint16, coord *) NONNULLARG1;
 extern void discard_migrations(void);
@@ -836,6 +848,7 @@ extern void quickmimic(struct monst *) NONNULLARG1;
 extern boolean ghitm(struct monst *, struct obj *) NONNULLPTRS;
 extern void container_impact_dmg(struct obj *, coordxy, coordxy) NONNULLARG1;
 extern int dokick(void);
+extern boolean step10b_tree_kick_has_loot(enum step10b_level_context);
 extern boolean ship_object(struct obj *, coordxy, coordxy, boolean);
 extern void obj_delivery(boolean);
 extern void deliver_obj_to_mon(struct monst *mtmp, int, unsigned long) NONNULLARG1;
@@ -1512,6 +1525,12 @@ extern struct permonst *grow_up(struct monst *, struct monst *) NONNULLARG1;
 extern struct obj* mongets(struct monst *, int) NONNULLARG1;
 extern int golemhp(int);
 extern boolean peace_minded(struct permonst *) NONNULLARG1;
+extern boolean step10b_center_peaceful(boolean);
+extern boolean step10b_is_witch(const struct permonst *) NONNULLARG1;
+extern void step10b_link_witch_familiar(struct monst *, struct monst *)
+    NONNULLARG12;
+extern boolean step10b_witch_needs_familiar(struct monst *) NONNULLARG1;
+extern struct monst *step10b_create_witch_familiar(struct monst *) NONNULLARG1;
 extern void set_malign(struct monst *) NONNULLARG1;
 extern void newmcorpsenm(struct monst *) NONNULLARG1;
 extern void freemcorpsenm(struct monst *) NONNULLARG1;
@@ -1573,6 +1592,7 @@ boolean u_slip_free(struct monst *, struct attack *) NONNULLARG12;
 extern int magic_negation(struct monst *) NONNULLARG1;
 extern boolean gulp_blnd_check(void);
 extern int gazemu(struct monst *, struct attack *) NONNULLARG12;
+extern int step10b_wisdom_drain_amount(int, int, int);
 extern void mdamageu(struct monst *, int) NONNULLARG1;
 extern int could_seduce(struct monst *, struct monst *, struct attack *) NONNULLARG12;
 extern int doseduce(struct monst *) NONNULLARG1;
@@ -1772,9 +1792,11 @@ extern void save_rooms(NHFILE *) NONNULLARG1;
 extern void rest_rooms(NHFILE *) NONNULLARG1;
 extern struct mkroom *search_special(schar);
 extern int cmap_to_type(int);
+extern void place_neutral_features(void);
 
 /* ### mon.c ### */
 
+extern void step10b_familiar_died(unsigned);
 extern void dealloc_monst(struct monst *) NONNULLARG1;
 extern void copy_mextra(struct monst *, struct monst *);
 extern void dealloc_mextra(struct monst *) NONNULLARG1;
@@ -1814,6 +1836,7 @@ extern void relmon(struct monst *, struct monst **) NONNULLARG1;
 extern struct obj *mlifesaver(struct monst *) NONNULLARG1;
 extern boolean corpse_chance(struct monst *, struct monst *, boolean) NONNULLARG1;
 extern void mondead(struct monst *) NONNULLARG1;
+extern void step10b_cthulhu_death_effect(coordxy, coordxy);
 extern void mondied(struct monst *) NONNULLARG1;
 extern void mongone(struct monst *) NONNULLARG1;
 extern void monstone(struct monst *) NONNULLARG1;
@@ -1955,6 +1978,7 @@ extern void mon_track_clear(struct monst *) NONNULLARG1;
 extern boolean monhaskey(struct monst *, boolean) NONNULLARG1;
 extern void mon_regen(struct monst *, boolean) NONNULLARG1;
 extern void m_everyturn_effect(struct monst *) NONNULLARG1;
+extern int step10b_cthulhu_psychic_damage(int, boolean, boolean);
 extern void m_postmove_effect(struct monst *) NONNULLARG1;
 extern int dochugw(struct monst *, boolean) NONNULLARG1;
 extern boolean onscary(coordxy, coordxy, struct monst *) NONNULLARG3;
@@ -2056,6 +2080,9 @@ extern int thitu(int, int, struct obj **, const char *) NO_NNARGS;
 extern boolean ohitmon(struct monst *, struct obj *,
                        int, boolean) NONNULLARG12;
 extern void thrwmu(struct monst *) NONNULLARG1;
+extern int mith_silver_arrow(struct monst *, struct monst *) NONNULLPTRS;
+extern int mith_internal_projectile(struct monst *, struct monst *,
+                                    struct attack *) NONNULLPTRS;
 extern int spitmu(struct monst *, struct attack *) NONNULLPTRS;
 extern int breamu(struct monst *, struct attack *) NONNULLPTRS;
 extern boolean linedup_callback(coordxy, coordxy, coordxy, coordxy,
@@ -2207,6 +2234,10 @@ extern void tty_ibmgraphics_fixup(void);
 /* ### o_init.c ### */
 
 extern void init_objects(void);
+extern boolean step10b_extension_otyp(int);
+extern int step10b_oclass_first(int);
+extern int step10b_oclass_next(int, int);
+extern int step10b_amnesia_percent(boolean, boolean);
 extern void init_oclass_probs(void);
 extern void obj_shuffle_range(int, int *, int *) NONNULLPTRS;
 /* objdescr_is() contains a test for NULL arg1, so can't be NONNULLARG12 */
@@ -2611,6 +2642,7 @@ extern char temple_occupied(char *) NONNULLARG1;
 extern boolean inhistemple(struct monst *) NO_NNARGS;
 extern int pri_move(struct monst *) NONNULLARG1;
 extern void priestini(d_level *, struct mkroom *, int, int, boolean) NONNULLARG12;
+extern boolean step10b_designate_bridge_priest(struct monst *) NO_NNARGS;
 extern aligntyp mon_aligntyp(struct monst *) NONNULLARG1;
 extern char *priestname(struct monst *, int, boolean, char *) NONNULLARG1;
 extern boolean p_coaligned(struct monst *) NONNULLARG1;
@@ -2656,6 +2688,13 @@ extern int stinky_nemesis(struct monst *);
 extern void com_pager(const char *);
 extern void qt_pager(const char *);
 extern struct permonst *qt_montype(void);
+extern int step10b_neutral_montype(int, int, int, int);
+extern int step10b_sum_montype(int, int);
+extern int step10b_neutral_squad(int, int, int);
+extern int step10b_rlyeh_create(coordxy, coordxy);
+extern int step10b_center_candidate(int, int, unsigned);
+extern int step10b_alhoon_key_choice(boolean, boolean);
+extern boolean step10b_is_outlands_context(enum step10b_level_context);
 extern void deliver_splev_message(void);
 
 /* ### random.c ### */
@@ -3019,6 +3058,7 @@ extern const char *says(void);
 
 extern void neweshk(struct monst *) NONNULLARG1;
 extern void free_eshk(struct monst *) NONNULLARG1;
+extern boolean step10b_designate_plumach_shopkeeper(struct monst *) NO_NNARGS;
 extern void stock_room(int, struct mkroom *) NONNULLARG2;
 extern boolean saleable(struct monst *, struct obj *) NONNULLARG12;
 extern int get_shop_item(int);
@@ -3125,6 +3165,7 @@ extern int dowizcast(void);
 extern int docast(void);
 extern int spell_skilltype(int);
 extern int spelleffects(int, boolean, boolean);
+extern int step10b_hero_spell_chance(enum step10b_level_context, int, int);
 extern int tport_spell(int);
 extern void losespells(void);
 extern int dovspell(void);
@@ -3358,6 +3399,14 @@ extern boolean lava_damage(struct obj *, coordxy, coordxy) NONNULLARG1;
 extern void acid_damage(struct obj *) NO_NNARGS;
 extern int water_damage(struct obj *, const char *, boolean) NO_NNARGS;
 extern void water_damage_chain(struct obj *, boolean) NO_NNARGS;
+extern void step10b_lethe_damage_chain(struct obj *, boolean) NO_NNARGS;
+extern int step10b_mirror_pit_damage(enum step10b_level_context, boolean,
+                                    int, int);
+extern int step10b_trap_projectile_material(enum step10b_level_context,
+                                            int, int, int, int, int);
+extern int step10b_lethe_otyp(int, int, boolean, int);
+extern int step10b_lethe_marker_spe(int, int);
+extern int step10b_lethe_drain_spe(int, boolean, int);
 extern boolean rnd_nextto_goodpos(coordxy *, coordxy *,
                                   struct monst *) NONNULLPTRS;
 extern void back_on_ground(boolean);
@@ -4090,6 +4139,10 @@ extern boolean In_dragon_caves(d_level *);
 extern boolean In_mithardir(const d_level *);
 extern boolean In_mithardir_desert(const d_level *);
 extern boolean In_mithardir_catacombs(const d_level *);
+extern enum step10b_level_context step10c_level_context(const d_level *);
+extern void step10c_set_level_flags(const d_level *);
+extern void step10c_post_load_content(const d_level *);
+extern boolean step10c_silver_key_domain(struct silver_key_domain *);
 extern boolean mith_anhydrous(const struct permonst *);
 extern boolean mith_displaced(struct monst *);
 extern int mith_paralyze_gaze(struct monst *, struct monst *, struct attack *);
@@ -4109,6 +4162,25 @@ extern void mith_cold_heal(struct monst *, int);
 extern int mith_roll_dr(struct monst *);
 extern boolean mith_armor_size_fits(struct obj *, const struct permonst *);
 extern int mith_physical_damage(struct monst *, struct obj *, int, int);
+extern int mith_cuprilach_backstab(struct monst *, struct monst *, struct attack *);
+extern int step10b_natural_dr(const struct permonst *);
+extern int step10b_passive_dice(const struct permonst *, int);
+extern boolean step10b_elemental_passive_ready(const struct permonst *,
+                                               boolean, boolean, boolean);
+extern int step10b_eldritch_presence_kind(const struct permonst *);
+extern boolean step10b_mark_eldritch_seen(struct monst *);
+extern void step10b_eldritch_encounter(struct monst *);
+extern int mith_multiweapon_slot(const struct permonst *, int);
+extern struct obj *mith_select_multiweapon(struct monst *, int);
+extern boolean step10b_innate_reflection(const struct permonst *);
+extern boolean step10b_innate_magic(const struct permonst *);
+extern int step10b_spell_cooldown(const struct permonst *, int);
+extern int step10b_mon_spell_fumble_threshold(enum step10b_level_context, int);
+extern boolean step10b_mon_spell_always_fumbles(enum step10b_level_context);
+extern int step10b_species_spell(const struct permonst *, int, int);
+extern int step10b_backstab_die(const struct permonst *, int, boolean);
+extern int step10b_illurien_forget_percent(int, int);
+extern void step10b_forget_memories(int);
 extern struct permonst *mith_rndmonst(void);
 extern void lava_jet_obstacle(coordxy, coordxy);
 extern int cave_breath_type(struct permonst *, int);

@@ -7,6 +7,7 @@ struct instance_globals_m gm;
 static int roll,rolls,asleep,paralyzed,blinded;
 int rn2(int n) { assert(n>0);++rolls;return roll%n; }
 int rnd(int n) { return rn2(n)+1; }
+int sgn(int n) { return n < 0 ? -1 : n > 0; }
 schar acurr(int attr) { return u.acurr.a[attr]; }
 boolean defended(struct monst *m,int type) { (void)m;(void)type;return FALSE; }
 boolean Resists_Elem(struct monst *m,int prop) {
@@ -67,6 +68,11 @@ int main(void) {
     assert(!mith_weapon_effects(&o,&m,10));m.data=&mons[PM_HUMAN];
     o.obranch_props=OBP_FILTH;assert(mith_weapon_effects(&o,&m,10)==9999);
     o.obranch_props=OBP_ANARCHIC;assert(mith_weapon_effects(&o,&m,10)==10);
+    o.obranch_props=OBP_CONCORDANT;u.ualign.type=A_NEUTRAL;
+    assert(!mith_weapon_effects(&o,&gy.youmonst,10));
+    u.ualign.type=A_LAWFUL;assert(mith_weapon_effects(&o,&gy.youmonst,10)==10);
+    m.data=&mons[PM_ORC];assert(mith_weapon_effects(&o,&m,10)==10);
+    m.data=&mons[PM_HUMAN];
     for(i=0;i<2;++i) {
         o.otyp=i?POT_ACID:ROCK;o.oclass=i?POTION_CLASS:GEM_CLASS;
         o.obranch_props=OBP_ACID;rolls=0;

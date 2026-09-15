@@ -33,14 +33,21 @@ for sample in range(1, count + 1):
     assert len(lines) == 1, (sample, run.stdout, run.stderr)
     row = parse(lines[0])
     assert all(30 <= row[name] <= 199
-               for name in ("sheol", "dragon", "mithardir")), row
-    assert len({row["sheol"], row["dragon"], row["mithardir"]}) == 3, row
+               for name in ("sheol", "dragon", "mithardir", "neutral")), row
+    assert len({row["sheol"], row["dragon"], row["mithardir"],
+                row["neutral"]}) == 4, row
     assert row["step9_count"] == 3 and row["step9d_count"] == 0, row
     assert row["collisions"] == 0 and row["castle_count"] == 1, row
     assert row["chalv2"] == row["mithardir"], row
+    assert row["neulev"] == row["neutral"], row
+    assert row["dungeons"] <= 18, row
+    assert row["neutral_floors"] == 7 and row["lost_floors"] == 13, row
+    assert row["alternates"] == 4 and 2 <= row["dispensary_parent"] <= 6, row
+    assert row["max_depth"] == row["neutral"] + 18, row
     results.append(row)
 
 (out / "results.json").write_text(json.dumps(results, indent=2),
                                    encoding="utf-8")
 print(f"PASS native fresh topology: {count} real init_dungeons samples; "
-      "Step9A-C distinct DL30-199 parents, Castle200, no Step9D")
+      "Step9A-C plus Neutral distinct DL30-199 parents, Castle200, "
+      "two Step10 dungeons and internal Dispensary")

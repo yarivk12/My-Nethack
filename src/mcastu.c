@@ -112,6 +112,116 @@ mith_spell_damage(struct monst *mtmp, struct attack *mattk)
     return d(min(10, mtmp->m_lev / 3 + 1) + mattk->damn, die);
 }
 
+int
+step10b_spell_cooldown(const struct permonst *ptr, int normal)
+{
+    return ptr == &mons[PM_AURUMACH_RILMANI] || ptr == &mons[PM_KUKER]
+               || ptr == &mons[PM_ALHOON]
+               || ptr == &mons[PM_WITCH_S_FAMILIAR]
+               || (ptr >= &mons[PM_APPRENTICE_WITCH]
+                   && ptr <= &mons[PM_HMNYW_PHARAOH])
+               ? 0 : normal;
+}
+
+int
+step10b_mon_spell_fumble_threshold(enum step10b_level_context context,
+                                   int native_threshold)
+{
+    switch (context) {
+    case STEP10B_CTX_GATE:       return native_threshold + 2;
+    case STEP10B_CTX_OUTLANDS_1: return native_threshold + 4;
+    case STEP10B_CTX_OUTLANDS_2: return native_threshold + 6;
+    case STEP10B_CTX_OUTLANDS_3: return native_threshold + 8;
+    case STEP10B_CTX_OUTLANDS_4: return native_threshold + 10;
+    case STEP10B_CTX_SUM:        return native_threshold - 1;
+    default:                     return native_threshold;
+    }
+}
+
+boolean
+step10b_mon_spell_always_fumbles(enum step10b_level_context context)
+{
+    return (boolean) (context == STEP10B_CTX_SPIRE);
+}
+
+int
+step10b_species_spell(const struct permonst *ptr, int favored, int detail)
+{
+    static const int cuprilach[] = {
+        MCAST_RILMANI_DRAIN_LIFE, MCAST_RILMANI_ACID_BLAST,
+        MCAST_RILMANI_SOLID_FOG, MCAST_DISAPPEAR,
+        MCAST_RILMANI_POISON_GAS, MCAST_RILMANI_MAKE_VISIBLE
+    };
+    static const int argenach[] = {
+        MCAST_RILMANI_ICE_STORM, MCAST_RILMANI_SOLID_FOG,
+        MCAST_DISAPPEAR, MCAST_RILMANI_MAKE_VISIBLE
+    };
+    static const int aurumach[] = {
+        MCAST_RILMANI_ICE_STORM, MCAST_RILMANI_ACID_RAIN,
+        MCAST_RILMANI_SOLID_FOG, MCAST_DISAPPEAR,
+        MCAST_RILMANI_POISON_GAS, MCAST_RILMANI_MAKE_VISIBLE,
+        MCAST_RILMANI_PRISMATIC_SPRAY
+    };
+    static const int kuker[] = {
+        MCAST_CONFUSE_YOU, MCAST_RILMANI_MAKE_VISIBLE,
+        MCAST_KUKER_EVIL_EYE, MCAST_CURSE_ITEMS,
+        MCAST_KUKER_PROTECTION, MCAST_PUNISHMENT
+    };
+
+    if (ptr == &mons[PM_AMM_KAMEREL]
+        || ptr == &mons[PM_HUDOR_KAMEREL]
+        || ptr == &mons[PM_ARA_KAMEREL])
+        return MCAST_OPEN_WOUNDS;
+    if (ptr == &mons[PM_SHARAB_KAMEREL])
+        return MCAST_PSI_BOLT;
+    if (ptr == &mons[PM_PLUMACH_RILMANI])
+        return MCAST_RILMANI_SOLID_FOG;
+    if (ptr == &mons[PM_FERRUMACH_RILMANI])
+        return favored ? MCAST_RILMANI_HAIL_FLURY
+                       : MCAST_RILMANI_SOLID_FOG;
+    if (ptr == &mons[PM_CUPRILACH_RILMANI])
+        return detail >= 0 && detail < SIZE(cuprilach) ? cuprilach[detail] : -1;
+    if (ptr == &mons[PM_ARGENACH_RILMANI])
+        return favored ? MCAST_RILMANI_SILVER_RAYS
+                       : detail >= 0 && detail < SIZE(argenach)
+                             ? argenach[detail] : -1;
+    if (ptr == &mons[PM_AURUMACH_RILMANI]
+        || ptr == &mons[PM_CENTER_OF_ALL])
+        return favored ? MCAST_RILMANI_GOLDEN_WAVE
+                       : detail >= 0 && detail < SIZE(aurumach)
+                             ? aurumach[detail] : -1;
+    if (ptr == &mons[PM_KUKER])
+        return detail >= 0 && detail < SIZE(kuker) ? kuker[detail] : -1;
+    if (ptr == &mons[PM_STAR_SPAWN])
+        return MCAST_PSI_BOLT;
+    if (ptr == &mons[PM_WITCH_S_FAMILIAR])
+        return MCAST_OPEN_WOUNDS;
+    return -1;
+}
+
+staticfn int
+step10b_choose_species_spell(const struct permonst *ptr)
+{
+    if (ptr == &mons[PM_FERRUMACH_RILMANI])
+        return step10b_species_spell(ptr, rn2(4), 0);
+    if (ptr == &mons[PM_CUPRILACH_RILMANI])
+        return step10b_species_spell(ptr, 0, rn2(6));
+    if (ptr == &mons[PM_ARGENACH_RILMANI]) {
+        int favored = rn2(4);
+
+        return step10b_species_spell(ptr, favored, favored ? 0 : rn2(4));
+    }
+    if (ptr == &mons[PM_AURUMACH_RILMANI]
+        || ptr == &mons[PM_CENTER_OF_ALL]) {
+        int favored = rn2(4);
+
+        return step10b_species_spell(ptr, favored, favored ? 0 : rn2(7));
+    }
+    if (ptr == &mons[PM_KUKER])
+        return step10b_species_spell(ptr, 0, rn2(6));
+    return step10b_species_spell(ptr, 0, 0);
+}
+
 staticfn void
 mith_mass_cure(struct monst *mtmp, boolean far, coordxy tx, coordxy ty)
 {
@@ -178,10 +288,14 @@ mith_mm_useless(struct monst *caster, struct monst *target, int spell)
 staticfn int
 mith_mm_choose_spell(struct monst *caster, struct monst *target)
 {
-    int i, value, maxlev = mcast_data[mon_wizard_spells[SIZE(mon_wizard_spells)-1]].level;
+    int i, value, special;
+    int maxlev = mcast_data[mon_wizard_spells[SIZE(mon_wizard_spells)-1]].level;
 
     if (caster->data == &mons[PM_ALABASTER_ELF_ELDER])
         return mith_elder_spell();
+    special = step10b_choose_species_spell(caster->data);
+    if (special >= 0)
+        return special;
     /* Mummies retain the native general wizard list. Its usefulness checks
      * must inspect the actual monster target, not the hero's properties. */
     value = rn2(caster->m_lev);
@@ -232,11 +346,60 @@ mith_castmm(struct monst *caster, struct monst *target, struct attack *attack)
 {
     int spell = 0, tries, damage, result = M_ATTK_HIT;
     int syllable = mith_mon_syllable(caster);
+    boolean lake = caster->data >= &mons[PM_FLASHING_LAKE]
+                   && caster->data <= &mons[PM_SPARKLING_LAKE];
     struct monst *other;
     struct obj *armor;
 
-    if ((caster->data != &mons[PM_ALABASTER_ELF_ELDER] && syllable < 0)
-        || attack->adtyp != AD_SPEL || !caster->m_lev
+    /* Native combat has no elemental castmm path.  The four lakes use their
+       declared AT_MAGC attack against monsters with the same level-scaled
+       dice and full resistance handling used against the hero. */
+    if (lake) {
+        boolean resisted;
+
+        if (!caster->m_lev || caster->mcan || DEADMONSTER(caster)
+            || DEADMONSTER(target) || helpless(caster)
+            || (attack->adtyp != AD_FIRE && attack->adtyp != AD_COLD
+                && attack->adtyp != AD_ELEC && attack->adtyp != AD_MAGM))
+            return M_ATTK_MISS;
+        if (rn2(caster->m_lev * 10) < (caster->mconf ? 100 : 20))
+            return M_ATTK_MISS;
+        damage = mith_spell_damage(caster, attack);
+        resisted = attack->adtyp == AD_FIRE ? resists_fire(target)
+                   : attack->adtyp == AD_COLD ? resists_cold(target)
+                   : attack->adtyp == AD_ELEC ? resists_elec(target)
+                                              : resists_magm(target);
+        if (resisted) {
+            shieldeff(target->mx, target->my);
+            damage = 0;
+        }
+        if (canseemon(caster))
+            pline_mon(caster, "%s casts an elemental spell!", Monnam(caster));
+        if (damage > 0 && (target->mhp -= damage) <= 0) {
+            monkilled(target, "", (int) attack->adtyp);
+            if (DEADMONSTER(target))
+                result |= M_ATTK_DEF_DIED;
+        }
+        return result;
+    }
+
+    if ((caster->data != &mons[PM_ALABASTER_ELF_ELDER]
+         && caster->data != &mons[PM_OGRE_MAGE]
+         && caster->data != &mons[PM_PLUMACH_RILMANI]
+         && caster->data != &mons[PM_FERRUMACH_RILMANI]
+         && caster->data != &mons[PM_CUPRILACH_RILMANI]
+         && caster->data != &mons[PM_ARGENACH_RILMANI]
+         && caster->data != &mons[PM_AURUMACH_RILMANI]
+         && caster->data != &mons[PM_AMM_KAMEREL]
+         && caster->data != &mons[PM_HUDOR_KAMEREL]
+         && caster->data != &mons[PM_SHARAB_KAMEREL]
+         && caster->data != &mons[PM_ARA_KAMEREL]
+         && caster->data != &mons[PM_KUKER]
+         && caster->data != &mons[PM_STAR_SPAWN]
+         && caster->data != &mons[PM_WITCH_S_FAMILIAR]
+         && !step10b_is_witch(caster->data) && syllable < 0)
+        || (attack->adtyp != AD_SPEL && attack->adtyp != AD_CLRC
+            && attack->adtyp != AD_PSON) || !caster->m_lev
         || DEADMONSTER(caster) || DEADMONSTER(target) || helpless(caster))
         return M_ATTK_MISS;
     for (tries = 0; tries < 40; ++tries) {
@@ -245,10 +408,13 @@ mith_castmm(struct monst *caster, struct monst *target, struct attack *attack)
             break;
     }
     if (tries == 40 || caster->mcan
-        || (caster->mspec_used && syllable != MITH_NAEN))
+        || (caster->mspec_used && syllable != MITH_NAEN)
+        || step10b_witch_needs_familiar(caster))
         return M_ATTK_MISS;
     caster->mspec_used = syllable == MITH_NAEN ? 0
                         : caster->m_lev < 8 ? 10 - caster->m_lev : 2;
+    caster->mspec_used = step10b_spell_cooldown(caster->data,
+                                                caster->mspec_used);
     if (syllable >= 0
         ? rn2(caster->m_lev * 2) < ((syllable == MITH_NAEN ? 0 : 2)
                                   + (caster->mconf ? 8 : 0))
@@ -310,6 +476,15 @@ mith_castmm(struct monst *caster, struct monst *target, struct attack *attack)
         break;
     case MCAST_CURSE_ITEMS:
         mith_mm_curse(target);
+        damage = 0;
+        break;
+    case MCAST_KUKER_EVIL_EYE:
+        target->mconf = 1;
+        damage = 0;
+        break;
+    case MCAST_KUKER_PROTECTION:
+        caster->mconf = caster->mstun = 0;
+        caster->mhp = min(caster->mhpmax, caster->mhp + d(2, 6));
         damage = 0;
         break;
     case MCAST_SUMMON_MONS: {
@@ -382,6 +557,64 @@ mith_castmm(struct monst *caster, struct monst *target, struct attack *attack)
             pline_mon(target, "%s draws attention!", Monnam(target));
         damage = 0;
         break;
+    case MCAST_RILMANI_DRAIN_LIFE:
+        if (resists_drli(target))
+            damage = 0;
+        else
+            damage = max(damage, target->m_lev + 1);
+        break;
+    case MCAST_RILMANI_ACID_BLAST:
+        damage = min(60, damage);
+        if (resists_acid(target))
+            damage = 0;
+        break;
+    case MCAST_RILMANI_SOLID_FOG:
+        target->mblinded = max(target->mblinded, 8);
+        target->mcansee = 0;
+        mon_adjust_speed(target, -1, (struct obj *) 0);
+        if (caster->data == &mons[PM_PLUMACH_RILMANI])
+            caster->mcan = 1;
+        damage = 0;
+        break;
+    case MCAST_RILMANI_POISON_GAS:
+        (void) create_gas_cloud(target->mx, target->my, rnd(3), rnd(3) + 1);
+        damage = 0;
+        break;
+    case MCAST_RILMANI_MAKE_VISIBLE:
+        target->minvis = target->perminvis = 0;
+        newsym(target->mx, target->my);
+        damage = 0;
+        break;
+    case MCAST_RILMANI_HAIL_FLURY:
+    case MCAST_RILMANI_ICE_STORM:
+        if (resists_cold(target))
+            damage = (damage + 1) / 2;
+        break;
+    case MCAST_RILMANI_SILVER_RAYS:
+        damage = d(2, 20);
+        if (resists_fire(target) && resists_cold(target)
+            && resists_elec(target) && resists_acid(target))
+            damage = max(1, damage / 2);
+        break;
+    case MCAST_RILMANI_GOLDEN_WAVE:
+        damage = d(2, 12);
+        if (resists_fire(target) && resists_cold(target)
+            && resists_elec(target) && resists_acid(target))
+            damage = max(1, damage / 2);
+        break;
+    case MCAST_RILMANI_ACID_RAIN:
+        damage = resists_acid(target) ? 0 : d(8, 6);
+        break;
+    case MCAST_RILMANI_PRISMATIC_SPRAY:
+        switch (rn2(6)) {
+        case 0: if (resists_fire(target)) damage = 0; break;
+        case 1: if (resists_cold(target)) damage = 0; break;
+        case 2: if (resists_elec(target)) damage = 0; break;
+        case 3: if (resists_acid(target)) damage = 0; break;
+        case 4: if (resists_poison(target)) damage = 0; break;
+        default: if (resists_magm(target)) damage = 0; break;
+        }
+        break;
     }
     if (damage > 0 && !DEADMONSTER(target)) {
         target->mhp -= damage;
@@ -399,11 +632,15 @@ staticfn int
 choose_monster_spell(struct monst *mtmp, int adtyp)
 {
     int *list = NULL;
-    int i, spellval, len = 0;
+    int i, spellval, special, len = 0;
     int maxlev;
 
     if (mtmp->data == &mons[PM_ALABASTER_ELF_ELDER] && adtyp == AD_SPEL)
         return mith_elder_spell();
+    special = (adtyp == AD_CLRC || adtyp == AD_SPEL || adtyp == AD_PSON)
+                  ? step10b_choose_species_spell(mtmp->data) : -1;
+    if (special >= 0)
+        return special;
 
     if (adtyp == AD_PUNI) {
         static const int punisher_spells[] = {
@@ -476,6 +713,7 @@ castmu(
      * attacking monster does.
      */
     if ((mattk->adtyp == AD_SPEL || mattk->adtyp == AD_CLRC
+         || mattk->adtyp == AD_PSON
          || mattk->adtyp == AD_PUNI) && ml) {
         int cnt = 40;
 
@@ -501,6 +739,7 @@ castmu(
     /* monster unable to cast spells? */
     if (mtmp->mcan || (mtmp->mspec_used
                        && mith_mon_syllable(mtmp) != MITH_NAEN) || !ml
+        || step10b_witch_needs_familiar(mtmp)
         || m_seenres(mtmp, cvt_adtyp_to_mseenres(mattk->adtyp))) {
         cursetxt(mtmp, is_undirected_spell(spellnum));
         return M_ATTK_MISS;
@@ -509,11 +748,14 @@ castmu(
     debugpline3("castmu:%s,lvl:%i,spell:%i", noit_Monnam(mtmp), ml, spellnum);
 
     if (mattk->adtyp == AD_SPEL || mattk->adtyp == AD_CLRC
+         || mattk->adtyp == AD_PSON
          || mattk->adtyp == AD_PUNI) {
         /* monst->m_lev is unsigned (uchar), monst->mspec_used is int */
         mtmp->mspec_used = (int) ((mtmp->m_lev < 8) ? (10 - mtmp->m_lev) : 2);
         if (mith_mon_syllable(mtmp) == MITH_NAEN)
             mtmp->mspec_used = 0;
+        mtmp->mspec_used = step10b_spell_cooldown(mtmp->data,
+                                                  mtmp->mspec_used);
     }
 
     /* Monster can cast spells, but is casting a directed spell at the
@@ -536,16 +778,30 @@ castmu(
     }
 
     nomul(0);
-    if (mith_mon_syllable(mtmp) >= 0
-        ? rn2(ml * 2) < ((mith_mon_syllable(mtmp) == MITH_NAEN ? 0 : 2)
-                         + (mtmp->mconf ? 8 : 0))
-        : rn2(ml * 10) < (mtmp->mconf ? 100 : 20)) { /* fumbled attack */
-        Soundeffect(se_air_crackles, 60);
-        if (canseemon(mtmp) && !Deaf) {
-            set_msg_xy(mtmp->mx, mtmp->my);
-            pline_The("air crackles around %s.", mon_nam(mtmp));
+    {
+        enum step10b_level_context context = step10c_level_context(&u.uz);
+        int native_threshold = mith_mon_syllable(mtmp) >= 0
+                               ? ((mith_mon_syllable(mtmp) == MITH_NAEN
+                                   ? 0 : 2) + (mtmp->mconf ? 8 : 0))
+                               : (mtmp->mconf ? 100 : 20);
+        int roll = 0;
+        /* Step 10C-D supplies the real production level identity. */
+        boolean fumbled = step10b_mon_spell_always_fumbles(context);
+
+        if (!fumbled) {
+            roll = rn2(ml * (mith_mon_syllable(mtmp) >= 0 ? 2 : 10));
+            fumbled = roll < step10b_mon_spell_fumble_threshold(
+                                  context, native_threshold);
         }
-        return M_ATTK_MISS;
+
+        if (fumbled) { /* fumbled attack */
+            Soundeffect(se_air_crackles, 60);
+            if (canseemon(mtmp) && !Deaf) {
+                set_msg_xy(mtmp->mx, mtmp->my);
+                pline_The("air crackles around %s.", mon_nam(mtmp));
+            }
+            return M_ATTK_MISS;
+        }
     }
     if (canspotmon(mtmp) || !is_undirected_spell(spellnum)) {
         pline_mon(mtmp, "%s casts a spell%s!",
@@ -566,6 +822,7 @@ castmu(
     if (!foundyou) {
         dmg = 0;
         if (mattk->adtyp != AD_SPEL && mattk->adtyp != AD_CLRC
+            && mattk->adtyp != AD_PSON
             && mattk->adtyp != AD_PUNI) {
             impossible(
               "%s casting non-hand-to-hand version of hand-to-hand spell %d?",
@@ -573,7 +830,17 @@ castmu(
             return M_ATTK_MISS;
         }
     } else if (mith_mon_syllable(mtmp) >= 0
-               || mtmp->data == &mons[PM_ALABASTER_ELF_ELDER]) {
+               || mtmp->data == &mons[PM_ALABASTER_ELF_ELDER]
+               || mtmp->data == &mons[PM_OGRE_MAGE]
+               || mtmp->data == &mons[PM_PLUMACH_RILMANI]
+               || mtmp->data == &mons[PM_FERRUMACH_RILMANI]
+               || mtmp->data == &mons[PM_CUPRILACH_RILMANI]
+               || mtmp->data == &mons[PM_ARGENACH_RILMANI]
+               || mtmp->data == &mons[PM_AURUMACH_RILMANI]
+               || mtmp->data == &mons[PM_AMM_KAMEREL]
+               || mtmp->data == &mons[PM_HUDOR_KAMEREL]
+               || mtmp->data == &mons[PM_SHARAB_KAMEREL]
+               || mtmp->data == &mons[PM_ARA_KAMEREL]) {
         dmg = mith_spell_damage(mtmp, mattk);
     } else if (mattk->damd)
         dmg = d((int) ((ml / 2) + mattk->damn), (int) mattk->damd);
@@ -636,6 +903,7 @@ castmu(
         mon_spell_hits_spot(mtmp, AD_MAGM, u.ux, u.uy);
         break;
     case AD_PUNI: /* Sheol Punisher */
+    case AD_PSON: /* Star Spawn pinned psionic spell */
     case AD_SPEL: /* wizard spell */
     case AD_CLRC: /* clerical spell */
         mcast_spell(mtmp, dmg, spellnum);
@@ -1197,6 +1465,18 @@ mcast_spell(struct monst *mtmp, int dmg, int spellnum)
         rndcurse();
         dmg = 0;
         break;
+    case MCAST_KUKER_EVIL_EYE:
+        You_feel("your luck running out.");
+        change_luck(-1);
+        dmg = 0;
+        break;
+    case MCAST_KUKER_PROTECTION:
+        mtmp->mconf = mtmp->mstun = 0;
+        mtmp->mhp = min(mtmp->mhpmax, mtmp->mhp + d(2, 6));
+        if (canseemon(mtmp))
+            pline("A shimmering shield surrounds %s!", mon_nam(mtmp));
+        dmg = 0;
+        break;
     case MCAST_DESTRY_ARMR:
         mcast_destroy_armor();
         dmg = 0;
@@ -1265,6 +1545,68 @@ mcast_spell(struct monst *mtmp, int dmg, int spellnum)
         break;
     case MCAST_OPEN_WOUNDS:
         dmg = mcast_open_wounds(dmg);
+        break;
+    case MCAST_RILMANI_DRAIN_LIFE:
+        if (Drain_resistance) {
+            shieldeff(u.ux, u.uy);
+        } else {
+            Your("body deteriorates!");
+            losexp("life drainage");
+        }
+        dmg = 0;
+        break;
+    case MCAST_RILMANI_ACID_BLAST:
+    case MCAST_RILMANI_ACID_RAIN:
+        if (Acid_resistance) {
+            shieldeff(u.ux, u.uy);
+            dmg = 0;
+        } else {
+            dmg = min(60, dmg);
+            erode_armor(&gy.youmonst, TRUE);
+        }
+        break;
+    case MCAST_RILMANI_SOLID_FOG:
+        You("are engulfed by solid fog!");
+        make_blinded(Blinded + 8L, FALSE);
+        gy.youmonst.movement -= NORMAL_SPEED / 2;
+        if (mtmp->data == &mons[PM_PLUMACH_RILMANI])
+            mtmp->mcan = 1;
+        dmg = 0;
+        break;
+    case MCAST_RILMANI_POISON_GAS:
+        (void) create_gas_cloud(u.ux, u.uy, rnd(3), rnd(3) + 1);
+        dmg = 0;
+        break;
+    case MCAST_RILMANI_MAKE_VISIBLE:
+        HInvis &= ~INTRINSIC;
+        You_feel("paranoid.");
+        dmg = 0;
+        break;
+    case MCAST_RILMANI_HAIL_FLURY:
+    case MCAST_RILMANI_ICE_STORM:
+        if (Cold_resistance) {
+            shieldeff(u.ux, u.uy);
+            dmg = (dmg + 1) / 2;
+        }
+        break;
+    case MCAST_RILMANI_SILVER_RAYS:
+        pline("Silver rays strike you!");
+        dmg = d(2, 20);
+        break;
+    case MCAST_RILMANI_GOLDEN_WAVE:
+        pline("A wave of golden light strikes you!");
+        dmg = d(2, 12);
+        break;
+    case MCAST_RILMANI_PRISMATIC_SPRAY:
+        pline("Prismatic light bursts around you!");
+        switch (rn2(6)) {
+        case 0: if (Fire_resistance) dmg = 0; break;
+        case 1: if (Cold_resistance) dmg = 0; break;
+        case 2: if (Shock_resistance) dmg = 0; break;
+        case 3: if (Acid_resistance) dmg = 0; break;
+        case 4: if (Poison_resistance) dmg = 0; break;
+        default: if (Antimagic) dmg = 0; break;
+        }
         break;
     default:
         impossible("mcastu: invalid magic spell (%d)", spellnum);

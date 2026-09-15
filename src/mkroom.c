@@ -1109,6 +1109,847 @@ cmap_to_type(int sym)
     return typ;
 }
 
+/* Step 10C-C Outlands post-processing.  The pinned donor owns these features
+ * in mkroom.c and invokes them from makemaz() after a special map is loaded.
+ * Keep the same ownership here.  The protected path is a local generation
+ * guard, not persistent state: it preserves the two resolved portal cells and
+ * one ordinary four-way walking route between them while features are placed. */
+static boolean outlands_protected[COLNO][ROWNO];
+static struct rm outlands_protected_rm[COLNO][ROWNO];
+
+#ifdef STEP10C_C_TEST
+extern void step10c_c_note_feature(const char *);
+#define OUTLANDS_NOTE(s) step10c_c_note_feature(s)
+#else
+#define OUTLANDS_NOTE(s) ((void) 0)
+#endif
+
+staticfn boolean
+outlands_walkable(coordxy x, coordxy y)
+{
+    int typ;
+
+    if (!isok(x, y))
+        return FALSE;
+    typ = levl[x][y].typ;
+    return (boolean) (ACCESSIBLE(typ) && !IS_POOL(typ) && typ != WATER
+                      && typ != LAVAPOOL && typ != LAVAWALL);
+}
+
+staticfn boolean
+outlands_route_candidate(coordxy x, coordxy y)
+{
+    int typ;
+
+    if (!isok(x, y))
+        return FALSE;
+    typ = levl[x][y].typ;
+    return (boolean) (outlands_walkable(x, y) || typ == TREE || typ == GRASS
+                      || typ == SOIL || typ == SAND || typ == PUDDLE);
+}
+
+staticfn boolean
+outlands_connector(coordxy x, coordxy y)
+{
+    struct trap *ttmp;
+
+    if (!isok(x, y))
+        return FALSE;
+    if (levl[x][y].typ == STAIRS || levl[x][y].typ == LADDER)
+        return TRUE;
+    ttmp = t_at(x, y);
+    return (boolean) (ttmp && ttmp->ttyp == MAGIC_PORTAL);
+}
+
+staticfn void
+outlands_protect_route(void)
+{
+    coordxy qx[COLNO * ROWNO], qy[COLNO * ROWNO];
+    short prev[COLNO * ROWNO];
+    coord portals[2];
+    int head = 0, tail = 0, count = 0, i, x, y, nx, ny, cur, next;
+    static const schar dx[4] = { 1, -1, 0, 0 };
+    static const schar dy[4] = { 0, 0, 1, -1 };
+
+    (void) memset(outlands_protected, 0, sizeof outlands_protected);
+    (void) memset(outlands_protected_rm, 0, sizeof outlands_protected_rm);
+    for (x = 1; x < COLNO; ++x)
+        for (y = 0; y < ROWNO; ++y) {
+            struct trap *ttmp;
+
+            if (outlands_connector((coordxy) x, (coordxy) y)) {
+                outlands_protected[x][y] = TRUE;
+                outlands_protected_rm[x][y] = levl[x][y];
+            }
+            ttmp = t_at((coordxy) x, (coordxy) y);
+            if (ttmp && ttmp->ttyp == MAGIC_PORTAL) {
+                if (count < 2) {
+                    portals[count].x = (coordxy) x;
+                    portals[count].y = (coordxy) y;
+                }
+                ++count;
+            }
+        }
+    if (count < 2)
+        return;
+
+    for (i = 0; i < SIZE(prev); ++i)
+        prev[i] = -1;
+    cur = portals[0].y * COLNO + portals[0].x;
+    prev[cur] = cur;
+    qx[tail] = portals[0].x;
+    qy[tail++] = portals[0].y;
+    while (head < tail) {
+        x = qx[head];
+        y = qy[head++];
+        if (x == portals[1].x && y == portals[1].y)
+            break;
+        cur = y * COLNO + x;
+        for (i = 0; i < 4; ++i) {
+            nx = x + dx[i];
+            ny = y + dy[i];
+            if (!outlands_route_candidate((coordxy) nx, (coordxy) ny))
+                continue;
+            next = ny * COLNO + nx;
+            if (prev[next] >= 0)
+                continue;
+            prev[next] = (short) cur;
+            qx[tail] = (coordxy) nx;
+            qy[tail++] = (coordxy) ny;
+        }
+    }
+    cur = portals[1].y * COLNO + portals[1].x;
+    if (prev[cur] < 0)
+        return;
+    while (TRUE) {
+        x = cur % COLNO;
+        y = cur / COLNO;
+        outlands_protected[x][y] = TRUE;
+        if (!outlands_walkable((coordxy) x, (coordxy) y)) {
+            levl[x][y].typ = GRASS;
+            levl[x][y].lit = 1;
+        }
+        outlands_protected_rm[x][y] = levl[x][y];
+        if (prev[cur] == cur)
+            break;
+        cur = prev[cur];
+    }
+}
+
+staticfn void
+outlands_restore_route(void)
+{
+    int x, y;
+
+    for (x = 1; x < COLNO; ++x)
+        for (y = 0; y < ROWNO; ++y)
+            if (outlands_protected[x][y])
+                levl[x][y] = outlands_protected_rm[x][y];
+}
+
+staticfn boolean
+outlands_ground(int typ)
+{
+    return (boolean) (typ == TREE || typ == ROOM || typ == GRASS
+                      || typ == SOIL || typ == SAND || typ == PUDDLE);
+}
+
+staticfn boolean
+outlands_area(coordxy x, coordxy y, int w, int h, boolean trees_only)
+{
+    int i, j, typ;
+
+    for (i = 0; i < w; ++i)
+        for (j = 0; j < h; ++j) {
+            if (!isok(x + i, y + j) || outlands_protected[x + i][y + j]
+                || t_at(x + i, y + j))
+                return FALSE;
+            typ = levl[x + i][y + j].typ;
+            if (trees_only ? (typ != TREE && typ != GRASS)
+                           : !outlands_ground(typ))
+                return FALSE;
+        }
+    return TRUE;
+}
+
+staticfn void
+outlands_relocate(coordxy x, coordxy y)
+{
+    struct monst *mtmp = m_at(x, y);
+
+    if (mtmp)
+        (void) rloc(mtmp, RLOC_NOMSG);
+}
+
+staticfn void
+outlands_terrain(coordxy x, coordxy y, schar typ, boolean lit)
+{
+    if (!isok(x, y) || outlands_protected[x][y]
+        || outlands_connector(x, y) || t_at(x, y))
+        return;
+    outlands_relocate(x, y);
+    levl[x][y].typ = typ;
+    levl[x][y].lit = lit;
+}
+
+staticfn void
+outlands_wall_box(coordxy x, coordxy y, int w, int h, schar floor)
+{
+    int i, j;
+
+    for (i = 0; i < w; ++i)
+        for (j = 0; j < h; ++j)
+            outlands_terrain(x + i, y + j,
+                             (i == 0 || j == 0 || i == w - 1 || j == h - 1)
+                                 ? HWALL : floor,
+                             TRUE);
+    wallification(x, y, x + w - 1, y + h - 1);
+}
+
+staticfn void
+outlands_door(coordxy x, coordxy y)
+{
+    if (!outlands_protected[x][y] && !t_at(x, y)) {
+        levl[x][y].typ = DOOR;
+        levl[x][y].doormask = rn2(3) ? D_CLOSED : D_LOCKED;
+    }
+}
+
+void
+neuliquify(coordxy x, coordxy y, boolean edge)
+{
+    int typ, monster = PM_JELLYFISH, dep;
+
+    if (!isok(x, y) || outlands_protected[x][y] || outlands_connector(x, y)
+        || t_at(x, y))
+        return;
+    if (svl.level.flags.has_shop && *in_rooms(x, y, SHOPBASE))
+        return;
+    typ = levl[x][y].typ;
+    if (typ != TREE && typ != GRASS && typ != SOIL && typ != SAND)
+        return;
+    OUTLANDS_NOTE("river-cell");
+    if (typ != TREE || (!edge && rn2(6))) {
+        levl[x][y].typ = (typ == TREE) ? POOL : PUDDLE;
+        if (typ == TREE)
+            outlands_relocate(x, y);
+    }
+    dep = depth(&u.uz);
+    if (levl[x][y].typ == POOL) {
+        if (!rn2(max(1, 85 - dep))) {
+            if (dep > 19 && !rn2(3))
+                monster = PM_ELECTRIC_EEL;
+            else if (dep > 15 && !rn2(3))
+                monster = PM_GIANT_EEL;
+            else if (dep > 11 && !rn2(2))
+                monster = PM_SHARK;
+            else if (dep > 7 && rn2(4))
+                monster = PM_PIRANHA;
+            (void) makemon(&mons[monster], x, y, NO_MM_FLAGS);
+        }
+        if (!rn2(max(1, 140 - dep)))
+            (void) mkobj_at(RANDOM_CLASS, x, y, FALSE);
+        else if (!rn2(max(1, 100 - dep)))
+            (void) mkgold((long) rn1(10 * level_difficulty(), 10), x, y);
+    }
+    levl[x][y].lit = 1;
+}
+
+void
+mkneuriver(void)
+{
+    int center, width, prog, fill;
+    boolean edge;
+
+    OUTLANDS_NOTE("river");
+    if (!rn2(4)) {
+        center = rn2(ROWNO - 12) + 6;
+        width = rn2(4) + 4;
+        for (prog = 1; prog < COLNO; ++prog) {
+            edge = TRUE;
+            for (fill = center - width / 2; fill <= center + width / 2;
+                 ++fill) {
+                neuliquify((coordxy) prog, (coordxy) fill, edge);
+                edge = (boolean) (fill == center + width / 2 - 1);
+            }
+            if (!rn2(3)) {
+                if (!rn2(2) && width > 4)
+                    --width;
+                else if (width < 7)
+                    ++width;
+            }
+            if (!rn2(3)) {
+                if (!rn2(2) && center - width / 2 > 1)
+                    --center;
+                else if (center + width / 2 < ROWNO - 1)
+                    ++center;
+            }
+            center = max(4, min(center, ROWNO - 5));
+        }
+    } else {
+        center = rn2(COLNO - 14) + 7;
+        width = rn2(4) + 5;
+        for (prog = 0; prog < ROWNO; ++prog) {
+            edge = TRUE;
+            for (fill = center - width / 2; fill <= center + width / 2;
+                 ++fill) {
+                neuliquify((coordxy) fill, (coordxy) prog, edge);
+                edge = (boolean) (fill == center + width / 2 - 1);
+            }
+            if (!rn2(3)) {
+                if (!rn2(2) && width > 5)
+                    --width;
+                else if (width < 8)
+                    ++width;
+            }
+            if (!rn2(3)) {
+                if (!rn2(2) && center - width / 2 > 1)
+                    --center;
+                else if (center + width / 2 < COLNO - 1)
+                    ++center;
+            }
+            center = max(5, min(center, COLNO - 6));
+        }
+    }
+}
+
+staticfn struct obj *
+outlands_name_artifact(int otyp, int artinum, coordxy x, coordxy y)
+{
+    struct obj *otmp = mksobj(otyp, FALSE, FALSE);
+
+    if (!otmp)
+        return (struct obj *) 0;
+    otmp = oname(otmp, artiname(artinum), ONAME_RANDOM);
+    otmp->spe = max(1, otmp->spe);
+    otmp->cursed = otmp->blessed = 0;
+    place_object(otmp, x, y);
+    return otmp;
+}
+
+void
+mkkamereltowers(void)
+{
+    int x = 0, y = 0, tx = 0, ty = 0, tries = 0;
+    int i, j, c, edge;
+    boolean left = (boolean) rn2(2), good = FALSE;
+    int slant = rn2(3);
+    struct obj *otmp;
+    /* The donor's Lillend identity is not present locally; retain every other
+     * member of its fixed serpent/statue pool rather than invent a fallback. */
+    static const int snakes[] = {
+        PM_PYTHON, PM_COBRA, PM_PIT_VIPER,
+        PM_PYTHON, PM_COBRA, PM_PIT_VIPER,
+        PM_PYTHON, PM_COBRA, PM_PIT_VIPER,
+        PM_LONG_WORM, PM_PURPLE_WORM, PM_COUATL,
+        PM_RED_NAGA, PM_BLACK_NAGA, PM_GOLDEN_NAGA, PM_GUARDIAN_NAGA,
+        PM_GIANT_EEL, PM_ELECTRIC_EEL, PM_SALAMANDER, PM_MARILITH
+    };
+
+    OUTLANDS_NOTE("kamerel");
+    edge = left ? rn1(20, 20) : COLNO - rn1(20, 20);
+    for (j = 0; j < ROWNO; ++j) {
+        if (left) {
+            for (i = 1; i < edge; ++i)
+                if (isok(i, j) && outlands_ground(levl[i][j].typ)
+                    && !outlands_protected[i][j] && !t_at(i, j)) {
+                    if (levl[i][j].typ != TREE || edge - i > rn2(6))
+                        outlands_terrain(i, j, PUDDLE, TRUE);
+                }
+        } else {
+            for (i = COLNO - 1; i > edge; --i)
+                if (isok(i, j) && outlands_ground(levl[i][j].typ)
+                    && !outlands_protected[i][j] && !t_at(i, j)) {
+                    if (levl[i][j].typ != TREE || i - edge > rn2(6))
+                        outlands_terrain(i, j, PUDDLE, TRUE);
+                }
+        }
+        if (rn2(4))
+            edge += rn2(3) - slant;
+    }
+    while (!good && tries++ < 500) {
+        x = left ? 4 + rnd(3) + rn2(3) : COLNO - (4 + rnd(3) + rn2(3));
+        y = 6 + rn2(10);
+        good = TRUE;
+        for (i = -3; i <= 3; ++i)
+            for (j = -3; j <= 3; ++j)
+                if (!isok(x + i, y + j) || levl[x + i][y + j].typ != PUDDLE
+                    || outlands_protected[x + i][y + j])
+                    good = FALSE;
+    }
+    if (!good)
+        return;
+    tx = x;
+    ty = y;
+    for (i = -3; i <= 3; ++i)
+        for (j = -3; j <= 3; ++j)
+            if (dist2(x + i, y + j, x, y) <= 14)
+                outlands_terrain(x + i, y + j, HWALL, TRUE);
+    for (i = -2; i <= 2; ++i)
+        for (j = -2; j <= 2; ++j)
+            if (dist2(x + i, y + j, x, y) <= 5) {
+                outlands_terrain(x + i, y + j, CORR, FALSE);
+                if (i || j) {
+                    (void) mkcorpstat(STATUE, (struct monst *) 0,
+                                      &mons[snakes[rn2(SIZE(snakes))]],
+                                      x + i, y + j, FALSE);
+                    (void) mkcorpstat(STATUE, (struct monst *) 0,
+                                      &mons[PM_AMM_KAMEREL], x + i, y + j,
+                                      TRUE);
+                }
+            }
+    for (i = -3; i <= 3; ++i)
+        for (j = -3; j <= 3; ++j)
+            if (levl[x + i][y + j].typ == HWALL
+                && (otmp = mksobj(MIRROR, FALSE, FALSE)) != 0) {
+                otmp->obranch_size = MZ_GIGANTIC + 1;
+                place_object(otmp, x + i, y + j);
+            }
+    wallification(x - 3, y - 3, x + 3, y + 3);
+    switch (rn2(3)) {
+    case 0:
+        (void) outlands_name_artifact(KHAKKHARA,
+                                      ART_STAFF_OF_TWELVE_MIRRORS, x, y);
+        break;
+    case 1:
+        (void) outlands_name_artifact(MIRRORBLADE, ART_SANSARA_MIRROR, x, y);
+        break;
+    default:
+        (void) outlands_name_artifact(DOUBLE_LIGHTSABER,
+                                      ART_INFINITY_S_MIRRORED_ARC, x, y);
+        break;
+    }
+    c = 1 + rn2(3);
+    while (c-- > 0) {
+        boolean placed = FALSE;
+        for (tries = 0; tries < 50 && !placed; ++tries) {
+            x = tx + rn2(17) - 8;
+            y = ty + rn2(17) - 8;
+            if (!outlands_area(x - 2, y - 2, 5, 5, FALSE))
+                continue;
+            outlands_wall_box(x - 2, y - 2, 5, 5, CORR);
+            (void) makemon(&mons[PM_AMM_KAMEREL], x, y, MM_ADJACENTOK);
+            placed = TRUE;
+        }
+    }
+    c = rnd(4) + rn2(4);
+    while (c-- > 0) {
+        x = tx + rn2(25) - 12;
+        y = ty + rn2(25) - 12;
+        if (isok(x, y) && levl[x][y].typ == PUDDLE
+            && !outlands_protected[x][y] && !m_at(x, y) && !t_at(x, y))
+            (void) makemon(&mons[PM_HUDOR_KAMEREL], x, y, MM_ADJACENTOK);
+    }
+}
+
+void
+mkminorspire(void)
+{
+    int x = 0, y = 0, ix, iy, tries, i, j, c;
+    boolean good = FALSE;
+
+    OUTLANDS_NOTE("spire");
+    for (tries = 0; tries < 50 && !good; ++tries) {
+        x = rn2(COLNO - 6) + 3;
+        y = rn2(ROWNO - 5) + 2;
+        good = outlands_area(x - 1, y - 1, 3, 3, FALSE);
+    }
+    if (!good)
+        return;
+    ix = x;
+    iy = y;
+    for (i = -10; i <= 10; ++i)
+        for (j = -10; j <= 10; ++j)
+            if (isok(ix + i, iy + j) && dist2(ix, iy, ix + i, iy + j) < 105
+                && !outlands_protected[ix + i][iy + j]
+                && outlands_ground(levl[ix + i][iy + j].typ)) {
+                if (levl[ix + i][iy + j].typ != TREE
+                    || dist2(ix, iy, ix + i, iy + j) < rnd(8) * rnd(8) + 36)
+                    outlands_terrain(ix + i, iy + j, PUDDLE, TRUE);
+            }
+    outlands_wall_box(x - 1, y - 1, 3, 3, HWALL);
+    outlands_terrain(x, y, CORR, FALSE);
+    (void) mksobj_at(ROBE, x, y, TRUE, FALSE);
+    switch (rn2(6)) {
+    case 4:
+        (void) outlands_name_artifact(LONG_SWORD, ART_MIRROR_BRAND, x, y);
+        break;
+    case 3:
+        (void) outlands_name_artifact(PLATE_MAIL, ART_SOULMIRROR, x, y);
+        break;
+    default:
+        (void) mksobj_at(KHAKKHARA, x, y, FALSE, FALSE);
+        (void) mksobj_at(AMULET_OF_REFLECTION, x, y, FALSE, FALSE);
+        break;
+    }
+    c = rnd(4) + rn2(4);
+    while (c-- > 0) {
+        x = ix + rn2(25) - 12;
+        y = iy + rn2(25) - 12;
+        if (isok(x, y) && levl[x][y].typ == PUDDLE && !m_at(x, y)
+            && !t_at(x, y) && !outlands_protected[x][y])
+            (void) makemon(&mons[PM_HUDOR_KAMEREL], x, y, MM_ADJACENTOK);
+    }
+    c = rnd(3) + rn2(3);
+    while (c-- > 0) {
+        x = ix + rn2(25) - 12;
+        y = iy + rn2(25) - 12;
+        if (isok(x, y) && levl[x][y].typ == PUDDLE && !m_at(x, y)
+            && !t_at(x, y) && !outlands_protected[x][y])
+            (void) makemon(&mons[PM_SHARAB_KAMEREL], x, y, MM_ADJACENTOK);
+    }
+}
+
+staticfn void
+mkfishinghut(boolean left)
+{
+    int x, y, tries, i, j, pathto;
+    struct obj *otmp;
+
+    for (tries = 0; tries < 500; ++tries) {
+        x = rn2(COLNO / 2) + 1 + (left ? 0 : COLNO / 2);
+        y = rn2(ROWNO - 5);
+        if (!outlands_area(x, y, 4, 4, FALSE))
+            continue;
+        pathto = 0;
+        for (i = -1; i <= 4; ++i)
+            for (j = -1; j <= 4; ++j)
+                if (isok(x + i, y + j)
+                    && levl[x + i][y + j].typ == PUDDLE)
+                    ++pathto;
+        if (!pathto)
+            continue;
+        outlands_wall_box(x, y, 4, 4, CORR);
+        for (i = 1; i < 3; ++i)
+            for (j = 1; j < 3; ++j) {
+                if (!rn2(9))
+                    (void) mksobj_at(SPEAR, x + i, y + j, TRUE, FALSE);
+                if (!rn2(9)) {
+                    otmp = mksobj(SLIME_MOLD, TRUE, FALSE);
+                    if (otmp) {
+                        otmp->quan = (long) rnd(4);
+                        otmp->owt = weight(otmp);
+                        place_object(otmp, x + i, y + j);
+                    }
+                }
+                if (!rn2(9))
+                    (void) mksobj_at(POT_BOOZE, x + i, y + j, TRUE, FALSE);
+            }
+        for (i = 1 + rn2(3); i > 0; --i)
+            (void) makemon(&mons[PM_DEEP_ONE], x + rnd(2), y + rnd(2),
+                           MM_ADJACENTOK);
+        if (left)
+            outlands_door(x + 3, y + 2);
+        else
+            outlands_door(x, y + 2);
+        return;
+    }
+}
+
+void
+mkwell(boolean left)
+{
+    int x, y, tries, i, j, pathto;
+
+    OUTLANDS_NOTE("well");
+    for (tries = 0; tries < 500; ++tries) {
+        x = rn2(COLNO / 2) + 1 + (left ? 0 : COLNO / 2);
+        y = rn2(ROWNO - 5);
+        if (!outlands_area(x - 1, y - 1, 3, 3, FALSE))
+            continue;
+        pathto = 0;
+        if (isok(x, y - 2) && outlands_walkable(x, y - 2))
+            ++pathto;
+        if (isok(x, y + 2) && outlands_walkable(x, y + 2))
+            ++pathto;
+        if (isok(x - 2, y) && outlands_walkable(x - 2, y))
+            ++pathto;
+        if (isok(x + 2, y) && outlands_walkable(x + 2, y))
+            ++pathto;
+        if (!pathto)
+            continue;
+        for (i = -1; i <= 1; ++i)
+            for (j = -1; j <= 1; ++j)
+                outlands_terrain(x + i, y + j, CORR, TRUE);
+        outlands_terrain(x, y, POOL, TRUE);
+        (void) mksobj_at(RAKUYO, x, y, TRUE, FALSE);
+        return;
+    }
+}
+
+void
+mkfishingvillage(void)
+{
+    boolean left = (boolean) rn2(2);
+    int i, j, edge, slant = rn2(3), shelf = rn1(5, 5), n;
+
+    OUTLANDS_NOTE("fishing");
+    edge = left ? rn1(20, 20) : COLNO - rn1(20, 20);
+    for (j = 0; j < ROWNO; ++j) {
+        if (left) {
+            for (i = 1; i < edge; ++i)
+                if (outlands_ground(levl[i][j].typ)
+                    && !outlands_protected[i][j] && !t_at(i, j))
+                    outlands_terrain(i, j,
+                                     i < edge - shelf ? MOAT : PUDDLE, TRUE);
+        } else {
+            for (i = COLNO - 1; i > edge; --i)
+                if (outlands_ground(levl[i][j].typ)
+                    && !outlands_protected[i][j] && !t_at(i, j))
+                    outlands_terrain(i, j,
+                                     i > edge + shelf ? MOAT : PUDDLE, TRUE);
+        }
+        if (rn2(4))
+            edge += rn2(3) - slant;
+    }
+    n = 4 + rnd(4) + rn2(4);
+    while (n-- > 0)
+        mkfishinghut(left);
+    mkwell(left);
+}
+
+void
+mkpluhomestead(void)
+{
+    int x, y, tries, i, j, pathto;
+
+    for (tries = 0; tries < 500; ++tries) {
+        x = rn2(COLNO - 6) + 1;
+        y = rn2(ROWNO - 5);
+        if (!outlands_area(x, y, 5, 5, TRUE))
+            continue;
+        pathto = 0;
+        if (isok(x + 2, y - 1) && levl[x + 2][y - 1].typ == GRASS)
+            ++pathto;
+        if (isok(x + 2, y + 5) && levl[x + 2][y + 5].typ == GRASS)
+            ++pathto;
+        if (isok(x - 1, y + 2) && levl[x - 1][y + 2].typ == GRASS)
+            ++pathto;
+        if (isok(x + 5, y + 2) && levl[x + 5][y + 2].typ == GRASS)
+            ++pathto;
+        if (!pathto)
+            continue;
+        outlands_wall_box(x, y, 5, 5, CORR);
+        for (i = 1; i < 4; ++i)
+            for (j = 1; j < 4; ++j)
+                if (!rn2(3))
+                    (void) mkobj_at(rn2(2) ? WEAPON_CLASS
+                                           : rn2(2) ? TOOL_CLASS : ARMOR_CLASS,
+                                    x + i, y + j, FALSE);
+        for (i = rnd(3) + rn2(2); i > 0; --i)
+            (void) makemon(&mons[PM_PLUMACH_RILMANI], x + rnd(3), y + rnd(3),
+                           MM_ADJACENTOK);
+        switch (rn2(pathto)) {
+        case 0: outlands_door(x + 2, y); break;
+        case 1: outlands_door(x + 2, y + 4); break;
+        case 2: outlands_door(x, y + 2); break;
+        default: outlands_door(x + 4, y + 2); break;
+        }
+        OUTLANDS_NOTE("homestead-success");
+        return;
+    }
+}
+
+staticfn void
+outlands_fill_building(coordxy x, coordxy y, int w, int h, int rtype)
+{
+    struct mkroom *room;
+
+    if (svn.nroom >= MAXNROFROOMS)
+        return;
+    outlands_wall_box(x, y, w, h, rtype >= SHOPBASE ? ROOM : CORR);
+    outlands_door(x + w - 1, y + h / 2);
+    flood_fill_rm(x + 1, y + 1, svn.nroom + ROOMOFFSET, TRUE, TRUE);
+    add_room(x + 1, y + 1, x + w - 2, y + h - 2, TRUE, (schar) rtype,
+             TRUE);
+    room = &svr.rooms[svn.nroom - 1];
+    add_door(x + w - 1, y + h / 2, room);
+    if (rtype >= SHOPBASE) {
+        stock_room(rtype - SHOPBASE, room);
+        (void) step10b_designate_plumach_shopkeeper(room->resident);
+    } else if (rtype == BARRACKS || rtype == COURT)
+        fill_zoo(room);
+}
+
+void
+mkpluvillage(void)
+{
+    int x = 0, y = 0, tries, n, i, j, nshacks = 0, sizebig1 = 0,
+        sizebig2 = 0, sizetot = 0;
+    boolean good = FALSE;
+
+    OUTLANDS_NOTE("plumach-village");
+    for (tries = 0; tries < 50 && !good; ++tries) {
+        nshacks = rnd(3) + rn2(3);
+        if (rn2(2)) {
+            sizebig1 = 1 + rnd(3) + 2;
+            sizebig2 = 2 + rnd(3) + 2;
+        } else {
+            sizebig1 = 2 + rnd(3) + 2;
+            sizebig2 = 1 + rnd(3) + 2;
+        }
+        sizetot = sizebig1 + nshacks * 5 + sizebig2 + 1;
+        x = rn2(COLNO - sizetot) + 1;
+        y = rn2(ROWNO - 11);
+        good = outlands_area(x, y, sizetot + 1, 11, TRUE);
+    }
+    if (!good)
+        return;
+    for (i = sizebig1; i < sizetot - sizebig2; ++i)
+        for (j = 1; j < 10; ++j)
+            outlands_terrain(x + i, y + j, GRASS, TRUE);
+    outlands_fill_building(x, y + 3, sizebig1, 5,
+                           rn2(7) == 0 ? SHOPBASE + rn2(UNIQUESHOP - SHOPBASE)
+                                       : (rn2(4) == 0 ? BARRACKS : OROOM));
+    outlands_fill_building(x + sizetot - sizebig2, y + 3, sizebig2 + 1, 5,
+                           rn2(7) == 0 ? SHOPBASE + rn2(UNIQUESHOP - SHOPBASE)
+                                       : (rn2(4) == 0 ? COURT : OROOM));
+    for (n = 0; n < nshacks; ++n) {
+        i = x + sizebig1 + 1 + n * 5;
+        if (outlands_area(i, y, 4, 4, TRUE)) {
+            outlands_wall_box(i, y, 4, 4, CORR);
+            outlands_door(i + 2, y + 3);
+            (void) makemon(&mons[PM_PLUMACH_RILMANI], i + 1, y + 1,
+                           MM_ADJACENTOK);
+        }
+        if (outlands_area(i, y + 7, 4, 4, TRUE)) {
+            outlands_wall_box(i, y + 7, 4, 4, CORR);
+            outlands_door(i + 2, y + 7);
+            (void) makemon(&mons[PM_PLUMACH_RILMANI], i + 1, y + 8,
+                           MM_ADJACENTOK);
+        }
+    }
+}
+
+void
+mkferrutower(void)
+{
+    int x = 0, y = 0, tries, i, j, size = 8;
+    boolean good = FALSE;
+
+    OUTLANDS_NOTE("ferrumach");
+    if (!rn2(20))
+        size += rnd(4);
+    for (tries = 0; tries < 500 && !good; ++tries) {
+        x = rn2(COLNO - size) + 1;
+        y = rn2(ROWNO - size);
+        good = outlands_area(x, y, size, size, TRUE);
+    }
+    if (!good || svn.nroom >= MAXNROFROOMS)
+        return;
+    for (i = 0; i < size; ++i)
+        for (j = 0; j < size; ++j)
+            outlands_terrain(x + i, y + j,
+                             (i < 2 || j < 2 || i >= size - 2
+                              || j >= size - 2) ? HWALL : ROOM,
+                             TRUE);
+    wallification(x, y, x + size - 1, y + size - 1);
+    outlands_door(x + 1, y + size / 2);
+    flood_fill_rm(x + size / 2, y + size / 2,
+                  svn.nroom + ROOMOFFSET, TRUE, TRUE);
+    add_room(x + 2, y + 2, x + size - 3, y + size - 3, TRUE, BARRACKS,
+             TRUE);
+    add_door(x + 1, y + size / 2, &svr.rooms[svn.nroom - 1]);
+    fill_zoo(&svr.rooms[svn.nroom - 1]);
+}
+
+void
+mkinvertzigg(void)
+{
+    int x = 0, y = 0, tries, i, j, size = 15;
+    boolean good = FALSE;
+    struct obj *chest, *otmp;
+
+    OUTLANDS_NOTE("ziggurat");
+    for (tries = 0; tries < 500 && !good; ++tries) {
+        x = rn2(COLNO - size) + 1;
+        y = rn2(ROWNO - size);
+        good = outlands_area(x, y, size, size, TRUE);
+    }
+    if (!good)
+        return;
+    for (i = 0; i < size; ++i)
+        for (j = 0; j < size; ++j) {
+            schar typ = GRASS;
+            if (i >= 1 && j >= 1 && i < size - 1 && j < size - 1)
+                typ = HWALL;
+            if (i >= 2 && j >= 2 && i < size - 2 && j < size - 2)
+                typ = CORR;
+            if (i >= 4 && j >= 4 && i < size - 4 && j < size - 4)
+                typ = HWALL;
+            if (i >= 5 && j >= 5 && i < size - 5 && j < size - 5)
+                typ = ROOM;
+            outlands_terrain(x + i, y + j, typ, typ != CORR);
+        }
+    wallification(x, y, x + size - 1, y + size - 1);
+    outlands_door(x + 1, y + size / 2);
+    outlands_door(x + 4, y + size / 2);
+    if (rn2(3)) {
+        chest = mksobj_at(CHEST, x + size / 2, y + size / 2, TRUE, TRUE);
+        if (chest) {
+            chest->obranch_material = IRON;
+            if ((otmp = mksobj(TORCH, TRUE, FALSE)) != 0)
+                (void) add_to_container(chest, otmp);
+            if ((otmp = mksobj(SHADOWLANDER_S_TORCH, TRUE, FALSE)) != 0)
+                (void) add_to_container(chest, otmp);
+            if ((otmp = mksobj(WAN_STRIKING, TRUE, FALSE)) != 0)
+                (void) add_to_container(chest, otmp);
+            (void) bury_an_obj(chest, (boolean *) 0);
+        }
+    } else {
+        levl[x + size / 2][y + size / 2].typ = ALTAR;
+        levl[x + size / 2][y + size / 2].altarmask = Align2amask(A_NONE);
+    }
+    if (!montoostrong(PM_SHATTERED_ZIGGURAT_WIZARD,
+                      (level_difficulty() + u.ulevel) / 2 + 5)) {
+        (void) makemon(&mons[PM_SHATTERED_ZIGGURAT_WIZARD],
+                       x + size / 2, y + size / 2, MM_ADJACENTOK);
+        for (i = rnd(6) + rnd(4); i > 0; --i)
+            (void) makemon(&mons[PM_SHATTERED_ZIGGURAT_KNIGHT],
+                           x + size / 2, y + size / 2, MM_ADJACENTOK);
+    } else
+        for (i = rnd(4); i > 0; --i)
+            (void) makemon(&mons[PM_SHATTERED_ZIGGURAT_KNIGHT],
+                           x + size / 2, y + size / 2, MM_ADJACENTOK);
+    for (i = rn1(6, 6); i > 0; --i)
+        (void) makemon(&mons[PM_SHATTERED_ZIGGURAT_CULTIST],
+                       x + size / 2, y + size / 2, MM_ADJACENTOK);
+}
+
+void
+place_neutral_features(void)
+{
+    int n;
+
+    outlands_protect_route();
+    OUTLANDS_NOTE("invocation");
+    if (!rn2(30)) {
+        mkkamereltowers();
+        if (!rn2(16))
+            mkfishingvillage();
+    } else if (!rn2(16)) {
+        mkminorspire();
+    } else if (!rn2(16)) {
+        mkfishingvillage();
+    }
+    if (!rn2(8))
+        mkneuriver();
+    if (!rn2(8))
+        mkpluvillage();
+    if (!rn2(16))
+        mkinvertzigg();
+    if (!rn2(8))
+        mkferrutower();
+    if (!rn2(3)) {
+        n = rnd(4) + rn2(4);
+        while (n-- > 0) {
+            OUTLANDS_NOTE("homestead-attempt");
+            mkpluhomestead();
+        }
+    }
+    outlands_restore_route();
+}
+
 /* With the introduction of themed rooms, there are certain room shapes that
  * may generate a door, the square just inside the door, and only one other
  * ROOM square touching that one. E.g.

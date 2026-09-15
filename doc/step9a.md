@@ -14,7 +14,7 @@ authoritative status.
 - Donor: `UnNetHack/UnNetHack`, immutable revision
   `439b8d63d3d1ca78fb08588dd43f61874114b21a` (the Step 8 donor).
 - Source inspected using `git show`/`git grep` and a `git archive` of that
-  revision, extracted outside this repository in `../step9-audit`.
+  revision, extracted outside this repository in `../_qa/step9-audit`.
 - The historical phase plan preceded the combined Step 9A–9C publication.
   The final closeout removes the temporary parent and validates the shared
   randomized scheduler across both Release architectures.
@@ -118,7 +118,7 @@ and distinguishing these reused images remain on the human inspection list.
 
 ## Validation results
 
-External evidence is under `../step9-audit`; no fixture or build result is part
+External evidence is under `../_qa/step9-audit`; no fixture or build result is part
 of the source diff. The evolving whole-project report is
 [step9-playtest.md](step9-playtest.md).
 

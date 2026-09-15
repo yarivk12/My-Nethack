@@ -303,6 +303,7 @@ autokey(boolean opening) /* True: key, pick, or card; False: key or pick */
         if (any_quest_artifact(o) && !is_quest_artifact(o)) {
             switch (o->otyp) {
             case SKELETON_KEY:
+            case UNIVERSAL_KEY:
                 if (!akey)
                     akey = o;
                 break;
@@ -320,6 +321,7 @@ autokey(boolean opening) /* True: key, pick, or card; False: key or pick */
         } else {
             switch (o->otyp) {
             case SKELETON_KEY:
+            case UNIVERSAL_KEY:
                 if (!key || is_magic_key(&gy.youmonst, o))
                     key = o;
                 break;
@@ -417,6 +419,7 @@ pick_lock(
     }
 
     if (pick != &dummypick && picktyp != SKELETON_KEY
+        && picktyp != UNIVERSAL_KEY
         && picktyp != LOCK_PICK && picktyp != CREDIT_CARD
         && picktyp != STETHOSCOPE) {
         impossible("picking lock with object %d?", picktyp);
@@ -544,6 +547,7 @@ pick_lock(
                     ch = 4 * ACURR(A_DEX) + 25 * Role_if(PM_ROGUE);
                     break;
                 case SKELETON_KEY:
+                case UNIVERSAL_KEY:
                     ch = 75 + ACURR(A_DEX);
                     break;
                 case STETHOSCOPE:
@@ -659,6 +663,7 @@ pick_lock(
                 ch = 3 * ACURR(A_DEX) + 30 * Role_if(PM_ROGUE);
                 break;
             case SKELETON_KEY:
+            case UNIVERSAL_KEY:
                 ch = 70 + ACURR(A_DEX);
                 break;
             default:

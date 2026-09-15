@@ -31,8 +31,8 @@ static const char *output_name;
 #define CHECK(c) do { if (!(c)) { \
     fprintf(stderr, "FAIL line %d: %s\n", __LINE__, #c); ++failures; \
 } } while (0)
-_Static_assert(MAXLEVEL == 200 && MAXLINFO == 3200, "Step 4 capacity");
-_Static_assert(MAXULEV == 30 && EDITLEVEL == 4, "Step 3/4 limits; combined Step 9 stored-ID save epoch");
+_Static_assert(MAXLEVEL == 200 && MAXLINFO == 3600, "Step 10 dungeon capacity; unchanged DoD");
+_Static_assert(MAXULEV == 30 && EDITLEVEL == 5, "Step 3/4 limits; Step 10 stored-ID save epoch");
 _Static_assert(sizeof(xint16) == 2 && LONG_MAX >= 0x7fff7fffL,
                "ledger pair carrier");
 
@@ -140,7 +140,7 @@ static long pair(int a, int b)
 static void test_pairs(void)
 {
     static const int vals[] = { 0, 1, 127, 128, 254, 255, 256, 257, 511,
-                               512, 1024, 2048, 3199, 3200, 32767 };
+                               512, 1024, 2048, 3199, 3200, 3599, 3600, 32767 };
     static const int pairs[][2] = { {1,254}, {1,255}, {1,256}, {2,1},
         {127,255}, {128,1}, {255,255}, {255,256}, {256,1}, {256,256},
         {511,512}, {512,1024} };

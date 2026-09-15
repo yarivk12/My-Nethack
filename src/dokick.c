@@ -29,6 +29,12 @@ staticfn void drop_to(coord *, schar, coordxy, coordxy) NONNULLARG1;
 
 static const char kick_passes_thru[] = "kick passes harmlessly through";
 
+boolean
+step10b_tree_kick_has_loot(enum step10b_level_context context)
+{
+    return (boolean) !step10b_is_outlands_context(context);
+}
+
 /* kicking damage when not poly'd into a form with a kick attack */
 staticfn void
 kickdmg(struct monst *mon, boolean clumsy)
@@ -1180,6 +1186,13 @@ kick_nondoor(coordxy x, coordxy y, int avrg_attrib)
     }
     if (IS_TREE(gm.maploc->typ)) {
         struct obj *treefruit;
+
+        /* Outlands trees yield neither fruit nor a swarm.  Step 10C-D
+         * supplies the real production level identity. */
+        if (!step10b_tree_kick_has_loot(step10c_level_context(&u.uz))) {
+            kick_ouch(x, y, "");
+            return ECMD_TIME;
+        }
 
         /* nothing, fruit or trouble? 75:23.5:1.5% */
         if (rn2(3)) {

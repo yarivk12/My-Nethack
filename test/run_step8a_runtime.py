@@ -132,7 +132,10 @@ class Game:
         marker = 'LUA_DONE_%d' % self.seq
         (self.path/'probe.lua').write_text(code+'\nnh.pline("'+marker+'");\n')
         for attempt in range(3):
-            self.send('#wizloadlua\n')
+            # See the Step 10C-A packaged tty gate: WinPTY currently drops
+            # lowercase alphabetic input in this line editor.  Extended
+            # command matching is case-insensitive.
+            self.send('#WIZLOADLUA\n')
             try:
                 self.wait('Load which lua file?',timeout=12)
                 break
@@ -142,7 +145,7 @@ class Game:
                 # --More-- dismissal. The file has not been submitted yet.
                 self.send('\x1b')
                 self.settle()
-        self.send('probe.lua\n')
+        self.send('PROBE.LUA\n')
         self.wait(marker)
         assert 'Lua error' not in self.text(), self.text()
         # Lua can emit several messages on the same TTY row. The completion
@@ -169,8 +172,8 @@ class Game:
         # Preserve the terminal model: Windows can omit unchanged cells.
         # Wait for this command's redraw before looking for the parent.
         self.send('#wizwhere\n',1)
-        text = self.wait('Stair to ' + name + ':', more=False)
-        matches = re.findall(r'Stair to ' + re.escape(name) + r': (\d+)', text)
+        text = self.wait(' to ' + name + ':', more=False)
+        matches = re.findall(r'(?:Stair|Portal) to ' + re.escape(name) + r': (\d+)', text)
         assert len(matches) == 1, (name, text)
         depth = int(matches[0])
         self.send('\x1b')

@@ -43,6 +43,7 @@ hitmsg(struct monst *mtmp, struct attack *mattk)
         switch (mattk->aatyp) {
         case AT_BITE:
         case AT_REACH5:
+        case AT_REACH2:
             verb = "bites";
             break;
         case AT_KICK:
@@ -434,6 +435,32 @@ getmattk(
 
     }
 
+    /* Pinned Black-Goat composite attacks choose one concrete native attack
+       at use time.  This keeps RNG local to an attack actually attempted. */
+    if (attk->aatyp == AT_WDGZ) {
+        *alt_attk_buf = *attk;
+        attk = alt_attk_buf;
+        attk->aatyp = AT_GAZE;
+    } else if (attk->aatyp == AT_BKGT) {
+        int pick = rn2(5);
+
+        *alt_attk_buf = *attk;
+        attk = alt_attk_buf;
+        attk->aatyp = pick == 0 ? AT_TUCH : pick == 1 ? AT_BITE
+                      : pick == 2 ? AT_KICK : pick == 3 ? AT_BUTT : AT_GAZE;
+        attk->adtyp = pick == 0 ? AD_EACD
+                      : pick == 4 ? AD_CONF : AD_PHYS;
+    } else if (attk->aatyp == AT_BKG2) {
+        int pick = rn2(4);
+
+        *alt_attk_buf = *attk;
+        attk = alt_attk_buf;
+        attk->aatyp = pick == 0 ? AT_TENT : pick == 1 ? AT_BUTT
+                      : pick == 2 ? AT_GAZE : AT_CLAW;
+        attk->adtyp = pick == 0 ? AD_DRST : pick == 1 ? AD_STUN
+                      : pick == 2 ? AD_CONF : AD_SEDU;
+    }
+
     /* elementals on their home plane do double damage */
     if (magr != &gy.youmonst && indx == 1
         && mith_mon_syllable(magr) >= 0) {
@@ -817,27 +844,56 @@ mattacku(struct monst *mtmp)
         case AT_KICK:
         case AT_BITE:
         case AT_REACH5:
+        case AT_REACH2:
         case AT_STNG:
         case AT_TUCH:
         case AT_BUTT:
         case AT_TENT:
+        case AT_DEVA:
+        case AT_REND:
+            if (mattk->aatyp == AT_REND
+                && (i < 2 || !(sum[i - 1] & M_ATTK_HIT)
+                    || !(sum[i - 2] & M_ATTK_HIT)))
+                continue;
             if (mattk->aatyp == AT_KICK && mtrapped_in_pit(mtmp))
                 continue;
-            if ((!range2 || (mattk->aatyp == AT_REACH5
+            if ((!range2 || ((mattk->aatyp == AT_REACH5
                               && distmin(mtmp->mx, mtmp->my,
-                                         mtmp->mux, mtmp->muy) <= 5))
+                                         mtmp->mux, mtmp->muy) <= 5)
+                             || (mattk->aatyp == AT_REACH2
+                                 && distmin(mtmp->mx, mtmp->my,
+                                            mtmp->mux, mtmp->muy) <= 2)))
                 && (!MON_WEP(mtmp) || mtmp->mconf || Conflict
                             || !touch_petrifies(gy.youmonst.data))) {
                 if (foundyou) {
-                    if (tmp > (j = rnd(20 + i))) {
-                        if (unsolid(gy.youmonst.data)
-                            && failed_grab(mtmp, &gy.youmonst, mattk))
-                            continue;
-                        if (mattk->aatyp != AT_KICK
-                            || !thick_skinned(gy.youmonst.data))
-                            sum[i] = hitmu(mtmp, mattk);
-                    } else
-                        missmu(mtmp, (tmp == j), mattk);
+                    int deva_penalty = 0;
+                    boolean deva_hit = FALSE;
+
+                    do {
+                        if (tmp - deva_penalty > (j = rnd(20 + i))) {
+                            int onehit;
+
+                            if (unsolid(gy.youmonst.data)
+                                && failed_grab(mtmp, &gy.youmonst, mattk))
+                                break;
+                            if (mattk->aatyp == AT_KICK
+                                && thick_skinned(gy.youmonst.data))
+                                break;
+                            onehit = hitmu(mtmp, mattk);
+                            sum[i] |= onehit;
+                            deva_hit = (sum[i] & M_ATTK_HIT) != 0;
+                            if (onehit & (M_ATTK_DEF_DIED | M_ATTK_AGR_DIED
+                                          | M_ATTK_AGR_DONE))
+                                break;
+                        } else {
+                            if (!deva_hit)
+                                missmu(mtmp, (tmp - deva_penalty == j), mattk);
+                            break;
+                        }
+                        if (mattk->aatyp != AT_DEVA)
+                            break;
+                        deva_penalty += 4;
+                    } while (TRUE);
                 } else {
                     wildmiss(mtmp, mattk);
                     /* skip any remaining non-spell attacks */
@@ -906,6 +962,11 @@ mattacku(struct monst *mtmp)
                 sum[i] = spitmu(mtmp, mattk);
             /* Note: spitmu takes care of displacement */
             break;
+        case AT_ARRW:
+            if (foundyou)
+                sum[i] = mith_internal_projectile(mtmp, &gy.youmonst,
+                                                  mattk);
+            break;
         case AT_WEAP:
             if (range2) {
                 if (!Is_rogue_level(&u.uz))
@@ -924,8 +985,11 @@ mattacku(struct monst *mtmp)
                         break;
                 }
                 if (foundyou) {
-                    mon_currwep = mith_offhand_attack(mtmp->data, i)
-                                      ? mith_select_offhand(mtmp) : MON_WEP(mtmp);
+                    mon_currwep = mtmp->data == &mons[PM_LURKING_ONE]
+                                      ? mith_select_multiweapon(mtmp, i)
+                                      : mith_offhand_attack(mtmp->data, i)
+                                            ? mith_select_offhand(mtmp)
+                                            : MON_WEP(mtmp);
                     if (mon_currwep) {
                         boolean bash = (is_pole(mon_currwep)
                                         && !is_art(mon_currwep,
@@ -952,6 +1016,17 @@ mattacku(struct monst *mtmp)
             break;
         case AT_MAGC:
             if (range2 && mtmp->data != &mons[PM_ALABASTER_ELF_ELDER]
+                && mtmp->data != &mons[PM_OGRE_MAGE]
+                && mtmp->data != &mons[PM_PLUMACH_RILMANI]
+                && mtmp->data != &mons[PM_FERRUMACH_RILMANI]
+                && mtmp->data != &mons[PM_CUPRILACH_RILMANI]
+                && mtmp->data != &mons[PM_ARGENACH_RILMANI]
+                && mtmp->data != &mons[PM_AURUMACH_RILMANI]
+                && mtmp->data != &mons[PM_AMM_KAMEREL]
+                && mtmp->data != &mons[PM_HUDOR_KAMEREL]
+                && mtmp->data != &mons[PM_SHARAB_KAMEREL]
+                && mtmp->data != &mons[PM_ARA_KAMEREL]
+                && mtmp->data != &mons[PM_KUKER]
                 && mith_mon_syllable(mtmp) < 0)
                 sum[i] = buzzmu(mtmp, mattk);
             else
@@ -1301,7 +1376,8 @@ hitmu(struct monst *mtmp, struct attack *mattk)
             mith_coure_sleep(mtmp, &gy.youmonst);
     }
 
-    if (mhm.damage && (mattk->aatyp != AT_REACH5
+    if (mhm.damage && ((mattk->aatyp != AT_REACH5
+                        && mattk->aatyp != AT_REACH2)
                        || monnear(mtmp, u.ux, u.uy)))
         res = passiveum(olduasmon, mtmp, mattk);
     else
@@ -1466,6 +1542,14 @@ gulpmu(struct monst *mtmp, struct attack *mattk)
         u.uswldtim -= 1;
 
     switch (mattk->adtyp) {
+    case AD_ILUR: {
+        int hpmax = Upolyd ? u.mhmax : u.uhpmax;
+
+        physical_damage = TRUE;
+        You("feel your memories being consumed!");
+        step10b_forget_memories(step10b_illurien_forget_percent(tmp, hpmax));
+        break;
+    }
     case AD_DGST:
         physical_damage = TRUE;
         if (Slow_digestion) {
@@ -1636,6 +1720,14 @@ gulpmu(struct monst *mtmp, struct attack *mattk)
     return M_ATTK_HIT;
 }
 
+int
+step10b_illurien_forget_percent(int damage, int hpmax)
+{
+    if (damage <= 0 || hpmax <= 0)
+        return 0;
+    return min(10, max(1, (100 * damage) / hpmax));
+}
+
 /* monster explodes in your face */
 staticfn int
 explmu(
@@ -1743,6 +1835,12 @@ fern_release(struct monst *mtmp)
 }
 
 int
+step10b_wisdom_drain_amount(int base, int amount, int minimum)
+{
+    return max(0, min(amount, base - minimum));
+}
+
+int
 gazemu(struct monst *mtmp, struct attack *mattk)
 {
     static const char *const reactions[] = {
@@ -1765,6 +1863,59 @@ gazemu(struct monst *mtmp, struct attack *mattk)
         if (fern_release(mtmp) && canseemon(mtmp))
             pline("%s releases a spore!", Monnam(mtmp));
         return 0;
+    }
+
+    if (mattk->adtyp == AD_MIST) {
+        coord cc;
+        int summon = mtmp->data == &mons[PM_MIGO_SOLDIER] ? PM_FOG_CLOUD
+                     : mtmp->data == &mons[PM_MIGO_PHILOSOPHER]
+                           ? PM_ICE_VORTEX : PM_STEAM_VORTEX;
+
+        if (!cancelled && mcanseeu && !rn2(5)
+            && enexto(&cc, u.ux, u.uy, &mons[summon])) {
+            (void) makemon(&mons[summon], cc.x, cc.y, NO_MM_FLAGS);
+            pline("A strange mist gathers around you!");
+            return M_ATTK_HIT;
+        }
+        return M_ATTK_MISS;
+    }
+    if (mattk->adtyp == AD_BLAS) {
+        if (!cancelled && mcanseeu && rn2(5)) {
+            int blast = d(4, 8);
+
+            pline("A blasphemous radiance tears through your thoughts!");
+            make_confused(HConfusion + rnd(6), FALSE);
+            make_stunned((HStun & TIMEOUT) + (long) rnd(6), TRUE);
+            mtmp->mspec_used = rnd(6);
+            mdamageu(mtmp, blast);
+            stop_occupation();
+            return M_ATTK_HIT;
+        }
+        return M_ATTK_MISS;
+    }
+    if (mattk->adtyp == AD_WISD) {
+        int amount, loss, leftover, i;
+
+        if (!canseemon(mtmp) || !couldsee(mtmp->mx, mtmp->my) || Unaware
+            || mtmp->mspec_used)
+            return M_ATTK_MISS;
+        mtmp->mspec_used = 4;
+        amount = d((int) mattk->damn, (int) mattk->damd);
+        loss = step10b_wisdom_drain_amount(ABASE(A_WIS), amount,
+                                           ATTRMIN(A_WIS));
+        pline("Great Cthulhu's gaze tears wisdom from your mind!");
+        for (i = 0; i < loss; ++i) {
+            (void) adjattrib(A_WIS, -1, TRUE);
+            step10b_forget_memories(10);
+            exercise(A_WIS, FALSE);
+            if (AMAX(A_WIS) > ATTRMIN(A_WIS))
+                --AMAX(A_WIS);
+        }
+        leftover = amount - loss;
+        if (leftover > 0)
+            losehp(leftover * 10, "Great Cthulhu's gaze", KILLED_BY_AN);
+        stop_occupation();
+        return M_ATTK_HIT;
     }
 
     if ((mattk->adtyp == AD_LUCK || mattk->adtyp == AD_BLNK)
@@ -1974,6 +2125,52 @@ gazemu(struct monst *mtmp, struct attack *mattk)
             }
         }
         break;
+    case AD_ELEC:
+        /* The pinned lurking one uses an elemental gaze.  Keep it in the
+         * existing gaze pipeline: eye contact, cancellation, the 4/5
+         * chance, resistance, inventory effects, and the declared dice all
+         * remain gaze-specific rather than becoming a melee zap. */
+        if (mcanseeu && !mtmp->mspec_used && rn2(5)) {
+            if (cancelled) {
+                react = rn1(2, 4); /* "irritated" || "inflamed" */
+            } else {
+                int dmg = d((int) mattk->damn, (int) mattk->damd);
+                int orig_dmg = dmg, lev = (int) mtmp->m_lev;
+
+                pline_mon(mtmp, "%s attacks you with a shocking stare!",
+                          Monnam(mtmp));
+                stop_occupation();
+                if (Shock_resistance) {
+                    shieldeff(u.ux, u.uy);
+                    pline_The("zap doesn't shock you!");
+                    monstseesu(M_SEEN_ELEC);
+                    ugolemeffects(AD_ELEC, orig_dmg);
+                    dmg = 0;
+                } else {
+                    monstunseesu(M_SEEN_ELEC);
+                }
+                if (lev > rn2(20))
+                    (void) destroy_items(&gy.youmonst, AD_ELEC, orig_dmg);
+                if (dmg)
+                    mdamageu(mtmp, dmg);
+            }
+        }
+        break;
+    case AD_DRLI: {
+        struct mhitm_data mhm = { 0 };
+
+        /* The pinned voice in the dark uses a life-drain gaze.  Reuse the
+         * shared native life-drain helper so resistance, cancellation, and
+         * the donor 1/3 success gate remain identical to other AD_DRLI
+         * attacks, while the helper supplies the gaze-specific message. */
+        if (mcanseeu && !mtmp->mspec_used && !cancelled) {
+            mhitm_ad_drli(mtmp, mattk, &gy.youmonst, &mhm);
+            stop_occupation();
+        } else if (mcanseeu && !mtmp->mspec_used && cancelled) {
+            react = 4; /* "irritated" */
+        }
+        break;
+    }
 #ifdef PM_BEHOLDER /* work in progress */
     case AD_SLEE:
         if (mcanseeu && gm.multi >= 0 && !rn2(5) && !Sleep_resistance) {
@@ -2537,7 +2734,7 @@ ranged_attk_available(struct monst *mtmp)
     int i, typ = -1;
     struct permonst *ptr = mtmp->data;
 
-    if (attacktype(ptr, AT_REACH5))
+    if (attacktype(ptr, AT_REACH5) || attacktype(ptr, AT_REACH2))
         return TRUE;
     for (i = 0; i < NATTK; i++) {
         if (DISTANCE_ATTK_TYPE(ptr->mattk[i].aatyp)

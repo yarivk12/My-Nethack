@@ -54,7 +54,8 @@ struct u_event {
     Bitfield(ascended, 1);          /* has offered the Amulet */
 
     Bitfield(amulet_wish, 1);       /* has gained a wish from the Amulet */
-    /* 7 free bits */
+    Bitfield(sum_entered, 1);      /* Step 10: entered Sum of All (Center) */
+    /* 6 free bits; sum_entered owns the first formerly free event bit. */
 };
 
 /*

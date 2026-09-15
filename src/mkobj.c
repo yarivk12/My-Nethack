@@ -1280,6 +1280,37 @@ mksobj(int otyp, boolean init, boolean artif)
     case POT_WATER: /* POTION_CLASS */
         otmp->fromsink = 0; /* overloads corpsenm, which was set to NON_PM */
         break;
+    case SICKLE:
+    case MIRRORBLADE:
+    case DOUBLE_LIGHTSABER:
+        otmp->obranch_size = MZ_SMALL + 1;
+        break;
+    case SCYTHE:
+    case KHAKKHARA:
+    case LIFELESS_DOLL:
+        otmp->obranch_size = MZ_HUGE + 1;
+        break;
+    case ROUNDSHIELD:
+    case SPE_SECRETS:
+        otmp->obranch_size = MZ_LARGE + 1;
+        break;
+    case UNIVERSAL_KEY:
+    case EYEBALL:
+        otmp->obranch_size = MZ_TINY + 1;
+        break;
+    case TORCH:
+        otmp->obranch_size = MZ_SMALL + 1;
+        if (init)
+            otmp->age = rn1(500, 1000);
+        break;
+    case SHADOWLANDER_S_TORCH:
+        otmp->obranch_size = MZ_SMALL + 1;
+        if (init)
+            otmp->age = rn1(500, 1000);
+        break;
+    case VIPERWHIP:
+        otmp->usecount = rn2(2) ? 1 : rn2(5) ? rnd(2) : rnd(5);
+        break;
     case LEASH:
         otmp->leashmon = 0; /* overloads corpsenm, which was set to NON_PM */
         break;

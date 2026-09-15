@@ -3712,6 +3712,8 @@ lspo_object(lua_State *L)
         }
         if (get_table_boolean_opt(L, "anarchic", FALSE))
             tmpobj.branch_props |= OBP_ANARCHIC;
+        if (get_table_boolean_opt(L, "deep", FALSE))
+            tmpobj.branch_props |= OBP_DEEP;
         if (get_table_boolean_opt(L, "acid_coated", FALSE))
             tmpobj.branch_props |= OBP_ACID;
         if (tmpobj.id == STATUE && get_table_boolean_opt(L, "faceless", FALSE))

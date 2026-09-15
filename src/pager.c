@@ -568,6 +568,9 @@ waterbody_name(coordxy x, coordxy y)
         return "drink"; /* should never happen */
     ltyp = SURFACE_AT(x, y);
 
+    if (svl.level.flags.lethe
+        && (IS_POOL(ltyp) || IS_PUDDLE(ltyp) || IS_WATERWALL(ltyp)))
+        return "sparkling water";
     if (IS_BOG(ltyp))
         return "muddy swamp";
     if (IS_PUDDLE(ltyp))

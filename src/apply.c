@@ -1660,9 +1660,10 @@ use_lamp(struct obj *obj)
 {
     char buf[BUFSZ];
     const char *lamp = (obj->otyp == OIL_LAMP
-                        || obj->otyp == MAGIC_LAMP) ? "lamp"
-                       : (obj->otyp == BRASS_LANTERN) ? "lantern"
-                         : NULL;
+                         || obj->otyp == MAGIC_LAMP) ? "lamp"
+                        : (obj->otyp == BRASS_LANTERN) ? "lantern"
+                          : Is_torch(obj) ? "torch"
+                          : NULL;
 
     /*
      * When blind, lamps' and candles' on/off state can be distinguished
@@ -1692,6 +1693,8 @@ use_lamp(struct obj *obj)
                 Your("lantern is out of power.");
             else
                 pline("%s", nothing_seems_to_happen);
+        } else if (Is_torch(obj)) {
+            pline("This torch has burnt out.");
         } else {
             pline("This %s has no oil.", xname(obj));
         }
@@ -4199,7 +4202,7 @@ apply_ok(struct obj *obj)
     /* certain weapons */
     if (obj->oclass == WEAPON_CLASS
         && (is_pick(obj) || is_axe(obj) || is_pole(obj)
-            || obj->otyp == BULLWHIP))
+            || obj->otyp == BULLWHIP || obj->otyp == VIPERWHIP))
         return GETOBJ_SUGGEST;
 
     if (obj->oclass == POTION_CLASS) {
@@ -4297,6 +4300,7 @@ doapply(void)
         res = use_royal_jelly(&obj);
         break;
     case BULLWHIP:
+    case VIPERWHIP:
         res = use_whip(obj);
         break;
     case GRAPPLING_HOOK:
@@ -4320,6 +4324,7 @@ doapply(void)
     case LOCK_PICK:
     case CREDIT_CARD:
     case SKELETON_KEY:
+    case UNIVERSAL_KEY:
         res = (pick_lock(obj, 0, 0, NULL) != 0) ? ECMD_TIME : ECMD_OK;
         break;
     case CRYSTAL_PICK:
@@ -4381,6 +4386,8 @@ doapply(void)
     case OIL_LAMP:
     case MAGIC_LAMP:
     case BRASS_LANTERN:
+    case TORCH:
+    case SHADOWLANDER_S_TORCH:
         use_lamp(obj);
         break;
     case POT_OIL:

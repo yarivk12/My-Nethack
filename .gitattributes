@@ -28,3 +28,33 @@ dat/drgnC.lua whitespace=-blank-at-eol
 dat/drgnD.lua whitespace=-blank-at-eol
 dat/palace_e.lua whitespace=-blank-at-eol
 dat/palace_f.lua whitespace=-blank-at-eol
+
+# Step 10 ASCII maps also contain validated right-padding inside map literals.
+# Preserve those bytes; the Step 10 source/content tests reject whitespace
+# outside map strings.
+dat/gatetwn.lua whitespace=-trailing-space
+dat/lbyrnth.lua whitespace=-trailing-space
+dat/leth-a-1.lua whitespace=-trailing-space
+dat/leth-a-2.lua whitespace=-trailing-space
+dat/leth-c-1.lua whitespace=-trailing-space
+dat/leth-c-2.lua whitespace=-trailing-space
+dat/leth-d-1.lua whitespace=-trailing-space
+dat/leth-d-2.lua whitespace=-trailing-space
+dat/lethe-b.lua whitespace=-trailing-space
+dat/lethe-e.lua whitespace=-trailing-space
+dat/lethe-f.lua whitespace=-trailing-space
+dat/lethe-g.lua whitespace=-trailing-space
+dat/lethe-z.lua whitespace=-trailing-space
+dat/neulev.lua whitespace=-trailing-space
+dat/nkai-a-1.lua whitespace=-trailing-space
+dat/nkai-a-2.lua whitespace=-trailing-space
+dat/nkai-b.lua whitespace=-trailing-space
+dat/nkai-c.lua whitespace=-trailing-space
+dat/nkai-z.lua whitespace=-trailing-space
+dat/out1.lua whitespace=-trailing-space
+dat/out2.lua whitespace=-trailing-space
+dat/out3.lua whitespace=-trailing-space
+dat/out4.lua whitespace=-trailing-space
+dat/rlyeh.lua whitespace=-trailing-space
+dat/spire.lua whitespace=-trailing-space
+dat/sumall.lua whitespace=-trailing-space

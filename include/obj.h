@@ -178,6 +178,8 @@ struct obj {
 #define OBP_PARALYZE 0x0010UL
 #define OBP_FILTH    0x0020UL
 #define OBP_FACELESS 0x0040UL /* statue presentation; no combat property */
+#define OBP_CONCORDANT 0x0080UL /* stronger against non-Neutral targets */
+#define OBP_DEEP     0x0100UL /* donor "deep" long-sword property */
 #define OBP_COATINGS (OBP_ACID | OBP_SLEEP | OBP_BLIND | OBP_PARALYZE | OBP_FILTH)
 #define spestudied usecount /* # of times a spellbook has been studied */
 #define wishedfor usecount  /* flag for hold_another_object() if from wish */
@@ -399,6 +401,8 @@ struct obj {
 #define Is_candle(otmp) \
     (otmp->otyp == TALLOW_CANDLE || otmp->otyp == WAX_CANDLE \
      || otmp->otyp == MAGIC_CANDLE)
+#define Is_torch(otmp) \
+    ((otmp)->otyp == TORCH || (otmp)->otyp == SHADOWLANDER_S_TORCH)
 #define MAX_OIL_IN_FLASK 400 /* maximum amount of oil in a potion of oil */
 
 /* age field of this is relative age rather than absolute; does not include
@@ -407,7 +411,7 @@ struct obj {
     ((otmp)->otyp == BRASS_LANTERN || (otmp)->otyp == OIL_LAMP      \
      || (otmp)->otyp == CANDELABRUM_OF_INVOCATION                   \
      || (otmp)->otyp == TALLOW_CANDLE || (otmp)->otyp == WAX_CANDLE \
-     || (otmp)->otyp == POT_OIL)
+     || Is_torch(otmp) || (otmp)->otyp == POT_OIL)
 /* object can be ignited; magic lamp used to excluded here too but all
    usage of this macro ended up testing
      (ignitable(obj) || obj->otyp == MAGIC_LAMP)
@@ -418,6 +422,7 @@ struct obj {
      || ((otmp)->otyp == MAGIC_LAMP && (otmp)->spe > 0)             \
      || (otmp)->otyp == CANDELABRUM_OF_INVOCATION                   \
      || (otmp)->otyp == TALLOW_CANDLE || (otmp)->otyp == WAX_CANDLE \
+     || (otmp)->otyp == TORCH || (otmp)->otyp == SHADOWLANDER_S_TORCH \
      || (otmp)->otyp == POT_OIL)
 
 /* things that can be read */

@@ -1401,7 +1401,8 @@ burn_object(anything *arg, long timeout)
             if (menorah) {
                 obj->spe = 0; /* no more candles */
                 obj->owt = weight(obj);
-            } else if (Is_candle(obj) || obj->otyp == POT_OIL) {
+            } else if (Is_candle(obj) || Is_torch(obj)
+                       || obj->otyp == POT_OIL) {
                 struct monst *mtmp = NULL;
 
                 if (obj->where == OBJ_FLOOR)
@@ -1440,6 +1441,34 @@ burn_object(anything *arg, long timeout)
 
     /* obj->age is the age remaining at this point.  */
     switch (obj->otyp) {
+    case TORCH:
+    case SHADOWLANDER_S_TORCH:
+        if (obj->age == 150L || obj->age == 50L) {
+            if (canseeit)
+                pline("%s flickers%s.", Yname2(obj),
+                      obj->age == 50L ? " low" : "");
+            begin_burn(obj, TRUE);
+        } else if (obj->age == 0L) {
+            if (canseeit || bytouch)
+                pline("%s is consumed!", Yname2(obj));
+            end_burn(obj, FALSE);
+            if (carried(obj)) {
+                useupall(obj);
+            } else {
+                boolean onfloor = (obj->where == OBJ_FLOOR);
+                if (obj->where == OBJ_MIGRATING)
+                    obj->owornmask = 0L;
+                obj_extract_self(obj);
+                if (onfloor)
+                    maybe_unhide_at(x, y);
+                obfree(obj, (struct obj *) 0);
+            }
+            obj = (struct obj *) 0;
+        } else {
+            begin_burn(obj, TRUE);
+        }
+        break;
+
     case POT_OIL:
         /* this should only be called when we run out */
         if (canseeit) {
@@ -1722,7 +1751,7 @@ begin_burn(struct obj *obj, boolean already_lit)
     switch (obj->otyp) {
     case MAGIC_CANDLE:
         obj->age = 300L; /* donor nominal age; no fuel timer */
-        /*FALLTHRU*/
+        FALLTHROUGH;
     case MAGIC_LAMP:
         obj->lamplit = 1;
         do_timer = FALSE;
@@ -1761,6 +1790,17 @@ begin_burn(struct obj *obj, boolean already_lit)
         else
             turns = obj->age;
         radius = candle_light_range(obj);
+        break;
+
+    case TORCH:
+    case SHADOWLANDER_S_TORCH:
+        if (obj->age > 150L)
+            turns = obj->age - 150L;
+        else if (obj->age > 50L)
+            turns = obj->age - 50L;
+        else
+            turns = obj->age;
+        radius = obj->age > 150L ? 4 : obj->age > 50L ? 3 : 2;
         break;
 
     default:

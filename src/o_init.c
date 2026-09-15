@@ -167,7 +167,7 @@ init_objects(void)
        otherwise compute probs */
     first = MAXOCLASSES;
     prevoclass = -1;
-    while (first < NUM_OBJECTS) {
+    while (first < FIRST_STEP10B_OBJECT) {
         oclass = objects[first].oc_class;
         /*
          * objects[] sanity check:  must be in ascending oc_class order to
@@ -180,7 +180,8 @@ init_objects(void)
             panic("objects[%d] class #%d not in order!", first, oclass);
 
         last = first + 1;
-        while (last < NUM_OBJECTS && objects[last].oc_class == oclass)
+        while (last < FIRST_STEP10B_OBJECT
+               && objects[last].oc_class == oclass)
             last++;
         svb.bases[(int) oclass] = first;
 
@@ -199,13 +200,24 @@ init_objects(void)
        attempting to process non-existent class MAXOCLASSES; the
        [MAXOCLASSES+1] element gives that non-class 0 objects
        when traversing objects[] from bases[X] through bases[X+1]-1 */
-    svb.bases[MAXOCLASSES] = svb.bases[MAXOCLASSES + 1] = NUM_OBJECTS;
+    svb.bases[MAXOCLASSES] = svb.bases[MAXOCLASSES + 1]
+        = FIRST_STEP10B_OBJECT;
     /* hypothetically someone might remove all objects of some class,
        or be adding a new class and not populated it yet, leaving gaps
        in bases[]; guarantee that there are no such gaps */
     for (last = MAXOCLASSES - 1; last >= 0; --last)
         if (!svb.bases[last])
             svb.bases[last] = svb.bases[last + 1];
+
+    prevoclass = -1;
+    for (i = FIRST_STEP10B_OBJECT; i <= LAST_STEP10B_OBJECT; ++i) {
+        if ((int) objects[i].oc_class < prevoclass)
+            panic("Step 10 object extension class order breaks at #%d", i);
+        if (objects[i].oc_prob != 0)
+            panic("Step 10 object extension #%d leaks into random generation",
+                  i);
+        prevoclass = (int) objects[i].oc_class;
+    }
 
     /* check objects[].oc_name_known */
     for (i = MAXOCLASSES; i < NUM_OBJECTS; ++i) {
@@ -232,6 +244,37 @@ init_objects(void)
     shuffle_tiles();
 #endif
     objects[WAN_NOTHING].oc_dir = rn2(2) ? NODIR : IMMEDIATE;
+}
+
+boolean
+step10b_extension_otyp(int otyp)
+{
+    return otyp >= FIRST_STEP10B_OBJECT && otyp <= LAST_STEP10B_OBJECT;
+}
+
+/* Iterate all real members of an object class.  Legacy random selection
+ * intentionally continues to use bases[] so zero-probability Step 10 bases
+ * cannot leak into the vanilla pools. */
+int
+step10b_oclass_first(int oclass)
+{
+    int i;
+
+    for (i = MAXOCLASSES; i < NUM_OBJECTS; ++i)
+        if (objects[i].oc_class == oclass && OBJ_NAME(objects[i]))
+            return i;
+    return STRANGE_OBJECT;
+}
+
+int
+step10b_oclass_next(int otyp, int oclass)
+{
+    int i;
+
+    for (i = otyp + 1; i < NUM_OBJECTS; ++i)
+        if (objects[i].oc_class == oclass && OBJ_NAME(objects[i]))
+            return i;
+    return STRANGE_OBJECT;
 }
 
 /* Compute the total probability of each object class.
@@ -471,9 +514,13 @@ discover_object(
         /* Loop thru disco[] 'til we find the target (which may have been
            uname'd) or the next open slot; one or the other will be found
            before we reach the next class... */
-        for (dindx = svb.bases[acls]; svd.disco[dindx] != 0; dindx++)
-            if (svd.disco[dindx] == oindx)
-                break;
+        if (step10b_extension_otyp(oindx)) {
+            dindx = oindx;
+        } else {
+            for (dindx = svb.bases[acls]; svd.disco[dindx] != 0; dindx++)
+                if (svd.disco[dindx] == oindx)
+                    break;
+        }
         svd.disco[dindx] = oindx;
 
         if (mark_as_encountered)
@@ -502,6 +549,14 @@ undiscover_object(int oindx)
     if (!objects[oindx].oc_name_known && !objects[oindx].oc_encountered) {
         int dindx, acls = objects[oindx].oc_class;
         boolean found = FALSE;
+
+        if (step10b_extension_otyp(oindx)) {
+            if (svd.disco[oindx] == oindx)
+                svd.disco[oindx] = 0;
+            else
+                impossible("named Step 10 object not in disco");
+            return;
+        }
 
         /* find the object; shift those behind it forward one slot */
         for (dindx = svb.bases[acls];
@@ -825,8 +880,9 @@ dodiscovered(void) /* free after Robert Viduya */
     for (s = classes; *s; s++) {
         oclass = *s;
         prev_class = oclass + 1; /* forced different from oclass */
-        for (i = svb.bases[(int) oclass];
-             i < NUM_OBJECTS && objects[i].oc_class == oclass; i++) {
+        for (i = step10b_oclass_first((int) oclass);
+             i != STRANGE_OBJECT;
+             i = step10b_oclass_next(i, (int) oclass)) {
             if ((dis = svd.disco[i]) != 0 && interesting_to_discover(dis)) {
                 ct++;
                 if (oclass != prev_class) {
@@ -974,8 +1030,9 @@ doclassdisco(void)
     for (s = allclasses; *s; ++s) {
         oclass = *s;
         c = def_oc_syms[(int) oclass].sym;
-        for (i = svb.bases[(int) oclass];
-             i < NUM_OBJECTS && objects[i].oc_class == oclass; ++i)
+        for (i = step10b_oclass_first((int) oclass);
+             i != STRANGE_OBJECT;
+             i = step10b_oclass_next(i, (int) oclass))
             if ((dis = svd.disco[i]) != 0 && interesting_to_discover(dis)) {
                 if (!strchr(discosyms, c)) {
                     (void) strkitten(discosyms, c);
@@ -1089,8 +1146,9 @@ doclassdisco(void)
                   : "alphabetical order");
         putstr(tmpwin, 0, buf); /* skip iflags.menu_headings */
         sorted_ct = 0;
-        for (i = svb.bases[(int) oclass]; i <= svb.bases[oclass + 1] - 1;
-             ++i) {
+        for (i = step10b_oclass_first((int) oclass);
+             i != STRANGE_OBJECT;
+             i = step10b_oclass_next(i, (int) oclass)) {
             if ((dis = svd.disco[i]) != 0 && interesting_to_discover(dis)) {
                 ++ct;
                 Strcpy(buf, objects[dis].oc_encountered ? "  " : "* ");
@@ -1156,8 +1214,9 @@ rename_disco(void)
     for (s = flags.inv_order; *s; s++) {
         oclass = *s;
         prev_class = oclass + 1; /* forced different from oclass */
-        for (i = svb.bases[(int) oclass];
-             i < NUM_OBJECTS && objects[i].oc_class == oclass; i++) {
+        for (i = step10b_oclass_first((int) oclass);
+             i != STRANGE_OBJECT;
+             i = step10b_oclass_next(i, (int) oclass)) {
             dis = svd.disco[i];
             if (!dis || !interesting_to_discover(dis))
                 continue;

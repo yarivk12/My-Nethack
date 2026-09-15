@@ -91,7 +91,8 @@
 #define control_teleport(ptr) (((ptr)->mflags1 & M1_TPORT_CNTRL) != 0L)
 #define telepathic(ptr)                                                \
     ((ptr) == &mons[PM_FLOATING_EYE] || (ptr) == &mons[PM_MIND_FLAYER] \
-     || (ptr) == &mons[PM_MASTER_MIND_FLAYER])
+     || (ptr) == &mons[PM_MASTER_MIND_FLAYER]                          \
+     || (ptr) == &mons[PM_ALHOON] || (ptr) == &mons[PM_GREAT_CTHULHU])
 #define is_armed(ptr) attacktype(ptr, AT_WEAP)
 #define acidic(ptr) (((ptr)->mflags1 & M1_ACID) != 0L)
 #define poisonous(ptr) (((ptr)->mflags1 & M1_POIS) != 0L)
@@ -234,6 +235,8 @@
    Mithardir uses 7..9 for a mummy's syllable (0 absent, 1..6 present). */
 #define MITH_SYLLABLE_SHIFT 7
 #define MITH_SYLLABLE_MASK (7L << MITH_SYLLABLE_SHIFT)
+#define MITH_ELDRITCH_SEEN 0x01L /* Step 10B2-2: free mspare1 bit 0 */
+#define MITH_CTHULHU_DEATH_FIRED 0x02L
 #define mith_hates_iron(ptr) \
     ((ptr) == &mons[PM_ALABASTER_ELF] \
      || (ptr) == &mons[PM_ALABASTER_ELF_ELDER])

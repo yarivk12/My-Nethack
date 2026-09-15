@@ -39,7 +39,10 @@ mith_armor_base(int typ)
     case HIGH_ELVEN_PLATE: return 6;
     case ELVEN_TOGA: case GENTLEMAN_S_SUIT: case GENTLEWOMAN_S_DRESS:
     case JACKET: return 1;
-    case BLACK_DRESS: case STILETTOS: return 0;
+    case WHITE_FACELESS_ROBE: return 1;
+    case BLACK_FACELESS_ROBE: return 2;
+    case SMOKY_VIOLET_FACELESS_ROBE: return 3;
+    case BLACK_DRESS: case STILETTOS: case WITCH_HAT: return 0;
     default: return -1; /* shields have no donor DR */
     }
 }
@@ -94,6 +97,34 @@ mith_worn(struct monst *mon, long mask)
 /* Five equally likely donor body locations; no global DR table or save
    fields. Return before RNG for every unaffected native combatant. */
 int
+step10b_natural_dr(const struct permonst *ptr)
+{
+    return ptr == &mons[PM_PLUMACH_RILMANI] ? 4
+           : ptr == &mons[PM_FERRUMACH_RILMANI] ? 5
+           : ptr == &mons[PM_ARGENACH_RILMANI] ? 4
+           : ptr == &mons[PM_AURUMACH_RILMANI] ? 4
+           : ptr == &mons[PM_ARA_KAMEREL] ? 9
+           : ptr == &mons[PM_ARGENTUM_GOLEM] ? 9
+           : ptr == &mons[PM_LIVING_DOLL] ? 4
+           : ptr == &mons[PM_LIVING_LECTERN] ? 4
+           : ptr == &mons[PM_PARASITIZED_DOLL] ? 2
+           : ptr == &mons[PM_MANY_TALONED_THING] ? 6
+           : ptr == &mons[PM_RADIANT_PYRAMID] ? 8
+           : ptr == &mons[PM_BLESSED] ? 5
+           : ptr == &mons[PM_COVEN_LEADER] ? 4
+           : ptr == &mons[PM_THE_GOOD_NEIGHBOR] ? 10
+           : ptr == &mons[PM_HMNYW_PHARAOH] ? 10
+           : ptr == &mons[PM_DARK_YOUNG] ? 5
+           : ptr == &mons[PM_GNOLL_GHOUL] ? 2
+           : ptr == &mons[PM_OREAD] ? 6
+           : ptr == &mons[PM_STAR_SPAWN] ? 10
+           : ptr == &mons[PM_HUNTING_HORROR] ? 2
+           : ptr == &mons[PM_ALHOON] ? 8
+           : ptr == &mons[PM_CENTER_OF_ALL] ? 4
+           : ptr == &mons[PM_GREAT_CTHULHU] ? 21 : 0;
+}
+
+int
 mith_roll_dr(struct monst *mon)
 {
     static const long slots[] = { W_ARM, W_ARMC, W_ARMU, W_ARMH, W_ARMF, W_ARMG };
@@ -102,7 +133,8 @@ mith_roll_dr(struct monst *mon)
     boolean you = mon == &gy.youmonst, equipped = FALSE;
     int natural = ptr == &mons[PM_YURIAN] ? 2
                   : ptr == &mons[PM_ALABASTER_MUMMY] ? 4
-                  : ptr == &mons[PM_ASPECT_OF_THE_SILENCE] ? 3 : 0;
+                  : ptr == &mons[PM_ASPECT_OF_THE_SILENCE] ? 3
+                  : step10b_natural_dr(ptr);
     int base = !you && mith_mon_syllable(mon) == 5 ? 10 : 0;
     int vaul = you ? u.mith_syllables[5] : 0;
     int i, slot, armor = 0, cloak;
@@ -129,7 +161,7 @@ mith_roll_dr(struct monst *mon)
     case 0:
         armor += mith_armor_dr(mith_worn(mon, W_ARMU));
         base += (vaul + 3) / 5;
-        /* FALLTHRU */
+        FALLTHROUGH;
     case 1:
         armor += mith_armor_dr(mith_worn(mon, W_ARM)) + cloak;
         if (slot == 1) {
@@ -173,6 +205,7 @@ mith_physical_damage(struct monst *def, struct obj *weapon, int aatyp, int damag
 {
     struct permonst *ptr = def->data;
     int mask, resist = 0;
+    boolean vulnerable = FALSE;
     boolean weaponlike = weapon || aatyp == AT_WEAP || aatyp == AT_KICK
                          || aatyp == AT_CLAW;
 
@@ -183,9 +216,13 @@ mith_physical_damage(struct monst *def, struct obj *weapon, int aatyp, int damag
             damage = 1;
         } else {
             if (ptr == &mons[PM_CRYSTAL_OOZE] || ptr == &mons[PM_ALABASTER_MUMMY])
-                resist = WHACK | PIERCE;
-            else if (ptr == &mons[PM_SENTINEL_OF_MITHARDIR])
-                resist = SLASH | PIERCE;
+                resist = WHACK | PIERCE, vulnerable = TRUE;
+            else if (ptr == &mons[PM_SENTINEL_OF_MITHARDIR]
+                     || ptr == &mons[PM_ARA_KAMEREL]
+                     || ptr == &mons[PM_ARGENTUM_GOLEM])
+                resist = SLASH | PIERCE, vulnerable = TRUE;
+            else if (ptr == &mons[PM_ALHOON])
+                resist = PIERCE;
             else if (ptr == &mons[PM_MOTE_OF_LIGHT]
                      || ptr == &mons[PM_WATER_DOLPHIN]
                      || ptr == &mons[PM_SINGING_SAND]
@@ -197,7 +234,7 @@ mith_physical_damage(struct monst *def, struct obj *weapon, int aatyp, int damag
                 mask = WHACK;
             if (resist && !(mask & ~resist))
                 damage = max(1, damage / 4);
-            else if (resist && resist != (WHACK | PIERCE | SLASH))
+            else if (resist && vulnerable)
                 damage *= 2;
         }
     }
@@ -938,7 +975,7 @@ find_mac(struct monst *mon)
             if (obj->otyp == AMULET_OF_GUARDING)
                 base -= 2; /* fixed amount, not impacted by erosion */
             else
-                base -= ARM_BONUS(obj);
+                base -= ARM_BONUS(obj) + artifact_arm_bonus(obj);
             /* since ARM_BONUS is positive, subtracting it increases AC */
         }
     }

@@ -1778,14 +1778,15 @@ goto_level(
     flush_screen(-1);       /* ensure all map flushes are postponed */
 
     if (portal && !In_endgame(&u.uz)) {
-        /* find the portal on the new level */
+        /* find the portal on the new level; prefer the one leading back to
+           the level we just left, with the first portal as fallback */
         struct trap *ttrap;
 
         for (ttrap = gf.ftrap; ttrap; ttrap = ttrap->ntrap)
             if (ttrap->ttyp == MAGIC_PORTAL)
                 break;
 
-        if (In_mithardir(&u.uz) || In_mithardir(&u.uz0)) {
+        if (ttrap) {
             struct trap *match;
             for (match = gf.ftrap; match; match = match->ntrap)
                 if (match->ttyp == MAGIC_PORTAL
@@ -1793,8 +1794,6 @@ goto_level(
                     ttrap = match;
                     break;
                 }
-            /* The directed cat3 -> mith3 shortcut has no reciprocal
-               portal; the donor falls back to the first arrival portal. */
         }
 
         if (!ttrap) {

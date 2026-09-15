@@ -20,9 +20,13 @@ def function(path, name):
     assert len(matches)==1, (path,name)
     return matches[0]
 
-parts = ['#include "hack.h"', 'struct restore_info restoreinfo;',
+parts = ['#include "hack.h"',
+         re.search(r'(?m)^#define STEP10C_DISPENSARY_LEVEL[^\n]*',
+                   source('src/dungeon.c')).group(0),
+         'struct restore_info restoreinfo;',
          'volatile struct window_procs windowprocs;',
          'void pline(const char *fmt, ...) { (void)fmt; }']
+parts.append(function('src/dungeon.c', 'step10c_internal_depth'))
 for name in ['depth','deepest_lev_reached','ledger_no','ledger_to_dnum',
              'ledger_to_dlev','maxledgerno','on_level','builds_up','level_difficulty']:
     parts.append(function('src/dungeon.c',name))

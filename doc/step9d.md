@@ -18,7 +18,7 @@ Use exactly the dNetHack revision pinned before Step9C:
 **17bc64f77ac566e7b90c0c6c6652e2a5f3a995c0**, from the requested
 `Chris-plus-alphanumericgibberish/dnethack` repository's `master` branch.
 Use `git show` at that pin or the immutable export under
-`../step9-audit/dnethack-pinned/dnethack-3.4.3`; do not follow the repository's
+`../_qa/step9-audit/dnethack-pinned/dnethack-3.4.3`; do not follow the repository's
 relocation notice or mix revisions. The clone is outside the project.
 
 The complete dependency closure was not finished before cancellation.
@@ -64,7 +64,7 @@ four extra map variants. The Lost Cities `ENTRY: 2` is significant.
 | Shrouded Dispensary | Separate level1 | `lbyrnth`; native branch selected at Outlands2–6, no teleport/mapping/digging/passwall |
 
 The donor map directives and source-use indexes are recorded outside the
-repository under `../step9-audit/neutral-{map-inventory.json,map-directives.txt,
+repository under `../_qa/step9-audit/neutral-{map-inventory.json,map-directives.txt,
 topology-uses.txt,dispensary-uses.txt}`. The current direct named-monster union
 has109 names; this is an audit input, not the final number of imported species.
 Random class entries, procedural features, equipment, artifact containers,

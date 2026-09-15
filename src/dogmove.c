@@ -102,6 +102,7 @@ droppables(struct monst *mon)
             break;
 
         case SKELETON_KEY:
+        case UNIVERSAL_KEY:
             /* keep key in preference to lock-pick */
             if (key && key->otyp == LOCK_PICK
                 && (!key->oartifact || obj->oartifact))

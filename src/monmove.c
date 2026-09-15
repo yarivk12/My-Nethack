@@ -14,6 +14,7 @@ staticfn void release_hero(struct monst *);
 staticfn void distfleeck(struct monst *, int *, int *, int *);
 staticfn int m_arrival(struct monst *);
 staticfn void mind_blast(struct monst *);
+staticfn void step10b_cthulhu_psychic(struct monst *);
 staticfn boolean holds_up_web(coordxy, coordxy);
 staticfn int count_webbing_walls(coordxy, coordxy);
 staticfn boolean soko_allow_web(struct monst *);
@@ -99,7 +100,8 @@ monhaskey(
 {
     if (for_unlocking && m_carrying(mon, CREDIT_CARD))
         return TRUE;
-    return m_carrying(mon, SKELETON_KEY) || m_carrying(mon, LOCK_PICK);
+    return m_carrying(mon, SKELETON_KEY) || m_carrying(mon, UNIVERSAL_KEY)
+           || m_carrying(mon, LOCK_PICK);
 }
 
 void
@@ -569,6 +571,12 @@ distfleeck(
                     || (!mtmp->mpeaceful && in_your_sanctuary(mtmp, 0, 0)))) {
         *scared = 1;
         monflee(mtmp, rnd(rn2(7) ? 10 : 100), TRUE, TRUE);
+    } else if (*nearby && !mtmp->mflee
+               && mtmp->data == &mons[PM_TINY_BEING_OF_LIGHT]
+               && mtmp->data->mmove > gy.youmonst.data->mmove) {
+        /* Narrow donor MM_FLEETFLEE adaptation. */
+        *scared = 1;
+        monflee(mtmp, rnd(rn2(7) ? 10 : 100), TRUE, TRUE);
     } else
         *scared = 0;
 }
@@ -812,6 +820,87 @@ sheol_chillbug_turn(struct monst *mtmp)
         }
 }
 
+void
+step10b_eldritch_encounter(struct monst *mtmp)
+{
+    int kind = step10b_eldritch_presence_kind(mtmp->data);
+
+    if (!kind || dist2(mtmp->mx, mtmp->my, u.ux, u.uy) > 64
+        || !canseemon(mtmp) || !step10b_mark_eldritch_seen(mtmp))
+        return;
+    if (Hallucination)
+        You_feel("the scenery wink at you.");
+    else
+        You_feel("an alien presence brush against your thoughts.");
+    if (kind == 2) {
+        make_confused(HConfusion + (long) rnd(3), TRUE);
+        exercise(A_WIS, FALSE);
+    } else {
+        make_stunned(HStun + 1L, TRUE);
+    }
+}
+
+int
+step10b_cthulhu_psychic_damage(int raw, boolean half_spell, boolean vaul)
+{
+    int damage = raw;
+
+    if (half_spell)
+        damage = (damage + 1) / 2;
+    if (vaul)
+        damage = (damage + 1) / 2;
+    return damage;
+}
+
+staticfn void
+step10b_cthulhu_psychic(struct monst *mtmp)
+{
+    struct monst *m2, *nmon = (struct monst *) 0;
+
+    if (canseemon(mtmp))
+        pline_mon(mtmp, "%s concentrates.", Monnam(mtmp));
+    pline("A wave of psychic energy pours over you!");
+    if (mtmp->mpeaceful && (!Conflict || resist_conflict(mtmp))) {
+        pline("It feels quite soothing.");
+    } else if (!u.uinvulnerable) {
+        boolean sensed = sensemon(mtmp);
+
+        if (sensed || (Blind_telepat && rn2(2)) || !rn2(10)) {
+            int damage = step10b_cthulhu_psychic_damage(
+                d(5, 15), Half_spell_damage,
+                (boolean) !!u.mith_timers[MITH_VAUL]);
+
+            if (u.uundetected) {
+                u.uundetected = 0;
+                newsym(u.ux, u.uy);
+            }
+            pline("It locks on to your %s!",
+                  sensed ? "telepathy"
+                  : Blind_telepat ? "latent telepathy" : "mind");
+            losehp(damage, "Great Cthulhu's psychic blast", KILLED_BY_AN);
+            make_stunned((HStun & TIMEOUT) + (long) damage * 10L, FALSE);
+            make_confused((HConfusion & TIMEOUT) + (long) min(10, damage),
+                          FALSE);
+        }
+    }
+    for (m2 = fmon; m2; m2 = nmon) {
+        nmon = m2->nmon;
+        if (DEADMONSTER(m2) || m2 == mtmp
+            || m2->mpeaceful == mtmp->mpeaceful || mindless(m2->data))
+            continue;
+        if ((telepathic(m2->data) && (rn2(2) || m2->mblinded))
+            || !rn2(10)) {
+            wakeup(m2, FALSE);
+            m2->mconf = 1;
+            if (cansee(m2->mx, m2->my))
+                pline("It locks on to %s.", mon_nam(m2));
+            m2->mhp -= d(5, 15);
+            if (DEADMONSTER(m2))
+                monkilled(m2, "", AD_DRIN);
+        }
+    }
+}
+
 int
 dochug(struct monst *mtmp)
 {
@@ -826,6 +915,25 @@ dochug(struct monst *mtmp)
      */
 
     mdat = mtmp->data;
+    step10b_eldritch_encounter(mtmp);
+
+    if (step10b_witch_needs_familiar(mtmp) && !mtmp->mspec_used
+        && ((mdat == &mons[PM_COVEN_LEADER] && !rn2(4))
+            || (mdat == &mons[PM_WITCH] && !rn2(20)))) {
+        struct monst *familiar;
+
+        if (canseemon(mtmp))
+            pline_mon(mtmp, "%s concentrates.", Monnam(mtmp));
+        familiar = step10b_create_witch_familiar(mtmp);
+        if (familiar) {
+            healmon(mtmp, mtmp->m_lev, 0);
+            step10b_link_witch_familiar(mtmp, familiar);
+            if (mtmp->mflee && mtmp->mhp > mtmp->mhpmax / 2) {
+                mtmp->mflee = 0;
+                mtmp->mfleetim = 0;
+            }
+        }
+    }
 
     if (mtmp->mstrategy & STRAT_ARRIVE) {
         res = m_arrival(mtmp);
@@ -959,6 +1067,11 @@ dochug(struct monst *mtmp)
     if (is_watch(mdat)) {
         watch_on_duty(mtmp);
     /* mind flayers can make psychic attacks! */
+    } else if (mdat == &mons[PM_GREAT_CTHULHU]
+               && !u.uinvulnerable && !rn2(20)) {
+        step10b_cthulhu_psychic(mtmp);
+        set_apparxy(mtmp);
+        distfleeck(mtmp, &inrange, &nearby, &scared);
     } else if (is_mind_flayer(mdat) && !rn2(20)) {
         mind_blast(mtmp);
         set_apparxy(mtmp);
@@ -2064,6 +2177,8 @@ m_move(struct monst *mtmp, int after)
     nix = omx;
     niy = omy;
     flag = mon_allowflags(mtmp);
+    if (ptr == &mons[PM_TINY_BEING_OF_LIGHT])
+        flag |= NOTONL; /* narrow donor MM_NOTONL adaptation */
     {
         int i, j, nx, ny, nearer;
         int jcnt, cnt;
@@ -2084,6 +2199,18 @@ m_move(struct monst *mtmp, int after)
         if (!mtmp->mpeaceful && svl.level.flags.shortsighted
             && nidist > (couldsee(nix, niy) ? 144 : 36) && appr == 1)
             appr = 0;
+        if (ptr == &mons[PM_TINY_BEING_OF_LIGHT]) {
+            int oldappr = appr;
+
+            if (appr == 1)
+                appr = -1;
+            for (i = 0; i < cnt; ++i) {
+                if (!(mfp.info[i] & NOTONL))
+                    avoid = TRUE;
+                else
+                    appr = oldappr;
+            }
+        }
         if (is_unicorn(ptr) && noteleport_level(mtmp)) {
             /* on noteleport levels, perhaps we cannot avoid hero */
             for (i = 0; i < cnt; i++)
@@ -2488,10 +2615,12 @@ stuff_prevents_passage(struct monst *mtmp)
             && obj->oclass != AMULET_CLASS && obj->oclass != RING_CLASS
             && obj->oclass != VENOM_CLASS && typ != SACK
             && typ != BAG_OF_HOLDING && typ != BAG_OF_TRICKS
-            && !Is_candle(obj) && typ != OILSKIN_SACK && typ != LEASH
+            && !Is_candle(obj) && !Is_torch(obj)
+            && typ != OILSKIN_SACK && typ != LEASH
             && typ != STETHOSCOPE && typ != BLINDFOLD && typ != TOWEL
             && typ != TIN_WHISTLE && typ != MAGIC_WHISTLE
             && typ != MAGIC_MARKER && typ != TIN_OPENER && typ != SKELETON_KEY
+            && typ != UNIVERSAL_KEY
             && typ != LOCK_PICK)
             return TRUE;
         if (Is_container(obj) && obj->cobj)

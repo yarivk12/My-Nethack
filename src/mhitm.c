@@ -413,8 +413,10 @@ mattackm(
                     return M_ATTK_MISS;
             }
             possibly_unwield(magr, FALSE);
-            mwep = mith_offhand_attack(magr->data, i)
-                       ? mith_select_offhand(magr) : MON_WEP(magr);
+            mwep = magr->data == &mons[PM_LURKING_ONE]
+                       ? mith_select_multiweapon(magr, i)
+                       : mith_offhand_attack(magr->data, i)
+                             ? mith_select_offhand(magr) : MON_WEP(magr);
             if (mwep != 0) {
                 if (gv.vis)
                     mswingsm(magr, mdef, mwep);
@@ -426,15 +428,23 @@ mattackm(
         case AT_KICK:
         case AT_BITE:
         case AT_REACH5:
+        case AT_REACH2:
         case AT_STNG:
         case AT_TUCH:
         case AT_BUTT:
         case AT_TENT:
+        case AT_DEVA:
+        case AT_REND:
+            if (mattk->aatyp == AT_REND
+                && (i < 2 || !(res[i - 1] & M_ATTK_HIT)
+                    || !(res[i - 2] & M_ATTK_HIT)))
+                continue;
             if (mattk->aatyp == AT_KICK && mtrapped_in_pit(magr))
                     continue;
             /* Nymph that teleported away on first attack? */
             if (distmin(magr->mx, magr->my, mdef->mx, mdef->my)
-                > (mattk->aatyp == AT_REACH5 ? 5 : 1))
+                > (mattk->aatyp == AT_REACH5 ? 5
+                   : mattk->aatyp == AT_REACH2 ? 2 : 1))
                 /* Continue because the monster may have a ranged attack. */
                 continue;
             /* Monsters won't attack cockatrices physically if they
@@ -446,41 +456,55 @@ mattackm(
                 strike = 0;
                 break;
             }
-            dieroll = rnd(20 + i);
-            strike = (tmp > dieroll);
-            if (mith_displaced(mdef) && rn2(2))
-                strike = 0;
             /* KMH -- don't accumulate to-hit bonuses */
             if (mwep)
                 tmp -= hitval(mwep, mdef);
-            if (strike) {
-                /* for eel AT_TUCH+AD_WRAP attack: can't grab an unsolid
-                   target; the unsolid test is redundant since failed_grab
-                   checks it too, but is cheap and avoids calling failed_grab
-                   for ordinary targets */
-                if (unsolid(mdef->data) && failed_grab(magr, mdef, mattk)) {
-                    strike = 0;
-                    break;
-                }
-                res[i] = hitmm(magr, mdef, mattk, mwep, dieroll);
-                if ((mdef->data == &mons[PM_BLACK_PUDDING]
-                     || mdef->data == &mons[PM_BROWN_PUDDING])
-                    && (mwep && (obj_material(mwep) == IRON
-                                 || obj_material(mwep) == METAL))
-                    && mdef->mhp > 1 && !mdef->mcan) {
-                    struct monst *mclone;
+            {
+                int deva_penalty = 0;
+                boolean deva_hit = FALSE;
 
-                    if ((mclone = clone_mon(mdef, 0, 0)) != 0) {
-                        if (gv.vis && canspotmon(mdef))
-                            pline("%s divides as %s hits it!",
-                                  Monnam(mdef), mon_nam(magr));
-                        (void) mintrap(mclone, NO_TRAP_FLAGS);
-                        if (DEADMONSTER(magr))
-                            res[i] |= M_ATTK_AGR_DIED;
+                do {
+                    dieroll = rnd(20 + i);
+                    strike = (tmp - deva_penalty > dieroll);
+                    if (mith_displaced(mdef) && rn2(2))
+                        strike = 0;
+                    if (!strike) {
+                        if (!deva_hit)
+                            missmm(magr, mdef, mattk);
+                        break;
                     }
-                }
-            } else
-                missmm(magr, mdef, mattk);
+                    if (unsolid(mdef->data)
+                        && failed_grab(magr, mdef, mattk)) {
+                        strike = 0;
+                        break;
+                    }
+                    res[i] |= hitmm(magr, mdef, mattk, mwep, dieroll);
+                    deva_hit = (res[i] & M_ATTK_HIT) != 0;
+                    if ((mdef->data == &mons[PM_BLACK_PUDDING]
+                         || mdef->data == &mons[PM_BROWN_PUDDING])
+                        && (mwep && (obj_material(mwep) == IRON
+                                     || obj_material(mwep) == METAL))
+                        && mdef->mhp > 1 && !mdef->mcan) {
+                        struct monst *mclone;
+
+                        if ((mclone = clone_mon(mdef, 0, 0)) != 0) {
+                            if (gv.vis && canspotmon(mdef))
+                                pline("%s divides as %s hits it!",
+                                      Monnam(mdef), mon_nam(magr));
+                            (void) mintrap(mclone, NO_TRAP_FLAGS);
+                            if (DEADMONSTER(magr))
+                                res[i] |= M_ATTK_AGR_DIED;
+                        }
+                    }
+                    if ((res[i] & (M_ATTK_DEF_DIED | M_ATTK_AGR_DIED
+                                   | M_ATTK_AGR_DONE))
+                        || mattk->aatyp != AT_DEVA)
+                        break;
+                    deva_penalty += 4;
+                } while (TRUE);
+                if (deva_hit)
+                    strike = 1;
+            }
             break;
 
         case AT_HUGS: /* automatic if prev two attacks succeed */
@@ -573,6 +597,12 @@ mattackm(
                 strike = 0;
                 attk = 0;
             }
+            break;
+
+        case AT_ARRW:
+            attk = 0;
+            res[i] = mith_internal_projectile(magr, mdef, mattk);
+            strike = (res[i] & M_ATTK_HIT) != 0;
             break;
 
         case AT_MAGC:
@@ -775,6 +805,16 @@ gazemm(struct monst *magr, struct monst *mdef, struct attack *mattk)
               canspotmon(mdef) ? mon_nam(mdef) : "something");
     }
 
+    /* Great Cthulhu's wide gaze becomes confusion against monsters.  Its
+     * donor semantics do not depend on the aggressor's cancellation/sight. */
+    if (mattk->adtyp == AD_WISD) {
+        if (!mdef->mcansee || mdef->msleeping
+            || (magr->minvis && !perceives(mdef->data)))
+            return M_ATTK_MISS;
+        mdef->mconf = 1;
+        return M_ATTK_HIT;
+    }
+
     if (magr->mcan || !mdef->mcansee
         || (archon ? resists_blnd(mdef) : !magr->mcansee)
         || (magr->minvis && !perceives(mdef->data)) || mdef->msleeping) {
@@ -784,6 +824,22 @@ gazemm(struct monst *magr, struct monst *mdef, struct attack *mattk)
     }
     if (mattk->adtyp == AD_PLYS)
         return mith_paralyze_gaze(magr, mdef, mattk);
+    if (mattk->adtyp == AD_MIST) {
+        if (!rn2(5))
+            mdef->mconf = 1;
+        return M_ATTK_HIT;
+    }
+    if (mattk->adtyp == AD_BLAS) {
+        if (rn2(5)) {
+            mdef->mconf = mdef->mstun = 1;
+            magr->mspec_used = rnd(6);
+            mdef->mhp -= d(4, 8);
+            if (mdef->mhp <= 0)
+                monkilled(mdef, "", AD_SPEL);
+            return M_ATTK_HIT | (DEADMONSTER(mdef) ? M_ATTK_DEF_DIED : 0);
+        }
+        return M_ATTK_MISS;
+    }
     /* call mon_reflects 2x, first test, then, if visible, print message */
     if (magr->data == &mons[PM_MEDUSA] && mon_reflects(mdef, (char *) 0)) {
         if (canseemon(mdef))
@@ -1359,12 +1415,23 @@ passivemm(
     if (mddat->mattk[i].damn)
         tmp = d((int) mddat->mattk[i].damn, (int) mddat->mattk[i].damd);
     else if (mddat->mattk[i].damd)
-        tmp = d((int) mddat->mlevel + 1, (int) mddat->mattk[i].damd);
+        tmp = d(step10b_passive_dice(mddat, (int) mdef->m_lev),
+                (int) mddat->mattk[i].damd);
     else
         tmp = 0;
 
     /* These affect the enemy even if defender killed */
     switch (mddat->mattk[i].adtyp) {
+    case AD_MAGM:
+        if (step10b_innate_magic(madat) || resists_magm(magr)) {
+            if (canseemon(magr))
+                pline("%s is missed by a hail of magic missiles.",
+                      Monnam(magr));
+            tmp = 0;
+        } else if (canseemon(magr)) {
+            pline("%s is hit by a hail of magic missiles.", Monnam(magr));
+        }
+        goto assess_dmg;
     case AD_ACID:
         if (mhitb && !rn2(2)) {
             Strcpy(buf, Monnam(magr));
@@ -1392,11 +1459,9 @@ passivemm(
     default:
         break;
     }
-    if (mdead || mdef->mcan)
-        return (mdead | mhit);
-
     /* These affect the enemy only if defender is still alive */
-    if (rn2(3))
+    if (step10b_elemental_passive_ready(mddat, mhitb, !mdead, mdef->mcan)
+        && rn2(3))
         switch (mddat->mattk[i].adtyp) {
         case AD_PLYS: /* Floating eye */
             if (tmp > 127)

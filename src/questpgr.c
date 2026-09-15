@@ -650,6 +650,164 @@ qt_montype(void)
     return mkclass(gu.urole.enemy2sym, 0);
 }
 
+/* The pinned donor calls its entire Neutral dungeon "Outlands".  Keep that
+ * definition explicit so Lost Cities and R'lyeh never inherit its rules. */
+boolean
+step10b_is_outlands_context(enum step10b_level_context context)
+{
+    return (boolean) (context >= STEP10B_CTX_GATE
+                      && context <= STEP10B_CTX_SUM);
+}
+
+/* Dormant, controlled versions of the pinned Neutral selection logic.  The
+ * caller supplies every random outcome; Step 10C will own branch identity and
+ * activation.  `detail` is rn2(2) for outer branch 0 and rn2(4) for branch 3. */
+int
+step10b_neutral_montype(int outer, int chance, int difficulty, int detail)
+{
+    switch (outer) {
+    case 0:
+        return detail ? PM_HORSE : STEP10B_NEUTRAL_QUADRUPED;
+    case 1:
+        if (chance < 10 && mons[PM_ARGENACH_RILMANI].difficulty <= difficulty)
+            return PM_ARGENACH_RILMANI;
+        if (chance < 30 && mons[PM_CUPRILACH_RILMANI].difficulty <= difficulty)
+            return PM_CUPRILACH_RILMANI;
+        /* Preserve donor's duplicate Cuprilach result after testing
+         * Ferrumach's strength; this is deliberately not corrected. */
+        if (chance < 60 && mons[PM_FERRUMACH_RILMANI].difficulty <= difficulty)
+            return PM_CUPRILACH_RILMANI;
+        return PM_PLUMACH_RILMANI;
+    case 2:
+        if (chance < 5 && mons[PM_ARA_KAMEREL].difficulty <= difficulty)
+            return PM_ARA_KAMEREL;
+        if (chance < 15 && mons[PM_SHARAB_KAMEREL].difficulty <= difficulty)
+            return PM_SHARAB_KAMEREL;
+        return PM_AMM_KAMEREL;
+    case 3:
+        return detail < 3 ? STEP10B_NEUTRAL_QUADRUPED
+                          : PM_SHATTERED_ZIGGURAT_CULTIST;
+    case 4:
+        return PM_PLAINS_CENTAUR;
+    default:
+        return NON_PM;
+    }
+}
+
+/* Dormant until the Neutral/Lost Cities encounter work is authorized.  The
+ * caller supplies the context, the already-bounded 1-in-5000 roll, and the
+ * unique monster's current vital flags. */
+int
+step10b_center_candidate(int context, int roll, unsigned mvflags)
+{
+    return (context == STEP10B_CENTER_NEUTRAL
+            || context == STEP10B_CENTER_LOST_CITIES)
+               && roll == 0 && !(mvflags & G_GONE)
+           ? PM_CENTER_OF_ALL : NON_PM;
+}
+
+/* Shared selector for the live Alhoon key birth path.  Artifact allocation is
+ * kept in makemon.c so native mksobj/oname lifecycle remains authoritative. */
+int
+step10b_alhoon_key_choice(boolean second_exists, boolean third_exists)
+{
+    if (!second_exists)
+        return STEP10B_KEY_SECOND;
+    if (!third_exists)
+        return STEP10B_KEY_THIRD;
+    return STEP10B_KEY_ORDINARY;
+}
+
+int
+step10b_sum_montype(int chance, int difficulty)
+{
+    if (chance < 5 && mons[PM_AURUMACH_RILMANI].difficulty <= difficulty)
+        return PM_AURUMACH_RILMANI;
+    if (chance < 15 && mons[PM_ARGENACH_RILMANI].difficulty <= difficulty)
+        return PM_ARGENACH_RILMANI;
+    if (chance < 35 && mons[PM_CUPRILACH_RILMANI].difficulty <= difficulty)
+        return PM_CUPRILACH_RILMANI;
+    if (chance < 65 && mons[PM_FERRUMACH_RILMANI].difficulty <= difficulty)
+        return PM_CUPRILACH_RILMANI; /* exact pinned duplicate */
+    return PM_PLUMACH_RILMANI;
+}
+
+/* Exact source formula: rnd(80 + level_difficulty()).  The strict `>`
+ * cumulative tests make roll 80 an iron golem and rolls >=100 use a uniformly
+ * selected fallback table entry rather than normalized percentages. */
+int
+step10b_neutral_squad(int level_difficulty, int roll, int fallback)
+{
+    static const int table[] = {
+        PM_FERRUMACH_RILMANI, PM_IRON_GOLEM,
+        PM_ARGENTUM_GOLEM, PM_CUPRILACH_RILMANI
+    };
+
+    if (level_difficulty < 0 || roll < 1 || roll > 80 + level_difficulty
+        || fallback < 0 || fallback >= SIZE(table))
+        return NON_PM;
+    if (80 > roll)
+        return table[0];
+    if (95 > roll)
+        return table[1];
+    if (99 > roll)
+        return table[2];
+    if (100 > roll)
+        return table[3];
+    return table[fallback];
+}
+
+/* Complete pinned R'lyeh override, deliberately dormant until Step 10C owns
+ * branch identity.  `d(1, 100)` precedes the 1-in-20 gate in the donor and
+ * every group loop is inclusive.  Only genocide, not extinction, selects the
+ * class fallback. */
+staticfn int
+step10b_rlyeh_emit(int pm, char mclass, coordxy x, coordxy y)
+{
+    struct permonst *ptr = (svm.mvitals[pm].mvflags & G_GENOD)
+                              ? mkclass(mclass, G_NOHELL | G_HELL)
+                              : &mons[pm];
+
+    return ptr && makemon(ptr, x, y, NO_MM_FLAGS) ? 1 : 0;
+}
+
+int
+step10b_rlyeh_create(coordxy x, coordxy y)
+{
+    int chance = d(1, 100), num, made = 0;
+
+    if (rn2(20))
+        return 0;
+    if (chance < 2) {
+        for (num = d(2, 3); num >= 0; --num)
+            made += step10b_rlyeh_emit(PM_HUNTING_HORROR, S_UMBER, x, y);
+    } else if (chance < 6) {
+        for (num = d(2, 4); num >= 0; --num)
+            made += step10b_rlyeh_emit(PM_BYAKHEE, S_UMBER, x, y);
+    } else if (chance < 8) {
+        made += step10b_rlyeh_emit(PM_SHOGGOTH, S_BLOB, x, y);
+    } else if (chance < 10) {
+        made += step10b_rlyeh_emit(PM_DEEPEST_ONE, S_HUMANOID, x, y);
+        for (num = rnd(4); num >= 0; --num)
+            made += step10b_rlyeh_emit(PM_DEEPER_ONE, S_HUMANOID, x, y);
+        for (num = rn1(2, 1); num >= 0; --num)
+            made += step10b_rlyeh_emit(PM_DEEP_ONE, S_HUMANOID, x, y);
+    } else if (chance < 30) {
+        for (num = rnd(3); num >= 0; --num)
+            made += step10b_rlyeh_emit(PM_MASTER_MIND_FLAYER, S_UMBER, x, y);
+    } else if (chance < 50) {
+        for (num = rn1(2, 2); num >= 0; --num)
+            made += step10b_rlyeh_emit(PM_MIND_FLAYER, S_UMBER, x, y);
+    } else if (chance < 70) {
+        for (num = rnd(6); num >= 0; --num)
+            made += step10b_rlyeh_emit(PM_DEEPER_ONE, S_HUMANOID, x, y);
+    } else {
+        for (num = rn1(4, 3); num >= 0; --num)
+            made += step10b_rlyeh_emit(PM_DEEP_ONE, S_HUMANOID, x, y);
+    }
+    return made;
+}
+
 /* special levels can include a custom arrival message; display it */
 void
 deliver_splev_message(void)

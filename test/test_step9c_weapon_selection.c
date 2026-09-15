@@ -42,7 +42,7 @@ int main(void) {
     assert(select_hwep(&mon) == &other); /* native artifact preference */
     for (i = 0; i < SIZE(rwep); ++i) if (rwep[i] == SPIKE) ++spike;
     assert(spike == 1);
-    /* Six donor species, seven distinct AT_XWEP slots. Native repeated
+    /* Imported species' distinct offhand/multi-arm slots. Native repeated
        AT_WEAP attacks retain their original mainhand behavior. */
     {
         int pm, slot, count = 0;
@@ -51,8 +51,16 @@ int main(void) {
                 boolean expected =
                     (pm == PM_ALABASTER_ELF && slot == 2)
                     || (pm == PM_BRALANI_ELADRIN && (slot == 1 || slot == 3))
+                    || (pm == PM_LURKING_ONE && slot >= 1 && slot <= 3)
+                    || (pm == PM_MOTHER_HYDRA && slot == 5)
                     || ((pm == PM_COURE_ELADRIN || pm == PM_DEEP_ONE
-                         || pm == PM_DEEPER_ONE || pm == PM_DEEPEST_ONE)
+                         || pm == PM_DEEPER_ONE || pm == PM_DEEPEST_ONE
+                         || pm == PM_CUPRILACH_RILMANI
+                         || (pm >= PM_SMALL_GOAT_SPAWN
+                             && pm <= PM_GIANT_GOAT_SPAWN)
+                         || pm == PM_HMNYW_PHARAOH || pm == PM_DEMINYMPH
+                         || pm == PM_FATHER_DAGON
+                         || pm == PM_STAR_SPAWN)
                         && slot == 1);
                 assert(mith_offhand_attack(&mons[pm], slot) == expected);
                 if (expected) {
@@ -60,7 +68,7 @@ int main(void) {
                     ++count;
                 }
             }
-        assert(count == 7);
+        assert(count == 19);
     }
     memset(&mon, 0, sizeof mon);
     memset(&weapon, 0, sizeof weapon);

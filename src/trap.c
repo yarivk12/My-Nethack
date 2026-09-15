@@ -82,6 +82,73 @@ static const char *const blindgas[6] = { "humid",   "odorless",
                                          "pungent", "chilling",
                                          "acrid",   "biting" };
 
+int
+step10b_mirror_pit_damage(enum step10b_level_context context,
+                          boolean silver_hating, int shard_damage,
+                          int silver_damage)
+{
+    return shard_damage
+           + ((step10b_is_outlands_context(context) && silver_hating)
+              ? silver_damage : 0);
+}
+
+int
+step10b_trap_projectile_material(enum step10b_level_context context,
+                                 int roll3, int roll2a, int roll2b, int roll4,
+                                 int ordinary_material)
+{
+    if (!step10b_is_outlands_context(context))
+        return ordinary_material;
+    return roll3 ? METAL
+           : roll2a ? IRON
+             : roll2b ? COPPER
+               : roll4 ? SILVER : GOLD;
+}
+
+int
+step10b_lethe_otyp(int oclass, int otyp, boolean artifact, int rewrite_roll)
+{
+    if (oclass == SCROLL_CLASS) {
+        if (artifact || otyp == STEP10B_SCR_RESISTANCE
+#ifdef MAIL_STRUCTURES
+            || otyp == SCR_MAIL
+#endif
+           )
+            return otyp;
+        return rewrite_roll == 0 ? SCR_AMNESIA : SCR_BLANK_PAPER;
+    }
+    if (oclass == SPBOOK_CLASS) {
+        if (artifact || otyp == SPE_BOOK_OF_THE_DEAD)
+            return otyp;
+        return SPE_BLANK_PAPER;
+    }
+    if (oclass == POTION_CLASS) {
+        if (otyp == POT_ACID)
+            return STEP10B_LETHE_DESTROYED;
+        if (otyp == POT_WATER)
+            return POT_AMNESIA;
+        if (otyp == POT_AMNESIA)
+            return otyp;
+        return POT_WATER;
+    }
+    return otyp;
+}
+
+int
+step10b_lethe_marker_spe(int spe, int roll10)
+{
+    return max(0, spe - (3 + roll10));
+}
+
+int
+step10b_lethe_drain_spe(int oclass, boolean weapon_tool, int spe)
+{
+    return spe > 0
+           && (oclass == WEAPON_CLASS || oclass == ARMOR_CLASS
+               || oclass == WAND_CLASS || oclass == RING_CLASS || weapon_tool)
+           ? spe - 1 : spe;
+}
+
 /* called when you're hit by fire (dofiretrap,buzz,zapyourself,explode);
    returns TRUE if hit on torso */
 boolean
@@ -1020,6 +1087,28 @@ t_missile(int otyp, struct trap *trap)
     struct obj *otmp = mksobj(otyp, TRUE, FALSE);
 
     otmp->quan = 1L;
+    if (otyp == ARROW || otyp == DART) {
+        enum step10b_level_context context = step10c_level_context(&u.uz);
+        int material = obj_material(otmp);
+
+        if (step10b_is_outlands_context(context)) {
+            int roll3 = rn2(3), roll2a = 0, roll2b = 0, roll4 = 0;
+
+            if (!roll3) {
+                roll2a = rn2(2);
+                if (!roll2a) {
+                    roll2b = rn2(2);
+                    if (!roll2b)
+                        roll4 = rn2(4);
+                }
+            }
+            material = step10b_trap_projectile_material(
+                context, roll3, roll2a, roll2b, roll4, material);
+        }
+
+        if ((unsigned) material != obj_material(otmp))
+            otmp->obranch_material = (unsigned) material;
+    }
     otmp->owt = weight(otmp);
     otmp->opoisoned = 0;
     otmp->ox = trap->tx, otmp->oy = trap->ty;
@@ -1876,6 +1965,9 @@ trapeffect_pit(
     unsigned int trflags)
 {
     int ttype = trap->ttyp;
+    enum step10b_level_context context = step10c_level_context(&u.uz);
+    boolean mirror_shards = (ttype == SPIKED_PIT
+                             && step10b_is_outlands_context(context));
     /* relevant_spikes is initially always true for spiked pits, but
        set to false if the spikes are found to not be relevant */
     boolean relevant_spikes = ttype == SPIKED_PIT;
@@ -1901,10 +1993,12 @@ trapeffect_pit(
         if (!Sokoban && is_clinger(gy.youmonst.data) && !plunged) {
             if (already_known) {
                 You_see("%s %spit below you.", a_your[trap->madeby_u],
-                        ttype == SPIKED_PIT ? "spiked " : "");
+                        mirror_shards ? "mirror-shard filled "
+                        : ttype == SPIKED_PIT ? "spiked " : "");
             } else {
                 pline("%s pit %sopens up under you!", A_Your[trap->madeby_u],
-                      ttype == SPIKED_PIT ? "full of spikes " : "");
+                      mirror_shards ? "full of mirror-shards "
+                      : ttype == SPIKED_PIT ? "full of spikes " : "");
                 You("don't fall in!");
             }
             return Trap_Effect_Finished;
@@ -1946,11 +2040,13 @@ trapeffect_pit(
         } else if (u.umonnum == PM_PIT_VIPER || u.umonnum == PM_PIT_FIEND) {
             pline("How pitiful.  Isn't that the pits?");
         }
-        if (relevant_spikes && wearing_iron_shoes(mtmp)) {
+        if (relevant_spikes && !mirror_shards && wearing_iron_shoes(mtmp)) {
             pline("%s protects you from the sharp iron spikes.", Yname2(uarmf));
             relevant_spikes = FALSE;
         } else if (relevant_spikes) {
-            const char *predicament = "on a set of sharp iron spikes";
+            const char *predicament = mirror_shards
+                                      ? "on a set of sharp mirror-shards"
+                                      : "on a set of sharp iron spikes";
 
             if (u.usteed) {
                 pline("%s %s %s!",
@@ -1970,7 +2066,24 @@ trapeffect_pit(
             if (relevant_spikes) {
                 int oldumort = u.umortality;
 
-                losehp(Maybe_Half_Phys(rnd(conj_pit ? 4 : adj_pit ? 6 : 10)),
+                if (mirror_shards) {
+                    boolean silver_hating = Hate_silver;
+                    int shard_damage = rnd(12);
+                    int silver_damage = silver_hating ? rnd(20) : 0;
+                    int damage = step10b_mirror_pit_damage(
+                        context, silver_hating, shard_damage, silver_damage);
+
+                    if (silver_hating)
+                        pline_The("silver shards sear your flesh!");
+                    losehp(Maybe_Half_Phys(damage),
+                           silver_hating
+                           ? "fell into a pit of silver mirror-shards"
+                           : "fell into a pit of mirror-shards",
+                           NO_KILLER_PREFIX);
+                } else {
+
+                    losehp(Maybe_Half_Phys(
+                               rnd(conj_pit ? 4 : adj_pit ? 6 : 10)),
                        /* note: these don't need locomotion() handling;
                           if fatal while poly'd and Unchanging, the
                           death reason will be overridden with
@@ -1982,15 +2095,16 @@ trapeffect_pit(
                          : adj_pit
                            ? "stumbled into a pit of iron spikes"
                            : "fell into a pit of iron spikes",
-                       NO_KILLER_PREFIX);
-                if (!rn2(6))
-                    poisoned("spikes", A_STR,
+                           NO_KILLER_PREFIX);
+                    if (!rn2(6))
+                        poisoned("spikes", A_STR,
                              (conj_pit || adj_pit || deliberate)
                              ? "stepping on poison spikes"
                              : "fall onto poison spikes",
                              /* if damage triggered life-saving,
                                 poison is limited to attrib loss */
-                             (u.umortality > oldumort) ? 0 : 8, FALSE);
+                                 (u.umortality > oldumort) ? 0 : 8, FALSE);
+                }
             } else {
                 /* plunging flyers take spike damage but not pit damage */
                 if (!conj_pit && !deliberate
@@ -2046,10 +2160,26 @@ trapeffect_pit(
             seetrap(trap);
         }
         mselftouch(mtmp, "Falling, ", FALSE);
-        if (wearing_iron_shoes(mtmp)) relevant_spikes = FALSE;
-        if (DEADMONSTER(mtmp) || thitm(0, mtmp, (struct obj *) 0,
-                                       rnd(relevant_spikes ? 10 : 6), FALSE))
+        if (!mirror_shards && wearing_iron_shoes(mtmp))
+            relevant_spikes = FALSE;
+        if (DEADMONSTER(mtmp)) {
             trapkilled = TRUE;
+        } else {
+            int damage;
+
+            if (mirror_shards) {
+                boolean silver_hating = mon_hates_silver(mtmp);
+                int shard_damage = rnd(12);
+                int silver_damage = silver_hating ? rnd(20) : 0;
+
+                damage = step10b_mirror_pit_damage(
+                    context, silver_hating, shard_damage, silver_damage);
+            } else {
+                damage = rnd(relevant_spikes ? 10 : 6);
+            }
+            if (thitm(0, mtmp, (struct obj *) 0, damage, FALSE))
+                trapkilled = TRUE;
+        }
 
         return trapkilled ? Trap_Killed_Mon : mtmp->mtrapped
             ? Trap_Caught_Mon : Trap_Effect_Finished;
@@ -3201,9 +3331,25 @@ steedintrap(struct trap *trap, struct obj *otmp)
         break;
     case PIT:
     case SPIKED_PIT:
-        trapkilled = (DEADMONSTER(steed)
-                      || thitm(0, steed, (struct obj *) 0,
-                               rnd((tt == PIT) ? 6 : 10), FALSE));
+        if (tt == SPIKED_PIT
+            && step10b_is_outlands_context(step10c_level_context(&u.uz))) {
+            if (DEADMONSTER(steed)) {
+                trapkilled = TRUE;
+            } else {
+                boolean silver_hating = mon_hates_silver(steed);
+                int shard_damage = rnd(12);
+                int silver_damage = silver_hating ? rnd(20) : 0;
+                int damage = step10b_mirror_pit_damage(
+                    step10c_level_context(&u.uz), silver_hating, shard_damage,
+                    silver_damage);
+
+                trapkilled = thitm(0, steed, (struct obj *) 0, damage, FALSE);
+            }
+        } else {
+            trapkilled = (DEADMONSTER(steed)
+                          || thitm(0, steed, (struct obj *) 0,
+                                   rnd((tt == PIT) ? 6 : 10), FALSE));
+        }
         steedhit = TRUE;
         break;
     case POLY_TRAP:
@@ -4779,6 +4925,99 @@ pot_acid_damage(
         update_inventory();
 }
 
+/* Lethe keeps native wet-object protection and erosion ordering, then layers
+ * the pinned amnesia transformations onto the items which actually get wet. */
+staticfn int
+step10b_lethe_damage(struct obj *obj, const char *ostr, boolean force)
+{
+    boolean in_invent = obj && carried(obj), described = FALSE;
+    int oldtyp, newtyp;
+
+    if (!obj)
+        return ER_NOTHING;
+    (void) splash_lit(obj); /* snuff first; Lethe continues after doing so */
+    if (!ostr)
+        ostr = cxname(obj);
+
+    if (obj->otyp == CAN_OF_GREASE && obj->spe > 0) {
+        return ER_NOTHING;
+    } else if (obj->otyp == TOWEL && obj->spe < 7) {
+        wet_a_towel(obj, -rnd(7 - obj->spe), TRUE);
+        return ER_NOTHING;
+    } else if (obj->greased) {
+        if (!rn2(2)) {
+            obj->greased = 0;
+            if (in_invent) {
+                pline_The("grease on %s washes off.", yname(obj));
+                described = TRUE;
+                update_inventory();
+            }
+            if (obj->otyp == POT_ACID) {
+                pot_acid_damage(obj, in_invent, described);
+                return ER_DESTROYED;
+            }
+        }
+        return ER_GREASED;
+    } else if (Is_container(obj) && obj->otyp != IRON_SAFE
+               && (!Waterproof_container(obj)
+                   || (obj->cursed && !rn2(3)))) {
+        if (in_invent)
+            pline("Some sparkling water gets into your %s!", ostr);
+        step10b_lethe_damage_chain(obj->cobj, FALSE);
+        return ER_DAMAGED;
+    } else if (Waterproof_container(obj)) {
+        return ER_DAMAGED;
+    } else if (!force && (Luck + 5 - 7) > rn2(20)) {
+        return ER_NOTHING;
+    }
+
+    /* The Lethe strips BUC before any class-specific transformation. */
+    obj->blessed = obj->cursed = 0;
+    oldtyp = obj->otyp;
+    {
+        int rewrite_roll = 1;
+
+        if (obj->oclass == SCROLL_CLASS && !obj->oartifact
+            && obj->otyp != STEP10B_SCR_RESISTANCE
+#ifdef MAIL_STRUCTURES
+            && obj->otyp != SCR_MAIL
+#endif
+           )
+            rewrite_roll = rn2(10);
+        newtyp = step10b_lethe_otyp(obj->oclass, oldtyp,
+                                    obj->oartifact != 0, rewrite_roll);
+    }
+    if (newtyp == STEP10B_LETHE_DESTROYED) {
+        pot_acid_damage(obj, in_invent, described);
+        return ER_DESTROYED;
+    }
+    if (newtyp != oldtyp) {
+        obj->otyp = (short) newtyp;
+        obj->dknown = 0;
+        obj->odiluted = 0;
+        if (obj->oclass == SCROLL_CLASS || obj->oclass == SPBOOK_CLASS)
+            obj->spe = 0;
+        if (obj->oclass == SPBOOK_CLASS)
+            obj->spestudied = 0;
+        obj->owt = weight(obj);
+    } else if (oldtyp == SPE_BOOK_OF_THE_DEAD) {
+        pline("Steam rises from %s.", the(ostr));
+    }
+
+    if (step10b_lethe_drain_spe(obj->oclass, is_weptool(obj), obj->spe)
+        != obj->spe)
+        (void) drain_item(obj, FALSE);
+    if (obj->otyp == MAGIC_MARKER)
+        obj->spe = step10b_lethe_marker_spe(obj->spe, rn2(10));
+
+    if (in_invent)
+        update_inventory();
+    if (obj->oclass == SCROLL_CLASS || obj->oclass == SPBOOK_CLASS
+        || obj->oclass == POTION_CLASS)
+        return ER_DAMAGED;
+    return erode_obj(obj, ostr, ERODE_RUST, EF_NONE);
+}
+
 /* Get an object wet and damage it appropriately.
    Returns an erosion return value (ER_*). */
 int
@@ -4955,6 +5194,32 @@ water_damage_chain(
     }
 
     /* reset acid context and bhitpos */
+    ga.acid_ctx.dkn_boom = ga.acid_ctx.unk_boom = 0;
+    ga.acid_ctx.ctx_valid = FALSE;
+    gb.bhitpos = save_bhitpos;
+}
+
+void
+step10b_lethe_damage_chain(struct obj *obj, boolean here)
+{
+    struct obj *otmp;
+    coordxy x, y;
+    coord save_bhitpos;
+
+    if (!obj)
+        return;
+    ga.acid_ctx.dkn_boom = ga.acid_ctx.unk_boom = 0;
+    ga.acid_ctx.ctx_valid = TRUE;
+    save_bhitpos = gb.bhitpos;
+    if (get_obj_location(obj, &x, &y, CONTAINED_TOO))
+        gb.bhitpos.x = x, gb.bhitpos.y = y;
+
+    for (; obj; obj = otmp) {
+        /* Save linkage before acid or another transform can delete obj. */
+        otmp = here ? obj->nexthere : obj->nobj;
+        (void) step10b_lethe_damage(obj, (char *) 0, FALSE);
+    }
+
     ga.acid_ctx.dkn_boom = ga.acid_ctx.unk_boom = 0;
     ga.acid_ctx.ctx_valid = FALSE;
     gb.bhitpos = save_bhitpos;
@@ -5156,7 +5421,13 @@ drown(void)
             You("sink like %s.", Hallucination ? "the Titanic" : "a rock");
     }
 
-    water_damage_chain(gi.invent, FALSE);
+    if (svl.level.flags.lethe) {
+        You_feel("the sparkling waters of the Lethe sweep away your cares!");
+        step10b_forget_memories(10);
+        step10b_lethe_damage_chain(gi.invent, FALSE);
+    } else {
+        water_damage_chain(gi.invent, FALSE);
+    }
 
     if (u.umonnum == PM_GREMLIN && rn2(3)) {
         (void) split_mon(&gy.youmonst, (struct monst *) 0);

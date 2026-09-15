@@ -27,7 +27,7 @@ Release executables run in actual wizard-mode Windows TTY sessions, driven by
 the test scripts under `test/`. Each run copies the relevant architecture's
 Release directory to a new external fixture directory. Saves, panic logs,
 terminal transcripts, generated arenas, build output and donor exports stay
-outside the repository in `../step9-audit`.
+outside the repository in `../_qa/step9-audit`.
 
 Traversal fixtures inspect generated content before removing combatants to
 isolate connector and save integrity. Separate encounters exercise combat and

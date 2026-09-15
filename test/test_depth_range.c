@@ -19,8 +19,8 @@ struct lchoice_capacity_layout {
 
 _Static_assert(sizeof(xint16) == 2, "xint16 must be two bytes");
 _Static_assert(MAXLEVEL == 200, "Step 4 requires MAXLEVEL 200");
-_Static_assert(MAXLINFO == 3200, "MAXLINFO must scale to 3200");
-_Static_assert(sizeof(struct lchoice_capacity_layout) == 25608,
+_Static_assert(MAXLINFO == 3600, "Step 10 MAXLINFO must scale to 3600");
+_Static_assert(sizeof(struct lchoice_capacity_layout) == 28808,
                "unexpected print_dungeon lchoice stack layout");
 _Static_assert(TYPE_IS_INT(depth((d_level *) 0)), "depth must return int");
 _Static_assert(TYPE_IS_INT(deepest_lev_reached(FALSE)),

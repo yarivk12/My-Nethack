@@ -10,7 +10,8 @@ out.mkdir(parents=True, exist_ok=True)
 parts = []
 for file, names in {
     'src/worn.c': ['mith_armor_base', 'mith_material_defense', 'mith_armor_dr',
-                   'mith_worn', 'mith_roll_dr', 'mith_physical_damage'],
+                   'mith_worn', 'step10b_natural_dr', 'mith_roll_dr',
+                   'mith_physical_damage'],
     'src/hacklib.c': ['isqrt'],
     'src/weapon.c': ['mith_aesh_bonus'],
 }.items():
@@ -34,7 +35,17 @@ assert missiles.index(monster) < missiles.index('if (otmp->opoisoned && is_poiso
 kick=(repo/'src/dokick.c').read_text()
 baseline=subprocess.check_output(['git','show','5ce8b8193e4c581dd293ccac2bd0cafb4da89e96:src/dokick.c'],cwd=repo).decode()
 addition='    dmg += mith_aesh_bonus();\n    dmg = mith_physical_damage(mon, uarmf, AT_KICK, dmg);\n'
-assert kick.count(addition)==1 and kick.replace(addition,'')==baseline
+tree_helper=re.search(r'(?m)^boolean\nstep10b_tree_kick_has_loot\([\s\S]*?^\}\n\n',kick)[0]
+tree_hook='''        /* Outlands trees yield neither fruit nor a swarm.  Step 10C-D
+         * supplies the real production level identity. */
+        if (!step10b_tree_kick_has_loot(step10c_level_context(&u.uz))) {
+            kick_ouch(x, y, "");
+            return ECMD_TIME;
+        }
+
+'''
+assert kick.count(addition)==1 and kick.count(tree_hook)==1
+assert kick.replace(tree_helper,'',1).replace(tree_hook,'',1).replace(addition,'')==baseline
 guard=kick.split('    dmg += u.udaminc; /* add ring(s) of increase damage */',1)[1].split('    if (!DEADMONSTER(mon)',1)[0]
 parts.append('static void kick_commit(struct monst *mon,int dmg) {'+guard+'}')
 (out / 'step9c_defense.h').write_text('\n'.join(parts), encoding='utf8')

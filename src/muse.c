@@ -2178,7 +2178,8 @@ find_misc(struct monst *mtmp)
             gm.m.has_misc = MUSE_POT_GAIN_LEVEL;
         }
         nomore(MUSE_BULLWHIP);
-        if (obj->otyp == BULLWHIP && !mtmp->mpeaceful
+        if ((obj->otyp == BULLWHIP || obj->otyp == VIPERWHIP)
+            && !mtmp->mpeaceful
             /* the random test prevents whip-wielding
                monster from attempting disarm every turn */
             && uwep && !rn2(5) && obj == MON_WEP(mtmp)
@@ -2796,9 +2797,27 @@ searches_for_item(struct monst *mon, struct obj *obj)
 DISABLE_WARNING_FORMAT_NONLITERAL
 
 boolean
+step10b_innate_reflection(const struct permonst *ptr)
+{
+    return ptr == &mons[PM_AMM_KAMEREL]
+           || ptr == &mons[PM_HUDOR_KAMEREL]
+           || ptr == &mons[PM_SHARAB_KAMEREL]
+           || ptr == &mons[PM_ARA_KAMEREL]
+           || ptr == &mons[PM_ARGENTUM_GOLEM]
+           || ptr == &mons[PM_MIRRORED_MOONFLOWER]
+           || ptr == &mons[PM_CENTER_OF_ALL];
+}
+
+boolean
 mon_reflects(struct monst *mon, const char *str)
 {
     struct obj *orefl = which_armor(mon, W_ARMS);
+
+    if (step10b_innate_reflection(mon->data)) {
+        if (str)
+            pline(str, s_suffix(mon_nam(mon)), "body");
+        return TRUE;
+    }
 
     if (orefl && orefl->otyp == SHIELD_OF_REFLECTION) {
         if (str) {
@@ -2810,6 +2829,12 @@ mon_reflects(struct monst *mon, const char *str)
         /* due to wielded artifact weapon */
         if (str)
             pline(str, s_suffix(mon_nam(mon)), "weapon");
+        return TRUE;
+    } else if ((orefl = which_armor(mon, W_ARM))
+               && arti_reflects(orefl)) {
+        /* due to a worn artifact armor */
+        if (str)
+            pline(str, s_suffix(mon_nam(mon)), "armor");
         return TRUE;
     } else if ((orefl = which_armor(mon, W_AMUL))
                && orefl->otyp == AMULET_OF_REFLECTION) {

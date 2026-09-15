@@ -961,6 +961,10 @@ xname_flags(
                             : "small ");
         if ((obj->obranch_props & OBP_ANARCHIC) && known)
             Strcat(prefix, "anarchic ");
+        if ((obj->obranch_props & OBP_CONCORDANT) && known)
+            Strcat(prefix, "concordant ");
+        if ((obj->obranch_props & OBP_DEEP) && known)
+            Strcat(prefix, "deep ");
         if (obj->obranch_props & OBP_ACID)
             Strcat(prefix, "acid-coated ");
         if (obj->obranch_props & OBP_SLEEP)
@@ -3536,8 +3540,8 @@ rnd_otyp_by_namedesc(
 
     (void) memset((genericptr_t) validobjs, 0, sizeof validobjs);
     if (oclass) {
-        lo = svb.bases[(uchar) oclass];
-        hi = svb.bases[(uchar) oclass + 1] - 1;
+        lo = MAXOCLASSES;
+        hi = NUM_OBJECTS - 1;
     } else {
         lo = MAXOCLASSES; /* STRANGE_OBJECT + 1; */
         hi = NUM_OBJECTS - 1;
@@ -3551,6 +3555,8 @@ rnd_otyp_by_namedesc(
      * scrolls are supposed to be much more common than books.]
      */
     for (i = lo; i <= hi; ++i) {
+        if (oclass && objects[i].oc_class != oclass)
+            continue;
         /* don't match extra descriptions (w/o real name) */
         if ((zn = OBJ_NAME(objects[i])) == 0)
             continue;
@@ -5234,6 +5240,7 @@ readobjnam(char *bp, struct obj *no_wish)
         FALLTHROUGH;
     /* FALLTHRU */
     case SKELETON_KEY:
+    case UNIVERSAL_KEY:
     case CHEST:
     case LARGE_BOX:
     case IRON_SAFE:

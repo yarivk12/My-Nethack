@@ -791,6 +791,40 @@ peffect_booze(struct obj *otmp)
     }
 }
 
+int
+step10b_amnesia_percent(boolean blessed, boolean cursed)
+{
+    return blessed ? 0 : cursed ? 25 : 10;
+}
+
+staticfn void
+peffect_amnesia(struct obj *otmp)
+{
+    gp.potion_unkn++;
+    pline(Hallucination ? "This tastes like champagne!"
+                        : "This liquid bubbles and fizzes as you drink it.");
+    step10b_forget_memories(
+        step10b_amnesia_percent(otmp->blessed, otmp->cursed));
+    if (Hallucination)
+        pline("Hakuna matata!");
+    else
+        You_feel("your memories dissolve.");
+}
+
+staticfn void
+peffect_space_mead(struct obj *otmp)
+{
+    gp.potion_unkn++;
+    pline("This tastes like honeyed starlight!");
+    if (!otmp->blessed)
+        make_confused(itimeout_incr(HConfusion, d(2 + u.uhs, 8)), FALSE);
+    healup(otmp->blessed ? 8 : 4, 0, FALSE, FALSE);
+    u.uhunger += 20 * (2 + bcsign(otmp));
+    newuhs(FALSE);
+    incr_itimeout(&HSlow_digestion, 5000);
+    incr_itimeout(&HMagical_breathing, 5000);
+}
+
 staticfn void
 peffect_enlightenment(struct obj *otmp)
 {
@@ -1345,6 +1379,12 @@ peffects(struct obj *otmp)
         break;
     case POT_BOOZE:
         peffect_booze(otmp);
+        break;
+    case POT_AMNESIA:
+        peffect_amnesia(otmp);
+        break;
+    case POT_SPACE_MEAD:
+        peffect_space_mead(otmp);
         break;
     case POT_ENLIGHTENMENT:
         peffect_enlightenment(otmp);

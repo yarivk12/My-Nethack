@@ -8,6 +8,7 @@
 
 #include "permonst.h"
 #include "prop.h"
+#include "dungeon.h"
 
 /* clang-format off */
 
@@ -41,6 +42,26 @@
 #define SPFX_XRAY   0x02000000L /* gives X-RAY vision to player */
 #define SPFX_REFLECT 0x04000000L /* Reflection */
 #define SPFX_PROTECT 0x08000000L /* Protection */
+/* Step 10B3-2 local displacement bit for the Staff of Twelve Mirrors. */
+#define SPFX_DISPL  0x10000000L /* displacement while worn/wielded */
+/* Step 10B3-3 carried polymorph control for the Silver Key. */
+#define SPFX_PCTRL  0x20000000L /* Polymorph Control */
+
+enum necronomicon_operations {
+    NECRONOMICON_SUMMON_BYAKHEE = 1,
+    NECRONOMICON_SUMMON_NIGHTGAUNT,
+    NECRONOMICON_DETECT_MONSTERS,
+    NECRONOMICON_HEALTH_RECOVERY
+};
+
+/* Explicit Step 10 travel identities.  Keeping this descriptor free of
+ * production dungeon globals makes the safety core independently testable. */
+struct silver_key_domain {
+    d_level approach;
+    xint16 neutral_dnum;
+    xint16 lost_cities_dnum;
+    d_level dispensary;
+};
 
 struct artifact {
     short otyp;
@@ -75,7 +96,11 @@ enum invoke_prop_types {
     FIRESTORM,
     SNOWSTORM,
     BLINDING_RAY,
-    MORIA_PORTAL
+    MORIA_PORTAL,
+    /* artifact-local alternate mode; persisted in obj.usecount */
+    ALTMODE,
+    /* readable artifact; #invoke safely directs the hero to read it */
+    NECRONOMICON
 };
 
 /* artifact tracking; gift and wish imply found; it also gets set for items

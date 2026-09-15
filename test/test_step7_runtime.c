@@ -16,8 +16,9 @@ struct instance_globals_saved_m svm;
 struct instance_globals_saved_n svn;
 static unsigned rng_state;
 static int light_count, timer_count, light_radius;
-static branch temple, tomb, moria, sheol, dragon_caves, mithardir;
-static s_level mithardir_approach;
+static branch temple, tomb, moria, sheol, dragon_caves, mithardir, neutral,
+              lost_cities;
+static s_level mithardir_approach, neutral_approach;
 
 void panic(const char *fmt, ...) { fprintf(stderr, "%s\n", fmt); abort(); }
 void impossible(const char *fmt, ...) { fprintf(stderr, "%s\n", fmt); abort(); }
@@ -31,7 +32,9 @@ int dname_to_dnum(const char *s) {
         : !strcmp(s,"The Ruins of Moria") ? 3
         : !strcmp(s,"Sheol") ? 4
         : !strcmp(s,"The Dragon Caves") ? 5
-        : !strcmp(s,"Mithardir") ? 6 : -1;
+        : !strcmp(s,"Mithardir") ? 6
+        : !strcmp(s,"Neutral Quest") ? 7
+        : !strcmp(s,"The Lost Cities") ? 8 : -1;
 }
 s_level *find_level(const char *s) {
     s_level *p; for (p=svs.sp_levchn; p; p=p->next)
@@ -39,7 +42,9 @@ s_level *find_level(const char *s) {
     return NULL;
 }
 static void add_level(s_level *p) { p->next=svs.sp_levchn; svs.sp_levchn=p; }
-void insert_branch(branch *p, boolean extract) { (void)p; (void)extract; }
+void insert_branch(branch *p, boolean extract) {
+    if (!extract) { p->next=svb.branches; svb.branches=p; }
+}
 boolean In_hell(d_level *lev) { (void)lev; return FALSE; }
 int inhishop(struct monst *m) { (void)m; return TRUE; }
 static long get_cost(struct obj *o, struct monst *m) {
@@ -73,17 +78,26 @@ static void topology(void) {
     int sample, level, seen[201]={0}, moria_seen[201]={0},
         step9_seen[201]={0}, variations=0;
     for (sample=1; sample<=2000; sample++) {
-        int used[201]={0}, big=0, giant=0, zoo=0, dragon=0;
+        int used[201]={0}, big=0, giant=0, zoo=0, dragon=0, i;
+        branch *dispensary;
+        d_level dispensary_level;
         s_level *p, *next;
+        static const char *const lost_alternates[] = {
+            "leth-a-1", "leth-c-1", "leth-d-1", "nkai-a-1"
+        };
         rng_state=(unsigned)sample;
         memset(&svd,0,sizeof svd); memset(&temple,0,sizeof temple);
         memset(&tomb,0,sizeof tomb);
         memset(&mithardir_approach,0,sizeof mithardir_approach);
+        memset(&neutral_approach,0,sizeof neutral_approach);
         svd.dungeons[0].num_dunlevs=200; svd.dungeons[0].depth_start=1;
         svd.dungeons[1].entry_lev=svd.dungeons[2].entry_lev=1;
         svd.dungeons[3].entry_lev=6;
         svd.dungeons[4].entry_lev=svd.dungeons[5].entry_lev=
             svd.dungeons[6].entry_lev=1;
+        svd.dungeons[7].entry_lev=1; svd.dungeons[7].num_dunlevs=8;
+        svd.dungeons[8].entry_lev=2; svd.dungeons[8].num_dunlevs=13;
+        svn.n_dgns=9;
         temple.end1.dlevel=30; temple.end2.dnum=1; temple.end2.dlevel=1;
         tomb.end1.dlevel=31; tomb.end2.dnum=2; tomb.end2.dlevel=1;
         memset(&moria, 0, sizeof moria);
@@ -97,12 +111,30 @@ static void topology(void) {
         memset(&mithardir, 0, sizeof mithardir);
         mithardir.end1.dlevel=110; mithardir.end2.dnum=6;
         mithardir.end2.dlevel=1; mithardir.type=BR_PORTAL;
+        memset(&neutral, 0, sizeof neutral);
+        neutral.end1.dlevel=111; neutral.end2.dnum=7;
+        neutral.end2.dlevel=1; neutral.type=BR_PORTAL;
+        memset(&lost_cities, 0, sizeof lost_cities);
+        lost_cities.end1.dnum=7; lost_cities.end1.dlevel=7;
+        lost_cities.end2.dnum=8; lost_cities.end2.dlevel=2;
         strcpy(mithardir_approach.proto,"chalv2");
         mithardir_approach.dlevel.dnum=0;
         mithardir_approach.dlevel.dlevel=110;
-        svs.sp_levchn=&mithardir_approach;
+        strcpy(neutral_approach.proto,"neulev");
+        neutral_approach.dlevel.dnum=0;
+        neutral_approach.dlevel.dlevel=111;
+        neutral_approach.next=&mithardir_approach;
+        svs.sp_levchn=&neutral_approach;
+        for (i=0; i<SIZE(lost_alternates); ++i) {
+            p=(s_level *)calloc(1,sizeof *p);
+            assert(p);
+            strcpy(p->proto,lost_alternates[i]);
+            p->dlevel.dnum=8;
+            add_level(p);
+        }
         temple.next=&tomb; tomb.next=&moria; moria.next=&sheol;
         sheol.next=&dragon_caves; dragon_caves.next=&mithardir;
+        mithardir.next=&neutral; neutral.next=&lost_cities;
         svb.branches=&temple;
         step6b_add_level("medusa",196,'M',0);
         step6b_add_level("castle",200,'C',0);
@@ -112,16 +144,34 @@ static void topology(void) {
         assert(dragon_caves.end1.dlevel>=30
                && dragon_caves.end1.dlevel<=199);
         assert(mithardir.end1.dlevel>=30 && mithardir.end1.dlevel<=199);
+        assert(neutral.end1.dlevel>=30 && neutral.end1.dlevel<=199);
         assert(sheol.end1.dlevel != dragon_caves.end1.dlevel
                && sheol.end1.dlevel != mithardir.end1.dlevel
-               && dragon_caves.end1.dlevel != mithardir.end1.dlevel);
+               && dragon_caves.end1.dlevel != mithardir.end1.dlevel
+               && neutral.end1.dlevel != sheol.end1.dlevel
+               && neutral.end1.dlevel != dragon_caves.end1.dlevel
+               && neutral.end1.dlevel != mithardir.end1.dlevel);
         assert(svd.dungeons[4].depth_start==sheol.end1.dlevel+1);
         assert(svd.dungeons[5].depth_start==dragon_caves.end1.dlevel+1);
         assert(svd.dungeons[6].depth_start==mithardir.end1.dlevel);
         assert(mithardir_approach.dlevel.dlevel==mithardir.end1.dlevel);
+        assert(svd.dungeons[7].depth_start==neutral.end1.dlevel);
+        assert(svd.dungeons[8].depth_start==neutral.end1.dlevel+6);
+        assert(neutral_approach.dlevel.dlevel==neutral.end1.dlevel);
         assert(!used[sheol.end1.dlevel]++);
         assert(!used[dragon_caves.end1.dlevel]++);
         assert(!used[mithardir.end1.dlevel]++);
+        assert(!used[neutral.end1.dlevel]++);
+        dispensary=svb.branches;
+        assert(dispensary && dispensary->end1.dnum==7
+               && dispensary->end2.dnum==7
+               && dispensary->end1.dlevel>=2
+               && dispensary->end1.dlevel<=6
+               && dispensary->end2.dlevel==STEP10C_DISPENSARY_LEVEL);
+        dispensary_level.dnum=7;
+        dispensary_level.dlevel=STEP10C_DISPENSARY_LEVEL;
+        assert(depth(&dispensary_level)==neutral.end1.dlevel
+               +dispensary->end1.dlevel);
         step9_seen[sheol.end1.dlevel]++;
         step9_seen[dragon_caves.end1.dlevel]++;
         step9_seen[mithardir.end1.dlevel]++;
@@ -140,8 +190,10 @@ static void topology(void) {
         seen[tomb.end1.dlevel]++;
         for (p=svs.sp_levchn;p;p=p->next) {
             level=p->dlevel.dlevel;
-            if (!strcmp(p->proto,"chalv2"))
-                continue; /* the Mithardir approach shares its parent */
+            if (p->dlevel.dnum != 0)
+                continue; /* internal branch floors do not occupy DoD slots */
+            if (!strcmp(p->proto,"chalv2") || !strcmp(p->proto,"neulev"))
+                continue; /* scheduler approaches share their parents */
             assert(!used[level]++);
             if (!strcmp(p->proto,"bigrm")) { big++; assert(p->rndlevs==14); }
             if (!strcmp(p->proto,"x6b-giant")) giant++;
@@ -152,9 +204,10 @@ static void topology(void) {
         assert(big>=3 && big<=5 && giant==1 && (zoo==2 || zoo==3) && dragon==1);
         for (p=svs.sp_levchn;p;p=next) {
             next=p->next;
-            if (p != &mithardir_approach)
+            if (p != &mithardir_approach && p != &neutral_approach)
                 free(p);
         }
+        free(dispensary);
         svs.sp_levchn=NULL;
     }
     for (level=30;level<=199;level++) variations+=(moria_seen[level]>0);

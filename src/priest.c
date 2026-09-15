@@ -275,6 +275,24 @@ priestini(
     }
 }
 
+boolean
+step10b_designate_bridge_priest(struct monst *priest)
+{
+    if (!priest || !priest->ispriest || !has_epri(priest))
+        return FALSE;
+    if (priest->data != &mons[PM_BLASPHEMOUS_LURKER]
+        && !newcham(priest, &mons[PM_BLASPHEMOUS_LURKER], NO_NC_FLAGS))
+        return FALSE;
+    /* Keep EPRI's altar, room, and level ownership; this particular resident
+     * is awake and hostile regardless of altar alignment. */
+    priest->mpeaceful = 0;
+    priest->msleeping = 0;
+    priest->ispriest = 1;
+    priest->isminion = 0;
+    set_malign(priest);
+    return TRUE;
+}
+
 /* get a monster's alignment type without caller needing EPRI & EMIN */
 aligntyp
 mon_aligntyp(struct monst *mon)
@@ -428,7 +446,8 @@ intemple(int roomno)
         shrined = has_shrine(priest);
         sanctum = (priest->data == &mons[PM_HIGH_CLERIC]
                    && (Is_sanctum(&u.uz) || In_endgame(&u.uz)));
-        can_speak = !helpless(priest);
+        can_speak = (!helpless(priest)
+                     && priest->data != &mons[PM_BLASPHEMOUS_LURKER]);
         if (can_speak && !Deaf && svm.moves >= epri_p->intone_time) {
             unsigned save_priest = priest->ispriest;
 

@@ -11,22 +11,25 @@ import sys
 repo = Path(__file__).resolve().parents[1]
 out = Path(sys.argv[1]).resolve()
 out.mkdir(parents=True, exist_ok=True)
-parts = re.findall(r"(?m)^#define STEP6B_(?:MIN|MAX)_LEVEL[^\n]*",
+parts = re.findall(r"(?m)^#define (?:STEP6B_(?:MIN|MAX)_LEVEL|STEP10C_DISPENSARY_LEVEL)[^\n]*",
                    (repo / "src/dungeon.c").read_text())
-assert len(parts) == 2
+assert len(parts) == 3
 # The extracted production bodies keep their source order.  The scheduler's
 # depth-used predicate calls these Step 9 classifiers before their bodies
 # appear below, so preserve the production forward declarations in the
 # standalone fixture too.
 parts.extend([
-    "staticfn boolean step6b_step9_branch(const branch *);",
-    "staticfn boolean step6b_step9_approach(const s_level *);",
+    "staticfn boolean step6b_scheduled_branch(const branch *);",
+    "staticfn boolean step6b_scheduled_approach(const s_level *);",
+    "staticfn boolean step10c_internal_depth(d_level *, int *);",
 ])
 for path, names in {
     "src/dungeon.c": ["depth", "In_sheol", "step6b_depth_used", "step6b_pick_depth",
-                      "step6b_add_level", "step6b_step9_branch",
-                      "step6b_step9_approach", "step6b_rebase_level",
-                      "step6b_rebase_branch", "step6b_schedule"],
+                      "step6b_add_level", "step6b_scheduled_branch",
+                      "step6b_scheduled_approach", "step6b_rebase_level",
+                      "step6b_rebase_branch", "step10c_internal_branch",
+                      "step10c_select_alternates", "step10c_internal_depth",
+                      "step6b_schedule"],
     "src/makemon.c": ["sheol_mon_allowed", "uncommon"],
     "src/light.c": ["candle_light_range"],
     "src/timeout.c": ["begin_burn", "end_burn"],
@@ -34,7 +37,7 @@ for path, names in {
 }.items():
     source = (repo / path).read_text(encoding="utf-8")
     for name in names:
-        matches = list(re.finditer(r"(?m)^(?:staticfn )?\w+\n" + name
+        matches = list(re.finditer(r"(?m)^(?:staticfn )?(?:\w+\s*\*)?\w*\n" + name
                                   + r"\([\s\S]*?^\}", source))
         assert len(matches) == 1, (path, name)
         parts.append(matches[0][0])

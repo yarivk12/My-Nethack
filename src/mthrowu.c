@@ -317,6 +317,49 @@ monshoot(struct monst *mtmp, struct obj *otmp, struct obj *mwep)
     gm.m_shot.s = FALSE;
 }
 
+/* Argentum's internal reservoir fires native silver arrows without a bow and
+ * is permitted at point-blank range, as in the pinned AT_ARRW action. */
+int
+mith_silver_arrow(struct monst *magr, struct monst *mdef)
+{
+    struct obj *arrow = m_carrying(magr, SILVER_ARROW);
+    struct monst *oldtarget = gm.mtarget;
+
+    if (!arrow || !linedup(magr->mx, magr->my, mdef->mx, mdef->my, 0))
+        return M_ATTK_MISS;
+    gm.mtarget = mdef == &gy.youmonst ? (struct monst *) 0 : mdef;
+    monshoot(magr, arrow, (struct obj *) 0);
+    gm.mtarget = oldtarget;
+    return M_ATTK_HIT | (DEADMONSTER(mdef) ? M_ATTK_DEF_DIED : 0)
+           | (DEADMONSTER(magr) ? M_ATTK_AGR_DIED : 0);
+}
+
+/* Dispatch an internal projectile by its attack marker.  Loadstones are
+ * allocated for one flight only; they never become saved monster inventory. */
+int
+mith_internal_projectile(struct monst *magr, struct monst *mdef,
+                         struct attack *mattk)
+{
+    struct monst *oldtarget;
+    struct obj *stone;
+
+    if (mattk->adtyp == AD_SLVR)
+        return mith_silver_arrow(magr, mdef);
+    if (mattk->adtyp != AD_LOAD
+        || !linedup(magr->mx, magr->my, mdef->mx, mdef->my, 0))
+        return M_ATTK_MISS;
+    stone = mksobj(LOADSTONE, TRUE, FALSE);
+    curse(stone);
+    oldtarget = gm.mtarget;
+    gm.mtarget = mdef == &gy.youmonst ? (struct monst *) 0 : mdef;
+    m_throw(magr, magr->mx, magr->my,
+            (coordxy) sgn(mdef->mx - magr->mx),
+            (coordxy) sgn(mdef->my - magr->my), 8, stone);
+    gm.mtarget = oldtarget;
+    return M_ATTK_HIT | (DEADMONSTER(mdef) ? M_ATTK_DEF_DIED : 0)
+           | (DEADMONSTER(magr) ? M_ATTK_AGR_DIED : 0);
+}
+
 /* an object launched by someone/thing other than player attacks a monster;
    return 1 if the object has stopped moving (hit or its range used up);
    can anger the monster, if this happened due to hero (eg. exploding
@@ -1539,7 +1582,8 @@ hits_bars(
             hits = (objects[obj_type].oc_armcat != ARM_GLOVES);
             break;
         case TOOL_CLASS:
-            hits = (obj_type != SKELETON_KEY && obj_type != LOCK_PICK
+            hits = (obj_type != SKELETON_KEY && obj_type != UNIVERSAL_KEY
+                    && obj_type != LOCK_PICK
                     && obj_type != CREDIT_CARD && obj_type != TALLOW_CANDLE
                     && obj_type != WAX_CANDLE && obj_type != LENSES
                     && obj_type != TIN_WHISTLE && obj_type != MAGIC_WHISTLE);

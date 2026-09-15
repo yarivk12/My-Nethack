@@ -3217,6 +3217,23 @@ arctic_spore_dies(struct monst *mtmp)
                    x, y, NO_MM_FLAGS);
 }
 
+/* The donor's radius-two gas occupies five cells in open terrain; native
+ * create_gas_cloud() takes a cell count rather than a radius. */
+void
+step10b_cthulhu_death_effect(coordxy x, coordxy y)
+{
+    NhRegion *cloud;
+
+    Strcpy(svk.killer.name, "Great Cthulhu's explosion");
+    svk.killer.format = KILLED_BY_AN;
+    explode(x, y, PHYS_EXPL_TYPE, d(8, 8), MON_EXPLODE, EXPL_NOXIOUS);
+    svk.killer.name[0] = '\0';
+    cloud = create_gas_cloud(x, y, STEP10B_CTHULHU_CLOUD_SIZE,
+                             STEP10B_CTHULHU_GAS_DAMAGE);
+    if (cloud)
+        cloud->ttl = STEP10B_CTHULHU_GAS_TTL;
+}
+
 /* The Alabaster death transformation is a donor life-saving mechanism,
    separate from native amulets. Petrification never invokes it. */
 staticfn boolean
@@ -3248,6 +3265,30 @@ mith_putrefies(struct monst *mon)
     set_mon_min_mhpmax(mon, 10);
     mon->mhp = mon->mhpmax;
     return TRUE;
+}
+
+void
+step10b_familiar_died(unsigned witch_id)
+{
+    struct monst *witch;
+
+    for (witch = fmon; witch; witch = witch->nmon) {
+        if (witch->m_id != witch_id || !step10b_is_witch(witch->data))
+            continue;
+        if (witch->data == &mons[PM_COVEN_LEADER]) {
+            if (canseemon(witch))
+                pline_mon(witch, "%s screams in rage!", Monnam(witch));
+            witch->mspec_used = 4;
+            witch->mavenge = 1;
+        } else {
+            if (canseemon(witch))
+                pline_mon(witch, "%s screams in dismay!", Monnam(witch));
+            monflee(witch, 0, FALSE, TRUE);
+            if (witch->data == &mons[PM_WITCH])
+                witch->mspec_used = 10;
+        }
+        break;
+    }
 }
 
 void
@@ -3309,11 +3350,39 @@ mondead(struct monst *mtmp)
     mndx = monsndx(mtmp->data);
     if (svm.mvitals[mndx].died < 255)
         svm.mvitals[mndx].died++;
+    if (mndx == PM_LIVING_DOLL) {
+        struct obj *doll = mksobj_at(LIFELESS_DOLL, mtmp->mx, mtmp->my,
+                                    TRUE, FALSE);
+        if (doll)
+            set_corpsenm(doll, mndx);
+    } else if (mndx == PM_PARASITIZED_DOLL) {
+        int debris = d(2, 4);
+        struct obj *doll;
+
+        while (debris-- > 0) {
+            struct obj *eye = mksobj_at(EYEBALL, mtmp->mx, mtmp->my,
+                                       TRUE, FALSE);
+            if (eye)
+                set_corpsenm(eye, mndx);
+        }
+        doll = mksobj_at(LIFELESS_DOLL, mtmp->mx, mtmp->my, TRUE, FALSE);
+        if (doll)
+            set_corpsenm(doll, mndx);
+    }
+    if (mndx == PM_WITCH_S_FAMILIAR)
+        step10b_familiar_died((unsigned) mtmp->mspare1);
     if (mndx == PM_ASPECT_OF_THE_SILENCE) {
         int slab = mith_slab_type();
 
         if (slab != STRANGE_OBJECT)
             (void) mksobj_at(slab, mtmp->mx, mtmp->my, TRUE, FALSE);
+    }
+    if (mndx == PM_GREAT_CTHULHU
+        && !(mtmp->mspare1 & MITH_CTHULHU_DEATH_FIRED)) {
+        coordxy deathx = mtmp->mx, deathy = mtmp->my;
+
+        mtmp->mspare1 |= MITH_CTHULHU_DEATH_FIRED;
+        step10b_cthulhu_death_effect(deathx, deathy);
     }
 
     /* if it's a (possibly polymorphed) quest leader, mark him as dead */
@@ -3372,7 +3441,9 @@ mith_deep_soul(const struct permonst *dead)
     struct monst *mon;
     int gain = dead == &mons[PM_DEEP_ONE] ? 2
                : dead == &mons[PM_DEEPER_ONE] ? 4
-               : dead == &mons[PM_DEEPEST_ONE] ? 8 : 0;
+               : dead == &mons[PM_DEEPEST_ONE] ? 8
+               : (dead == &mons[PM_FATHER_DAGON]
+                  || dead == &mons[PM_MOTHER_HYDRA]) ? 8 : 0;
     if (!gain) return;
     for (mon = fmon; mon; mon = mon->nmon) {
         if (!DEADMONSTER(mon) && (mon->data == &mons[PM_DEEP_ONE]

@@ -23,6 +23,7 @@ staticfn void m_initgrp(struct monst *, coordxy, coordxy, int, mmflags_nht);
 staticfn void m_initthrow(struct monst *, int, int);
 staticfn void m_initweap(struct monst *);
 staticfn void m_initinv(struct monst *);
+staticfn void m_give_step10b_key(struct monst *, int);
 staticfn boolean makemon_rnd_goodpos(struct monst *, mmflags_nht, coord *);
 staticfn void init_mextra(struct mextra *);
 
@@ -327,6 +328,52 @@ mith_fey_equipment(struct monst *mon)
     return TRUE;
 }
 
+boolean
+step10b_is_witch(const struct permonst *ptr)
+{
+    return ptr == &mons[PM_APPRENTICE_WITCH]
+           || ptr == &mons[PM_WITCH]
+           || ptr == &mons[PM_COVEN_LEADER];
+}
+
+void
+step10b_link_witch_familiar(struct monst *witch, struct monst *familiar)
+{
+    familiar->m_lev = witch->m_lev;
+    familiar->mhp = witch->mhp;
+    familiar->mhpmax = witch->mhpmax;
+    familiar->mspare1 = (long) witch->m_id;
+    familiar->mpeaceful = witch->mpeaceful;
+}
+
+boolean
+step10b_witch_needs_familiar(struct monst *witch)
+{
+    struct monst *mon;
+
+    if (!step10b_is_witch(witch->data))
+        return FALSE;
+    for (mon = fmon; mon; mon = mon->nmon)
+        if (mon->data == &mons[PM_WITCH_S_FAMILIAR]
+            && (unsigned long) mon->mspare1 == (unsigned long) witch->m_id)
+            return FALSE;
+    return TRUE;
+}
+
+struct monst *
+step10b_create_witch_familiar(struct monst *witch)
+{
+    struct monst *familiar;
+
+    if (!step10b_is_witch(witch->data))
+        return (struct monst *) 0;
+    familiar = makemon(&mons[PM_WITCH_S_FAMILIAR], witch->mx, witch->my,
+                       MM_ADJACENTOK | MM_NOCOUNTBIRTH);
+    if (familiar)
+        step10b_link_witch_familiar(witch, familiar);
+    return familiar;
+}
+
 staticfn void
 m_initweap(struct monst *mtmp)
 {
@@ -339,6 +386,318 @@ m_initweap(struct monst *mtmp)
         return;
     if (mith_deep_equipment(mtmp) || mith_fey_equipment(mtmp))
         goto offensive_item;
+    if (mm == PM_PLUMACH_RILMANI) {
+        int weapon;
+
+        if (!rn2(3))
+            weapon = MACE;
+        else
+            weapon = rn2(3) ? AXE : rn2(3) ? SICKLE : SCYTHE;
+        otmp = mksobj(weapon, TRUE, FALSE);
+        uncurse(otmp);
+        otmp->blessed = 0;
+        otmp->spe = -1;
+        otmp->obranch_material = METAL;
+        (void) mpickobj(mtmp, otmp);
+        if (weapon == MACE && !rn2(3)) {
+            otmp = mksobj(KITE_SHIELD, TRUE, FALSE);
+            uncurse(otmp);
+            otmp->blessed = 0;
+            otmp->obranch_material = METAL;
+            (void) mpickobj(mtmp, otmp);
+        }
+        goto offensive_item;
+    }
+    if (mm == PM_FERRUMACH_RILMANI) {
+        otmp = mksobj(rn2(2) ? HALBERD : BATTLE_AXE, TRUE, FALSE);
+        uncurse(otmp);
+        otmp->blessed = 0;
+        otmp->spe = max(1, otmp->spe);
+        otmp->obranch_material = IRON;
+        (void) mpickobj(mtmp, otmp);
+        goto offensive_item;
+    }
+    if (mm == PM_CUPRILACH_RILMANI) {
+        int choice = rn2(3), n = 1;
+
+        if (choice && !rn2(2))
+            ++n;
+
+        while (n-- > 0) {
+            otmp = mksobj(SHORT_SWORD, TRUE, FALSE);
+            otmp->spe = 2;
+            otmp->obranch_material = COPPER;
+            (void) mpickobj(mtmp, otmp);
+        }
+        if (!choice) {
+            otmp = mksobj(BUCKLER, TRUE, FALSE);
+            otmp->spe = 2;
+            otmp->obranch_material = COPPER;
+            (void) mpickobj(mtmp, otmp);
+        }
+        goto offensive_item;
+    }
+    if (mm == PM_ARGENACH_RILMANI) {
+        int choice = rn2(3), weapon = choice ? BROADSWORD
+                                            : rn2(3) ? BATTLE_AXE : HALBERD;
+
+        otmp = mksobj(weapon, TRUE, FALSE);
+        otmp->spe = 3;
+        otmp->obranch_material = SILVER;
+        (void) mpickobj(mtmp, otmp);
+        if (weapon == BROADSWORD) {
+            otmp = mksobj(rn2(6) ? KITE_SHIELD : SHIELD_OF_REFLECTION,
+                          TRUE, FALSE);
+            otmp->spe = 3;
+            otmp->obranch_material = SILVER;
+            (void) mpickobj(mtmp, otmp);
+        }
+        goto offensive_item;
+    }
+    if (mm == PM_AURUMACH_RILMANI) {
+        static const int weapons[] = { HALBERD, TWO_HANDED_SWORD };
+        int n;
+
+        for (n = 0; n < SIZE(weapons); ++n) {
+            otmp = mksobj(weapons[n], TRUE, FALSE);
+            otmp->spe = 4;
+            otmp->obranch_material = GOLD;
+            otmp->obranch_size = MZ_LARGE + 1;
+            otmp->obranch_props |= OBP_CONCORDANT;
+            (void) mpickobj(mtmp, otmp);
+        }
+        if (!rn2(3)) {
+            otmp = mksobj(PLATE_MAIL, TRUE, FALSE);
+            otmp->spe = 4;
+            otmp->obranch_material = GOLD;
+            otmp->obranch_size = MZ_LARGE + 1;
+            otmp->obranch_props |= OBP_CONCORDANT;
+            (void) mpickobj(mtmp, otmp);
+        }
+        goto offensive_item;
+    }
+    if (mm == PM_CENTER_OF_ALL) {
+        static const int equipment[] = {
+            BARDICHE, WAR_HAT, LEATHER_ARMOR, ROBE,
+            ARCHAIC_GAUNTLETS, LOW_BOOTS
+        };
+        int n;
+
+        for (n = 0; n < SIZE(equipment); ++n) {
+            otmp = mksobj(equipment[n], n == 0, FALSE);
+            uncurse(otmp);
+            otmp->blessed = 0;
+            otmp->obranch_size = MZ_LARGE + 1;
+            otmp->obranch_props |= OBP_CONCORDANT;
+            if (equipment[n] == BARDICHE || equipment[n] == WAR_HAT)
+                otmp->obranch_material = GOLD;
+            else if (equipment[n] == ARCHAIC_GAUNTLETS)
+                otmp->obranch_material = LEATHER;
+            if (equipment[n] == BARDICHE)
+                otmp->spe = 4;
+            (void) mpickobj(mtmp, otmp);
+        }
+        m_give_step10b_key(mtmp, ART_FIRST_KEY_OF_NEUTRALITY);
+        goto offensive_item;
+    }
+    if (mm == PM_HUDOR_KAMEREL || mm == PM_SHARAB_KAMEREL) {
+        (void) mongets(mtmp, MIRROR);
+        goto offensive_item;
+    }
+    if (mm == PM_AMM_KAMEREL) {
+        boolean physical = rn2(10) != 0;
+        boolean driver = rn2(10) == 0;
+        static const int amm_materials[] = { COPPER, GLASS, SILVER };
+
+        if (physical) {
+            mtmp->mcan = 1;
+            if (driver) {
+                mtmp->m_lev += 3;
+                mtmp->mhpmax += d(3, 8);
+                mtmp->mhp = mtmp->mhpmax;
+                mtmp->permspeed = mtmp->mspeed = MFAST;
+            }
+            otmp = mksobj(MIRRORBLADE, TRUE, FALSE);
+            if (driver) {
+                otmp->spe = max(1, otmp->spe);
+                otmp->obranch_size = MZ_SMALL + 1;
+            }
+            (void) mpickobj(mtmp, otmp);
+            otmp = mksobj(ROUNDSHIELD, TRUE, FALSE);
+            otmp->obranch_material = amm_materials[rn2(3)];
+            otmp->obranch_size = MZ_SMALL + 1;
+            if (driver)
+                otmp->spe = max(1, otmp->spe);
+            (void) mpickobj(mtmp, otmp);
+            otmp = mksobj(driver ? PLATE_MAIL : BANDED_MAIL, TRUE, FALSE);
+            otmp->obranch_material = amm_materials[rn2(3)];
+            otmp->obranch_size = MZ_SMALL + 1;
+            if (driver)
+                otmp->spe = max(1, otmp->spe);
+            (void) mpickobj(mtmp, otmp);
+        } else {
+            if (driver) {
+                mtmp->m_lev += 7;
+                mtmp->mhpmax += d(7, 8);
+            } else {
+                mtmp->m_lev += 3;
+                mtmp->mhpmax += d(3, 8);
+            }
+            mtmp->mhp = mtmp->mhpmax;
+            otmp = mksobj(MIRROR, FALSE, FALSE);
+            otmp->obranch_size = MZ_SMALL + 1;
+            (void) mpickobj(mtmp, otmp);
+            if (driver) {
+                (void) mongets(mtmp, CLOAK_OF_PROTECTION);
+            } else {
+                static const int cloaks[] = {
+                    ELVEN_CLOAK, DWARVISH_CLOAK, CLOAK_OF_INVISIBILITY
+                };
+                (void) mongets(mtmp, cloaks[rn2(3)]);
+            }
+            otmp = mksobj(STILETTO, TRUE, FALSE);
+            otmp->obranch_material = amm_materials[rn2(3)];
+            otmp->obranch_size = MZ_SMALL + 1;
+            otmp->spe = max(1, otmp->spe);
+            (void) mpickobj(mtmp, otmp);
+        }
+        goto offensive_item;
+    }
+    if (mm == PM_ARA_KAMEREL) {
+        otmp = mksobj(KAMEREL_VAJRA, FALSE, FALSE);
+        otmp->spe = 1;
+        otmp->obranch_material = GOLD;
+        (void) mpickobj(mtmp, otmp);
+        otmp = mksobj(MIRROR, FALSE, FALSE);
+        otmp->obranch_material = GOLD;
+        (void) mpickobj(mtmp, otmp);
+        goto offensive_item;
+    }
+    if (mm == PM_ARGENTUM_GOLEM) {
+        static const int weapons[] = {
+            SILVER_SABER, TRIDENT, AXE, STILETTO, ATHAME, SHORT_SWORD,
+            SCIMITAR, RAPIER, LONG_SWORD, TWO_HANDED_SWORD, MACE,
+            MORNING_STAR
+        };
+
+        otmp = mksobj(SILVER_ARROW, TRUE, FALSE);
+        otmp->quan = 19L + rnd(8);
+        otmp->owt = weight(otmp);
+        (void) mpickobj(mtmp, otmp);
+        otmp = mksobj(weapons[rn2(SIZE(weapons))], TRUE, FALSE);
+        otmp->obranch_material = SILVER;
+        (void) mpickobj(mtmp, otmp);
+        goto offensive_item;
+    }
+    if (mm >= PM_SMALL_GOAT_SPAWN && mm <= PM_GIANT_GOAT_SPAWN) {
+        int weapon = mm == PM_SMALL_GOAT_SPAWN ? KNIFE
+                     : mm == PM_GOAT_SPAWN ? SHORT_SWORD : CLUB;
+
+        (void) mongets(mtmp, weapon);
+        (void) mongets(mtmp, weapon);
+        goto offensive_item;
+    }
+    if (mm == PM_APPRENTICE_WITCH) {
+        (void) step10b_create_witch_familiar(mtmp);
+        (void) mongets(mtmp, HIGH_BOOTS);
+        (void) mongets(mtmp, BLACK_DRESS);
+        (void) mongets(mtmp, WITCH_HAT);
+        (void) mongets(mtmp, KNIFE);
+        goto offensive_item;
+    }
+    if (mm == PM_WITCH) {
+        (void) step10b_create_witch_familiar(mtmp);
+        (void) mongets(mtmp, HIGH_BOOTS);
+        (void) mongets(mtmp, BLACK_DRESS);
+        (void) mongets(mtmp, LEATHER_CLOAK);
+        (void) mongets(mtmp, LEATHER_GLOVES);
+        (void) mongets(mtmp, WITCH_HAT);
+        (void) mongets(mtmp, rn2(10) ? STILETTO : ATHAME);
+        goto offensive_item;
+    }
+    if (mm == PM_COVEN_LEADER) {
+        (void) step10b_create_witch_familiar(mtmp);
+        (void) mongets(mtmp, HIGH_BOOTS);
+        (void) mongets(mtmp, BLACK_DRESS);
+        (void) mongets(mtmp, LEATHER_ARMOR);
+        (void) mongets(mtmp, LEATHER_CLOAK);
+        (void) mongets(mtmp, LEATHER_GLOVES);
+        (void) mongets(mtmp, WITCH_HAT);
+        (void) mongets(mtmp, QUARTERSTAFF);
+        goto offensive_item;
+    }
+    if (mm == PM_HMNYW_PHARAOH) {
+        otmp = mksobj(SICKLE, FALSE, FALSE);
+        otmp->spe = 9;
+        otmp->obranch_material = METAL;
+        otmp->obranch_size = MZ_LARGE + 1;
+        curse(otmp);
+        (void) mpickobj(mtmp, otmp);
+        otmp = mksobj(QUARTERSTAFF, FALSE, FALSE);
+        otmp->spe = 9;
+        otmp->obranch_material = METAL;
+        otmp->obranch_size = MZ_SMALL + 1;
+        curse(otmp);
+        (void) mpickobj(mtmp, otmp);
+        goto offensive_item;
+    }
+    if (mm >= PM_MIGO_SOLDIER && mm <= PM_MIGO_QUEEN) {
+        (void) mongets(mtmp, WAN_LIGHTNING);
+        (void) mongets(mtmp, rn2(2) ? RUBY : DIAMOND);
+        goto offensive_item;
+    }
+    if (mm == PM_DEMINYMPH) {
+        (void) mongets(mtmp, DAGGER);
+        (void) mongets(mtmp, DAGGER);
+        goto offensive_item;
+    }
+    if (mm == PM_GUG) {
+        (void) mongets(mtmp, CLUB);
+        goto offensive_item;
+    }
+    if (mm == PM_SHATTERED_ZIGGURAT_CULTIST) {
+        otmp = mksobj(TORCH, FALSE, FALSE);
+        otmp->age = rn1(500, 1000);
+        (void) mpickobj(mtmp, otmp);
+        begin_burn(otmp, FALSE);
+        (void) mongets(mtmp, WHITE_FACELESS_ROBE);
+        (void) mongets(mtmp, LOW_BOOTS);
+        goto offensive_item;
+    }
+    if (mm == PM_SHATTERED_ZIGGURAT_KNIGHT) {
+        otmp = mksobj(SHADOWLANDER_S_TORCH, FALSE, FALSE);
+        (void) mpickobj(mtmp, otmp);
+        otmp->age = rn1(500, 1000);
+        begin_burn(otmp, FALSE);
+        (void) mongets(mtmp, HELMET);
+        (void) mongets(mtmp, BLACK_FACELESS_ROBE);
+        (void) mongets(mtmp, CHAIN_MAIL);
+        (void) mongets(mtmp, LEATHER_GLOVES);
+        (void) mongets(mtmp, HIGH_BOOTS);
+        goto offensive_item;
+    }
+    if (mm == PM_SHATTERED_ZIGGURAT_WIZARD) {
+        otmp = mksobj(SHADOWLANDER_S_TORCH, FALSE, FALSE);
+        otmp->spe = rnd(3);
+        otmp->age = rn1(1000, 2000);
+        (void) mpickobj(mtmp, otmp);
+        begin_burn(otmp, FALSE);
+        otmp = mksobj(HELMET, TRUE, FALSE);
+        otmp->obranch_material = LEATHER;
+        (void) mpickobj(mtmp, otmp);
+        (void) mongets(mtmp, SMOKY_VIOLET_FACELESS_ROBE);
+        (void) mongets(mtmp, LEATHER_ARMOR);
+        (void) mongets(mtmp, LEATHER_GLOVES);
+        (void) mongets(mtmp, HIGH_BOOTS);
+        goto offensive_item;
+    }
+    if (mm == PM_ILLURIEN_OF_THE_MYRIAD_GLIMPSES) {
+        otmp = mksobj(SPE_SECRETS, TRUE, FALSE);
+        uncurse(otmp);
+        otmp->blessed = 0;
+        (void) mpickobj(mtmp, otmp);
+        goto offensive_item;
+    }
     /*
      *  First a few special cases:
      *          giants get a boulder to throw sometimes
@@ -777,6 +1136,30 @@ m_initinv(struct monst *mtmp)
 
     if (Is_rogue_level(&u.uz))
         return;
+    if (ptr == &mons[PM_ALHOON]) {
+        boolean second = exist_artifact(UNIVERSAL_KEY,
+                                        artiname(ART_SECOND_KEY_OF_NEUTRALITY));
+        boolean third = exist_artifact(UNIVERSAL_KEY,
+                                       artiname(ART_THIRD_KEY_OF_NEUTRALITY));
+        int choice = step10b_alhoon_key_choice(second, third);
+
+        if (choice == STEP10B_KEY_SECOND)
+            m_give_step10b_key(mtmp, ART_SECOND_KEY_OF_NEUTRALITY);
+        else if (choice == STEP10B_KEY_THIRD)
+            m_give_step10b_key(mtmp, ART_THIRD_KEY_OF_NEUTRALITY);
+        else
+            (void) mongets(mtmp, UNIVERSAL_KEY);
+    } else if (ptr == &mons[PM_THE_GOOD_NEIGHBOR]) {
+        (void) mongets(mtmp, LEATHER_ARMOR);
+        (void) mongets(mtmp, ROBE);
+        (void) mongets(mtmp, HIGH_BOOTS);
+    } else if (ptr == &mons[PM_MIGO_WORKER]) {
+        (void) mongets(mtmp, rn2(2) ? FLINT : ROCK);
+    } else if (ptr == &mons[PM_MIGO_PHILOSOPHER]
+               || ptr == &mons[PM_MIGO_QUEEN]) {
+        (void) mongets(mtmp, WAN_LIGHTNING);
+        (void) mongets(mtmp, rn2(2) ? RUBY : DIAMOND);
+    }
     /*
      *  Soldiers get armour & rations - armour approximates their ac.
      *  Nymphs may get mirror or potion of object detection.
@@ -1541,7 +1924,7 @@ makemon(
     if ((mmflags & MM_MINVIS) != 0) /* for ^G */
         mon_set_minvis(mtmp, FALSE); /* call after place_monster() */
 
-    if (is_shadow(ptr))
+    if (is_shadow(ptr) || mndx == PM_CENTER_OF_ALL)
         mtmp->perminvis = mtmp->minvis = TRUE;
 
     switch (ptr->mlet) {
@@ -1663,8 +2046,10 @@ makemon(
     }
     if (mndx == PM_RAVEN && uwep && uwep->otyp == BEC_DE_CORBIN)
         mtmp->mpeaceful = TRUE;
-    if (mndx == PM_LONG_WORM && (mtmp->wormno = get_wormno()) != 0) {
-        initworm(mtmp, allowtail ? rn2(5) : 0);
+    if ((mndx == PM_LONG_WORM || mndx == PM_HUNTING_HORROR)
+        && (mtmp->wormno = get_wormno()) != 0) {
+        initworm(mtmp, allowtail ? (mndx == PM_HUNTING_HORROR ? 2 : rn2(5))
+                                 : 0);
         if (count_wsegs(mtmp))
             place_worm_tail_randomly(mtmp, x, y);
     }
@@ -2917,6 +3302,12 @@ golemhp(int type)
         return 160;
     case PM_IRON_GOLEM:
         return 120;
+    case PM_LIVING_LECTERN:
+        return 50;
+    case PM_LIVING_DOLL:
+        return 45 + d(5, 8);
+    case PM_PARASITIZED_DOLL:
+        return 45 + d(20, 8);
     default:
         return 0;
     }
@@ -2927,10 +3318,36 @@ golemhp(int type)
  *      (Some "animal" types are co-aligned, but also hungry.)
  */
 boolean
+step10b_center_peaceful(boolean sum_entered)
+{
+    return !sum_entered;
+}
+
+/* Use native mksobj/oname tracking and refuse the ordinary-shell result if a
+   requested artifact is already present.  This keeps Center/Alhoon births
+   duplicate-safe without creating progression or travel behavior. */
+staticfn void
+m_give_step10b_key(struct monst *mtmp, int artifact)
+{
+    struct obj *key;
+
+    if (exist_artifact(UNIVERSAL_KEY, artiname(artifact)))
+        return;
+    key = mksobj(UNIVERSAL_KEY, TRUE, FALSE);
+    key = oname(key, artiname(artifact), ONAME_NO_FLAGS);
+    if (key && key->oartifact == artifact)
+        (void) mpickobj(mtmp, key);
+    else if (key)
+        obfree(key, (struct obj *) 0);
+}
+
+boolean
 peace_minded(struct permonst *ptr)
 {
     aligntyp mal = ptr->maligntyp, ual = u.ualign.type;
 
+    if (ptr == &mons[PM_CENTER_OF_ALL])
+        return step10b_center_peaceful(u.uevent.sum_entered);
     if (always_peaceful(ptr))
         return TRUE;
     if (always_hostile(ptr))

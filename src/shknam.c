@@ -762,6 +762,17 @@ free_eshk(struct monst *mtmp)
     mtmp->isshk = 0;
 }
 
+boolean
+step10b_designate_plumach_shopkeeper(struct monst *shk)
+{
+    if (!shk || !shk->isshk || !has_eshk(shk))
+        return FALSE;
+    if (shk->data == &mons[PM_PLUMACH_RILMANI])
+        return TRUE;
+    /* Species changes only after native MM_ESHK ownership is established. */
+    return newcham(shk, &mons[PM_PLUMACH_RILMANI], NO_NC_FLAGS);
+}
+
 /* find a door in room sroom which is good for shop entrance.
    returns -1 if no good door found, or the svd.doors index
    and the door coordinates in sx, sy */

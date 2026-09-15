@@ -12,7 +12,7 @@ Donor: `Chris-plus-alphanumericgibberish/dnethack`, requested `master`, resolved
 to immutable commit **17bc64f77ac566e7b90c0c6c6652e2a5f3a995c0**. Use this same
 revision for both Step9C and Step9D. The clone is outside the project at
 `../step9-donor-dnethack`; source reads use `git show` at that pin or its exact
-archive export under `../step9-audit/dnethack-pinned/dnethack-3.4.3`.
+archive export under `../_qa/step9-audit/dnethack-pinned/dnethack-3.4.3`.
 
 The selected repository's latest commit advertises a move; that does not change
 the requested donor authority. Do not follow another repository or mix in a
@@ -194,7 +194,7 @@ checkpoint authorization above now permits README/commit/push only.
   breathing property uses ordinary worn-property bookkeeping. Their other
   audited metadata, descriptions and runtime tests remain to be completed.
 
-External evidence under `../step9-audit`:
+External evidence under `../_qa/step9-audit`:
 
 - `build-mithardir-tiles-x64.log`: x64 Release build **PASS** for the terrain,
   dust, type and tile foundation. Later mechanics require a refreshed build.

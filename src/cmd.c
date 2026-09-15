@@ -4567,7 +4567,8 @@ there_cmd_menu_next2u(
             mcmd_addmenu(win, MCMD_OPEN_DOOR, "Open the door"), ++K;
             /* unfortunately there's no lknown flag for doors to
                remember the locked/unlocked state */
-            key_or_pick = (carrying(SKELETON_KEY) || carrying(LOCK_PICK));
+            key_or_pick = (carrying(SKELETON_KEY) || carrying(UNIVERSAL_KEY)
+                           || carrying(LOCK_PICK));
             card = (carrying(CREDIT_CARD) != 0);
             if (key_or_pick || card) {
                 Sprintf(buf, "%sunlock the door",
@@ -4720,6 +4721,8 @@ act_on_act(
         break;
     case MCMD_LOCK_DOOR:
         otmp = carrying(SKELETON_KEY);
+        if (!otmp)
+            otmp = carrying(UNIVERSAL_KEY);
         if (!otmp)
             otmp = carrying(LOCK_PICK);
         if (!otmp)

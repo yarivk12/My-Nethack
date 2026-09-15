@@ -2655,6 +2655,35 @@ get_bkglyph_and_framecolor(
 #define GMAP_SET            0x0001
 #define GMAP_ROGUELEVEL     0x0002
 
+int
+step10b_terrain_color(enum step10b_level_context context, int cmap,
+                      int ordinary_color)
+{
+    boolean wall = (cmap >= S_vwall && cmap <= S_trwall);
+    boolean lit_floor = (cmap == S_room);
+    boolean dark_floor = (cmap == S_darkroom);
+
+    if (ordinary_color == NO_COLOR)
+        return NO_COLOR;
+    if (step10b_is_outlands_context(context)) {
+        if (wall || lit_floor)
+            return CLR_BROWN;
+        if (dark_floor)
+            return CLR_BLACK;
+    } else if (context == STEP10B_CTX_LOST_CITIES) {
+        if (wall || dark_floor)
+            return CLR_BLACK;
+        if (lit_floor)
+            return CLR_GRAY;
+    } else if (context == STEP10B_CTX_RLYEH) {
+        if (wall)
+            return CLR_BRIGHT_BLUE;
+        if (lit_floor || dark_floor)
+            return CLR_BLUE;
+    }
+    return ordinary_color;
+}
+
 void
 map_glyphinfo(
     coordxy x, coordxy y,
@@ -2714,6 +2743,12 @@ map_glyphinfo(
         /* one more accessibility kludge;
            turn off override symbol if caller has specified NOOVERRIDE */
         glyphinfo->gm.sym.symidx = mons[glyph_to_mon(glyph)].mlet + SYM_OFF_M;
+    }
+    if (glyph_is_cmap(glyph)) {
+        /* Step 10C-D supplies the real production level identity. */
+        glyphinfo->gm.sym.color = step10b_terrain_color(
+            step10c_level_context(&u.uz), glyph_to_cmap(glyph),
+            glyphinfo->gm.sym.color);
     }
     glyphinfo->ttychar = gs.showsyms[glyphinfo->gm.sym.symidx];
     if (moria_level(&u.uz) == 3 && glyph_is_cmap(glyph)) {

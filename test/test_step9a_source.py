@@ -8,6 +8,7 @@ import re
 import subprocess
 import sys
 from step9c_source_projection import project
+from test_step10b_source import project as step10b_project
 
 repo=Path(__file__).resolve().parents[1]
 pin='439b8d63d3d1ca78fb08588dd43f61874114b21a'
@@ -50,12 +51,116 @@ for p in ['include/global.h','include/dungeon.h','include/you.h',
           'include/monst.h','src/save.c','src/restore.c','src/bones.c',
           'src/files.c','util/recover.c','include/artilist.h',
           'src/mkroom.c','src/shknam.c']:
-    assert project(p, read(p))==old(p),p
-artifact=read('src/artifact.c')
+    assert project(p, step10b_project(p, read(p)))==old(p),p
+def strip_step10b3_artifact_changes(text):
+    """Project current B3 artifact additions out of the historical check."""
+    for fragment in (
+        'staticfn int invoke_silver_key_portal(struct obj *) NONNULLARG1;\n',
+        'staticfn int invoke_altmode(struct obj *) NONNULLARG1;\n',
+        '''                switch (m) {
+                case ART_MIRROR_BRAND:
+                    otmp->obranch_material = mod ? SILVER : 0;
+                    break;
+                case ART_SANSARA_MIRROR:
+                    otmp->obranch_material = mod ? GOLD : 0;
+                    break;
+                case ART_SOULMIRROR:
+                    otmp->obranch_material = mod ? MITHRIL : 0;
+                    break;
+                case ART_SILVER_KEY:
+                    otmp->obranch_material = mod ? SILVER : 0;
+                    break;
+                default:
+                    break;
+                }
+''',
+        '''/* Soulmirror's pinned +7 is artifact-specific; ordinary PLATE_MAIL keeps its
+   normal native armor value. */
+int
+artifact_arm_bonus(struct obj *obj)
+{
+    return obj && is_art(obj, ART_SOULMIRROR) ? 7 : 0;
+}
+
+''',
+        '''    if (spfx & SPFX_PCTRL) {
+        if (on)
+            EPolymorph_control |= wp_mask;
+        else
+            EPolymorph_control &= ~wp_mask;
+    }
+''',
+        '''    if (spfx & SPFX_DISPL) {
+        if (on)
+            EDisplaced |= wp_mask;
+        else
+            EDisplaced &= ~wp_mask;
+    }
+''',
+        '    int dnum = 1, dsize = 4;\n'
+        '    boolean mirror_brand = is_art(mb, ART_MIRROR_BRAND);\n',
+        '    if (mirror_brand)\n        dnum = 2, dsize = 10;\n',
+        '    if ((spfx & SPFX_REFLECT) && (wp_mask & (W_WEP | W_ARMOR))) {',
+        '    if ((spfx & SPFX_REFLECT) && (wp_mask & W_WEP)) {',
+    ):
+        if fragment == '    if ((spfx & SPFX_REFLECT) && (wp_mask & W_WEP)) {':
+            continue
+        assert text.count(fragment) == 1, fragment[:50]
+        text = text.replace(fragment, '' if 'REFLECT' not in fragment else
+                            '    if ((spfx & SPFX_REFLECT) && (wp_mask & W_WEP)) {')
+
+    damage = '    *dmgptr += mirror_brand ? d(dnum, dsize) : rnd(4);'
+    assert text.count(damage) == 4
+    text = text.replace(damage, '    *dmgptr += rnd(4);')
+    comments = [' /* (2..3)d4 */', ' /* (3..4)d4 */',
+                ' /* (3..5)d4 */', ' /* (4..6)d4 */']
+    lines = text.splitlines(keepends=True)
+    for index, line in enumerate(lines):
+        if line.lstrip() == '*dmgptr += rnd(4);\n':
+            lines[index] = line[:-1] + comments.pop(0) + '\n'
+    assert not comments
+    text = ''.join(lines)
+
+    infinity = '''    /* The local representation of the donor's second beam is a bounded
+       artifact-only damage increment when its alternate mode is active. */
+    if (is_art(otmp, ART_INFINITY_S_MIRRORED_ARC) && otmp->usecount)
+        *dmgptr += d(3, 3);
+'''
+    assert text.count(infinity) == 1
+    text = text.replace(infinity, '')
+
+    portal_start = text.index('boolean\nsilver_key_destination_valid')
+    portal_end = text.index('staticfn int\ninvoke_create_portal', portal_start)
+    text = text[:portal_start] + text[portal_end:]
+
+    dispatch = '''    /* Readability is the Necronomicon's authoritative interface.  Neither
+     * this harmless direction nor the dormant Silver Key path uses cooldown. */
+    if (is_art(obj, ART_NECRONOMICON)) {
+        pline("The Necronomicon must be read, not invoked.");
+        return ECMD_TIME;
+    }
+    if (is_art(obj, ART_SILVER_KEY))
+        return invoke_silver_key_portal(obj);
+
+'''
+    assert text.count(dispatch) == 1
+    text = text.replace(dispatch, '')
+    assert text.count('        case ALTMODE: res = invoke_altmode(obj); break;\n') == 1
+    text = text.replace('        case ALTMODE: res = invoke_altmode(obj); break;\n', '')
+
+    alt_start = text.index('staticfn int\ninvoke_altmode')
+    alt_end = text.index('/* will freeing this object', alt_start)
+    text = text[:alt_start] + text[alt_end:]
+    assert text.count('        { &EPolymorph_control, SPFX_PCTRL },\n') == 1
+    text = text.replace('        { &EPolymorph_control, SPFX_PCTRL },\n', '')
+    return text
+
+
+artifact=strip_step10b3_artifact_changes(read('src/artifact.c'))
 for ident in ['GLOWING_DRAGON_SCALE_MAIL','GLOWING_DRAGON_SCALES']:
     artifact=re.sub(r'\s+\|\| obj->otyp == '+ident+r'\b','',artifact)
 assert artifact==old('src/artifact.c'),'artifact changes beyond Step9B worn glowing armor light'
-assert '#define EDITLEVEL 4' in read('include/patchlevel.h')
+assert '#define EDITLEVEL 5' in read('include/patchlevel.h') # Step 10 ID epoch
 assert len(re.findall(r'name\s*=\s*"Sheol"',read('dat/dungeon.lua')))==2
 dungeon = read('dat/dungeon.lua')
 assert 'name="Sheol", base=30, range=170, direction="down"' in dungeon

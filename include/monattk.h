@@ -25,12 +25,21 @@
 #define AT_GAZE 15  /* gaze - ranged */
 #define AT_TENT 16  /* tentacles */
 #define AT_REACH5 17 /* Mithardir: First Wraithworm's five-square bite */
+#define AT_ARRW 18 /* Step 10B: internal silver-projectile launcher */
+#define AT_DEVA 19 /* Step 10B2-2: many-taloned repeated-arm strike */
+#define AT_REND 20 /* Step 10B2-2: follows two successful attacks */
+#define AT_REACH2 21 /* Step 10B2-3: two-square lurch/reach */
+#define AT_WDGZ 22 /* Step 10B2-3: wide gaze */
+#define AT_BKGT 23 /* Step 10B2-3: blessed random primary attack */
+#define AT_BKG2 24 /* Step 10B2-3: blessed random secondary attack */
 
 #define AT_WEAP 254 /* uses weapon */
 #define AT_MAGC 255 /* uses magic spell(s) */
 
 #define DISTANCE_ATTK_TYPE(atyp) ((atyp) == AT_SPIT \
                                   || (atyp) == AT_BREA \
+                                  || (atyp) == AT_ARRW \
+                                  || (atyp) == AT_REACH2 \
                                   || (atyp) == AT_MAGC \
                                   || (atyp) == AT_GAZE)
 
@@ -95,6 +104,21 @@
 #define AD_DESC 50  /* Mithardir: desiccation, healing the attacker */
 #define AD_VAMP 51  /* Mithardir: blood and life-force drain */
 #define AD_SOUL 52  /* deep-one death strengthens its surviving kin */
+#define AD_WET 53   /* Step 10B: Hudor soaks carried equipment */
+#define AD_SLVR 54  /* Step 10B: silver projectile marker */
+#define AD_EELC 55  /* Step 10B2-2: elemental shock; resistance halves */
+#define AD_EACD 56  /* Step 10B2-3: enhanced acid; resistance halves */
+#define AD_MIST 57  /* Step 10B2-3: Mi-go mist gaze */
+#define AD_SHRD 58  /* Step 10B2-3: shred worn armor */
+#define AD_TCKL 59  /* Step 10B2-3: nightgaunt tickle */
+#define AD_PSON 60  /* Step 10B2-3: psionic spell selection */
+#define AD_ILUR 61  /* Step 10B2-3: Illurien memory engulf */
+#define AD_UNKN 62  /* Step 10B2-3: unknown-god passive marker */
+#define AD_CNFT 63  /* Step 10B2-3: conflict attack */
+#define AD_BLAS 64  /* Step 10B2-3: blasphemous blasting gaze */
+#define AD_WISD 65  /* Step 10B2-4: Great Cthulhu's wisdom-draining gaze */
+#define AD_LOAD 66  /* Step 10B2-4: internal cursed loadstone launcher */
+#define AD_POSN 67  /* Step 10B2-4: noxious death marker */
 
 #define AD_CLRC 240 /* random clerical spell */
 #define AD_SPEL 241 /* random magic spell */

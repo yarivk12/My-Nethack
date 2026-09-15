@@ -14,7 +14,7 @@ the approved Step9A–9C implementation, randomized placement and final README
 publication.
 
 Donor: `UnNetHack/UnNetHack`, **439b8d63d3d1ca78fb08588dd43f61874114b21a**.
-Read the immutable exported files in `../step9-audit/unnethack-pinned` and use
+Read the immutable exported files in `../_qa/step9-audit/unnethack-pinned` and use
 `git show` from the external donor clone for automated comparisons. No revision
 switch or legacy level compiler is used; the combined closeout handles commit,
 tag and publication after validation.
@@ -185,7 +185,7 @@ Both architectures pass the complete corpse/drop and revival function tests.
 Proceed to the pinned dNetHack audit; no Step9C production changes preceded
 this gate.
 
-Evidence is outside the repository under `../step9-audit/dragon-*`. Failed
+Evidence is outside the repository under `../_qa/step9-audit/dragon-*`. Failed
 attempts are retained beside their corrected reruns; no failure is counted as
 a passing result. README is unchanged and there is no commit/tag/push.
 

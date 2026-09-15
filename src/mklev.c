@@ -909,6 +909,7 @@ clear_level_structures(void)
     svl.level.flags.noautosearch = 0;
     svl.level.flags.fumaroles = 0;
     svl.level.flags.stormy = 0;
+    svl.level.flags.lethe = 0;
     svl.level.flags.stasis_until = 0L;
 
     svn.nroom = 0;
@@ -1457,6 +1458,7 @@ makelevel(void)
 
     oinit(); /* assign level dependent obj probabilities */
     clear_level_structures();
+    step10c_set_level_flags(&u.uz);
 
     slev = Is_special(&u.uz);
     step6b_type = step6b_room_type(&u.uz);

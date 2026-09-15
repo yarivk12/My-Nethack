@@ -2773,9 +2773,13 @@ mhitm_ad_drli(
         }
     } else if (mdef == &gy.youmonst) {
         /* mhitu */
-        hitmsg(magr, mattk);
+        if (mattk->aatyp != AT_GAZE)
+            hitmsg(magr, mattk);
         if (!rn2(3) && !Drain_resistance
             && !mhitm_mgc_atk_negated(magr, mdef, TRUE)){
+            if (mattk->aatyp == AT_GAZE)
+                You_feel("your life force wither before the gaze of %s!",
+                         mon_nam(magr));
             losexp("life drainage");
 
             /* unlike hitting with Stormbringer, wounded attacker doesn't
@@ -3031,11 +3035,12 @@ mhitm_ad_elec(
     struct monst *mdef, struct mhitm_data *mhm)
 {
     const int orig_dmg = mhm->damage;
+    boolean elemental = mattk->adtyp == AD_EELC;
 
     if (magr == &gy.youmonst) {
         /* uhitm */
-        if (mhitm_mgc_atk_negated(magr, mdef, TRUE)) {
-            mhm->damage = 0;
+        if (!elemental && mhitm_mgc_atk_negated(magr, mdef, TRUE)) {
+            mhm->damage = elemental ? (mhm->damage + 1) / 2 : 0;
             return;
         }
         if (!Blind)
@@ -3051,12 +3056,12 @@ mhitm_ad_elec(
     } else if (mdef == &gy.youmonst) {
         /* mhitu */
         hitmsg(magr, mattk);
-        if (!mhitm_mgc_atk_negated(magr, mdef, TRUE)) {
+        if (elemental || !mhitm_mgc_atk_negated(magr, mdef, TRUE)) {
             You("get zapped!");
             if (Shock_resistance) {
                 pline_The("zap doesn't shock you!");
                 monstseesu(M_SEEN_ELEC);
-                mhm->damage = 0;
+                mhm->damage = elemental ? (mhm->damage + 1) / 2 : 0;
             } else {
                 monstunseesu(M_SEEN_ELEC);
             }
@@ -3066,8 +3071,8 @@ mhitm_ad_elec(
             mhm->damage = 0;
     } else {
         /* mhitm */
-        if (mhitm_mgc_atk_negated(magr, mdef, TRUE)) {
-            mhm->damage = 0;
+        if (!elemental && mhitm_mgc_atk_negated(magr, mdef, TRUE)) {
+            mhm->damage = elemental ? (mhm->damage + 1) / 2 : 0;
             return;
         }
         if (gv.vis && canseemon(mdef))
@@ -4957,6 +4962,7 @@ mhitm_ad_dise(
            hero gaining sick resistance combined with any hero wielding a
            weapon or wearing dragon scales/mail that guards against disease */
         if (pd->mlet == S_FUNGUS || pd == &mons[PM_GHOUL]
+            || pd == &mons[PM_VOICE_IN_THE_DARK]
             || defended(mdef, AD_DISE))
             mhm->damage = 0;
         /* else does ordinary damage */
@@ -5128,6 +5134,7 @@ mhitm_adtyping(
     struct monst *magr, struct attack *mattk,
     struct monst *mdef, struct mhitm_data *mhm)
 {
+    mhm->damage += mith_cuprilach_backstab(magr, mdef, mattk);
     if (mith_fey_weapon_attack(magr, mattk)) {
         int physical = mhm->damage;
         boolean rusts = mattk->adtyp == AD_RUST && !magr->mcan
@@ -5155,8 +5162,35 @@ mhitm_adtyping(
     case AD_PHYS: mhitm_ad_phys(magr, mattk, mdef, mhm); break;
     case AD_FIRE: mhitm_ad_fire(magr, mattk, mdef, mhm); break;
     case AD_COLD: mhitm_ad_cold(magr, mattk, mdef, mhm); break;
-    case AD_ELEC: mhitm_ad_elec(magr, mattk, mdef, mhm); break;
+    case AD_ELEC:
+    case AD_EELC: mhitm_ad_elec(magr, mattk, mdef, mhm); break;
     case AD_ACID: mhitm_ad_acid(magr, mattk, mdef, mhm); break;
+    case AD_EACD: {
+        int acid_damage = mhm->damage;
+        boolean resisted = resists_acid(mdef);
+
+        mhitm_ad_acid(magr, mattk, mdef, mhm);
+        if (resisted && !mhm->damage)
+            mhm->damage = (acid_damage + 1) / 2;
+        break;
+    }
+    case AD_SHRD:
+        erode_armor(mdef, ERODE_CORRODE);
+        mhitm_ad_phys(magr, mattk, mdef, mhm);
+        break;
+    case AD_TCKL:
+        mhitm_ad_plys(magr, mattk, mdef, mhm);
+        break;
+    case AD_CNFT:
+    case AD_BLAS:
+        mhitm_ad_conf(magr, mattk, mdef, mhm);
+        break;
+    case AD_ILUR:
+        mhitm_ad_drin(magr, mattk, mdef, mhm);
+        break;
+    case AD_UNKN:
+        mhm->damage = 0; /* pinned donor marker has no combat handler */
+        break;
     case AD_STON: mhitm_ad_ston(magr, mattk, mdef, mhm); break;
     case AD_SSEX: mhitm_ad_ssex(magr, mattk, mdef, mhm); break;
     case AD_SITM:
@@ -5210,6 +5244,16 @@ mhitm_adtyping(
     case AD_CURS: mhitm_ad_curs(magr, mattk, mdef, mhm); break;
     case AD_DRLI: mhitm_ad_drli(magr, mattk, mdef, mhm); break;
     case AD_VAMP: mith_drain_attack(magr, mattk, mdef, mhm); break;
+    case AD_WET:
+        if (mdef == &gy.youmonst) {
+            hitmsg(magr, mattk);
+            (void) water_damage(gi.invent, (const char *) 0, FALSE);
+        } else {
+            if (canseemon(mdef))
+                pline_mon(mdef, "%s is soaking wet!", Monnam(mdef));
+            (void) water_damage(mdef->minvent, (const char *) 0, FALSE);
+        }
+        break;
     case AD_DESC: mith_desiccate(magr, mattk, mdef, mhm); break;
     case AD_DISN: mith_disintegrate(magr, mattk, mdef, mhm); break;
     case AD_RUST: mhitm_ad_rust(magr, mattk, mdef, mhm); break;
@@ -5254,6 +5298,31 @@ mhitm_adtyping(
     default:
         mhm->damage = 0;
     }
+}
+
+/* Cuprilach's pinned donor backstab is one extra level-scaled die when a
+ * weapon attack catches a helpless, fleeing, blind, or trapped defender. */
+int
+step10b_backstab_die(const struct permonst *ptr, int level, boolean eligible)
+{
+    return ptr == &mons[PM_CUPRILACH_RILMANI] && eligible
+           ? max(1, level * 3 / 2) : 0;
+}
+
+int
+mith_cuprilach_backstab(struct monst *magr, struct monst *mdef,
+                        struct attack *mattk)
+{
+    boolean trapped = mdef == &gy.youmonst ? u.utrap != 0 : mdef->mtrapped;
+
+    int die = step10b_backstab_die(
+        magr->data, magr->m_lev,
+        mattk->aatyp == AT_WEAP
+            && (helpless(mdef) || mdef->mflee || !mdef->mcansee || trapped));
+
+    if (!die)
+        return 0;
+    return d(1, die);
 }
 
 boolean
@@ -6034,6 +6103,7 @@ hmonas(struct monst *mon)
             /*FALLTHRU*/
         case AT_BITE:
         case AT_REACH5:
+        case AT_REACH2:
         case AT_STNG:
         case AT_BUTT:
         case AT_TENT:
@@ -6105,6 +6175,7 @@ hmonas(struct monst *mon)
                     break;
                 case AT_BITE:
                 case AT_REACH5:
+                case AT_REACH2:
                     verb = "bite";
                     break;
                 case AT_STNG:
@@ -6338,6 +6409,29 @@ hmonas(struct monst *mon)
 
 /*      Special (passive) attacks on you by monsters done here.
  */
+/* Donor AT_NONE attacks with zero dice use level/3+1 dice.  Keep native
+ * level+1 scaling for every pre-existing passive. */
+int
+step10b_passive_dice(const struct permonst *ptr, int level)
+{
+    return ptr >= &mons[PM_BESTIAL_DERVISH]
+                   && ptr <= &mons[PM_RADIANT_PYRAMID]
+               ? level / 3 + 1 : level + 1;
+}
+
+/* The donor's lake retaliation is an end-of-attack counterattack: unlike
+ * native mold/jelly passives, it needs an actual hit.  Preserve native
+ * trigger behavior for every pre-existing monster. */
+boolean
+step10b_elemental_passive_ready(const struct permonst *ptr, boolean hit,
+                                boolean alive, boolean cancelled)
+{
+    boolean lake = ptr >= &mons[PM_FLASHING_LAKE]
+                   && ptr <= &mons[PM_SPARKLING_LAKE];
+
+    return alive && !cancelled && (!lake || hit);
+}
+
 int
 passive(
     struct monst *mon,
@@ -6362,7 +6456,8 @@ passive(
     if (ptr->mattk[i].damn)
         tmp = d((int) ptr->mattk[i].damn, (int) ptr->mattk[i].damd);
     else if (ptr->mattk[i].damd)
-        tmp = d((int) mon->m_lev + 1, (int) ptr->mattk[i].damd);
+        tmp = d(step10b_passive_dice(ptr, (int) mon->m_lev),
+                (int) ptr->mattk[i].damd);
     else
         tmp = 0;
 
@@ -6493,7 +6588,8 @@ passive(
 
     /*  These only affect you if they still live.
      */
-    if (malive && !mon->mcan && rn2(3)) {
+    if (step10b_elemental_passive_ready(ptr, mhitb, malive, mon->mcan)
+        && rn2(3)) {
         switch (ptr->mattk[i].adtyp) {
         case AD_PLYS:
             if (ptr == &mons[PM_FLOATING_EYE]) {

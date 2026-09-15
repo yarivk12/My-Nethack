@@ -321,6 +321,56 @@ static NEARDATA struct artifact artilist[] = {
       NO_ATTK, NO_DFNS, NO_CARY, 0, A_CHAOTIC, NON_PM, NON_PM,
       0, 0, 1500L, NO_COLOR, THIRD_KEY_OF_CHAOS),
 
+    /* Step 10B3-2: neutral keys use the established universal-key shell. */
+    A("The First Key of Neutrality", UNIVERSAL_KEY,
+      (SPFX_NOGEN | SPFX_RESTR), 0, 0,
+      NO_ATTK, NO_DFNS, NO_CARY, 0, A_NEUTRAL, NON_PM, NON_PM,
+      0, 0, 1500L, NO_COLOR, FIRST_KEY_OF_NEUTRALITY),
+    A("The Second Key of Neutrality", UNIVERSAL_KEY,
+      (SPFX_NOGEN | SPFX_RESTR), 0, 0,
+      NO_ATTK, NO_DFNS, NO_CARY, 0, A_NEUTRAL, NON_PM, NON_PM,
+      0, 0, 1500L, NO_COLOR, SECOND_KEY_OF_NEUTRALITY),
+    A("The Third Key of Neutrality", UNIVERSAL_KEY,
+      (SPFX_NOGEN | SPFX_RESTR), 0, 0,
+      NO_ATTK, NO_DFNS, NO_CARY, 0, A_NEUTRAL, NON_PM, NON_PM,
+      0, 0, 1500L, NO_COLOR, THIRD_KEY_OF_NEUTRALITY),
+
+    A("Infinity's Mirrored Arc", DOUBLE_LIGHTSABER,
+      (SPFX_NOGEN | SPFX_RESTR | SPFX_REFLECT), 0, 0,
+      NO_ATTK, NO_DFNS, NO_CARY, ALTMODE, A_NEUTRAL, NON_PM, NON_PM,
+      0, 0, 3000L, NO_COLOR, INFINITY_S_MIRRORED_ARC),
+    A("The Staff of Twelve Mirrors", KHAKKHARA,
+      (SPFX_NOGEN | SPFX_RESTR | SPFX_REFLECT | SPFX_DISPL), 0, 0,
+      PHYS(5,6), NO_DFNS, NO_CARY, 0, A_NEUTRAL, NON_PM, NON_PM,
+      0, 0, 3000L, NO_COLOR, STAFF_OF_TWELVE_MIRRORS),
+    /* The gold override is applied in artifact_exists(). */
+    A("The Sansara Mirror", MIRRORBLADE,
+      (SPFX_NOGEN | SPFX_RESTR | SPFX_REFLECT | SPFX_HSPDAM), 0, 0,
+      PHYS(8,8), NO_DFNS, NO_CARY, 0, A_NEUTRAL, NON_PM, NON_PM,
+      0, 0, 3000L, NO_COLOR, SANSARA_MIRROR),
+    /* The silver override is applied in artifact_exists(). */
+    A("Mirror Brand", LONG_SWORD,
+      (SPFX_NOGEN | SPFX_RESTR | SPFX_ATTK | SPFX_DALIGN | SPFX_REFLECT),
+      0, 0, STUN(1,0), NO_DFNS, NO_CARY, 0, A_NEUTRAL, NON_PM, NON_PM,
+      0, 0, 3000L, NO_COLOR, MIRROR_BRAND),
+    /* The mithril override is applied in artifact_exists(). */
+    A("Soulmirror", PLATE_MAIL, SPFX_NOGEN | SPFX_RESTR | SPFX_REFLECT,
+      0, 0, NO_ATTK, DRLI(0,0), NO_CARY, 0, A_NEUTRAL, NON_PM, NON_PM,
+      0, 0, 9000L, NO_COLOR, SOULMIRROR),
+
+    /* Step 10B3-3: bounded readable artifact; no learned-page state. */
+    A("The Necronomicon", SPE_SECRETS,
+      (SPFX_NOGEN | SPFX_RESTR), 0, 0,
+      NO_ATTK, NO_DFNS, NO_CARY, NECRONOMICON, A_NONE, NON_PM, NON_PM,
+      0, 0, 5000L, NO_COLOR, NECRONOMICON),
+    /* The silver override is applied in artifact_exists().  All three
+     * passive controls follow the pin's carried-property scope. */
+    A("The Silver Key", UNIVERSAL_KEY,
+      (SPFX_NOGEN | SPFX_RESTR),
+      (SPFX_EREGEN | SPFX_TCTRL | SPFX_PCTRL), 0,
+      NO_ATTK, NO_DFNS, NO_CARY, CREATE_PORTAL, A_NEUTRAL, NON_PM, NON_PM,
+      0, 0, 5000L, NO_COLOR, SILVER_KEY),
+
 #if !defined(ARTI_ENUM) && !defined(DUMP_ARTI_ENUM)
     /*
      *  terminator; otyp must be zero

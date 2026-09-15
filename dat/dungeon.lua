@@ -15,6 +15,7 @@ dungeon = {
          { name="Sheol", base=30, range=170, direction="down" },
          { name="The Dragon Caves", base=30, range=170, direction="down" },
          { name="Mithardir", base=30, range=170, branchtype="portal" },
+         { name="Neutral Quest", base=30, range=170, branchtype="portal" },
          {
             name = "The Gnomish Mines",
             base = 2,
@@ -104,6 +105,11 @@ dungeon = {
          {
             name = "castle",
             base = -1
+         },
+         {
+            name = "neulev",
+            base = 30,
+            range = 170
          },
       }
    },
@@ -415,6 +421,44 @@ dungeon = {
          { name = "cat1", base = 5 },
          { name = "cat2", base = 6 },
          { name = "cat3", base = 7 }
+      }
+   },
+   {
+      -- Seven logical Neutral floors plus the same-dnum Dispensary slot.
+      name = "Neutral Quest", bonetag = "N", base = 8,
+      flags = { "mazelike" }, alignment = "neutral",
+      branches = {
+         { name="The Lost Cities", chainlevel="sumall", base=0, direction="down" }
+      },
+      levels = {
+         { name = "gatetwn", base = 1 },
+         { name = "out1", bonetag = "A", base = 2 },
+         { name = "out2", bonetag = "B", base = 3 },
+         { name = "out3", bonetag = "C", base = 4 },
+         { name = "out4", bonetag = "D", base = 5 },
+         { name = "spire", bonetag = "E", base = 6 },
+         { name = "sumall", base = 7 },
+         { name = "lbyrnth", base = 8 }
+      }
+   },
+   {
+      name = "The Lost Cities", bonetag = "R", base = 13,
+      entry = 2, flags = { "mazelike" }, alignment = "neutral",
+      levels = {
+         -- The native scheduler chooses and persists each equal alternate.
+         { name = "leth-a-1", bonetag = "F", base = 1 },
+         { name = "lethe-b", bonetag = "G", base = 2 },
+         { name = "leth-c-1", bonetag = "H", base = 3 },
+         { name = "leth-d-1", bonetag = "I", base = 4 },
+         { name = "lethe-e", bonetag = "J", base = 5 },
+         { name = "lethe-f", bonetag = "K", base = 6 },
+         { name = "lethe-g", bonetag = "L", base = 7 },
+         { name = "lethe-z", bonetag = "M", base = 8 },
+         { name = "nkai-a-1", bonetag = "N", base = 9 },
+         { name = "nkai-b", bonetag = "O", base = 10 },
+         { name = "nkai-c", bonetag = "P", base = 11 },
+         { name = "nkai-z", bonetag = "Q", base = 12 },
+         { name = "rlyeh", base = 13 }
       }
    },
 

@@ -2504,19 +2504,19 @@ find_ac(void)
 
     /* armor class from worn gear */
     if (uarm)
-        uac -= ARM_BONUS(uarm);
+        uac -= ARM_BONUS(uarm) + artifact_arm_bonus(uarm);
     if (uarmc)
-        uac -= ARM_BONUS(uarmc);
+        uac -= ARM_BONUS(uarmc) + artifact_arm_bonus(uarmc);
     if (uarmh)
-        uac -= ARM_BONUS(uarmh);
+        uac -= ARM_BONUS(uarmh) + artifact_arm_bonus(uarmh);
     if (uarmf)
-        uac -= ARM_BONUS(uarmf);
+        uac -= ARM_BONUS(uarmf) + artifact_arm_bonus(uarmf);
     if (uarms)
-        uac -= ARM_BONUS(uarms);
+        uac -= ARM_BONUS(uarms) + artifact_arm_bonus(uarms);
     if (uarmg)
-        uac -= ARM_BONUS(uarmg);
+        uac -= ARM_BONUS(uarmg) + artifact_arm_bonus(uarmg);
     if (uarmu)
-        uac -= ARM_BONUS(uarmu);
+        uac -= ARM_BONUS(uarmu) + artifact_arm_bonus(uarmu);
     if (uleft && uleft->otyp == RIN_PROTECTION)
         uac -= uleft->spe;
     if (uright && uright->otyp == RIN_PROTECTION)

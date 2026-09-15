@@ -159,6 +159,10 @@ def restore():
     print('PASS traversal save/reload', before[:2], flush=True)
 
 try:
+    # Let the initial tty redraw and welcome messages settle before sending
+    # the first extended command; WinPTY can otherwise consume it as a
+    # startup --More-- dismissal.
+    game.settle()
     game.send('#levelchange\n');game.wait('To what experience level')
     game.send('30\n');game.settle()
     game.lua('nh.debug_flags({hunger=false})')

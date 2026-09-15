@@ -311,6 +311,8 @@ mith_weapon_dice(struct obj *otmp, boolean large)
         if (large) { MITH_ADD(1); } break;
     case RANSEUR: case VOULGE:
         MITH_PLUS(1, 4); break;
+    case SCYTHE:
+        MITH_PLUS(1, 4); break;
     case SPETUM:
         if (large) { MITH_PLUS(1, 6); } else { MITH_ADD(1); } break;
     case HALBERD:
@@ -370,6 +372,7 @@ dmgval(struct obj *otmp, struct monst *mon)
         case FLAIL:
         case RANSEUR:
         case VOULGE:
+        case SCYTHE:
             tmp += rnd(4);
             break;
 
@@ -417,6 +420,7 @@ dmgval(struct obj *otmp, struct monst *mon)
         case ELVEN_BROADSWORD:
         case RUNESWORD:
         case VOULGE:
+        case SCYTHE:
             tmp += rnd(4);
             break;
 
@@ -425,11 +429,25 @@ dmgval(struct obj *otmp, struct monst *mon)
             break;
         }
     }
+    if (otyp == VIPERWHIP)
+        tmp *= max(1, otmp->usecount);
     if (Is_weapon) {
         tmp += otmp->spe;
+        if (otyp == RAKUYO
+            && ((otmp == uwep && !u.twoweap)
+                || (otmp->where == OBJ_MINVENT
+                    && (otmp->owornmask & W_WEP)))) {
+            tmp += rnd(bigmonst(ptr) ? 3 : 4) + otmp->spe;
+        }
         /* negative enchantment mustn't produce negative damage */
         if (tmp < 0)
             tmp = 0;
+    }
+    if (otyp == MIRRORBLADE) {
+        struct obj *defender = (mon == &gy.youmonst) ? uwep : MON_WEP(mon);
+
+        if (defender && defender != otmp)
+            tmp = max(tmp, dmgval(defender, mon));
     }
 
     if (obj_material(otmp) <= LEATHER && thick_skinned(ptr))
@@ -891,15 +909,32 @@ select_hwep(struct monst *mtmp)
 boolean
 mith_offhand_attack(const struct permonst *ptr, int slot)
 {
+    if (ptr == &mons[PM_LURKING_ONE])
+        return slot >= 1 && slot <= 3;
     if (ptr == &mons[PM_ALABASTER_ELF])
         return slot == 2;
     if (ptr == &mons[PM_BRALANI_ELADRIN])
         return slot == 1 || slot == 3;
+    if (ptr == &mons[PM_MOTHER_HYDRA])
+        return slot == 5;
     return slot == 1
            && (ptr == &mons[PM_COURE_ELADRIN]
                || ptr == &mons[PM_DEEP_ONE]
                || ptr == &mons[PM_DEEPER_ONE]
-               || ptr == &mons[PM_DEEPEST_ONE]);
+               || ptr == &mons[PM_DEEPEST_ONE]
+               || ptr == &mons[PM_CUPRILACH_RILMANI]
+               || (ptr >= &mons[PM_SMALL_GOAT_SPAWN]
+                   && ptr <= &mons[PM_GIANT_GOAT_SPAWN])
+               || ptr == &mons[PM_HMNYW_PHARAOH]
+               || ptr == &mons[PM_FATHER_DAGON]
+               || ptr == &mons[PM_DEMINYMPH]
+               || ptr == &mons[PM_STAR_SPAWN]);
+}
+
+int
+mith_multiweapon_slot(const struct permonst *ptr, int slot)
+{
+    return ptr == &mons[PM_LURKING_ONE] && slot >= 0 && slot < 4 ? slot : -1;
 }
 
 /* Donor visible size plus half the weapon type's size offset. Restrict this
@@ -972,6 +1007,31 @@ mith_select_offhand(struct monst *mtmp)
                 return otmp;
         }
     }
+    return (struct obj *) 0;
+}
+
+/* Re-scan current inventory for every arm.  No saved secondary weapon
+ * pointers means removal or destruction between attacks is immediately safe. */
+struct obj *
+mith_select_multiweapon(struct monst *mtmp, int slot)
+{
+    struct obj *otmp;
+    int i, wanted = slot - 1;
+
+    if (slot <= 0)
+        return MON_WEP(mtmp);
+    if (mtmp->misc_worn_check & W_ARMS)
+        return (struct obj *) 0;
+    for (i = 0; i < SIZE(hwep); ++i)
+        for (otmp = mtmp->minvent; otmp; otmp = otmp->nobj) {
+            if (otmp->otyp != hwep[i] || otmp == MON_WEP(mtmp)
+                || (otmp->owornmask & W_WEP) || otmp->oartifact
+                || otmp->cursed || mith_bimanual(otmp, mtmp->data)
+                || !can_touch_safely(mtmp, otmp))
+                continue;
+            if (wanted-- == 0)
+                return otmp;
+        }
     return (struct obj *) 0;
 }
 
@@ -2105,6 +2165,10 @@ mith_weapon_effects(struct obj *obj, struct monst *target, int base_damage)
         return 0;
     if ((obj->obranch_props & OBP_ANARCHIC)
         && (hero ? u.ualign.type != A_CHAOTIC : target->data->maligntyp >= 0))
+        extra += base_damage;
+    if ((obj->obranch_props & OBP_CONCORDANT)
+        && (hero ? u.ualign.type != A_NEUTRAL
+                 : sgn(target->data->maligntyp) != 0))
         extra += base_damage;
     if (!hero)
         for (gear = target->minvent; gear; gear = gear->nobj)

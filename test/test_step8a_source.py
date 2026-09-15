@@ -4,6 +4,7 @@ import io
 import re
 import subprocess
 import sys
+from test_step10b_source import project as step10b_project
 
 repo=Path(__file__).resolve().parents[1]
 baseline='4ab8e05f7a48833f303f11036d3697737b9946a0'
@@ -16,10 +17,10 @@ def old(path):
 
 for p in ['include/global.h','include/dungeon.h','src/save.c',
           'src/restore.c','src/bones.c','src/files.c','util/recover.c']:
-    assert read(p)==old(p),p
+    assert step10b_project(p, read(p))==old(p),p
 assert '## Step 8: Ruins of Moria' in read('README.md')
 assert '439b8d63d3d1ca78fb08588dd43f61874114b21a' in read('README.md')
-assert '#define EDITLEVEL 4' in read('include/patchlevel.h') # combined Step 9 ID epoch
+assert '#define EDITLEVEL 5' in read('include/patchlevel.h') # Step 10 ID epoch
 dungeon=read('dat/dungeon.lua')
 assert dungeon.count('name = "The Ruins of Moria"')==2
 assert re.search(r'name = "The Ruins of Moria",\s+base = 30,\s+range = 170,\s+direction = "up"',dungeon)

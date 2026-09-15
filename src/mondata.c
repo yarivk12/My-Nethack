@@ -228,7 +228,8 @@ resists_drli(struct monst *mon)
         || (mon == &gy.youmonst && u.ulycn >= LOW_PM)
         || ptr == &mons[PM_DEATH] || is_vampshifter(mon)
         || ptr == &mons[PM_WRAITHWORM]
-        || ptr == &mons[PM_FIRST_WRAITHWORM])
+        || ptr == &mons[PM_FIRST_WRAITHWORM]
+        || ptr == &mons[PM_VOICE_IN_THE_DARK])
         return TRUE;
     return defended(mon, AD_DRLI);
 }
@@ -241,10 +242,85 @@ mith_displaced(struct monst *mon)
     return mon->data == &mons[PM_WRAITHWORM]
            || mon->data == &mons[PM_FIRST_WRAITHWORM]
            || mon->data == &mons[PM_ASPECT_OF_THE_SILENCE]
-           || mith_mon_syllable(mon) == MITH_VAUL;
+           || mon->data == &mons[PM_SHARAB_KAMEREL]
+           || mith_mon_syllable(mon) == MITH_VAUL
+           || (MON_WEP(mon)
+               && spec_ability(MON_WEP(mon), SPFX_DISPL));
 }
 
 /* True if monster is magic-missile (actually, general magic) resistant */
+boolean
+step10b_innate_magic(const struct permonst *ptr)
+{
+    return ptr == &mons[PM_AURUMACH_RILMANI]
+           || ptr == &mons[PM_CENTER_OF_ALL]
+           || ptr == &mons[PM_ARA_KAMEREL]
+           || ptr == &mons[PM_LIVING_LECTERN]
+           || ptr == &mons[PM_KUKER]
+           || ptr == &mons[PM_LURKING_ONE]
+           || ptr == &mons[PM_BLESSED]
+           || (ptr >= &mons[PM_APPRENTICE_WITCH]
+               && ptr <= &mons[PM_HMNYW_PHARAOH])
+           || ptr == &mons[PM_ILLURIEN_OF_THE_MYRIAD_GLIMPSES]
+           || ptr == &mons[PM_BLASPHEMOUS_LURKER]
+           || (ptr >= &mons[PM_FLASHING_LAKE]
+               && ptr <= &mons[PM_SPARKLING_LAKE]);
+}
+
+/* 1 denotes donor insight-only presence; 2 denotes donor sanity-loss
+ * presence.  Visibility and generation never depend on this classification. */
+int
+step10b_eldritch_presence_kind(const struct permonst *ptr)
+{
+    if (ptr == &mons[PM_BESTIAL_DERVISH]
+        || ptr == &mons[PM_BLOOD_SHOWER]
+        || ptr == &mons[PM_MANY_TALONED_THING]
+        || ptr == &mons[PM_HEMORRHAGIC_THING]
+        || ptr == &mons[PM_MANY_EYED_SEEKER]
+        || ptr == &mons[PM_MAN_FACED_MILLIPEDE]
+        || ptr == &mons[PM_CRIMSON_WRITHER]
+        || ptr == &mons[PM_LURKING_ONE]
+        || (ptr >= &mons[PM_SMALL_GOAT_SPAWN]
+            && ptr <= &mons[PM_MOUTH_OF_THE_GOAT])
+        || (ptr >= &mons[PM_MIGO_WORKER] && ptr <= &mons[PM_MIGO_QUEEN])
+        || ptr == &mons[PM_BYAKHEE]
+        || ptr == &mons[PM_DARK_YOUNG]
+        || ptr == &mons[PM_DEEP_DWELLER]
+        || ptr == &mons[PM_GUG]
+        || ptr == &mons[PM_ILLURIEN_OF_THE_MYRIAD_GLIMPSES]
+        || ptr == &mons[PM_NIGHTGAUNT]
+        || ptr == &mons[PM_PRIEST_OF_AN_UNKNOWN_GOD]
+        || ptr == &mons[PM_SHOGGOTH]
+        || ptr == &mons[PM_STAR_SPAWN]
+        || ptr == &mons[PM_HUNTING_HORROR]
+        || ptr == &mons[PM_BLASPHEMOUS_LURKER]
+        || ptr == &mons[PM_ALHOON]
+        || ptr == &mons[PM_FATHER_DAGON]
+        || ptr == &mons[PM_MOTHER_HYDRA]
+        || ptr == &mons[PM_GREAT_CTHULHU])
+        return 2;
+    if (ptr == &mons[PM_ETHEREAL_DERVISH]
+        || (ptr >= &mons[PM_FLASHING_LAKE]
+            && ptr <= &mons[PM_SPARKLING_LAKE])
+        || ptr == &mons[PM_DEEP_BLUE_CUBE]
+        || ptr == &mons[PM_PITCH_BLACK_CUBE]
+        || ptr == &mons[PM_PRAYERFUL_THING]
+        || ptr == &mons[PM_MIRRORED_MOONFLOWER]
+        || ptr == &mons[PM_RADIANT_PYRAMID]
+        || ptr == &mons[PM_KUKER])
+        return 1;
+    return 0;
+}
+
+boolean
+step10b_mark_eldritch_seen(struct monst *mon)
+{
+    if (!mon || (mon->mspare1 & MITH_ELDRITCH_SEEN))
+        return FALSE;
+    mon->mspare1 |= MITH_ELDRITCH_SEEN;
+    return TRUE;
+}
+
 boolean
 resists_magm(struct monst *mon)
 {
@@ -255,6 +331,7 @@ resists_magm(struct monst *mon)
 
     /* as of 3.2.0:  gray dragons, Angels, Oracle, Yeenoghu */
     if (dmgtype(ptr, AD_MAGM) || ptr == &mons[PM_BABY_GRAY_DRAGON]
+        || step10b_innate_magic(ptr)
         || dmgtype(ptr, AD_RBRE)) /* Chromatic Dragon */
         return TRUE;
     /* check for magic resistance granted by wielded weapon */
@@ -560,6 +637,7 @@ hates_silver(struct permonst *ptr)
 {
     return (boolean) (is_were(ptr) || ptr->mlet == S_VAMPIRE || is_demon(ptr)
                       || ptr == &mons[PM_SHADE]
+                      || ptr == &mons[PM_VOICE_IN_THE_DARK]
                       || (ptr->mlet == S_IMP && ptr != &mons[PM_TENGU]));
 }
 
@@ -763,6 +841,7 @@ max_passive_dmg(struct monst *mdef, struct monst *magr)
         case AT_CLAW:
         case AT_BITE:
         case AT_REACH5:
+        case AT_REACH2:
         case AT_KICK:
         case AT_BUTT:
         case AT_TUCH:

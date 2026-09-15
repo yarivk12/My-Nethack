@@ -1,0 +1,60 @@
+*.[ch] NHSUBST
+*.cpp NHSUBST
+*.sh NHSUBST
+*.pl NHSUBST
+*.md NHSUBST
+Porting NHSUBST
+README NHSUBST
+* text=auto
+*.hqx -text
+*.sln -text
+*.vcxproj -text
+*.doc !diff
+*.DOC !diff
+*.uu NH_header=no
+*.xpm NH_header=no
+.git* NH_header=no
+* NH_filestag=(file%s_in_top_directory)
+NetHack.dsw NH_filestag=(file%s_for_win32_that_are_moved_into_._at_compile_time)
+
+# Step 9 ASCII maps contain meaningful trailing stone cells. Preserve their
+# validated bytes; test_step9a_source.py checks whitespace outside map strings.
+dat/cat1.lua whitespace=-blank-at-eol
+dat/cat3.lua whitespace=-blank-at-eol
+dat/chalv2.lua whitespace=-blank-at-eol
+dat/drgnA.lua whitespace=-blank-at-eol
+dat/drgnB.lua whitespace=-blank-at-eol
+dat/drgnC.lua whitespace=-blank-at-eol
+dat/drgnD.lua whitespace=-blank-at-eol
+dat/palace_e.lua whitespace=-blank-at-eol
+dat/palace_f.lua whitespace=-blank-at-eol
+
+# Step 10 ASCII maps also contain validated right-padding inside map literals.
+# Preserve those bytes; the Step 10 source/content tests reject whitespace
+# outside map strings.
+dat/gatetwn.lua whitespace=-trailing-space
+dat/lbyrnth.lua whitespace=-trailing-space
+dat/leth-a-1.lua whitespace=-trailing-space
+dat/leth-a-2.lua whitespace=-trailing-space
+dat/leth-c-1.lua whitespace=-trailing-space
+dat/leth-c-2.lua whitespace=-trailing-space
+dat/leth-d-1.lua whitespace=-trailing-space
+dat/leth-d-2.lua whitespace=-trailing-space
+dat/lethe-b.lua whitespace=-trailing-space
+dat/lethe-e.lua whitespace=-trailing-space
+dat/lethe-f.lua whitespace=-trailing-space
+dat/lethe-g.lua whitespace=-trailing-space
+dat/lethe-z.lua whitespace=-trailing-space
+dat/neulev.lua whitespace=-trailing-space
+dat/nkai-a-1.lua whitespace=-trailing-space
+dat/nkai-a-2.lua whitespace=-trailing-space
+dat/nkai-b.lua whitespace=-trailing-space
+dat/nkai-c.lua whitespace=-trailing-space
+dat/nkai-z.lua whitespace=-trailing-space
+dat/out1.lua whitespace=-trailing-space
+dat/out2.lua whitespace=-trailing-space
+dat/out3.lua whitespace=-trailing-space
+dat/out4.lua whitespace=-trailing-space
+dat/rlyeh.lua whitespace=-trailing-space
+dat/spire.lua whitespace=-trailing-space
+dat/sumall.lua whitespace=-trailing-space

@@ -1,0 +1,241 @@
+         NetHack 5.0.0 -- General information
+
+NetHack 5.0 is an enhancement to the dungeon exploration game NetHack,
+which is a distant descendent of Rogue and Hack, and a direct descendent
+of NetHack 3.6.
+
+NetHack 5.0.0 is a release of NetHack. As a .0 version, there may be some
+bugs encountered. Constructive suggestions, GitHub pull requests, and bug
+reports are all welcome and encouraged.
+
+Private expansion project status
+---------------------------------
+
+This checkout contains a private NetHack 5.0 expansion project. The project
+uses the upstream NetHack 5.0 code as its base and records each completed
+milestone in git. The following status describes the intentional state of this
+checkout; it is separate from the upstream release notes below.
+
+Frozen structural baseline
+
+The expanded dungeon structure is complete and frozen at baseline commit
+64db689a1, tagged expanded-dod-200-baseline. That baseline includes:
+
+ * 200-level Dungeons of Doom, with the Castle at Dungeons of Doom level 200.
+ * Widened deep-level depth, ledger, save, and restore handling.
+ * Removal of the former ledger-255 runtime limitation; audited runtime
+   capacity is 3199.
+ * Validated x86 and x64 builds and regression tests.
+
+No later milestone may change dungeon length, topology, ledger capacity, or
+ordinary depth semantics unless explicitly authorized. Step 7 added no
+save-format fields; its `EDITLEVEL` advance to 2 was required because stored
+monster, object, and dungeon IDs changed.
+
+Step 5: shop optimization
+
+Step 5 is the completed shop-only content milestone. Its intended behavior is:
+
+ * Shop-room creation keeps every existing eligibility guard. The vanilla
+   3/depth roll is preserved through depth 20, with a 15% floor from depth 20
+   onward. This gives 100% at depths 2 and 3, 75% at depth 4, 60% at depth 5,
+   30% at depth 10, 20% at depth 15, and 15% at depth 20 and deeper.
+ * Random shop types use these weights: general 30, armor 5, scroll 1,
+   potion 1, weapon 1, food 1, ring 15, wand 10, tool 10, spellbook 25,
+   and health-food 1. The unique special-level shop types remain zero-weight.
+ * General-store stock uses the requested weighted mixture: food 1, potions 9,
+   scrolls 9, armor 5, weapons 1, tools 8, gems 1, spellbooks 20, wands 10,
+   rings 20, and amulets 16.
+ * The specialized shop stock distributions are: armor 95/5 armor/weapons;
+   scroll 50/50 scrolls/spellbooks; potion 100 potions; weapon 50/50
+   weapons/armor; food unchanged; ring 65/35 rings/amulets; wand 100 wands;
+   tool 100 tools; spellbook 95/5 spellbooks/scrolls; and health-food unchanged.
+ * Shop-stock mimic creation is capped at 10% while retaining the existing
+   mimic-generation mechanics.
+
+Global RANDOM_CLASS object-generation distributions are intentionally unchanged.
+No dungeon, save, ledger, topology, or unrelated content changes are included
+in this milestone. The completed change is recorded as
+shops--optimization-step5-complete.
+
+Step 5 validation
+
+ * Source-level probability and inventory-table audit passed; all requested
+   weighted tables sum to 100.
+ * Release x64 and Win32 builds completed successfully with zero errors,
+   including NetHack, NetHackW, recover, and Windows package generation.
+ * Frozen structural files and the global object-generation tables are unchanged.
+ * git diff --check passed; the remaining compiler warnings are pre-existing
+   unrelated warnings.
+
+Step 6: NerfHack dungeon enrichment
+
+Step 6A/6B is the approved NerfHack `dev` donor integration. It adds NerfHack
+Big Room 18 as local Big Room slot 14, with 3--5 total Big Rooms per game and
+a hard maximum of 5; exactly 1 Giant Court; 2--3 Real Zoos; exactly 1 Dragon
+Lair; and exactly 1 optional Temple of Moloch branch. These features use
+randomized placement through the extended Dungeons of Doom. The deterministic
+DL101--105 test placement was removed after validation.
+
+Step 7: classic Lost Tomb
+
+Imports only NerfHack dev's classic dat/tomb-1.lua from pinned commit
+0cb8781b0929b4617590a3b9fe78f972ef42c25f; tomb-2 is not imported. Exactly one
+optional, one-level Lost Tomb branch is placed at DoD DL30--199 through the
+existing persistent enrichment scheduler, avoiding its reserved depths.
+Shadow is a genuine G_NOGEN monster. Magic Candle joins the normal tool
+population and provides permanent light, with finite ordinary candles when
+attached to the Candelabrum. Vanilla magic lamp and wishing remain unchanged.
+
+Local adaptations preserve the donor map bytes while using one return stair,
+map donor undead/Shadow flags to local behavior, and reuse ghost/wax tile art.
+Object, monster and dungeon index changes require the normal EDITLEVEL 2 save
+epoch; start fresh games with this build. Step 6 counts and Castle DL200 remain
+unchanged. A four-newline Moloch map repair restores its intended geometry.
+See https://github.com/yarivk12/My-Nethack/blob/phase0/dod-length/doc/step7.md
+for provenance, compatibility details and validation results.
+
+The file doc/fixes5-0-0.txt in the source distribution contains a full list
+of fixes and changes as they were committed. The text in there was written
+for the development team's own use and is provided  "as is", so please do
+not ask us to further explain the entries in that file. Some entries might
+be considered "spoilers", particularly in the "new features" section.
+
+Along with the game improvements and bug fixes, NetHack 5.0 strives to make
+some general architectural improvements to the game or to its building
+process. Among them, 5.0 has:
+
+ *  The source code is compliant with the C99 standard.
+
+ *  removes barriers to building NetHack on one platform and operating system,
+    for later execution on another (possibly quite different) platform and/or
+    operating system. That capability is generally known as "cross-compiling."
+    See the file "Cross-compiling" in the top-level folder for more information
+    on that.
+
+ *  The build-time "yacc and lex"-based level compiler, the
+    "yacc and lex"-based dungeon compiler, and the quest text file processing
+    previously done by NetHack's "makedefs" utility, have been replaced with
+    Lua text alternatives that are loaded and processed by the game during play.
+
+Here are some other general notes on the changes in NetHack 5.0 that were not
+considered spoilers:
+ -  automatic annotation "gateway to Moloch's Sanctum" for vibrating square
+        level once that square's location becomes known (found or magic
+        mapped); goes away once sanctum temple is found (entered or high altar
+        mapped)
+
+                        - - - - - - - - - - -
+
+Please read items (1), (2) and (3) BEFORE doing anything with your new code.
+
+1.  Unpack the code in a dedicated new directory.  We will refer to that
+    directory as the 'Top' directory.  It makes no difference what you
+    call it.
+
+2.  Having unpacked, you should have a file called 'Files' in your Top
+    directory.
+
+    This file contains the list of all the files you now SHOULD
+    have in each directory.  Please check the files in each directory
+    against this list to make sure that you have a complete set.
+
+    This file also contains a list of what files are created during
+    the build process.
+
+    The names of the directories listed should not be changed unless you
+    are ready to go through the makefiles and the makedefs program and change
+    all the directory references in them.
+
+3.  Before you do anything else, please read carefully the file called
+    "license" in the 'dat' subdirectory.  It is expected that you comply
+    with the terms of that license, and we are very serious about it.
+
+4.  If you are attempting to build NetHack on one platform/processor, to
+    produce a game on a different platform/processor it may behoove you to
+    read the file "Cross-compiling" in your Top directory.
+
+5.  If everything is in order, you can now turn to trying to get the program
+    to compile and run on your particular system.  It is worth mentioning
+    that the default configuration is SysV/Sun/Solaris2.x (simply because
+    the code was housed on such a system).
+
+    The files sys/*/Install.*, or sys/*/NewInstall.* were written to guide
+    you in configuring the program for your operating system.  The files
+    win/*/Install.* are available, where necessary, to help you in
+    configuring the program for particular windowing environments.
+    Reading them, and the man pages, should answer most of your questions.
+
+
+    At the time of the most recent official release, NetHack 5.0, it had
+    been tested to run and/or compile on:
+
+        Intel Pentium or better running Linux, BSDI
+            [compiles, runs]
+        Intel Pentium or better running Windows 10 or 11
+            [compiles, runs]
+        Intel-based, or Apple M1, M2, M3, M4, M5 Macs running
+            macOS 10.11 (El Capitan) to macOS 26 (Tahoe)
+            [compiles, runs]
+            (follow the instructions in sys/unix/NewInstall.unx)
+        Intel 80386 or greater running MS-DOS with DPMI
+            [cross-compiles on Linux, runs on MS-DOS, emulator/dosbox]
+            built via djgpp compiler (native or Linux-hosted cross-compiler)
+        AmigaOS 3.0 or later
+            [cross-compiles on Linux or macOS, runs on Amiga or emulator]
+            Running requires Kickstart 39+
+            6 MB free RAM minimum (8 MB recommended)
+            Hard drive with ~5 MB free space
+
+    There has also been some success runing/comiling on:
+        OpenVMS (aka VMS) V8.4 on Alpha and on Integrity/Itanium/IA64
+        OpenVMS (ask VMS) V9.2-3 on x86-64
+
+                        - - - - - - - - - - -
+
+If you have problems building the game, or you find bugs in it, we recommend
+filing a bug report from our "Contact Us" web page at:
+    https://www.nethack.org/common/contact.html
+Please include the version information from #version or the command line
+option --version in the appropriate field.
+
+A public repository of the latest NetHack code that we've made
+available can be obtained via git here:
+    https://github.com/NetHack/NetHack
+      or
+    https://sourceforge.net/p/nethack/NetHack/
+
+When sending correspondence, please observe the following:
+o Please be sure to include your machine type, OS, and patchlevel.
+o Please avoid sending us binary files (e.g. save files or bones files).
+  If you have found a bug and think that your save file would aid in solving
+  the problem, send us a description in words of the problem, your machine
+  type, your operating system, and the version of NetHack.  Tell us that you
+  have a save file, but do not actually send it.
+  You may then be contacted by a member of the development team with the
+  address of a specific person to send the save file to.
+o Though we make an effort to reply to each bug report, it may take some
+  time before you receive feedback.  This is especially true during the
+  period immediately after a new release, when we get the most bug reports.
+o We don't give hints for playing the game.
+o Don't bother to ask when the next version will be out or you can expect
+  to receive a stock answer.
+
+If you want to submit a patch for the NetHack source code via email directly,
+you can direct it to this address:
+    nethack-bugs (at) nethack.org
+
+If a feature is not accepted you are free, of course, to post the patches
+to the net yourself and let the marketplace decide their worth.
+
+All of this amounts to the following:  If you decide to apply a free-lanced
+patch to your NetHack 5.0 code, you are welcome to do so, of course, but we
+won't be able to provide support or receive bug reports for it.
+
+In our own patches, we will assume that your code is synchronized with ours.
+
+                  -- Good luck, and happy Hacking --
+
+# $NHDT-Date: 1779926755 2026/05/28 00:05:55 $ $NHDT-Branch: NetHack-5.0 $:$NHDT-Revision: 1.113 $
+# Copyright (c) 2012 by Michael Allison
+# NetHack may be freely redistributed.  See license for details.

@@ -1,0 +1,58 @@
+-- Ruins of the Dwarrowdelf, by Guest41. NetHack license.
+-- UnNetHack 439b8d63d3d1ca78fb08588dd43f61874114b21a:dat/moria.des (moria4-4).
+-- Step 8A Lua port; runtime dependencies documented in doc/step8a.md.
+des.level_init({ style="solidfill", fg=" " })
+des.level_flags("hardfloor", "mazelevel", "noflipy")
+des.map([[
+---------------------------------------------------------------------------
+|...|.|.....|.|.....|.|.....|.|.....|.|.....|.|.....|.|.....|.|.....|.|...|
+|...-.-.....-.-.....-.-.....-.-.....-.-.....-.-.....-.-.....-.-.....-.-...|
+|.........................................................................|
+|...-------------------------------------------------------------------...|
+|...|                                                                 |...|
+|...-------------------------------------------------------------------...|
+|.........................................................................|
+|.........................................................................|
+|................K...................K...................K................|
+|.........................................................................|
+|.........................................................................|
+|...-------------------------------------------------------------------...|
+|...|                                                                 |...|
+|...-------------------------------------------------------------------...|
+|.........................................................................|
+|...-.-.....-.-.....-.-.....-.-.....-.-.....-.-.....-.-.....-.-.....-.-...|
+|...|.|.....|.|.....|.|.....|.|.....|.|.....|.|.....|.|.....|.|.....|.|...|
+---------------------------------------------------------------------------
+]])
+
+des.region({ region={1,1,73,18}, lit=-1, type="ordinary" })
+des.non_diggable(selection.area(0,0,74,17))
+
+local up, down = {}, {}
+for x = 5, 69, 8 do
+    up[#up+1], down[#down+1] = {x,1}, {x,17}
+end
+shuffle(up)
+shuffle(down)
+des.stair({ dir="up", coord=up[1] })
+des.stair({ dir="down", coord=down[1] })
+for x = 5, 69, 8 do
+    des.door("locked", x,2)
+    des.door("locked", x,16)
+end
+
+for i = 1, 30+d(4) do des.monster({ id="deep orc", peaceful=false }) end
+for i = 1, 20+d(4) do des.monster({ id="hill orc", peaceful=false }) end
+for i = 1, 10+d(4) do
+    des.monster({ id="orc-captain", peaceful=false, inventory=function()
+        if percent(25) then des.object({ id="oil lamp", lit=true }) end
+    end })
+end
+for i = 1, d(3) do des.monster({ class="T", peaceful=false }) end
+for i = 1, d(2,4) do des.object({ id="dwarvish mithril-coat", buc="blessed", spe=d(5) }) end
+for i = 1, 10+d(3,5) do des.object() end
+
+-- Branch flavor: ordinary cursed teleportation scrolls with a custom name.
+for i = 1, d(2) do
+    des.object({ id="scroll of teleportation", buc="cursed", name="Word of Recall" })
+end

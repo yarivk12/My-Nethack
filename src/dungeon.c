@@ -13,7 +13,6 @@
 #define X_LOCATE "x-loca"
 #define X_GOAL "x-goal"
 
-#define STEP6B_ROOM_PREFIX "x6b-"
 #define STEP6B_MIN_LEVEL 30
 #define STEP6B_MAX_LEVEL 199
 #define STEP10C_DISPENSARY_LEVEL 8
@@ -66,7 +65,6 @@ staticfn void init_castle_tune(void);
 staticfn void fixup_level_locations(void);
 staticfn void free_proto_dungeon(struct proto_dungeon *);
 staticfn void step6b_schedule(void);
-staticfn boolean step6b_room_marker(const s_level *);
 staticfn boolean step6b_depth_used(int);
 staticfn int step6b_pick_depth(boolean *, boolean);
 staticfn void step6b_add_level(const char *, int, char, uchar);
@@ -1471,42 +1469,13 @@ depth(d_level *lev)
     return svd.dungeons[lev->dnum].depth_start + lev->dlevel - 1;
 }
 
-staticfn boolean
-step6b_room_marker(const s_level *lev)
-{
-    return (boolean) (lev && !strncmp(lev->proto, STEP6B_ROOM_PREFIX,
-                                      sizeof STEP6B_ROOM_PREFIX - 1));
-}
-
-/* Return the imported room to place on an otherwise ordinary level.  Room
- * markers live in the normal special-level chain so their locations are
- * saved and restored with the rest of the dungeon topology; Is_special()
- * filters them out before map loading. */
-int
-step6b_room_type(d_level *lev)
-{
-    s_level *curr;
-
-    for (curr = svs.sp_levchn; curr; curr = curr->next) {
-        if (!step6b_room_marker(curr) || !on_level(lev, &curr->dlevel))
-            continue;
-        if (!strcmp(curr->proto, "x6b-giant"))
-            return STEP6B_ROOM_GIANTCOURT;
-        if (!strcmp(curr->proto, "x6b-realzoo"))
-            return STEP6B_ROOM_REALZOO;
-        if (!strcmp(curr->proto, "x6b-dragon"))
-            return STEP6B_ROOM_DRAGONLAIR;
-    }
-    return STEP6B_ROOM_NONE;
-}
-
 boolean
 is_bigroom_level(d_level *lev)
 {
     s_level *curr;
 
     for (curr = svs.sp_levchn; curr; curr = curr->next)
-        if (!step6b_room_marker(curr) && !strcmp(curr->proto, "bigrm")
+        if (!strcmp(curr->proto, "bigrm")
             && on_level(lev, &curr->dlevel))
             return TRUE;
     return FALSE;
@@ -1845,20 +1814,6 @@ step6b_schedule(void)
         bigrooms++;
     }
 
-    dlevel = step6b_pick_depth(used, TRUE);
-    used[dlevel] = TRUE;
-    step6b_add_level("x6b-giant", dlevel, 'I', 0);
-
-    for (target_bigrooms = rn1(2, 2); target_bigrooms; target_bigrooms--) {
-        dlevel = step6b_pick_depth(used, TRUE);
-        used[dlevel] = TRUE;
-        step6b_add_level("x6b-realzoo", dlevel, 'I', 0);
-    }
-
-    dlevel = step6b_pick_depth(used, TRUE);
-    used[dlevel] = TRUE;
-    step6b_add_level("x6b-dragon", dlevel, 'I', 0);
-
     /* Step 7: reserve the Tomb after all Step 6 features, using the same
      * free pool and ordinary branch persistence/depth semantics. */
     if (!tomb)
@@ -1934,8 +1889,7 @@ Is_special(d_level *lev)
     s_level *levtmp;
 
     for (levtmp = svs.sp_levchn; levtmp; levtmp = levtmp->next)
-        if (!step6b_room_marker(levtmp)
-            && on_level(lev, &levtmp->dlevel))
+        if (on_level(lev, &levtmp->dlevel))
             return levtmp;
 
     return (s_level *) 0;
@@ -2835,8 +2789,6 @@ print_dungeon(boolean bymenu, xint16 *rlev, xint16 *rdgn)
          * this dungeon.
          */
         for (slev = svs.sp_levchn, last_level = 0; slev; slev = slev->next) {
-            if (step6b_room_marker(slev))
-                continue;
             if (slev->dlevel.dnum != i)
                 continue;
 

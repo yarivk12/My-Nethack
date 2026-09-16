@@ -1932,6 +1932,14 @@ create_monster(monster *m, struct mkroom *croom)
     struct permonst *pm;
     unsigned g_mvflags;
 
+#ifdef STEP11_TEST
+    {
+        extern void step11_monster_request(int, boolean);
+        if (gi.in_mk_themerooms
+            && custom_generation.selected == CUSTOM_DRAGON_HALL)
+            step11_monster_request(m->id, m->waiting);
+    }
+#endif
     if (m->class >= 0)
         class = (char) def_char_to_monclass((char) m->class);
     else
@@ -2807,6 +2815,10 @@ fill_special_room(struct mkroom *croom)
         svl.level.flags.has_swamp = TRUE;
         break;
     }
+    /* Custom payloads have exactly one deferred fill. Keep vanilla's legacy
+     * fill marker semantics unchanged; subtype identity is a separate field. */
+    if (croom->custom_id)
+        croom->needfill = FILL_NONE;
 }
 
 staticfn struct mkroom *

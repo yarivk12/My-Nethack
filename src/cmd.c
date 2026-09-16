@@ -6,6 +6,8 @@
 #include "hack.h"
 #include "func_tab.h"
 
+staticfn int wiz_customrooms(void);
+
 #ifdef UNIX
 /*
  * Some systems may have getchar() return EOF for various reasons, and
@@ -2004,6 +2006,8 @@ struct ext_func_tab extcmdlist[] = {
               wiz_smell, IFBURIED | AUTOCOMPLETE | WIZMODECMD, NULL },
     { '\0',   "wiztelekinesis", "telekinesis",
               wiz_telekinesis, IFBURIED | AUTOCOMPLETE | WIZMODECMD, NULL },
+    { '\0', "wizcustomrooms", "show current custom room identities",
+              wiz_customrooms, IFBURIED | AUTOCOMPLETE | WIZMODECMD, NULL },
     { '\0',   "wizwhere", "show locations of special levels",
               wiz_where, IFBURIED | AUTOCOMPLETE | WIZMODECMD, NULL },
     { C('w'), "wizwish", "wish for something",
@@ -5743,3 +5747,10 @@ dummyfunction(void)
 }
 
 /*cmd.c*/
+
+staticfn int
+wiz_customrooms(void)
+{
+    custom_diagnostics();
+    return ECMD_OK;
+}

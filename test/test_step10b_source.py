@@ -79,7 +79,7 @@ def project(path, text):
         "include/rm.h": (
             "    Bitfield(lethe, 1);        /* Step 10: amnesiac water, not new terrain */\n", ""),
         "src/mklev.c": ("    svl.level.flags.lethe = 0;\n", ""),
-        "include/patchlevel.h": ("#define EDITLEVEL 5", "#define EDITLEVEL 4"),
+        "include/patchlevel.h": ("#define EDITLEVEL 6", "#define EDITLEVEL 4"),
         "include/hack.h": (
             "\n/* Step 10 keeps serialized IDs append-only.  obj.oartifact is a char;\n"
             " * use the signed-char limit even on ports where plain char is unsigned. */\n"

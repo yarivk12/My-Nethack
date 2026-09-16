@@ -1095,3 +1095,251 @@ function post_level_generate()
    end
    postprocess = { };
 end
+
+
+-- Step 11: copperwater/xNetHack, 6eef39403f16f65e13f5d57242ee8d036307687a
+-- Copyright (c) 2020 by Pasi Kallinen; NetHack license (dat/license).
+-- Only these four descriptors are imported; this pool is never weighted.
+function way_out_method(trap_ok)
+   -- Lua analogue to generate_way_out_method() for non-joined, inaccessible
+   -- areas the player might teleport into
+   -- intended to be called inside the contents() of such an area
+   if trap_ok and percent(60) then
+      if percent(60) then
+         des.trap('hole')
+      else
+         des.trap('teleport')
+      end
+   else
+      local items = { { id = 'pick-axe' },
+                { id = 'dwarvish mattock' },
+                { class = '/', id = 'digging' },
+                { class = '?', id = 'teleportation' },
+                { class = '=', id = 'teleportation' } } -- no wand of teleportation
+      des.object(items[d(#items)])
+   end
+end
+
+local custom_themerooms = {
+   {
+      name = 'Wizard study',
+      mindiff = 14, -- arbitrary but should be fairly deep
+      contents = function()
+         des.room({ type = 'themed', w = 3, h = 3, filled = 0, joined = false,
+                    contents = function()
+            local sel = selection.room()
+            sel:set(01, 01, 0) -- leave the center free
+            des.trap({ type = 'teleport', coord = sel:rndcoord(1) })
+            if percent(10) then
+               if percent(50) then
+                  des.object({ id = 'magic marker', coord = sel:rndcoord(1) })
+               else
+                  des.object({ id = 'cloak of magic resistance',
+                               coord = sel:rndcoord(1) })
+               end
+            end
+            -- the remaining items don't use rndcoord(1); they can be stacked on
+            -- top of each other, but won't appear on top of the other items
+            -- which do use rndcoord(1)
+            for i = 1, 3 do
+               des.object({ class = '+', coord = sel:rndcoord() })
+            end
+            des.object({ class = '?', coord = sel:rndcoord() })
+            for i = 1, 3 do
+               local choice = d(4)
+               if choice == 1 then
+                  des.object({ class = '?', coord = sel:rndcoord() })
+               elseif choice == 2 then
+                  des.object({ class = '=', coord = sel:rndcoord() })
+               elseif choice == 3 then
+                  des.object({ class = '/', coord = sel:rndcoord() })
+               elseif choice == 4 then
+                  des.object({ class = '"', coord = sel:rndcoord() })
+               end
+            end
+         end })
+      end,
+   },
+   {
+      name = "Storeroom vault",
+      maxdiff = 14,
+      contents = function()
+         des.room({ type = "themed", filled = 0, w = 2, h = 2, joined = false,
+                    contents = function(rm)
+            for i=1,d(3) do
+               des.object("chest")
+            end
+            way_out_method(true)
+         end })
+      end
+   },
+   {
+      name = "Super Honeycomb",
+      mindiff = 13,
+      contents = function()
+         des.map({ map = [[
+xxxx----xx----xxxx
+xxx--..----..--xxx
+xxx|....||....|xxx
+x----..----..----x
+--..----..----..--
+|....||....||....|
+--..----..----..--
+x----..----..----x
+xxx|....||....|xxx
+xxx--..----..--xxx
+xxxx----xx----xxxx]], contents=function(m)
+            -- The goal: connect adjacent cells until a spanning tree is formed.
+            -- The following tables {a,b,w,x,y,z} denote pairs of cells with
+            -- ids a and b that would become connected if positions (w,x)
+            -- and (y,z) became floor. Cell ids are 1-7 left to right then
+            -- top to bottom.
+            local conns = {
+               {1,2, 08,02,09,02},
+               {1,3, 04,03,04,04},
+               {1,4, 07,03,07,04},
+               {2,4, 10,03,10,04},
+               {2,5, 13,03,13,04},
+               {3,4, 05,05,06,05},
+               {3,6, 04,06,04,07},
+               {4,5, 11,05,12,05},
+               {4,6, 07,06,07,07},
+               {4,7, 10,06,10,07},
+               {5,7, 13,06,13,07},
+               {6,7, 08,08,09,08}
+            }
+            local reached = { false, false, false, false, false, false, false }
+            reached[d(7)] = true -- initial cell
+            local nreached = 1
+            while nreached < 7 do
+               -- pick a random element of conns that adds a new cell
+               local pick = d(#conns)
+               while reached[conns[pick][1]] == reached[conns[pick][2]] do
+                  pick = d(#conns)
+               end
+
+               -- change those walls to floor
+               des.terrain(conns[pick][3], conns[pick][4], '.')
+               des.terrain(conns[pick][5], conns[pick][6], '.')
+
+               -- update reached; one of the two must have been true so set both
+               -- to true
+               reached[conns[pick][1]] = true
+               reached[conns[pick][2]] = true
+
+               -- recompute allconnected
+               nreached = nreached + 1
+            end
+            des.region({ region={05,01,05,01}, type="beehive", irregular=true,
+                         joined=true, filled=1 })
+         end })
+      end
+   },
+   {
+      name = "Dragon hall",
+      mindiff = 21,
+      contents = function()
+         des.map({ map = [[
+xxxxxx----xx----xxx
+xxxx---..----..--xx
+xxx--...........--x
+x---.............--
+--................|
+|................--
+|...............--x
+----..........---xx
+xxx--........--xxxx
+xxxx----....--xxxxx
+xxxxxxx------xxxxxx]], contents = function()
+            des.region({ region = {04,04,04,04}, irregular = true, filled = 0,
+                         type = "themed", joined = true })
+            local floor = selection.floodfill(04, 04)
+            local hoardctr = floor:rndcoord()
+
+            local function loot(x, y)
+               local choice = d(25)
+               if choice == 1 then
+                  des.object('(', x, y)
+               elseif choice == 2 then
+                  des.object({ class=')', x=x, y=y, spe=2+nh.rn2(3) })
+               elseif choice == 3 then
+                  des.object({ class='[', x=x, y=y, spe=2+nh.rn2(3) })
+               elseif choice == 4 then
+                  des.object('chest', x, y)
+               elseif choice >= 5 and choice <= 7 then
+                  des.object('=', x, y)
+               elseif choice == 8 then
+                  des.object(percent(50) and '?' or '+', x, y)
+               else
+                  des.object('*', x, y)
+               end
+               -- recursive 10% chance for more loot
+               if percent(10) then
+                  loot(x, y)
+               end
+            end
+            local goldpile = selection.circle(hoardctr.x, hoardctr.y, 5, 1) & floor
+            goldpile:filter_mapchar('.'):iterate(function(x,y)
+               local dist2 = (x-hoardctr.x) * (x-hoardctr.x) + (y-hoardctr.y) * (y-hoardctr.y)
+               if (dist2 >= 20 and percent(20)) -- radius 4-5
+                  or (dist2 >= 12 and dist2 < 20 and percent(50)) -- radius 3-4
+                  or dist2 < 12 then -- radius 0-3
+                  des.object({ id = 'gold piece', x = x, y = y,
+                               quantity = 200 - dist2*5 + d(50) })
+               end
+               -- given circle radius of 5, practical max for dist2 is 29
+               if percent(40 - (dist2 * 2)) then
+                  loot(x, y)
+               end
+               -- dragon eggs
+               if dist2 < 3 and percent(80) then
+                  des.object({ id = 'egg', x = x, y = y, montype = 'D' })
+               end
+            end)
+
+            -- put some pits and traps down
+            local nonpile = (floor ~ goldpile) & floor
+            for i = 1, 2+d(2) do
+               des.trap("pit", nonpile:rndcoord())
+               des.trap(nonpile:rndcoord())
+            end
+
+            -- no way to specifically force a baby or adult dragon
+            -- so we have to do it manually
+            local colors = { 'gray', 'silver', 'red', 'white', 'orange', 'black',
+                       'blue', 'green', 'yellow' }
+            for i = 1, 3+d(3) do
+               des.monster({ id='baby '..colors[d(#colors)]..' dragon',
+                             coord=goldpile:rndcoord(), waiting=1 })
+            end
+            for i = 1, 5 + d(5) do
+               -- would be neat if the adult dragons here could be buffed
+               des.monster({ id=colors[d(#colors)]..' dragon',
+                             coord=goldpile:rndcoord(), waiting=1 })
+            end
+            -- TODO: problem with this room is that the dragons start picking
+            -- up the hoard. Something needs to tell their AI that it's a
+            -- dragon hoard and shouldn't be picked up.
+         end })
+      end
+   },
+}
+
+function custom_themeroom_generate(target)
+   for _, room in ipairs(custom_themerooms) do
+      if room.name == target then
+         room.contents()
+         return
+      end
+   end
+   error("Unresolved custom room: " .. target)
+end
+
+function custom_themeroom_check(target)
+   for _, room in ipairs(custom_themerooms) do
+      if room.name == target and type(room.contents) == "function" then
+         return true
+      end
+   end
+   return false
+end

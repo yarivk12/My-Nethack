@@ -1090,6 +1090,9 @@ getlev(NHFILE *nhfp, int pid, xint16 lev)
 #endif
 
     program_state.in_getlev = TRUE;
+#ifndef SFCTOOL
+    custom_reset(); /* loading identity never starts a generation opportunity */
+#endif
     level_status_init();
     level_status.loading = 1;
 #ifndef SFCTOOL

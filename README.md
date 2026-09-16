@@ -9,17 +9,24 @@ kept current with every project commit.
 
 ## Current state
 
-The completed project includes the frozen dungeon-depth foundation, the Step 5
-shop milestone, the Step 6/7 NerfHack dungeon enrichment, and the Step 8
-Ruins of Moria integration. Step 8 is committed as `Add Ruins of Moria` and
-tagged `step8-ruins-of-moria`. Step 9A–9C adds Sheol, Dragon Caves and
-Mithardir. Their production parents now use the shared persistent scheduler,
-each selecting one distinct legal Dungeons of Doom depth from DL30–199;
-DL108–111 have no fixed Step 9 reservation. Step 9D was canceled. The final
-architecture/runtime/package closeout has passed on x64 and Win32: the native
-fresh-topology fixtures, focused regressions, donor/package checks, tile checks
-and non-PTY Mithardir suite all pass. The exact commit, annotated tag and
-atomic publication are recorded below after the final Release rebuild.
+The project includes the frozen 200-level dungeon, Step 5 shops, Step 6/7
+NerfHack enrichment, Moria, Sheol, Dragon Caves, Mithardir, and the Step 10
+Neutral Quest / Lost Cities content. Step 11 adds Wizard Study, Storeroom
+Vault v1, Super Honeycomb and Dragon Hall from a pinned xNetHack snapshot.
+These join Giant Court, Real Zoo and Dragon Lair in one recurring scheduler:
+each eligible room has exactly 3% selection probability, with at most one
+custom feature per new ordinary DoD level. Vanilla special rooms and shops
+retain their independent opportunity. Dilapidated Armory and Lemure Pit
+remain deferred because no implementations existed.
+
+Step 11 is uncommitted and unpublished, based on audited commit
+`fdc824dfd95e96fbafcbf66177b2fd674818f35b`. Saved room-specific identity
+requires **a new game (`EDITLEVEL = 6`)**; older saves and bones are rejected.
+The x64 native corpus generated 3,407 custom rooms on 25,830 sampled levels
+across 1,000 games, with no placement failures or double emissions. See
+[Step 11 implementation, validation and playtest guide](doc/step11.md) for
+eligibility, confidence bounds, compatibility, commands and Release hashes.
+User playtesting has not occurred.
 
 ## Frozen structural baseline
 
@@ -68,9 +75,9 @@ content. Big Room 18 from NerfHack is preserved locally as `dat/bigrm-14.lua`,
 the next available local Big Room slot. The extended Dungeons of Doom keeps:
 
 - 3–5 Big Rooms per game, with a hard maximum of 5;
-- exactly 1 Giant Court;
-- 2–3 Real Zoos;
-- exactly 1 Dragon Lair; and
+- recurring Giant Courts, Real Zoos and Dragon Lairs, each with a 3% selection
+  chance on eligible ordinary DoD DL30–199 levels before Medusa (Step 11
+  replaces their former occurrence quotas); and
 - exactly 1 optional Temple of Moloch branch.
 
 These features use randomized persistent placement in DL30–199. The former

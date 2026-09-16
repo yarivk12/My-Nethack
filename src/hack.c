@@ -3719,7 +3719,7 @@ check_special_room(boolean newlev)
     for (ptr = &u.uentered[0]; *ptr; ptr++) {
         int roomno = *ptr - ROOMOFFSET, rt = svr.rooms[roomno].rtype;
         boolean msg_given = TRUE;
-        int step6b_type = step6b_room_type(&u.uz);
+        int step6b_type = svr.rooms[roomno].custom_id;
 
         /* Did we just enter some other special room? */
         /* vault.c insists that a vault remain a VAULT,
@@ -3727,9 +3727,9 @@ check_special_room(boolean newlev)
          * but everything else gives a message only the first time */
         switch (rt) {
         case ZOO:
-            if (step6b_type == STEP6B_ROOM_DRAGONLAIR)
+            if (step6b_type == CUSTOM_DRAGON_LAIR)
                 You("enter a dragon lair...");
-            else if (step6b_type == STEP6B_ROOM_REALZOO)
+            else if (step6b_type == CUSTOM_REAL_ZOO)
                 You("enter a smelly zoo!");
             else
                 pline("Welcome to David's treasure zoo!");
@@ -3739,7 +3739,7 @@ check_special_room(boolean newlev)
                   Blind ? "humid" : "muddy");
             break;
         case COURT:
-            if (step6b_type == STEP6B_ROOM_GIANTCOURT) {
+            if (step6b_type == CUSTOM_GIANT_COURT) {
                 You("enter a giant throne room!");
                 break;
             }

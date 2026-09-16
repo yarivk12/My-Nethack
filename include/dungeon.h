@@ -95,15 +95,6 @@ typedef struct branch {
                         end2 to end1.  There is a stair from end1 to end2. */
 #define BR_PORTAL 3  /* Connection by magic portals (traps) */
 
-/* Step 6B imported room markers.  These are persisted as ordinary
- * special-level chain entries, but deliberately do not name level maps. */
-enum step6b_room_types {
-    STEP6B_ROOM_NONE = 0,
-    STEP6B_ROOM_GIANTCOURT,
-    STEP6B_ROOM_REALZOO,
-    STEP6B_ROOM_DRAGONLAIR
-};
-
 /* A particular dungeon contains num_dunlevs d_levels with dlevel 1..
  * num_dunlevs.  Ledger_start and depth_start are bases that are added
  * to the dlevel of a particular d_level to get the effective ledger_no

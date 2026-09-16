@@ -201,7 +201,7 @@ int main(void)
     for (i = 0; i < SIZE(artifact_ids); ++i)
         printf("ID artifact %s %d\n", artifact_ids[i].name, artifact_ids[i].value);
 #ifndef STEP10B_BASELINE
-    _Static_assert(EDITLEVEL == 5, "single Step 10 compatibility epoch");
+    _Static_assert(EDITLEVEL == 6, "Step 11 explicit room identity epoch");
     _Static_assert(MAXDUNGEON == 18 && MAXLINFO == 3600, "Step 10 capacity");
     _Static_assert(AFTER_LAST_ARTIFACT - 1 <= SCHAR_MAX, "saved artifact ID");
     _Static_assert(NUM_OBJECTS - 1 <= SHRT_MAX, "saved object ID");

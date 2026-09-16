@@ -28,6 +28,7 @@
 #include "context.h"
 #include "engrave.h"
 #include "mkroom.h"
+#include "customroom.h"
 #include "obj.h"
 #include "quest.h"
 #include "region.h"

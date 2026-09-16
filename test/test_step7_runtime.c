@@ -201,7 +201,7 @@ static void topology(void) {
             if (!strcmp(p->proto,"x6b-dragon")) dragon++;
             if (!strncmp(p->proto,"x6b-",4)) assert(level>=30 && level<=199);
         }
-        assert(big>=3 && big<=5 && giant==1 && (zoo==2 || zoo==3) && dragon==1);
+        assert(big>=3 && big<=5 && giant==0 && zoo==0 && dragon==0);
         for (p=svs.sp_levchn;p;p=next) {
             next=p->next;
             if (p != &mithardir_approach && p != &neutral_approach)

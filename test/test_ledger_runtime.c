@@ -32,7 +32,7 @@ static const char *output_name;
     fprintf(stderr, "FAIL line %d: %s\n", __LINE__, #c); ++failures; \
 } } while (0)
 _Static_assert(MAXLEVEL == 200 && MAXLINFO == 3600, "Step 10 dungeon capacity; unchanged DoD");
-_Static_assert(MAXULEV == 30 && EDITLEVEL == 5, "Step 3/4 limits; Step 10 stored-ID save epoch");
+_Static_assert(MAXULEV == 30 && EDITLEVEL == 6, "Step 3/4 limits; Step 11 room identity epoch");
 _Static_assert(sizeof(xint16) == 2 && LONG_MAX >= 0x7fff7fffL,
                "ledger pair carrier");
 

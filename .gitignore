@@ -98,3 +98,7 @@ util/*.lib
 util/*.exp
 submodules/CHKSUMS.tmp
 sys/amiga/regex/
+
+# Generated local validation evidence and Python caches.
+/_qa/
+/test/__pycache__/

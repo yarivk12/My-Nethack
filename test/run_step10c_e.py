@@ -136,7 +136,7 @@ def source_audit():
         (REPO / "dat" / (name + ".lua")).read_text(encoding="utf-8")
         for name in resources
     )
-    assert "#define EDITLEVEL 5" in (REPO / "include/patchlevel.h").read_text()
+    assert "#define EDITLEVEL 6" in (REPO / "include/patchlevel.h").read_text()
     assert "step10c_level_context" in (REPO / "src/dungeon.c").read_text()
     expected_generators = (
         "place_neutral_features", "mkkamereltowers", "mkminorspire",

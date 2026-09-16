@@ -11,6 +11,7 @@
 struct mkroom {
     coordxy lx, hx, ly, hy; /* usually coordxy, but hx may be -1 */
     schar rtype;          /* type of room (zoo, throne, etc...) */
+    unsigned char custom_id; /* stable saved custom feature; 0 is vanilla */
     schar orig_rtype;     /* same as rtype, but not zeroed later */
     schar rlit;           /* is the room lit ? */
     schar needfill;       /* sp_lev: does the room need filling? */

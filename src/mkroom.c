@@ -246,34 +246,38 @@ mkzoo(int type)
 {
     struct mkroom *sroom;
 
-    /* Imported Step 6B rooms must be present on their selected floor.  Keep
-     * vanilla pick_room() behavior first, then use the same room eligibility
-     * with a deterministic fallback when its preference rolls all fail. */
     if ((sroom = pick_room(FALSE)) != 0) {
         sroom->rtype = type;
-        /* room does not get stocked at this time - it will get stocked at the
-         * end of makelevel() */
         sroom->needfill = FILL_NORMAL;
-    } else if (step6b_room_type(&u.uz) != STEP6B_ROOM_NONE) {
-        int i;
-
-        for (i = 0; i < svn.nroom; i++) {
-            sroom = &svr.rooms[i];
-            if (sroom->rtype == OROOM && !has_upstairs(sroom)
-                && !has_dnstairs(sroom))
-                break;
-        }
-        if (i == svn.nroom)
-            for (i = 0; i < svn.nroom; i++) {
-                sroom = &svr.rooms[i];
-                if (sroom->rtype == OROOM)
-                    break;
-            }
-        if (i < svn.nroom) {
-            sroom->rtype = type;
-            sroom->needfill = FILL_NORMAL;
-        }
     }
+}
+
+/* Only the custom adapter may use this exhaustive, stair-safe fallback.
+ * Vanilla mkzoo keeps its original preference rolls and failure behavior. */
+struct mkroom *
+custom_classic_room(unsigned id, int type)
+{
+    struct mkroom *sroom = pick_room(TRUE);
+    int i;
+
+    if (sroom && (!sroom->needjoining || sroom->custom_id))
+        sroom = (struct mkroom *) 0;
+    if (!sroom)
+        for (i = 0; i < svn.nroom; ++i) {
+            struct mkroom *candidate = &svr.rooms[i];
+            if (candidate->rtype == OROOM && !candidate->custom_id
+                && candidate->needjoining && !has_upstairs(candidate)
+                && !has_dnstairs(candidate)) {
+                sroom = candidate;
+                break;
+            }
+        }
+    if (!sroom)
+        return (struct mkroom *) 0;
+    sroom->custom_id = (unsigned char) id;
+    sroom->rtype = type;
+    sroom->needfill = FILL_NORMAL;
+    return sroom;
 }
 
 staticfn void
@@ -298,7 +302,7 @@ mk_zoo_thronemon(coordxy x, coordxy y, boolean giantcourt)
 /* Step 6B, 2026-09-06: population/rewards adapted from NerfHack dev
  * 0cb8781b0929b4617590a3b9fe78f972ef42c25f, src/mkroom.c.
  * Reuse vanilla COURT/ZOO room types and their persistence; the selected
- * room marker identifies which approved imported population to use. */
+ * owning room identifies which approved imported population to use. */
 staticfn struct permonst *
 realzoomon(void)
 {
@@ -317,13 +321,13 @@ fill_zoo(struct mkroom *sroom)
     struct monst *mon;
     int sx, sy, i;
     int sh, goldlim = 0, type = sroom->rtype;
-    int step6b_type = step6b_room_type(&u.uz);
+    int step6b_type = sroom->custom_id;
     boolean giantcourt = (type == COURT
-                          && step6b_type == STEP6B_ROOM_GIANTCOURT);
+                          && step6b_type == CUSTOM_GIANT_COURT);
     boolean realzoo = (type == ZOO
-                      && step6b_type == STEP6B_ROOM_REALZOO);
+                      && step6b_type == CUSTOM_REAL_ZOO);
     boolean dragonlair = (type == ZOO
-                          && step6b_type == STEP6B_ROOM_DRAGONLAIR);
+                          && step6b_type == CUSTOM_DRAGON_LAIR);
     coordxy tx = 0, ty = 0;
     int rmno = (int) ((sroom - svr.rooms) + ROOMOFFSET);
     coord mm;

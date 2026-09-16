@@ -270,7 +270,8 @@ assert_scheduled_state(void)
             ++dragonrooms;
     }
     assert(bigrooms >= 3 && bigrooms <= 5);
-    assert(giant == 1 && zoos >= 2 && zoos <= 3 && dragonrooms == 1);
+    /* Step 11 removes only room reservations, not topology reservations. */
+    assert(giant == 0 && zoos == 0 && dragonrooms == 0);
 }
 
 int

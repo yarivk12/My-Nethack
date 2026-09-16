@@ -262,6 +262,8 @@ do_room_or_subroom(struct mkroom *croom,
     croom->hx = hix;
     croom->ly = lowy;
     croom->hy = hiy;
+    croom->custom_id = CUSTOM_NONE;
+    croom->orig_rtype = OROOM;
     croom->rtype = rtype;
     croom->doorct = 0;
     /* if we're not making a vault, gd.doorindex will still be 0
@@ -364,6 +366,300 @@ free_luathemes(enum lua_theme_group theme_group)
     }
 }
 
+/* Step 11: one categorical draw, followed by one narrow backend dispatch.
+ * State here is transient. Only mkroom.custom_id is serialized. */
+const struct custom_descriptor custom_registry[] = {
+    { CUSTOM_GIANT_COURT, "Giant Court", CUSTOM_CLASSIC, COURT, "court",
+      0, 30, 199, 0, 0, TRUE },
+    { CUSTOM_REAL_ZOO, "Real Zoo", CUSTOM_CLASSIC, ZOO, "zoo",
+      0, 30, 199, 0, 0, TRUE },
+    { CUSTOM_DRAGON_LAIR, "Dragon Lair", CUSTOM_CLASSIC, ZOO, "zoo",
+      0, 30, 199, 0, 0, TRUE },
+    { CUSTOM_WIZARD_STUDY, "Wizard Study", CUSTOM_LUA, THEMEROOM,
+      "Wizard study", 0, 0, 0, 14, 0, FALSE },
+    { CUSTOM_STOREROOM, "Storeroom Vault v1", CUSTOM_LUA, THEMEROOM,
+      "Storeroom vault", 0, 0, 0, 0, 14, FALSE },
+    { CUSTOM_HONEYCOMB, "Super Honeycomb", CUSTOM_LUA, BEEHIVE,
+      "Super Honeycomb", 0, 0, 0, 13, 0, FALSE },
+    { CUSTOM_DRAGON_HALL, "Dragon Hall", CUSTOM_LUA, THEMEROOM,
+      "Dragon hall", 0, 0, 0, 21, 0, FALSE }
+};
+const int custom_registry_count = SIZE(custom_registry);
+struct custom_generation custom_generation;
+
+const char *
+custom_validate(const struct custom_descriptor *entries, int count)
+{
+    int i, j;
+    if (count < 0 || (count && !entries))
+        return "invalid registry";
+    for (i = 0; i < count; ++i) {
+        const struct custom_descriptor *d = &entries[i];
+        if (!d->id || d->id > 255 || !d->name || !*d->name
+            || !d->target || !*d->target)
+            return "invalid ID/name/target";
+        for (j = 0; j < i; ++j)
+            if (entries[j].id == d->id)
+                return "duplicate ID";
+        if (d->backend != CUSTOM_CLASSIC && d->backend != CUSTOM_LUA)
+            return "invalid backend";
+        if (d->backend == CUSTOM_CLASSIC
+            && !((d->roomtype == COURT && !strcmp(d->target, "court"))
+                 || (d->roomtype == ZOO && !strcmp(d->target, "zoo"))))
+            return "unresolved classic target";
+        if (d->probability < 0 || d->probability > CUSTOM_OUTCOMES)
+            return "invalid probability";
+        if (d->min_dl < 0 || d->max_dl < 0 || d->min_diff < 0
+            || d->max_diff < 0
+            || (d->max_dl && d->min_dl > d->max_dl)
+            || (d->max_diff && d->min_diff > d->max_diff))
+            return "invalid bounds";
+    }
+    return (const char *) 0;
+}
+
+boolean
+custom_eligible(const struct custom_descriptor *d,
+                const struct custom_context *c)
+{
+    return (boolean) (c->ordinary_dod
+        && (!d->min_dl || c->dlevel >= d->min_dl)
+        && (!d->max_dl || c->dlevel <= d->max_dl)
+        && (!d->min_diff || c->difficulty >= d->min_diff)
+        && (!d->max_diff || c->difficulty <= d->max_diff)
+        && (!d->pre_medusa || c->logical_depth < c->medusa_depth));
+}
+
+/* The outcome is supplied so tests can exhaust the very same production
+ * partition without substituting a random-number generator. -1 is an error,
+ * never a random no-feature result. Validate the WHOLE eligible mass first. */
+int
+custom_select(const struct custom_descriptor *entries, int count,
+              const struct custom_context *context, int outcome)
+{
+    int i, total = 0, selected = CUSTOM_NONE;
+    if (!context || outcome < 0 || outcome >= CUSTOM_OUTCOMES
+        || custom_validate(entries, count))
+        return -1;
+    for (i = 0; i < count; ++i)
+        if (custom_eligible(&entries[i], context)) {
+            int mass = entries[i].probability
+                           ? entries[i].probability : CUSTOM_DEFAULT_BP;
+            if (total > CUSTOM_OUTCOMES - mass)
+                return -1;
+            if (outcome >= total && outcome < total + mass)
+                selected = entries[i].id;
+            total += mass;
+        }
+    return selected;
+}
+
+void
+custom_reset(void)
+{
+    memset(&custom_generation, 0, sizeof custom_generation);
+}
+
+void
+custom_begin(const struct custom_context *context)
+{
+    int chosen, i;
+    const char *force;
+    if (custom_generation.rolled)
+        panic("Custom selector called twice");
+    custom_generation.context = *context;
+    if (!context->ordinary_dod)
+        return;
+    custom_generation.rolled = TRUE;
+    chosen = custom_select(custom_registry, custom_registry_count,
+                           context, rn2(CUSTOM_OUTCOMES));
+    if (chosen < 0)
+        panic("Invalid custom room registry/probability mass");
+    /* Wizard diagnostics use the production adapters, never fixed depths.
+     * Eligibility is deliberately retained; natural runs leave this unset. */
+    force = wizard ? nh_getenv("CUSTOMROOM") : (const char *) 0;
+    if (force) {
+        chosen = -1;
+        for (i = 0; i < custom_registry_count; ++i)
+            if (!strcmp(force, custom_registry[i].name)
+                || atoi(force) == (int) custom_registry[i].id) {
+                chosen = custom_eligible(&custom_registry[i], context)
+                             ? custom_registry[i].id : CUSTOM_NONE;
+                break;
+            }
+        if (chosen < 0)
+            panic("Unknown CUSTOMROOM: %s", force);
+    }
+    custom_generation.selected = chosen;
+    custom_generation.progress = chosen ? CUSTOM_SELECTED : CUSTOM_IDLE;
+}
+
+staticfn const struct custom_descriptor *
+custom_selected(int backend)
+{
+    int i;
+    if (custom_generation.progress != CUSTOM_SELECTED
+        && custom_generation.progress != CUSTOM_CLEAN_FAILURE)
+        return (const struct custom_descriptor *) 0;
+    for (i = 0; i < custom_registry_count; ++i)
+        if (custom_registry[i].id == custom_generation.selected
+            && custom_registry[i].backend == backend)
+            return &custom_registry[i];
+    return (const struct custom_descriptor *) 0;
+}
+
+staticfn void
+custom_committed(struct mkroom *room)
+{
+    if (custom_generation.emissions++)
+        panic("Second custom feature emission");
+    room->custom_id = (unsigned char) custom_generation.selected;
+    custom_generation.progress = CUSTOM_PENDING_FILL;
+}
+
+staticfn void
+custom_lua(lua_State *themes)
+{
+    const struct custom_descriptor *d = custom_selected(CUSTOM_LUA);
+    if (!d)
+        return;
+    if (!themes)
+        panic("Missing custom themed room resource");
+    while (custom_generation.attempts < CUSTOM_MAX_ATTEMPTS) {
+        struct rm before[COLNO][ROWNO];
+        struct obj *objects = fobj;
+        struct monst *monsters = fmon;
+        struct trap *traps = gf.ftrap;
+        int nroom = svn.nroom, nsubroom = gn.nsubroom;
+        int top = lua_gettop(themes);
+#ifdef STEP11_TEST
+        struct rm test_before[COLNO][ROWNO];
+        boolean obstruct = getenv("STEP11_CLEAN_FAILURE") != NULL;
+        if (obstruct) {
+            int x, y;
+            memcpy(test_before, levl, sizeof test_before);
+            for (x = 1; x < COLNO; ++x)
+                for (y = 0; y < ROWNO; ++y)
+                    levl[x][y].typ = ROOM;
+        }
+#endif
+        memcpy(before, levl, sizeof before);
+        ++custom_generation.attempts;
+        reset_xystart_size();
+        iflags.in_lua = gi.in_mk_themerooms = TRUE;
+        gt.themeroom_failed = FALSE;
+        lua_getglobal(themes, "custom_themeroom_generate");
+        lua_pushstring(themes, d->target);
+        nhl_pcall_handle(themes, 1, 0, "custom room", NHLpa_panic);
+#ifdef STEP11_TEST
+        if (getenv("STEP11_PARTIAL_FAILURE"))
+            gt.themeroom_failed = TRUE;
+#endif
+        lua_settop(themes, top);
+        iflags.in_lua = gi.in_mk_themerooms = FALSE;
+        reset_xystart_size();
+        if (gt.themeroom_failed) {
+            if (svn.nroom != nroom || gn.nsubroom != nsubroom
+                || fobj != objects || fmon != monsters || gf.ftrap != traps
+                || memcmp(before, levl, sizeof before)) {
+                custom_generation.progress = CUSTOM_PARTIAL_ERROR;
+#ifdef STEP11_TEST
+                if (getenv("STEP11_PARTIAL_FAILURE")) {
+                    fprintf(stderr, "PARTIAL_ERROR|attempts=%d|rooms=%d\n",
+                            custom_generation.attempts, svn.nroom - nroom);
+                    exit(86); /* expected fatal test, never a clean retry */
+                }
+#endif
+                panic("Partial custom room generation: %s", d->name);
+            }
+            custom_generation.progress = CUSTOM_CLEAN_FAILURE;
+            gt.themeroom_failed = FALSE;
+#ifdef STEP11_TEST
+            /* Remove only the test's pre-attempt obstruction. The real
+             * constructor and production clean-failure check ran above. */
+            if (obstruct)
+                memcpy(levl, test_before, sizeof test_before);
+#endif
+            continue;
+        }
+        if (svn.nroom != nroom + 1 || gn.nsubroom != nsubroom) {
+            custom_generation.progress = CUSTOM_PARTIAL_ERROR;
+            panic("Invalid custom room ownership: %s", d->name);
+        }
+        custom_committed(&svr.rooms[nroom]);
+        break;
+    }
+}
+
+/* Record the vanilla opportunity without adding any RNG or changing its
+ * decision chain. Swamps may convert more than one vanilla room. */
+staticfn void
+custom_vanilla(int type)
+{
+    int i, before = 0, after = 0;
+    for (i = 0; i < svn.nroom; ++i)
+        before += svr.rooms[i].rtype != OROOM;
+    custom_generation.vanilla_attempt = type;
+    do_mkroom(type);
+    for (i = 0; i < svn.nroom; ++i)
+        after += svr.rooms[i].rtype != OROOM;
+    custom_generation.vanilla_placements = after - before;
+}
+
+staticfn void
+custom_classic(void)
+{
+    const struct custom_descriptor *d = custom_selected(CUSTOM_CLASSIC);
+    struct mkroom *room;
+    if (!d)
+        return;
+    while (custom_generation.attempts < CUSTOM_MAX_ATTEMPTS) {
+        ++custom_generation.attempts;
+        room = custom_classic_room(d->id, d->roomtype);
+        if (room) {
+            custom_committed(room);
+            break;
+        }
+        custom_generation.progress = CUSTOM_CLEAN_FAILURE;
+        /* Exhaustive fallback proved that no legal host exists. Repeating
+         * that search cannot help, so fewer than three attempts is enough. */
+        break;
+    }
+}
+
+staticfn void
+custom_finish(void)
+{
+    int i, found = 0;
+    for (i = 0; i < svn.nroom; ++i)
+        if (svr.rooms[i].custom_id) {
+            ++found;
+            if (svr.rooms[i].custom_id != custom_generation.selected
+                || svr.rooms[i].needfill)
+                panic("Custom identity/fill mismatch");
+        }
+    if (found != custom_generation.emissions || found > 1)
+        panic("Custom feature count mismatch");
+    if (found)
+        custom_generation.progress = CUSTOM_COMPLETE;
+}
+
+void
+custom_diagnostics(void)
+{
+    int i, found = 0;
+    for (i = 0; i < svn.nroom; ++i)
+        if (svr.rooms[i].custom_id) {
+            ++found;
+            pline("Custom ID %u, room %d, bounds %d,%d-%d,%d, type %d/%d.",
+                  svr.rooms[i].custom_id, i, svr.rooms[i].lx, svr.rooms[i].ly,
+                  svr.rooms[i].hx, svr.rooms[i].hy, svr.rooms[i].rtype,
+                  svr.rooms[i].orig_rtype);
+        }
+    if (!found)
+        pline("No custom room on this level.");
+}
+
 staticfn void
 makerooms(void)
 {
@@ -398,6 +694,23 @@ makerooms(void)
         nhl_pcall_handle(themes, 0, 0, "makerooms-1", NHLpa_impossible);
         iflags.in_lua = gi.in_mk_themerooms = FALSE;
     }
+
+    if (custom_generation.context.ordinary_dod && !themes)
+        panic("Missing custom themed room resource");
+    if (themes && custom_generation.context.ordinary_dod) {
+        int i, top = lua_gettop(themes);
+        for (i = 0; i < custom_registry_count; ++i)
+            if (custom_registry[i].backend == CUSTOM_LUA) {
+                lua_getglobal(themes, "custom_themeroom_check");
+                lua_pushstring(themes, custom_registry[i].target);
+                nhl_pcall_handle(themes, 1, 1, "custom target check", NHLpa_panic);
+                if (!lua_toboolean(themes, -1))
+                    panic("Unresolved custom Lua target: %s", custom_registry[i].target);
+                lua_settop(themes, top);
+            }
+    }
+
+    custom_lua(themes);
 
     /* make rooms until satisfied */
     /* rnd_rect() will returns 0 if no more rects are available... */
@@ -912,6 +1225,8 @@ clear_level_structures(void)
     svl.level.flags.lethe = 0;
     svl.level.flags.stasis_until = 0L;
 
+    custom_reset();
+    memset(svr.rooms, 0, sizeof svr.rooms);
     svn.nroom = 0;
     svr.rooms[0].hx = -1;
     gn.nsubroom = 0;
@@ -1446,7 +1761,6 @@ makelevel(void)
     stairway *prevstairs;
     int room_threshold;
     s_level *slev;
-    int step6b_type;
     int i;
 
     if (wiz1_level.dlevel == 0) {
@@ -1461,7 +1775,6 @@ makelevel(void)
     step10c_set_level_flags(&u.uz);
 
     slev = Is_special(&u.uz);
-    step6b_type = step6b_room_type(&u.uz);
     /* check for special levels */
     if (slev && !Is_rogue_level(&u.uz)) {
         makemaz(slev->proto);
@@ -1494,6 +1807,15 @@ makelevel(void)
             makeroguerooms();
             makerogueghost();
         } else {
+            struct custom_context context;
+            context.ordinary_dod = (u.uz.dnum == medusa_level.dnum
+                && !Is_branchlev(&u.uz) && !slev
+                && !Is_medusa_level(&u.uz) && !Is_stronghold(&u.uz));
+            context.dlevel = u.uz.dlevel;
+            context.logical_depth = u_depth;
+            context.difficulty = level_difficulty();
+            context.medusa_depth = depth(&medusa_level);
+            custom_begin(&context);
             makerooms();
         }
         assert(svn.nroom > 0);
@@ -1543,42 +1865,39 @@ makelevel(void)
         /* make up to 1 special room, with type dependent on depth;
            note that mkroom doesn't guarantee a room gets created, and that
            this step only sets the room's rtype - it doesn't fill it yet. */
-        if (step6b_type == STEP6B_ROOM_GIANTCOURT)
-            do_mkroom(COURT);
-        else if (step6b_type == STEP6B_ROOM_REALZOO
-                 || step6b_type == STEP6B_ROOM_DRAGONLAIR)
-            do_mkroom(ZOO);
-        else if (wizard && nh_getenv("SHOPTYPE"))
-            do_mkroom(SHOPBASE);
+        if (wizard && nh_getenv("SHOPTYPE"))
+            custom_vanilla(SHOPBASE);
         else if (u_depth > 1 && u_depth < depth(&medusa_level)
                  && svn.nroom >= room_threshold
                  && ((u_depth <= 20 && rn2(u_depth) < 3)
                      || (u_depth > 20 && rn2(100) < 15)))
-            do_mkroom(SHOPBASE);
+            custom_vanilla(SHOPBASE);
         else if (u_depth > 4 && !rn2(6))
-            do_mkroom(COURT);
+            custom_vanilla(COURT);
         else if (u_depth > 5 && !rn2(8)
                  && !(svm.mvitals[PM_LEPRECHAUN].mvflags & G_GONE))
-            do_mkroom(LEPREHALL);
+            custom_vanilla(LEPREHALL);
         else if (u_depth > 6 && !rn2(7))
-            do_mkroom(ZOO);
+            custom_vanilla(ZOO);
         else if (u_depth > 8 && !rn2(5))
-            do_mkroom(TEMPLE);
+            custom_vanilla(TEMPLE);
         else if (u_depth > 9 && !rn2(5)
                  && !(svm.mvitals[PM_KILLER_BEE].mvflags & G_GONE))
-            do_mkroom(BEEHIVE);
+            custom_vanilla(BEEHIVE);
         else if (u_depth > 11 && !rn2(6))
-            do_mkroom(MORGUE);
+            custom_vanilla(MORGUE);
         else if (u_depth > 12 && !rn2(8) && antholemon())
-            do_mkroom(ANTHOLE);
+            custom_vanilla(ANTHOLE);
         else if (u_depth > 14 && !rn2(4)
                  && !(svm.mvitals[PM_SOLDIER].mvflags & G_GONE))
-            do_mkroom(BARRACKS);
+            custom_vanilla(BARRACKS);
         else if (u_depth > 15 && !rn2(6))
-            do_mkroom(SWAMP);
+            custom_vanilla(SWAMP);
         else if (u_depth > 16 && !rn2(8)
                  && !(svm.mvitals[PM_COCKATRICE].mvflags & G_GONE))
-            do_mkroom(COCKNEST);
+            custom_vanilla(COCKNEST);
+
+        custom_classic();
 
  skip0:
         prevstairs = gs.stairs; /* used to test for place_branch() success */
@@ -1622,6 +1941,7 @@ makelevel(void)
     for (i = 0; i < svn.nroom; ++i) {
         fill_special_room(&svr.rooms[i]);
     }
+    custom_finish();
     level_status.shkready = 1;
     themerooms_post_level_generate();
 
@@ -1786,6 +2106,7 @@ mklev(void)
     reseed_random(rn2);
     reseed_random(rn2_on_display_rng);
 
+    custom_reset(); /* accepted bones never select */
     init_mapseen(&u.uz);
     if (getbones())
         return;
@@ -2873,3 +3194,20 @@ mk_knox_portal(coordxy x, coordxy y)
 }
 
 /*mklev.c*/
+
+#ifdef STEP11_TEST
+void
+step11_generate(void)
+{
+    makelevel();
+    level_finalize_topology();
+}
+
+void
+step11_repeat_backends(void)
+{
+    custom_lua((lua_State *) gl.luathemes[u.uz.dnum]);
+    custom_classic();
+    custom_finish();
+}
+#endif

@@ -4,28 +4,31 @@
 
 This repository is a private NetHack 5.0 expansion based on the upstream
 NetHack 5.0 source. Development is staged as small, reviewable milestones.
-The implementation branch is `phase0/dod-length`; the GitHub-visible README is
-kept current with every project commit.
+The historical Phase 0 branch is `phase0/dod-length`; active development is on
+`phase1/equipment-enhancement`. The GitHub-visible README is kept current with
+every project commit.
 
 ## Current state
 
-The project includes the frozen 200-level dungeon, Step 5 shops, Step 6/7
-NerfHack enrichment, Moria, Sheol, Dragon Caves, Mithardir, and the Step 10
-Neutral Quest / Lost Cities content. Step 11 adds Wizard Study, Storeroom
-Vault v1, Super Honeycomb and Dragon Hall from a pinned xNetHack snapshot.
-These join Giant Court, Real Zoo and Dragon Lair in one recurring scheduler:
-each eligible room has exactly 3% selection probability, with at most one
-custom feature per new ordinary DoD level. Vanilla special rooms and shops
-retain their independent opportunity. Dilapidated Armory and Lemure Pit
-remain deferred because no implementations existed.
+Phase 0 — Dungeons of Doom Expansion is complete and frozen through Step 12 at
+commit `216bf60903cbde8b3ef1de33aeb7368a09ba6719`, tagged
+`phase0-dod-expansion-complete`. The historical `phase0/dod-length` branch is
+preserved at that baseline. Phase 1 — Equipment Enhancement is active on
+`phase1/equipment-enhancement`; Step 13 — Unified Enhancement Engine + initial
+properties + quality — is next. No Step 13 gameplay implementation has begun.
 
-Step 11 is uncommitted and unpublished, based on audited commit
-`fdc824dfd95e96fbafcbf66177b2fd674818f35b`. Saved room-specific identity
-requires **a new game (`EDITLEVEL = 6`)**; older saves and bones are rejected.
-The x64 native corpus generated 3,407 custom rooms on 25,830 sampled levels
-across 1,000 games, with no placement failures or double emissions. See
-[Step 11 implementation, validation and playtest guide](doc/step11.md) for
-eligibility, confidence bounds, compatibility, commands and Release hashes.
+The frozen Phase 0 includes the 200-level dungeon, Step 5 shops, Step 6/7
+NerfHack enrichment, Moria, Sheol, Dragon Caves, Mithardir, Neutral Quest / Lost
+Cities, the recurring Step 11 custom rooms, and the recurring Step 12 Library.
+See [Phase 1 planning baseline](doc/phase1.md) for the active objective, scope,
+design constraints, persistence policy and roadmap.
+
+The Step 11 x64 native corpus generated 3,407 custom rooms on 25,830 sampled
+levels across 1,000 games, with no placement failures or double emissions.
+Saved room-specific identity requires **a new game (`EDITLEVEL = 6`)**; older
+saves and bones are rejected. See [Step 11 implementation, validation and
+playtest guide](doc/step11.md) and [Step 12 Library guide](doc/step12.md) for
+historical eligibility, compatibility, commands and validation details.
 User playtesting has not occurred.
 
 ## Frozen structural baseline

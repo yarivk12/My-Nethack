@@ -4992,7 +4992,7 @@ step10b_lethe_damage(struct obj *obj, const char *ostr, boolean force)
         return ER_DESTROYED;
     }
     if (newtyp != oldtyp) {
-        obj->otyp = (short) newtyp;
+        enhancement_change_type(obj, (short) newtyp);
         obj->dknown = 0;
         obj->odiluted = 0;
         if (obj->oclass == SCROLL_CLASS || obj->oclass == SPBOOK_CLASS)

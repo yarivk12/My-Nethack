@@ -2003,7 +2003,9 @@ omon_adj(struct monst *mon, struct obj *obj, boolean mon_notices)
     default:
         if (obj->oclass == WEAPON_CLASS || is_weptool(obj)
             || obj->oclass == GEM_CLASS)
-            tmp += hitval(obj, mon);
+            tmp += hitval(obj, mon)
+                   - enhancement_hit_bonus(obj, (struct obj *) 0, mon,
+                                            ENHANCE_MELEE);
         break;
     }
     return tmp;
@@ -2135,6 +2137,13 @@ thitmonst(
     }
 
     tmp += omon_adj(mon, obj, TRUE);
+    {
+        struct obj *launcher = hmode == HMON_THROWN && ammo_and_launcher(obj, uwep)
+                                   ? uwep : (struct obj *) 0;
+        enum enhance_use use = hmode == HMON_APPLIED ? ENHANCE_MELEE
+                                  : launcher ? ENHANCE_AMMO : ENHANCE_THROWN;
+        tmp += enhancement_hit_bonus(obj, launcher, mon, use);
+    }
     if (is_orc(mon->data)
         && maybe_polyd(is_elf(gy.youmonst.data), Race_if(PM_ELF)))
         tmp++;
@@ -2253,6 +2262,13 @@ thitmonst(
             tmp += weapon_hit_bonus(obj);
         }
 
+        {
+            struct obj *launcher = hmode == HMON_THROWN && ammo_and_launcher(obj, uwep)
+                                       ? uwep : (struct obj *) 0;
+            enhancement_observe_attack(obj, launcher,
+                hmode == HMON_APPLIED ? ENHANCE_MELEE
+                    : launcher ? ENHANCE_AMMO : ENHANCE_THROWN);
+        }
         if (tmp >= dieroll) {
             boolean wasthrown = (gt.thrownobj != 0),
                     /* remember weapon attribute; hmon() might destroy obj */

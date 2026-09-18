@@ -650,7 +650,7 @@ polyself(int psflags)
                     /* uarm->spe enchantment remains unchanged;
                        re-converting scales to mail poses risk
                        of evaporation due to over enchanting */
-                    uarm->otyp += GRAY_DRAGON_SCALES - GRAY_DRAGON_SCALE_MAIL;
+                    enhancement_change_type(uarm, uarm->otyp + GRAY_DRAGON_SCALES - GRAY_DRAGON_SCALE_MAIL);
                     observe_object(uarm);
                     disp.botl = TRUE; /* AC is changing */
                 }

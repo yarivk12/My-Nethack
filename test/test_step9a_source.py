@@ -16,6 +16,8 @@ base='5ce8b8193e4c581dd293ccac2bd0cafb4da89e96'
 clone=Path(sys.argv[1])
 def read(p):return (repo/p).read_text(encoding='utf8')
 def donor(p):return subprocess.check_output(['git','show',pin+':'+p],cwd=clone).decode().replace('\r\n','\n')
+def checkpoint(p):return subprocess.check_output(['git','show','f27b7f20fd90da8dcb7aa0e90ee85f1af1123444:'+p],cwd=repo).decode().replace('\r\n','\n')
+
 def old(p):return subprocess.check_output(['git','show',base+':'+p],cwd=repo).decode().replace('\r\n','\n')
 def block(source,start):
     pos=source.index(start);begin=source.index('(',pos);n=0;quoted=False
@@ -46,12 +48,12 @@ print('PASS all 15 complete donor monster definitions; only documented naming/AB
 for heading in ['Step 5: shop optimization', 'Step 6: NerfHack dungeon enrichment',
                 'Step 7: classic NerfHack Lost Tomb', 'Step 8: Ruins of Moria']:
     pattern=r'(?ms)^## '+re.escape(heading)+r'\n.*?(?=^## |\Z)'
-    assert re.search(pattern, read('README.md'))[0] == re.search(pattern, old('README.md'))[0], heading
+    assert re.search(pattern, read('README.md'))[0] == re.search(pattern, checkpoint('README.md'))[0], heading
 for p in ['include/global.h','include/dungeon.h','include/you.h',
           'include/monst.h','src/save.c','src/restore.c','src/bones.c',
           'src/files.c','util/recover.c','include/artilist.h',
           'src/mkroom.c','src/shknam.c']:
-    assert project(p, step10b_project(p, read(p)))==old(p),p
+    assert project(p, step10b_project(p, read(p)))==project(p, step10b_project(p, checkpoint(p))),p
 def strip_step10b3_artifact_changes(text):
     """Project current B3 artifact additions out of the historical check."""
     for fragment in (
@@ -156,11 +158,12 @@ artifact_arm_bonus(struct obj *obj)
     return text
 
 
-artifact=strip_step10b3_artifact_changes(read('src/artifact.c'))
+from step13_source_projection import project as step13_project
+artifact=strip_step10b3_artifact_changes(step13_project('src/artifact.c',read('src/artifact.c')))
 for ident in ['GLOWING_DRAGON_SCALE_MAIL','GLOWING_DRAGON_SCALES']:
     artifact=re.sub(r'\s+\|\| obj->otyp == '+ident+r'\b','',artifact)
 assert artifact==old('src/artifact.c'),'artifact changes beyond Step9B worn glowing armor light'
-assert '#define EDITLEVEL 6' in read('include/patchlevel.h') # Step 10 ID epoch
+assert '#define EDITLEVEL 7' in read('include/patchlevel.h') # Step 10 ID epoch
 assert len(re.findall(r'name\s*=\s*"Sheol"',read('dat/dungeon.lua')))==2
 dungeon = read('dat/dungeon.lua')
 assert 'name="Sheol", base=30, range=170, direction="down"' in dungeon

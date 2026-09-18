@@ -1331,6 +1331,9 @@ hitmu(struct monst *mtmp, struct attack *mattk)
         mhm.damage += mith_iron_contact(mtmp, &gy.youmonst, mattk->aatyp,
                           mattk->aatyp == AT_WEAP ? mhm.weapon : (struct obj *) 0);
         if (mattk->aatyp == AT_WEAP)
+            mhm.damage += enhancement_weapon_effects(mhm.weapon, (struct obj *) 0,
+                                      &gy.youmonst, mhm.damage, ENHANCE_MELEE);
+        if (mattk->aatyp == AT_WEAP)
             mhm.damage += mith_weapon_effects(mhm.weapon, &gy.youmonst,
                                               mhm.damage);
 
@@ -2961,3 +2964,15 @@ cloneu(void)
 #undef ld
 
 /*mhitu.c*/
+
+#ifdef STEP13_TEST
+int step13_hitmu(struct monst *m, struct obj *o)
+{
+    struct attack a = { AT_WEAP, AD_PHYS, 1, 4 };
+    int result;
+    mon_currwep = o;
+    result = hitmu(m, &a);
+    mon_currwep = 0;
+    return result;
+}
+#endif

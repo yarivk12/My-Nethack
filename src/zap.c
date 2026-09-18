@@ -1330,7 +1330,7 @@ cancel_item(struct obj *obj)
             setworn((struct obj *) 0, W_ARM);
         if (carrier && mask)
             update_mon_extrinsics(carrier, obj, FALSE, TRUE);
-        obj->otyp += GRAY_DRAGON_SCALES - GRAY_DRAGON_SCALE_MAIL;
+        enhancement_change_type(obj, obj->otyp + GRAY_DRAGON_SCALES - GRAY_DRAGON_SCALE_MAIL);
         if (worn) {
             setworn(obj, W_ARM);
             /* Mail's primary poison property becomes one of the scales'
@@ -5720,7 +5720,7 @@ fracture_rock(struct obj *obj) /* no texts here! */
     if (by_you && obj->otyp == BOULDER)
         sokoban_guilt();
 
-    obj->otyp = ROCK;
+    enhancement_change_type(obj, ROCK);
     obj->oclass = GEM_CLASS;
     obj->quan = (long) rn1(60, 7);
     obj->owt = weight(obj);

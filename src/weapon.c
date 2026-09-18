@@ -220,6 +220,8 @@ hitval(struct obj *otmp, struct monst *mon)
     if (is_pick(otmp) && (passes_walls(ptr) && thick_skinned(ptr)))
         tmp += 2;
 
+    tmp += enhancement_hit_bonus(otmp, (struct obj *) 0, mon, ENHANCE_MELEE);
+
     /* Check specially named weapon "to hit" bonuses */
     if (otmp->oartifact)
         tmp += spec_abon(otmp, mon);
@@ -449,6 +451,8 @@ dmgval(struct obj *otmp, struct monst *mon)
         if (defender && defender != otmp)
             tmp = max(tmp, dmgval(defender, mon));
     }
+
+    tmp += enhancement_damage_bonus(otmp, (struct obj *) 0, mon, ENHANCE_MELEE);
 
     if (obj_material(otmp) <= LEATHER && thick_skinned(ptr))
         /* thick-skinned or scaled creatures don't feel it */

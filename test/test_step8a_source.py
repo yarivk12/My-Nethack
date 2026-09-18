@@ -20,7 +20,7 @@ for p in ['include/global.h','include/dungeon.h','src/save.c',
     assert step10b_project(p, read(p))==old(p),p
 assert '## Step 8: Ruins of Moria' in read('README.md')
 assert '439b8d63d3d1ca78fb08588dd43f61874114b21a' in read('README.md')
-assert '#define EDITLEVEL 6' in read('include/patchlevel.h') # Step 10 ID epoch
+assert '#define EDITLEVEL 7' in read('include/patchlevel.h') # Step 10 ID epoch
 dungeon=read('dat/dungeon.lua')
 assert dungeon.count('name = "The Ruins of Moria"')==2
 assert re.search(r'name = "The Ruins of Moria",\s+base = 30,\s+range = 170,\s+direction = "up"',dungeon)

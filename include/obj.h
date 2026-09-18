@@ -171,6 +171,10 @@ struct obj {
     unsigned long obranch_props;
     uchar obranch_material;
     uchar obranch_size;
+    uint8 o_enh_quality;    /* generic equipment quality, independent of spe */
+    uint8 o_enh_flags;      /* generic quality knowledge */
+    uint32 o_enh_props;     /* active generic equipment properties */
+    uint32 o_enh_known;     /* known presence/absence of generic properties */
 #define OBP_ANARCHIC 0x0001UL
 #define OBP_ACID     0x0002UL
 #define OBP_SLEEP    0x0004UL

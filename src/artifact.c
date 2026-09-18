@@ -282,6 +282,7 @@ mk_artifact(
         otmp->oeroded = otmp->oeroded2 = 0;
         otmp = oname(otmp, a->name, ONAME_NO_FLAGS);
         otmp->oartifact = m;  /* probably already set by this point, but */
+        enhancement_strip_for_artifact(otmp);
         /* set existence and reason for creation bits */
         artifact_origin(otmp, ONAME_RANDOM); /* 'random' is default */
         if (adjust_spe) {
@@ -384,6 +385,7 @@ artifact_exists(
                 int m = (int) (a - artilist);
 
                 otmp->oartifact = (char) (mod ? m : 0);
+                enhancement_strip_for_artifact(otmp);
                 otmp->age = 0;
                 if (otmp->otyp == RIN_INCREASE_DAMAGE)
                     otmp->spe = 0;

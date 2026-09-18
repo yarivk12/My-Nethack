@@ -1218,3 +1218,12 @@ freedynamicdata(void)
 }
 
 /*save.c*/
+
+#ifdef STEP13_TEST
+/* Diagnostic access to the native codec, not a second serializer. */
+void
+step13_save_chain(NHFILE *f, struct obj **chain)
+{
+    saveobjchn(f, chain);
+}
+#endif

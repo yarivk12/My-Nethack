@@ -1238,7 +1238,7 @@ hold_another_object(
         }
         obj_extract_self(obj);
         if (crysknife) {
-            obj->otyp = CRYSKNIFE;
+            enhancement_change_type(obj, CRYSKNIFE);
             obj->oerodeproof = oerode;
         }
     }
@@ -2633,6 +2633,7 @@ void
 fully_identify_obj(struct obj *otmp)
 {
     makeknown(otmp->otyp);
+    enhancement_identify(otmp);
     if (otmp->oartifact)
         discover_artifact((xint16) otmp->oartifact);
     observe_object(otmp);
@@ -4439,6 +4440,12 @@ mergable(
        explicitly marked to prevent merge, or if not mergable in general */
     if (obj == otmp || obj->otyp != otmp->otyp
         || obj->nomerge || otmp->nomerge || !objects[obj->otyp].oc_merge)
+        return FALSE;
+
+    if (obj->o_enh_props != otmp->o_enh_props
+        || obj->o_enh_known != otmp->o_enh_known
+        || obj->o_enh_quality != otmp->o_enh_quality
+        || obj->o_enh_flags != otmp->o_enh_flags)
         return FALSE;
 
     /* coins of the same kind will always merge */

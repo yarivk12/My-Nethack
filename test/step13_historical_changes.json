@@ -1,0 +1,98 @@
+{
+  "include/you.h": [
+    {
+      "before": " */\nstruct _hitmon_data {\n    int dmg;  /* damage */\n    int thrown;\n",
+      "after": " */\nstruct _hitmon_data {\n    struct obj *enhance_obj; /* cleared if an eligible object breaks */\n    int dmg;  /* damage */\n    int thrown;\n"
+    }
+  ],
+  "include/hack.h": [
+    {
+      "before": "#if !defined(RECOVER_C)\n\n#include \"extern.h\"\n#include \"savefile.h\"\n",
+      "after": "#if !defined(RECOVER_C)\n\n#include \"enhance.h\"\n#include \"extern.h\"\n#include \"savefile.h\"\n"
+    }
+  ],
+  "src/save.c": [
+    {
+      "before": "\n/*save.c*/\n",
+      "after": "\n/*save.c*/\n\n#ifdef STEP13_TEST\n/* Diagnostic access to the native codec, not a second serializer. */\nvoid\nstep13_save_chain(NHFILE *f, struct obj **chain)\n{\n    saveobjchn(f, chain);\n}\n#endif\n"
+    }
+  ],
+  "src/restore.c": [
+    {
+      "before": "\n/*restore.c*/\n",
+      "after": "\n/*restore.c*/\n\n#ifdef STEP13_TEST\n/* Diagnostic access to the native codec, not a second serializer. */\nstruct obj *\nstep13_restore_chain(NHFILE *f)\n{\n    return restobjchn(f, FALSE);\n}\n#endif\n"
+    }
+  ],
+  "src/artifact.c": [
+    {
+      "before": "        otmp = oname(otmp, a->name, ONAME_NO_FLAGS);\n        otmp->oartifact = m;  /* probably already set by this point, but */\n        /* set existence and reason for creation bits */\n        artifact_origin(otmp, ONAME_RANDOM); /* 'random' is default */\n",
+      "after": "        otmp = oname(otmp, a->name, ONAME_NO_FLAGS);\n        otmp->oartifact = m;  /* probably already set by this point, but */\n        enhancement_strip_for_artifact(otmp);\n        /* set existence and reason for creation bits */\n        artifact_origin(otmp, ONAME_RANDOM); /* 'random' is default */\n"
+    },
+    {
+      "before": "\n                otmp->oartifact = (char) (mod ? m : 0);\n                otmp->age = 0;\n                if (otmp->otyp == RIN_INCREASE_DAMAGE)\n",
+      "after": "\n                otmp->oartifact = (char) (mod ? m : 0);\n                enhancement_strip_for_artifact(otmp);\n                otmp->age = 0;\n                if (otmp->otyp == RIN_INCREASE_DAMAGE)\n"
+    }
+  ],
+  "src/read.c": [
+    {
+      "before": "        setworn((struct obj *) 0, W_ARM);\n        /* assumes same order */\n        otmp->otyp += GRAY_DRAGON_SCALE_MAIL - GRAY_DRAGON_SCALES;\n        otmp->lamplit = 0; /* don't want bless() or uncurse() to adjust\n                            * light radius because scales -> scale_mail will\n",
+      "after": "        setworn((struct obj *) 0, W_ARM);\n        /* assumes same order */\n        enhancement_change_type(otmp, otmp->otyp + GRAY_DRAGON_SCALE_MAIL - GRAY_DRAGON_SCALES);\n        otmp->lamplit = 0; /* don't want bless() or uncurse() to adjust\n                            * light radius because scales -> scale_mail will\n"
+    }
+  ],
+  "src/shk.c": [
+    {
+      "before": "            }\n            tmp = (long) objects[i].oc_cost;\n        } else if (oid_price_adjustment(obj, obj->o_id) > 0) {\n            /* unid'd, arbitrarily impose surcharge: tmp *= 4/3 */\n",
+      "after": "            }\n            tmp = (long) objects[i].oc_cost;\n            if (obj->o_enh_props || obj->o_enh_quality)\n                tmp = enhancement_price(obj, tmp);\n        } else if (oid_price_adjustment(obj, obj->o_id) > 0) {\n            /* unid'd, arbitrarily impose surcharge: tmp *= 4/3 */\n"
+    },
+    {
+      "before": "        }\n    return;\n}\n\n",
+      "after": "        }\n    return;\n}\n\n/* Enhancement transactions can lower as well as raise the recorded value.\n * Preserve alter_cost's native increase-only semantics for all other callers. */\nvoid\nenhancement_rebill(struct obj *obj)\n{\n    struct monst *shkp;\n    struct bill_x *bp;\n    for (shkp = next_shkp(fmon, TRUE); shkp;\n         shkp = next_shkp(shkp->nmon, TRUE))\n        if ((bp = onbill(obj, shkp, TRUE)) != 0) {\n            bp->price = max(1L, get_cost(obj, shkp));\n            update_inventory();\n            break;\n        }\n}\n\n"
+    },
+    {
+      "before": "        break;\n    }\n    return tmp;\n}\n\n",
+      "after": "        break;\n    }\n    return (obj->o_enh_props || obj->o_enh_quality)\n               ? enhancement_price(obj, tmp) : tmp;\n}\n\n"
+    },
+    {
+      "before": "            verbalize(\"I tried, but I can't enchant this any higher!\");\n        } else if (otmp->otyp == WORM_TOOTH) {\n            otmp->otyp = CRYSKNIFE;\n            otmp->cursed = 0;\n            otmp->owt = weight(otmp);\n",
+      "after": "            verbalize(\"I tried, but I can't enchant this any higher!\");\n        } else if (otmp->otyp == WORM_TOOTH) {\n            enhancement_change_type(otmp, CRYSKNIFE);\n            otmp->cursed = 0;\n            otmp->owt = weight(otmp);\n"
+    },
+    {
+      "before": "\n/*shk.c*/\n",
+      "after": "\n/*shk.c*/\n\n#ifdef STEP13_TEST\nlong step13_getprice(struct obj *obj, boolean buying)\n{\n    return getprice(obj, buying);\n}\n#endif\n"
+    }
+  ],
+  "sys/windows/Makefile.nmake": [
+    {
+      "before": "\t$(SRC)dog.c      $(SRC)dogmove.c  $(SRC)dokick.c   $(SRC)dothrow.c \\\n\t$(SRC)drawing.c  $(SRC)dungeon.c  $(SRC)earlyarg.c $(SRC)eat.c \\\n\t$(SRC)end.c      $(SRC)engrave.c  $(SRC)exper.c    $(SRC)explode.c \\\n\t$(SRC)files.c    $(SRC)fountain.c $(SRC)getpos.c   $(SRC)glyphs.c \\\n\t$(SRC)hack.c     $(SRC)iactions.c $(SRC)insight.c  $(SRC)invent.c \\\n",
+      "after": "\t$(SRC)dog.c      $(SRC)dogmove.c  $(SRC)dokick.c   $(SRC)dothrow.c \\\n\t$(SRC)drawing.c  $(SRC)dungeon.c  $(SRC)earlyarg.c $(SRC)eat.c \\\n\t$(SRC)end.c      $(SRC)enhance.c  $(SRC)engrave.c  $(SRC)exper.c    $(SRC)explode.c \\\n\t$(SRC)files.c    $(SRC)fountain.c $(SRC)getpos.c   $(SRC)glyphs.c \\\n\t$(SRC)hack.c     $(SRC)iactions.c $(SRC)insight.c  $(SRC)invent.c \\\n"
+    },
+    {
+      "before": "\t$(INCL)coord.h    $(INCL)cstd.h       $(INCL)decl.h \\\n\t$(INCL)defsym.h   $(INCL)display.h    $(INCL)dlb.h \\\n\t$(INCL)dungeon.h  $(INCL)engrave.h    $(INCL)extern.h \\\n\t$(INCL)flag.h     $(INCL)fnamesiz.h   $(INCL)func_tab.h \\\n\t$(INCL)global.h   $(INCL)warnings.h   $(INCL)hack.h \\\n",
+      "after": "\t$(INCL)coord.h    $(INCL)cstd.h       $(INCL)decl.h \\\n\t$(INCL)defsym.h   $(INCL)display.h    $(INCL)dlb.h \\\n\t$(INCL)dungeon.h  $(INCL)enhance.h    $(INCL)engrave.h    $(INCL)extern.h \\\n\t$(INCL)flag.h     $(INCL)fnamesiz.h   $(INCL)func_tab.h \\\n\t$(INCL)global.h   $(INCL)warnings.h   $(INCL)hack.h \\\n"
+    },
+    {
+      "before": "\t$(OTTY)dog.o      $(OTTY)dogmove.o  $(OTTY)dokick.o   $(OTTY)dothrow.o \\\n\t$(OTTY)drawing.o  $(OTTY)dungeon.o  $(OTTY)earlyarg.o $(OTTY)eat.o \\\n\t$(OTTY)end.o      $(OTTY)engrave.o  $(OTTY)exper.o    $(OTTY)explode.o \\\n\t$(OTTY)extralev.o $(OTTY)files.o    $(OTTY)fountain.o $(OTTY)getpos.o \\\n\t$(OTTY)glyphs.o   $(OTTY)iactions.o $(OTTY)hack.o     $(OTTY)insight.o \\\n",
+      "after": "\t$(OTTY)dog.o      $(OTTY)dogmove.o  $(OTTY)dokick.o   $(OTTY)dothrow.o \\\n\t$(OTTY)drawing.o  $(OTTY)dungeon.o  $(OTTY)earlyarg.o $(OTTY)eat.o \\\n\t$(OTTY)end.o      $(OTTY)enhance.o  $(OTTY)engrave.o  $(OTTY)exper.o    $(OTTY)explode.o \\\n\t$(OTTY)extralev.o $(OTTY)files.o    $(OTTY)fountain.o $(OTTY)getpos.o \\\n\t$(OTTY)glyphs.o   $(OTTY)iactions.o $(OTTY)hack.o     $(OTTY)insight.o \\\n"
+    },
+    {
+      "before": "\t$(OGUI)dog.o      $(OGUI)dogmove.o  $(OGUI)dokick.o   $(OGUI)dothrow.o \\\n\t$(OGUI)drawing.o  $(OGUI)dungeon.o  $(OGUI)earlyarg.o $(OGUI)eat.o \\\n\t$(OGUI)end.o      $(OGUI)engrave.o  $(OGUI)exper.o    $(OGUI)explode.o \\\n\t$(OGUI)extralev.o $(OGUI)files.o    $(OGUI)fountain.o $(OGUI)getpos.o \\\n\t$(OGUI)glyphs.o   $(OGUI)iactions.o $(OGUI)hack.o     $(OGUI)insight.o \\\n",
+      "after": "\t$(OGUI)dog.o      $(OGUI)dogmove.o  $(OGUI)dokick.o   $(OGUI)dothrow.o \\\n\t$(OGUI)drawing.o  $(OGUI)dungeon.o  $(OGUI)earlyarg.o $(OGUI)eat.o \\\n\t$(OGUI)end.o      $(OGUI)enhance.o  $(OGUI)engrave.o  $(OGUI)exper.o    $(OGUI)explode.o \\\n\t$(OGUI)extralev.o $(OGUI)files.o    $(OGUI)fountain.o $(OGUI)getpos.o \\\n\t$(OGUI)glyphs.o   $(OGUI)iactions.o $(OGUI)hack.o     $(OGUI)insight.o \\\n"
+    },
+    {
+      "before": "\t$(INCL)attrib.h $(INCL)botl.h $(INCL)context.h \\\n\t$(INCL)decl.h $(INCL)defsym.h $(INCL)display.h \\\n\t$(INCL)dungeon.h $(INCL)engrave.h $(INCL)flag.h \\\n\t$(INCL)hack.h $(INCL)lint.h $(INCL)mextra.h \\\n\t$(INCL)mcastu.h \\\n",
+      "after": "\t$(INCL)attrib.h $(INCL)botl.h $(INCL)context.h \\\n\t$(INCL)decl.h $(INCL)defsym.h $(INCL)display.h \\\n\t$(INCL)dungeon.h $(INCL)enhance.h $(INCL)engrave.h $(INCL)flag.h \\\n\t$(INCL)hack.h $(INCL)lint.h $(INCL)mextra.h \\\n\t$(INCL)mcastu.h \\\n"
+    },
+    {
+      "before": "CTAGDEP = $(INCL)align.h  $(INCL)artifact.h $(INCL)artilist.h \\\n\t  $(INCL)attrib.h $(INCL)context.h  $(INCL)coord.h    \\\n\t  $(INCL)decl.h   $(INCL)dungeon.h  $(INCL)engrave.h  \\\n\t  $(INCL)flag.h   $(INCL)func_tab.h $(INCL)global.h   \\\n\t  $(INCL)hack.h   $(INCL)mextra.h   $(INCL)mcastu.h   \\\n",
+      "after": "CTAGDEP = $(INCL)align.h  $(INCL)artifact.h $(INCL)artilist.h \\\n\t  $(INCL)attrib.h $(INCL)context.h  $(INCL)coord.h    \\\n\t  $(INCL)decl.h   $(INCL)dungeon.h  $(INCL)enhance.h    $(INCL)engrave.h  \\\n\t  $(INCL)flag.h   $(INCL)func_tab.h $(INCL)global.h   \\\n\t  $(INCL)hack.h   $(INCL)mextra.h   $(INCL)mcastu.h   \\\n"
+    },
+    {
+      "before": "$(OTTY)eat.o: eat.c $(HACK_H)\n$(OTTY)end.o: end.c $(HACK_H) $(INCL)dlb.h\n$(OTTY)engrave.o: engrave.c $(HACK_H)\n$(OTTY)exper.o: exper.c $(HACK_H)\n",
+      "after": "$(OTTY)eat.o: eat.c $(HACK_H)\n$(OTTY)end.o: end.c $(HACK_H) $(INCL)dlb.h\n$(OTTY)enhance.o: enhance.c $(HACK_H)\n$(OTTY)engrave.o: engrave.c $(HACK_H)\n$(OTTY)exper.o: exper.c $(HACK_H)\n"
+    },
+    {
+      "before": "$(OGUI)eat.o: eat.c $(HACK_H)\n$(OGUI)end.o: end.c $(HACK_H) $(INCL)dlb.h\n$(OGUI)engrave.o: engrave.c $(HACK_H)\n$(OGUI)exper.o: exper.c $(HACK_H)\n",
+      "after": "$(OGUI)eat.o: eat.c $(HACK_H)\n$(OGUI)end.o: end.c $(HACK_H) $(INCL)dlb.h\n$(OGUI)enhance.o: enhance.c $(HACK_H)\n$(OGUI)engrave.o: engrave.c $(HACK_H)\n$(OGUI)exper.o: exper.c $(HACK_H)\n"
+    }
+  ]
+}

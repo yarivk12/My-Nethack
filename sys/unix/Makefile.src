@@ -516,7 +516,7 @@ HACK_H	= ../src/hack.h-t
 HACKCSRC ?= allmain.c alloc.c apply.c artifact.c attrib.c ball.c bones.c \
 	   botl.c calendar.c cmd.c coloratt.c dbridge.c decl.c detect.c dig.c \
 	   display.c dlb.c do.c do_name.c do_wear.c dog.c dogmove.c dokick.c \
-	   dothrow.c drawing.c dungeon.c earlyarg.c eat.c end.c engrave.c \
+	   dothrow.c drawing.c dungeon.c earlyarg.c eat.c end.c enhance.c engrave.c \
 	   exper.c explode.c extralev.c files.c fountain.c hack.c hacklib.c \
 	   getpos.c glyphs.c iactions.c insight.c invent.c isaac64.c light.c \
 	   lock.c mail.c makemon.c mcastu.c mdlib.c mhitm.c \
@@ -565,7 +565,7 @@ CSOURCES ?= $(HACKCSRC) $(HACKLIBSRC) $(SYSCSRC) $(WINCSRC) $(CHAINSRC)
 #
 HACKINCL ?= align.h artifact.h artilist.h attrib.h botl.h \
 	color.h config.h config1.h context.h coord.h cstd.h decl.h \
-	defsym.h display.h dlb.h dungeon.h engrave.h extern.h flag.h \
+	defsym.h display.h dlb.h dungeon.h enhance.h engrave.h extern.h flag.h \
 	fnamesiz.h func_tab.h global.h warnings.h hack.h lint.h mextra.h \
 	mcastu.h micro.h mfndpos.h mkroom.h monattk.h mondata.h monflag.h \
 	monst.h monsters.h nhmd4.h obj.h objects.h objclass.h optlist.h \
@@ -597,7 +597,7 @@ HOBJ ?= $(TARGETPFX)allmain.o $(TARGETPFX)alloc.o \
 	$(TARGETPFX)do_wear.o $(TARGETPFX)dog.o $(TARGETPFX)dogmove.o \
 	$(TARGETPFX)dokick.o $(TARGETPFX)dothrow.o $(TARGETPFX)drawing.o \
 	$(TARGETPFX)dungeon.o $(TARGETPFX)earlyarg.o $(TARGETPFX)eat.o \
-	$(TARGETPFX)end.o $(TARGETPFX)engrave.o $(TARGETPFX)exper.o \
+	$(TARGETPFX)end.o $(TARGETPFX)enhance.o $(TARGETPFX)engrave.o $(TARGETPFX)exper.o \
 	$(TARGETPFX)explode.o $(TARGETPFX)extralev.o $(TARGETPFX)files.o \
 	$(TARGETPFX)fountain.o $(TARGETPFX)getpos.o $(TARGETPFX)glyphs.o \
 	$(TARGETPFX)hack.o $(TARGETPFX)iactions.o $(TARGETPFX)insight.o \
@@ -904,7 +904,7 @@ $(CONFIG_H): ../include/color.h ../include/config.h ../include/config1.h \
 $(HACK_H): $(CONFIG_H) ../include/align.h ../include/artilist.h \
 		../include/attrib.h ../include/botl.h ../include/context.h \
 		../include/decl.h ../include/defsym.h ../include/display.h \
-		../include/dungeon.h ../include/engrave.h ../include/flag.h \
+		../include/dungeon.h ../include/enhance.h ../include/engrave.h ../include/flag.h \
 		../include/hack.h ../include/lint.h ../include/mextra.h \
 		../include/mcastu.h ../include/mkroom.h ../include/monattk.h \
 		../include/mondata.h ../include/monflag.h ../include/monst.h \
@@ -1180,6 +1180,7 @@ $(TARGETPFX)dungeon.o: dungeon.c $(HACK_H) ../include/dgn_file.h \
 $(TARGETPFX)earlyarg.o: earlyarg.c $(HACK_H)
 $(TARGETPFX)eat.o: eat.c $(HACK_H)
 $(TARGETPFX)end.o: end.c $(HACK_H) ../include/dlb.h
+$(TARGETPFX)enhance.o: enhance.c $(HACK_H)
 $(TARGETPFX)engrave.o: engrave.c $(HACK_H)
 $(TARGETPFX)exper.o: exper.c $(HACK_H)
 $(TARGETPFX)explode.o: explode.c $(HACK_H)

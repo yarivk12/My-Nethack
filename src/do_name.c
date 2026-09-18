@@ -399,6 +399,7 @@ oname(
     if (lth)
         artifact_exists(obj, name, TRUE, oflgs);
     if (obj->oartifact) {
+        enhancement_strip_for_artifact(obj);
         /* can't dual-wield with artifact as secondary weapon */
         if (obj == uswapwep)
             untwoweapon();

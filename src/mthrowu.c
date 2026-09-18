@@ -5,6 +5,10 @@
 
 #include "hack.h"
 
+staticfn int thitu_enhanced(int, int, struct obj **, const char *,
+                            const struct obj *, enum enhance_use);
+staticfn boolean ohitmon_enhanced(struct monst *, struct obj *, int, boolean,
+                                 const struct obj *, enum enhance_use);
 staticfn int monmulti(struct monst *, struct obj *, struct obj *);
 staticfn void monshoot(struct monst *, struct obj *, struct obj *);
 staticfn boolean ucatchgem(struct obj *, struct monst *);
@@ -71,12 +75,13 @@ m_has_launcher_and_ammo(struct monst *mtmp)
 
 /* hero is hit by something other than a monster (though it could be a
    missile thrown or shot by a monster) */
-int
-thitu(
+staticfn int
+thitu_enhanced(
     int tlev, /* pseudo-level used when deciding whether to hit hero's AC */
     int dam,
     struct obj **objp,
-    const char *name) /* if null, then format `*objp' */
+    const char *name, /* if null, then format `*objp' */
+    const struct obj *launcher, enum enhance_use use)
 {
     struct obj *obj = objp ? *objp : 0;
     const char *onm, *knm;
@@ -103,6 +108,7 @@ thitu(
             : an(name);
     is_acid = (obj && obj->otyp == ACID_VENOM);
 
+    tlev += enhancement_hit_bonus(obj, launcher, &gy.youmonst, use);
     if (u.uac + tlev <= (dieroll = rnd(20))) {
         ++gm.mesg_given;
         if (Blind || !flags.verbose) {
@@ -149,6 +155,7 @@ thitu(
             }
             if (!is_acid)
                 dam = mith_physical_damage(&gy.youmonst, obj, AT_WEAP, dam);
+            dam += enhancement_weapon_effects(obj, launcher, &gy.youmonst, dam, use);
             if (obj && (obj->oclass == WEAPON_CLASS || is_weptool(obj)))
                 dam += mith_weapon_effects(obj, &gy.youmonst, dam);
             losehp(dam, knm, kprefix); /* physical missile or acid damage */
@@ -364,14 +371,15 @@ mith_internal_projectile(struct monst *magr, struct monst *mdef,
    return 1 if the object has stopped moving (hit or its range used up);
    can anger the monster, if this happened due to hero (eg. exploding
    bag of holding throwing the items) */
-boolean
-ohitmon(
+staticfn boolean
+ohitmon_enhanced(
     struct monst *mtmp, /* accidental target, located at <gb.bhitpos.x,.y> */
     struct obj *otmp,   /* missile; might be destroyed by drop_throw */
     int range,          /* how much farther will object travel if it misses;
                          * use -1 to signify to keep going even after hit,
                          * unless it's gone (for rolling_boulder_traps) */
-    boolean verbose) /* give messages even when you can't see what happened */
+    boolean verbose, /* give messages even when you can't see what happened */
+    const struct obj *launcher, enum enhance_use use)
 {
     int damage, tmp;
     boolean vis, ismimic, objgone;
@@ -384,7 +392,8 @@ ohitmon(
     if (vis)
         observe_object(otmp);
 
-    tmp = 5 + find_mac(mtmp) + omon_adj(mtmp, otmp, FALSE);
+    tmp = 5 + find_mac(mtmp) + omon_adj(mtmp, otmp, FALSE)
+          + enhancement_hit_bonus(otmp, launcher, mtmp, use);
     /* High level monsters will be more likely to hit */
     /* This check applies only if this monster is the target
      * the archer was aiming at. */
@@ -499,6 +508,7 @@ ohitmon(
 
         /* might already be dead (if petrified) */
         if (!harmless && !DEADMONSTER(mtmp)) {
+            damage += enhancement_weapon_effects(otmp, launcher, mtmp, damage, use);
             if (otmp->oclass == WEAPON_CLASS || is_weptool(otmp))
                 damage += mith_weapon_effects(otmp, mtmp, damage);
             mtmp->mhp -= damage;
@@ -627,6 +637,10 @@ m_throw(
     int range,              /* maximum distance */
     struct obj *obj)        /* missile (or stack providing it) */
 {
+    struct obj launcher_copy;
+    const struct obj *enh_launcher = 0;
+    enum enhance_use enh_use = ENHANCE_THROWN;
+
     struct monst *mtmp;
     struct obj *singleobj;
     boolean forcehit;
@@ -637,6 +651,11 @@ m_throw(
                 (obj == MON_WEP(mon) && arw && arw->tethered != 0),
             return_flightpath = FALSE;
 
+    if (mon && ammo_and_launcher(obj, MON_WEP(mon))) {
+        launcher_copy = *MON_WEP(mon);
+        enh_launcher = &launcher_copy;
+        enh_use = ENHANCE_AMMO;
+    }
     gb.bhitpos.x = x;
     gb.bhitpos.y = y;
     gn.notonhead = FALSE; /* reset potentially stale value */
@@ -733,7 +752,7 @@ m_throw(
                give message and skip it in order to keep going */
             mtmp = (struct monst *) 0;
         } else if (mtmp) {
-            if (ohitmon(mtmp, singleobj, range, TRUE))
+            if (ohitmon_enhanced(mtmp, singleobj, range, TRUE, enh_launcher, enh_use))
                 break;
         } else if (u_at(gb.bhitpos.x, gb.bhitpos.y)) {
             if (gm.multi)
@@ -765,7 +784,7 @@ m_throw(
             case CREAM_PIE:
             case BLINDING_VENOM:
             case FREEZING_ICE:
-                hitu = thitu(8, 0, &singleobj, (char *) 0);
+                hitu = thitu_enhanced(8, 0, &singleobj, (char *) 0, enh_launcher, enh_use);
                 break;
             default:
                 {
@@ -791,7 +810,7 @@ m_throw(
                         dam = 1;
                     if (singleobj->otyp != ACID_VENOM)
                         dam = Maybe_Half_Phys(dam);
-                    hitu = thitu(hitv, dam, &singleobj, (char *) 0);
+                    hitu = thitu_enhanced(hitv, dam, &singleobj, (char *) 0, enh_launcher, enh_use);
                 }
             }
             if (hitu && singleobj->otyp == FREEZING_ICE)
@@ -1293,7 +1312,8 @@ thrwmu(struct monst *mtmp)
         if (dam < 1)
             dam = 1;
 
-        (void) thitu(hitv, Maybe_Half_Phys(dam), &otmp, (char *) 0);
+        (void) thitu_enhanced(hitv, Maybe_Half_Phys(dam), &otmp, (char *) 0,
+                              (struct obj *) 0, ENHANCE_MELEE);
         stop_occupation();
         return;
     } else if ((arw = autoreturn_weapon(otmp)) != 0 && !mwelded(otmp)) {
@@ -1618,3 +1638,28 @@ hits_bars(
 }
 
 /*mthrowu.c*/
+
+/* Non-monster callers (traps and scattered objects) have no shot source. */
+int
+thitu(int tlev, int dam, struct obj **objp, const char *name)
+{
+    return thitu_enhanced(tlev, dam, objp, name, (struct obj *) 0, ENHANCE_THROWN);
+}
+
+boolean
+ohitmon(struct monst *mon, struct obj *obj, int range, boolean verbose)
+{
+    return ohitmon_enhanced(mon, obj, range, verbose, (struct obj *) 0, ENHANCE_THROWN);
+}
+
+#ifdef STEP13_TEST
+int step13_thitu(struct obj **o, struct obj *launcher, enum enhance_use use)
+{
+    return thitu_enhanced(100, 10, o, (const char *) 0, launcher, use);
+}
+boolean step13_ohitmon(struct monst *m, struct obj *o, struct obj *launcher,
+                      enum enhance_use use)
+{
+    return ohitmon_enhanced(m, o, 0, FALSE, launcher, use);
+}
+#endif

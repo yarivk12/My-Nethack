@@ -10,6 +10,7 @@ import re
 import subprocess
 import sys
 import zipfile
+from step13_source_projection import project as step13_project
 
 repo = Path(__file__).resolve().parents[1]
 base = "fdc824dfd95e96fbafcbf66177b2fd674818f35b"
@@ -55,7 +56,7 @@ protected += ["include/global.h", "include/monsters.h", "include/objects.h",
               "src/shk.c", "src/save.c", "src/bones.c", "src/files.c", "util/recover.c",
               "sys/windows/vs/files.props", "sys/windows/Makefile.nmake"]
 for path in protected:
-    assert now(path) == old(path), path
+    assert step13_project(path, now(path)) == old(path), path
 mklev = now("src/mklev.c")
 old_chain = old("src/mklev.c")
 start = 'else if (u_depth > 1 && u_depth < depth(&medusa_level)'

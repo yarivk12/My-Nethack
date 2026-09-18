@@ -2968,6 +2968,8 @@ get_cost(
                 break;
             }
             tmp = (long) objects[i].oc_cost;
+            if (obj->o_enh_props || obj->o_enh_quality)
+                tmp = enhancement_price(obj, tmp);
         } else if (oid_price_adjustment(obj, obj->o_id) > 0) {
             /* unid'd, arbitrarily impose surcharge: tmp *= 4/3 */
             multiplier *= 4L;
@@ -3283,6 +3285,22 @@ alter_cost(
             break; /* done */
         }
     return;
+}
+
+/* Enhancement transactions can lower as well as raise the recorded value.
+ * Preserve alter_cost's native increase-only semantics for all other callers. */
+void
+enhancement_rebill(struct obj *obj)
+{
+    struct monst *shkp;
+    struct bill_x *bp;
+    for (shkp = next_shkp(fmon, TRUE); shkp;
+         shkp = next_shkp(shkp->nmon, TRUE))
+        if ((bp = onbill(obj, shkp, TRUE)) != 0) {
+            bp->price = max(1L, get_cost(obj, shkp));
+            update_inventory();
+            break;
+        }
 }
 
 /* called from doinv(invent.c) for inventory of unpaid objects */
@@ -4385,7 +4403,8 @@ getprice(struct obj *obj, boolean shk_buying)
             tmp /= 2L;
         break;
     }
-    return tmp;
+    return (obj->o_enh_props || obj->o_enh_quality)
+               ? enhancement_price(obj, tmp) : tmp;
 }
 
 /* shk catches thrown pick-axe */
@@ -5751,7 +5770,7 @@ mith_service_weapon(struct monst *shkp)
         } else if (otmp->spe >= 5) {
             verbalize("I tried, but I can't enchant this any higher!");
         } else if (otmp->otyp == WORM_TOOTH) {
-            otmp->otyp = CRYSKNIFE;
+            enhancement_change_type(otmp, CRYSKNIFE);
             otmp->cursed = 0;
             otmp->owt = weight(otmp);
         } else ++otmp->spe;
@@ -6423,3 +6442,10 @@ use_unpaid_trapobj(struct obj *otmp, coordxy x, coordxy y)
 #undef muteshk
 
 /*shk.c*/
+
+#ifdef STEP13_TEST
+long step13_getprice(struct obj *obj, boolean buying)
+{
+    return getprice(obj, buying);
+}
+#endif

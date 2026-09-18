@@ -948,6 +948,8 @@ hmon_hitmon_weapon_ranged(
         hmd->dmg = 0;
     else
         hmd->dmg = rnd(2);
+    if (hmd->dmg > 0)
+        hmd->dmg += enhancement_damage_bonus(obj, (struct obj *) 0, mon, ENHANCE_MELEE);
     hmd->dmg += mith_iron_damage(mon, hmd->material);
     if (hmd->material == SILVER && mon_hates_silver(mon)) {
         hmd->silvermsg = hmd->silverobj = TRUE;
@@ -964,8 +966,10 @@ hmon_hitmon_weapon_ranged(
         if (!more_than_1)
             uwepgone(); /* set gu.unweapon */
         useup(obj);
-        if (!more_than_1)
+        if (!more_than_1) {
             obj = (struct obj *) 0;
+            hmd->enhance_obj = (struct obj *) 0;
+        }
         hmd->hittxt = TRUE;
         if (!shadelike(hmd->mdat))
             hmd->dmg++;
@@ -1289,7 +1293,7 @@ hmon_hitmon_misc_obj(
                           (cnt == 1L) ? "isn't" : "aren't");
                 if (obj->timed)
                     obj_stop_timers(obj);
-                obj->otyp = ROCK;
+                enhancement_change_type(obj, ROCK);
                 obj->oclass = GEM_CLASS;
                 obj->oartifact = 0;
                 obj->spe = 0;
@@ -1834,8 +1838,17 @@ hmon_hitmon(
     int dieroll)
 {
     struct _hitmon_data hmd;
+    struct obj enhancement_snapshot = obj ? *obj : cg.zeroobj;
+    struct obj *enh_launcher = thrown == HMON_THROWN && obj
+                                  && ammo_and_launcher(obj, uwep) ? uwep : 0;
+    enum enhance_use enh_use = (thrown == HMON_MELEE || thrown == HMON_APPLIED)
+                                  ? ENHANCE_MELEE
+                                  : enh_launcher ? ENHANCE_AMMO : ENHANCE_THROWN;
     boolean maybe_knockback = FALSE;
 
+    hmd.enhance_obj = enhancement_eligible(obj) ? obj : (struct obj *) 0;
+    if (thrown == HMON_MELEE)
+        enhancement_observe_attack(hmd.enhance_obj, (struct obj *) 0, ENHANCE_MELEE);
     hmd.dmg = 0;
     hmd.thrown = thrown;
     hmd.twohits = thrown ? 0 : gt.twohits;
@@ -1891,6 +1904,12 @@ hmon_hitmon(
         hmd.dmg = mith_physical_damage(mon, (struct obj *) 0, AT_WEAP,
                                         hmd.dmg);
 
+    if (!hmd.already_killed && hmd.dmg > 0)
+        enhancement_observe_hit(hmd.enhance_obj, enh_launcher, mon, enh_use);
+    if (!hmd.already_killed)
+        hmd.dmg += enhancement_weapon_effects(hmd.enhance_obj
+                          ? hmd.enhance_obj : &enhancement_snapshot,
+                          enh_launcher, mon, hmd.dmg, enh_use);
     if (hmd.ispoisoned)
         hmon_hitmon_poison(&hmd, mon, obj);
     if (hmd.use_weapon_skill && !hmd.already_killed)

@@ -96,12 +96,12 @@ if __name__ == "__main__":
 
     for unchanged in ("README.md",):
         old = subprocess.check_output(
-            ["git", "show", BASE + ":" + unchanged], cwd=repo)
+            ["git", "show", "f27b7f20fd90da8dcb7aa0e90ee85f1af1123444:" + unchanged], cwd=repo)
         assert (repo / unchanged).read_bytes() == old.replace(b"\n", b"\r\n") \
             or (repo / unchanged).read_bytes().replace(b"\r\n", b"\n") == old
 
     diff = subprocess.check_output(
-        ["git", "diff", "--unified=0", BASE], cwd=repo, text=True)
+        ["git", "diff", "--unified=0", BASE, "--", "src", "include"], cwd=repo, text=True)
     additions = "\n".join(line[1:] for line in diff.splitlines()
                             if line.startswith("+") and not line.startswith("+++"))
     for forbidden in ("u.usanity", "u.uinsight", "u.umadness", "sanity.c"):

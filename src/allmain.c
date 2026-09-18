@@ -6,6 +6,9 @@
 /* various code that was replicated in *main.c */
 
 #include "hack.h"
+#ifdef STEP13_TEST
+extern void step13_game_fixture(boolean);
+#endif
 
 #ifndef NO_SIGNAL
 #include <signal.h>
@@ -100,6 +103,11 @@ moveloop_preamble(boolean resuming)
         iflags.fuzzerpending = FALSE;
     }
 
+#ifdef STEP13_TEST
+    if (getenv("STEP13_GAME_FIXTURE")) {
+        step13_game_fixture(resuming);
+    }
+#endif
     program_state.in_moveloop = 1;
     /* for perm_invent preset at startup, display persistent inventory after
        invent is fully populated and the in_moveloop flag has been set */

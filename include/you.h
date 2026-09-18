@@ -539,6 +539,7 @@ struct you {
  * done.
  */
 struct _hitmon_data {
+    struct obj *enhance_obj; /* cleared if an eligible object breaks */
     int dmg;  /* damage */
     int thrown;
     int twohits; /* 0: 1 of 1; 1: 1 of 2; 2: 2 of 2 */

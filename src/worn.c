@@ -325,6 +325,7 @@ setworn(struct obj *obj, long mask)
                 if (oobj) {
                     if (u.twoweap && (oobj->owornmask & (W_WEP | W_SWAPWEP)))
                         set_twoweap(FALSE); /* u.twoweap = FALSE */
+                    enhancement_worn_off(oobj, &gy.youmonst);
                     oobj->owornmask &= ~wp->w_mask;
                     if (wp->w_mask & ~(W_SWAPWEP | W_QUIVER)) {
                         /* leave as "x = x <op> y", here and below, for broken
@@ -348,6 +349,7 @@ setworn(struct obj *obj, long mask)
                 *(wp->w_obj) = obj;
                 if (obj) {
                     obj->owornmask |= wp->w_mask;
+                    enhancement_worn_on(obj, &gy.youmonst);
                     /* Prevent getting/blocking intrinsics from wielding
                      * potions, through the quiver, etc.
                      * Allow weapon-tools, too.
@@ -404,6 +406,7 @@ setnotworn(struct obj *obj)
             p = objects[obj->otyp].oc_oprop;
             u.uprops[p].extrinsic = u.uprops[p].extrinsic & ~wp->w_mask;
             monstunseesu_prop(p); /* remove this extrinsic from seenres */
+            enhancement_worn_off(obj, &gy.youmonst);
             obj->owornmask &= ~wp->w_mask;
             if (obj->oartifact)
                 set_artifact_intrinsic(obj, 0, wp->w_mask);
@@ -975,7 +978,8 @@ find_mac(struct monst *mon)
             if (obj->otyp == AMULET_OF_GUARDING)
                 base -= 2; /* fixed amount, not impacted by erosion */
             else
-                base -= ARM_BONUS(obj) + artifact_arm_bonus(obj);
+                base -= ARM_BONUS(obj) + artifact_arm_bonus(obj)
+                        + enhancement_quality_bonus(obj, ENHANCE_ARMOR);
             /* since ARM_BONUS is positive, subtracting it increases AC */
         }
     }

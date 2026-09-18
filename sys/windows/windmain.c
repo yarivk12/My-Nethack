@@ -117,6 +117,9 @@ void windows_raw_print(const char *str);
 #ifdef STEP9_TOPOLOGY_TEST
 extern int step9_topology_test_main(void);
 #endif
+#ifdef STEP13_TEST
+extern int step13_test_main(void);
+#endif
 #ifdef STEP11_TEST
 extern int step11_test_main(void);
 #endif
@@ -320,6 +323,12 @@ _CrtSetReportFile(_CRT_ASSERT, _CRTDBG_FILE_STDERR);*/
     }
 
     copy_hack_content();
+#ifdef STEP13_TEST
+    if (getenv("NETHACK_STEP13_TEST")) {
+        if (!dlb_init()) return EXIT_FAILURE;
+        return step13_test_main();
+    }
+#endif
 #ifdef STEP11_TEST
     if (getenv("NETHACK_STEP11_TEST")) {
         if (!dlb_init()) return EXIT_FAILURE;

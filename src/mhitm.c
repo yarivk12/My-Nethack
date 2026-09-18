@@ -1158,6 +1158,9 @@ mdamagem(
                       (mattk->aatyp == AT_WEAP || mattk->aatyp == AT_CLAW)
                           ? mwep : (struct obj *) 0);
     if (mattk->aatyp == AT_WEAP || (mattk->aatyp == AT_CLAW && mwep))
+        mhm.damage += enhancement_weapon_effects(mwep, (struct obj *) 0,
+                                                mdef, mhm.damage, ENHANCE_MELEE);
+    if (mattk->aatyp == AT_WEAP || (mattk->aatyp == AT_CLAW && mwep))
         mhm.damage += mith_weapon_effects(mwep, mdef, mhm.damage);
     mdef->mhp -= mhm.damage;
     if (mdef->mhp < 1) {
@@ -1616,3 +1619,11 @@ attk_protection(int aatyp)
 }
 
 /*mhitm.c*/
+
+#ifdef STEP13_TEST
+int step13_mdamagem(struct monst *a, struct monst *d, struct obj *o)
+{
+    struct attack attack = { AT_WEAP, AD_PHYS, 1, 4 };
+    return mdamagem(a, d, &attack, o, 10);
+}
+#endif

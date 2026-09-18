@@ -2504,19 +2504,19 @@ find_ac(void)
 
     /* armor class from worn gear */
     if (uarm)
-        uac -= ARM_BONUS(uarm) + artifact_arm_bonus(uarm);
+        uac -= (ARM_BONUS(uarm) + enhancement_quality_bonus(uarm, ENHANCE_ARMOR)) + artifact_arm_bonus(uarm);
     if (uarmc)
-        uac -= ARM_BONUS(uarmc) + artifact_arm_bonus(uarmc);
+        uac -= (ARM_BONUS(uarmc) + enhancement_quality_bonus(uarmc, ENHANCE_ARMOR)) + artifact_arm_bonus(uarmc);
     if (uarmh)
-        uac -= ARM_BONUS(uarmh) + artifact_arm_bonus(uarmh);
+        uac -= (ARM_BONUS(uarmh) + enhancement_quality_bonus(uarmh, ENHANCE_ARMOR)) + artifact_arm_bonus(uarmh);
     if (uarmf)
-        uac -= ARM_BONUS(uarmf) + artifact_arm_bonus(uarmf);
+        uac -= (ARM_BONUS(uarmf) + enhancement_quality_bonus(uarmf, ENHANCE_ARMOR)) + artifact_arm_bonus(uarmf);
     if (uarms)
-        uac -= ARM_BONUS(uarms) + artifact_arm_bonus(uarms);
+        uac -= (ARM_BONUS(uarms) + enhancement_quality_bonus(uarms, ENHANCE_ARMOR)) + artifact_arm_bonus(uarms);
     if (uarmg)
-        uac -= ARM_BONUS(uarmg) + artifact_arm_bonus(uarmg);
+        uac -= (ARM_BONUS(uarmg) + enhancement_quality_bonus(uarmg, ENHANCE_ARMOR)) + artifact_arm_bonus(uarmg);
     if (uarmu)
-        uac -= ARM_BONUS(uarmu) + artifact_arm_bonus(uarmu);
+        uac -= (ARM_BONUS(uarmu) + enhancement_quality_bonus(uarmu, ENHANCE_ARMOR)) + artifact_arm_bonus(uarmu);
     if (uleft && uleft->otyp == RIN_PROTECTION)
         uac -= uleft->spe;
     if (uright && uright->otyp == RIN_PROTECTION)

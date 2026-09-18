@@ -69,7 +69,7 @@ class Game:
             raise
         if restore:
             self.wait('keep the save file')
-            self.send('n')
+            self.send('N')
             self.settle()
         self.seq = 0
 
@@ -274,7 +274,9 @@ nh.pline(string.format("MOVE %d %d %d %d %d %d",u.ux,u.uy,target.x,target.y,targ
         self.settle()
         self.send('S')
         self.wait('Really save?')
-        self.send('y',1)
+        # The Windows console's active keyboard layout can remap lowercase
+        # letters; native yes/no handling accepts uppercase as well.
+        self.send('Y',1)
         deadline=time.monotonic()+40
         while self.p.isalive() and time.monotonic()<deadline:
             if '--More--' in self.text() or 'press a key' in self.text().lower():

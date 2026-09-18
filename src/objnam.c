@@ -987,6 +987,15 @@ xname_flags(
         if (typ == MASK && ismnum(omndx))
             ConcatF1(buf, 0, " of %s", an(pmname(&mons[omndx], NEUTRAL)));
     }
+    {
+        char prefix[100], named[BUFSZ];
+        enhancement_prefix(obj, iflags.override_ID, prefix, sizeof prefix);
+        if (*prefix) {
+            Snprintf(named, sizeof named, "%s%s", prefix, buf);
+            Snprintf(buf, (size_t) (buf_end - buf + 1), "%s", named);
+            ConcUpdate(buf);
+        }
+    }
     if (pluralize) {
         obufp = makeplural(buf);
         buf[0] = '\0'; /* replace the whole string */
@@ -1863,6 +1872,10 @@ not_fully_identified(struct obj *otmp)
         || (!otmp->lknown && Is_box(otmp)))
         return TRUE;
     if (otmp->oartifact && undiscovered_artifact(otmp->oartifact))
+        return TRUE;
+    if (enhancement_eligible(otmp)
+        && ((otmp->o_enh_props & ~otmp->o_enh_known)
+            || (otmp->o_enh_quality && !(otmp->o_enh_flags & OEF_QUALITY_KNOWN))))
         return TRUE;
     /* otmp->rknown is the only item of interest if we reach here */
     /*

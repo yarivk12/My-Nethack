@@ -36,7 +36,7 @@ artifact_tail = artifacts[artifacts.index("/* Step 10B3-2: neutral keys"):
 assert monster_tail.count("    MON(") == 73
 assert object_tail.count("OBJECT(OBJ(") == 21
 assert artifact_tail.count('A("') == 10
-assert "#define EDITLEVEL 6" in read("include/patchlevel.h")
+assert "#define EDITLEVEL 7" in read("include/patchlevel.h")
 assert "#define MAXDUNGEON 18" in global_h
 assert "FIRST_STEP10B_OBJECT" in o_init
 assert re.search(r"svb\.bases\[MAXOCLASSES\]\s*=\s*"
@@ -148,9 +148,11 @@ step10c_a_resources = {
         "nkai-z", "rlyeh", "lbyrnth",
     )
 }
-assert all(path in {"doc/step10.md", "doc/step10-playtest.md"}
+assert all(path in {"doc/step10.md", "doc/step10-playtest.md", "doc/step13.md",
+                            "include/enhance.h", "src/enhance.c"}
            or path.startswith("test/")
            or path.startswith("_qa/")
+           or path.startswith(".codegraph/")
            or path in step10c_a_resources
            for path in untracked), untracked
 

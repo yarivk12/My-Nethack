@@ -5,7 +5,10 @@ import subprocess
 BASE = "48fe150af4a087fd2f4ff576b43c1c96cc08c6fe"
 
 
+from step13_source_projection import project as step13_project
+
 def project(path, text):
+    text = step13_project(path, text)
     if path == "include/monsters.h":
         start = text.index("    /* Step 10B append-only branch content.")
         end = text.index("    /*\n     * mons_init()", start)
@@ -79,7 +82,7 @@ def project(path, text):
         "include/rm.h": (
             "    Bitfield(lethe, 1);        /* Step 10: amnesiac water, not new terrain */\n", ""),
         "src/mklev.c": ("    svl.level.flags.lethe = 0;\n", ""),
-        "include/patchlevel.h": ("#define EDITLEVEL 6", "#define EDITLEVEL 4"),
+        "include/patchlevel.h": ("#define EDITLEVEL 7", "#define EDITLEVEL 4"),
         "include/hack.h": (
             "\n/* Step 10 keeps serialized IDs append-only.  obj.oartifact is a char;\n"
             " * use the signed-char limit even on ports where plain char is unsigned. */\n"
@@ -119,10 +122,12 @@ if __name__ == "__main__":
                  "include/monsters.h", "include/objects.h", "include/artilist.h",
                  "src/save.c", "src/restore.c", "src/bones.c", "util/recover.c",
                  "README.md"):
-        old = subprocess.check_output(["git", "show", BASE + ":" + path], cwd=repo)
+        # Freeze the verified Step 12 checkpoint; older IDs also have donor gates.
+        old = subprocess.check_output(["git", "show", "f27b7f20fd90da8dcb7aa0e90ee85f1af1123444:" + path], cwd=repo)
         old = old.decode("utf8").replace("\r\n", "\n")
         current = (repo / path).read_text(encoding="utf8")
-        assert project(path, current) == old, path
+        expected = old.replace("#define EDITLEVEL 6", "#define EDITLEVEL 7")
+        assert project(path, current) == project(path, expected), path
     assert "PM_OGRE_MAGE" in (repo / "src/mcastu.c").read_text(encoding="utf8")
     assert "PM_OGRE_MAGE" in (repo / "src/mhitu.c").read_text(encoding="utf8")
     print("PASS B1/ogre exact scope; old IDs, save routing and README unchanged")

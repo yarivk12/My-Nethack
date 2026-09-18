@@ -1677,3 +1677,12 @@ restore_menu(
 #endif /* !SFCTOOL */
 
 /*restore.c*/
+
+#ifdef STEP13_TEST
+/* Diagnostic access to the native codec, not a second serializer. */
+struct obj *
+step13_restore_chain(NHFILE *f)
+{
+    return restobjchn(f, FALSE);
+}
+#endif

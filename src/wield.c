@@ -958,7 +958,7 @@ chwepon(struct obj *otmp, int amount)
         /* order: message, transformation, shop handling */
         Your("%s %s much sharper now.", simpleonames(uwep),
              multiple ? "fuse, and become" : "is");
-        uwep->otyp = CRYSKNIFE;
+        enhancement_change_type(uwep, CRYSKNIFE);
         uwep->oerodeproof = 0;
         if (multiple) {
             uwep->quan = 1L;
@@ -980,7 +980,7 @@ chwepon(struct obj *otmp, int amount)
         Your("%s %s much duller now.", simpleonames(uwep),
              multiple ? "fuse, and become" : "is");
         costly_alteration(uwep, COST_DEGRD); /* DECHNT? other? */
-        uwep->otyp = WORM_TOOTH;
+        enhancement_change_type(uwep, WORM_TOOTH);
         uwep->oerodeproof = 0;
         if (multiple) {
             uwep->quan = 1L;

@@ -14,7 +14,10 @@ def remove_function(text, name):
     assert match, name
     return text[:match.start()] + text[match.end():]
 
+from step13_source_projection import project as step13_project
+
 def project(path, text):
+    text = step13_project(path, text)
     if path == 'include/you.h':
         text = replace_once(text, '''    /* Step9C: independent persistent syllable effects and learned Words.
        uspare1 remains exclusively the Sheol frozen-feet timer. */

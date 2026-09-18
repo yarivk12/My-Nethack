@@ -940,7 +940,7 @@ obj_no_longer_held(struct obj *obj)
             /* if monsters aren't moving, assume player is responsible */
             if (!svc.context.mon_moving && !program_state.gameover)
                 costly_alteration(obj, COST_DEGRD);
-            obj->otyp = WORM_TOOTH;
+            enhancement_change_type(obj, WORM_TOOTH);
             obj->oerodeproof = 0;
         }
         break;

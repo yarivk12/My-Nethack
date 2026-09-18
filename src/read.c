@@ -1392,7 +1392,7 @@ seffect_enchant_armor(struct obj **sobjp)
         pline("%s merges and hardens!", Yname2(otmp));
         setworn((struct obj *) 0, W_ARM);
         /* assumes same order */
-        otmp->otyp += GRAY_DRAGON_SCALE_MAIL - GRAY_DRAGON_SCALES;
+        enhancement_change_type(otmp, otmp->otyp + GRAY_DRAGON_SCALE_MAIL - GRAY_DRAGON_SCALES);
         otmp->lamplit = 0; /* don't want bless() or uncurse() to adjust
                             * light radius because scales -> scale_mail will
                             * result in a second increase with own message */

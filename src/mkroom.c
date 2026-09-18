@@ -18,7 +18,6 @@
 #include "hack.h"
 
 #ifndef SFCTOOL
-staticfn boolean isbig(struct mkroom *);
 staticfn struct mkroom *pick_room(boolean);
 staticfn void mkshop(void), mkzoo(int), mkswamp(void);
 staticfn void mk_zoo_thronemon(coordxy, coordxy, boolean);
@@ -38,15 +37,6 @@ staticfn boolean invalid_shop_shape(struct mkroom *sroom);
 #define sq(x) ((x) * (x))
 
 extern const struct shclass shtypes[]; /* defined in shknam.c */
-
-staticfn boolean
-isbig(struct mkroom *sroom)
-{
-    int area = (sroom->hx - sroom->lx + 1)
-                        * (sroom->hy - sroom->ly + 1);
-
-    return (boolean) (area > 20);
-}
 
 /* make and stock a room of a given type */
 void
@@ -169,14 +159,29 @@ mkshop(void)
         }
         if (sroom->rtype != OROOM)
             continue;
-        if (has_dnstairs(sroom) || has_upstairs(sroom))
+        if (has_dnstairs(sroom) || has_upstairs(sroom)) {
+#ifdef STEP11_TEST
+            ++custom_generation.shop_stairs_blocked;
+#endif
             continue;
-        if (sroom->doorct == 1 || (wizard && ep && sroom->doorct != 0)) {
-            if (invalid_shop_shape(sroom))
-                continue;
-            else
-                break;
         }
+        if (sroom->doorct == 1 || (wizard && ep && sroom->doorct != 0)) {
+            if (invalid_shop_shape(sroom)) {
+#ifdef STEP11_TEST
+                ++custom_generation.shop_invalid_shapes;
+#endif
+                continue;
+            } else {
+#ifdef STEP11_TEST
+                ++custom_generation.shop_room_candidates;
+#endif
+                break;
+            }
+        }
+#ifdef STEP11_TEST
+        else
+            ++custom_generation.shop_door_mismatch;
+#endif
     }
     if (!sroom->rlit) {
         coordxy x, y;
@@ -193,15 +198,16 @@ mkshop(void)
         /* pick a shop type at random */
         for (j = rnd(100), i = 0; (j -= shtypes[i].prob) > 0; i++)
             continue;
-
-        /* big rooms cannot be wand or book shops,
-         * - so make them general stores
-         */
-        if (isbig(sroom) && (shtypes[i].symb == WAND_CLASS
-                             || shtypes[i].symb == SPBOOK_CLASS))
-            i = 0;
     }
+#ifdef STEP11_TEST
+    custom_generation.shop_selected_type = SHOPBASE + i;
+    custom_generation.shop_large = (boolean)
+        ((sroom->hx - sroom->lx + 1) * (sroom->hy - sroom->ly + 1) > 20);
+#endif
     sroom->rtype = SHOPBASE + i;
+#ifdef STEP11_TEST
+    custom_generation.shop_type = sroom->rtype;
+#endif
 
     /* set room bits before stocking the shop */
 #ifdef SPECIALIZATION
@@ -252,13 +258,219 @@ mkzoo(int type)
     }
 }
 
+#ifdef STEP11_TEST
+staticfn int step12_library_rn2(int);
+#define LIBRARY_RN2(n) step12_library_rn2(n)
+#else
+#define LIBRARY_RN2(n) rn2(n)
+#endif
+
+/* Library is a native custom THEMEROOM, not a new core room type. */
+staticfn boolean
+library_floor(struct mkroom *room, int x, int y)
+{
+    int i;
+    if (!isok(x, y) || x < room->lx || x > room->hx
+        || y < room->ly || y > room->hy || levl[x][y].typ != ROOM
+        || occupied(x, y)
+        || (room->irregular
+            && (levl[x][y].roomno != room - svr.rooms + ROOMOFFSET
+                || levl[x][y].edge)))
+        return FALSE;
+    for (i = room->fdoor; i < room->fdoor + room->doorct; ++i)
+        if (distmin(x, y, svd.doors[i].x, svd.doors[i].y) <= 1)
+            return FALSE;
+    return TRUE;
+}
+
+staticfn int
+library_squares(struct mkroom *room)
+{
+    int x, y, count = 0;
+    for (x = room->lx; x <= room->hx; ++x)
+        for (y = room->ly; y <= room->hy; ++y)
+            count += library_floor(room, x, y);
+    return count;
+}
+
+staticfn struct mkroom *
+library_room(void)
+{
+    int i, start = LIBRARY_RN2(svn.nroom);
+    for (i = 0; i < svn.nroom; ++i) {
+        struct mkroom *room = &svr.rooms[(start + i) % svn.nroom];
+        if (room->rtype == OROOM && !room->custom_id && room->needjoining
+            && !room->nsubrooms && !has_upstairs(room) && !has_dnstairs(room)
+            && library_squares(room) >= 12) {
+            int x, y, free = 0;
+            boolean chest = FALSE;
+            /* A prepopulated ordinary host must not leak native chests or
+             * let our chest cap consume the last unoccupied monster square. */
+            for (x = room->lx; x <= room->hx; ++x)
+                for (y = room->ly; y <= room->hy; ++y) {
+                    if (sobj_at(CHEST, x, y)) chest = TRUE;
+                    if (library_floor(room, x, y) && !MON_AT(x, y)) ++free;
+                }
+            if (chest || free <= (u.uz.dlevel < 100 ? 4 : 5)) continue;
+            room->custom_id = CUSTOM_LIBRARY;
+            room->rtype = THEMEROOM;
+            room->needfill = FILL_NORMAL;
+            return room;
+        }
+    }
+    return (struct mkroom *) 0;
+}
+
+/* Zero-based themes and all theme state are generation-local. */
+staticfn int
+library_theme(int dl, int roll)
+{
+    if (dl < 30) return roll < 50 ? 0 : 1;
+    if (dl < 60) return roll < 30 ? 0 : roll < 75 ? 1 : 2;
+    if (dl < 100) return roll < 10 ? 0 : roll < 40 ? 1 : roll < 85 ? 2 : 3;
+    if (dl < 150) return roll < 15 ? 1 : roll < 70 ? 2 : 3;
+    return roll < 5 ? 1 : roll < 55 ? 2 : 3;
+}
+
+staticfn int
+library_species(int theme, int choice)
+{
+    static const int pools[4][2] = {
+        { PM_KOBOLD_SHAMAN, PM_ORC_SHAMAN },
+        { PM_GNOMISH_WIZARD, PM_GNOMISH_WIZARD },
+        { PM_LICH, PM_DEMILICH },
+        { PM_MIND_FLAYER, PM_MASTER_MIND_FLAYER }
+    };
+    int pm = pools[theme][choice];
+    if (svm.mvitals[pm].mvflags & G_GONE)
+        pm = pools[theme][1 - choice];
+    return (svm.mvitals[pm].mvflags & G_GONE) ? NON_PM : pm;
+}
+
+staticfn boolean
+library_density(int dl)
+{
+    return dl < 60 ? !LIBRARY_RN2(4) : dl < 100 ? !LIBRARY_RN2(3) : LIBRARY_RN2(5) < 2;
+}
+
+staticfn struct obj *
+library_item(int roll, int subroll)
+{
+    if (roll < 25) return mkobj(SCROLL_CLASS, FALSE);
+    if (roll < 65) return mkobj(SPBOOK_CLASS, FALSE);
+    if (roll < 85)
+        return mkobj(subroll < 33 ? WAND_CLASS
+                     : subroll < 66 ? RING_CLASS : AMULET_CLASS, FALSE);
+    return mksobj(roll < 95
+                  ? (subroll < 50 ? MAGIC_MARKER : MAGIC_WHISTLE)
+                  : (subroll < 50 ? MAGIC_LAMP : BAG_OF_HOLDING), TRUE, FALSE);
+}
+
+staticfn void
+library_chest_state(struct obj *chest, int dl)
+{
+    chest->olocked = LIBRARY_RN2(100) < (dl < 60 ? 20 : dl < 100 ? 35 : 50);
+    chest->otrapped = LIBRARY_RN2(100) < (dl < 60 ? 5 : dl < 100 ? 10 : 15);
+}
+
+staticfn void
+library_monster(int theme, int x, int y)
+{
+    int pm;
+    struct monst *mon;
+    if (MON_AT(x, y)) return;
+    pm = library_species(theme, theme == 1 ? 0 : LIBRARY_RN2(2));
+    if (pm == NON_PM) return;
+    mon = makemon(&mons[pm], x, y, MM_ASLEEP | MM_NOGRP);
+    if (mon) mon->msleeping = 1;
+}
+
+void
+fill_library(struct mkroom *room)
+{
+    struct obj *chests[5], *chest;
+    int dl = u.uz.dlevel, theme, x, y, i, j, n = 0;
+    int guaranteed = dl < 60 ? 1 : 2, cap = dl < 100 ? 4 : 5;
+    int left, pick, gx = -1, gy = -1;
+
+    /* Native room lighting includes its bordering walls and doors. */
+    for (x = room->lx - 1; x <= room->hx + 1; ++x)
+        for (y = room->ly - 1; y <= room->hy + 1; ++y)
+            if (isok(x, y)) levl[x][y].lit = 1;
+    room->rlit = 1;
+    theme = library_theme(dl, LIBRARY_RN2(100));
+
+    /* Uniform rank selection without retries, shuffling, or a candidate list. */
+    for (i = 0; i < guaranteed; ++i) {
+        left = 0;
+        for (x = room->lx; x <= room->hx; ++x)
+            for (y = room->ly; y <= room->hy; ++y)
+                if (library_floor(room, x, y) && !sobj_at(CHEST, x, y))
+                    ++left;
+        if (!left) panic("Library guaranteed chest has no floor");
+        pick = LIBRARY_RN2(left);
+        for (x = room->lx; x <= room->hx; ++x)
+            for (y = room->ly; y <= room->hy; ++y)
+                if (library_floor(room, x, y) && !sobj_at(CHEST, x, y)
+                    && !pick--) {
+                    chests[n++] = mksobj_at(CHEST, x, y, FALSE, FALSE);
+                    goto chest_placed;
+                }
+ chest_placed:;
+    }
+    for (x = room->lx; x <= room->hx && n < cap; ++x)
+        for (y = room->ly; y <= room->hy && n < cap; ++y)
+            if (library_floor(room, x, y) && !sobj_at(CHEST, x, y)
+                && library_density(dl))
+                chests[n++] = mksobj_at(CHEST, x, y, FALSE, FALSE);
+
+    for (i = 0; i < n; ++i) {
+        int count = dl < 60 ? 1 + LIBRARY_RN2(3) : dl < 100 ? 2 + LIBRARY_RN2(3) : 2 + LIBRARY_RN2(4);
+        chest = chests[i];
+        for (j = 0; j < count; ++j) {
+            int roll = LIBRARY_RN2(100), subroll = LIBRARY_RN2(100);
+            (void) add_to_container(chest, library_item(roll, subroll));
+        }
+        chest->owt = weight(chest);
+    }
+    for (i = 0; i < n; ++i)
+        library_chest_state(chests[i], dl);
+    for (x = room->lx; x <= room->hx; ++x)
+        for (y = room->ly; y <= room->hy; ++y)
+            if (library_floor(room, x, y) && !sobj_at(CHEST, x, y)
+                && !MON_AT(x, y)) {
+                gx = x; gy = y;
+                library_monster(theme, x, y);
+                goto guaranteed_monster;
+            }
+ guaranteed_monster:
+    for (x = room->lx; x <= room->hx; ++x)
+        for (y = room->ly; y <= room->hy; ++y)
+            if ((x != gx || y != gy) && library_floor(room, x, y)
+                && !sobj_at(CHEST, x, y) && !MON_AT(x, y)
+                && library_density(dl))
+                library_monster(theme, x, y);
+    for (x = room->lx; x <= room->hx; ++x)
+        for (y = room->ly; y <= room->hy; ++y)
+            if (library_floor(room, x, y) && !sobj_at(CHEST, x, y) && !LIBRARY_RN2(20))
+                (void) mkobj_at(LIBRARY_RN2(2) ? SCROLL_CLASS : SPBOOK_CLASS, x, y, FALSE);
+}
+
+#ifdef STEP11_TEST
+#include "../test/test_step12_library.h"
+#endif
+#undef LIBRARY_RN2
+
 /* Only the custom adapter may use this exhaustive, stair-safe fallback.
  * Vanilla mkzoo keeps its original preference rolls and failure behavior. */
 struct mkroom *
 custom_classic_room(unsigned id, int type)
 {
-    struct mkroom *sroom = pick_room(TRUE);
+    struct mkroom *sroom;
     int i;
+
+    if (id == CUSTOM_LIBRARY) return library_room();
+    sroom = pick_room(TRUE);
 
     if (sroom && (!sroom->needjoining || sroom->custom_id))
         sroom = (struct mkroom *) 0;

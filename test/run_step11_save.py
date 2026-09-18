@@ -7,7 +7,8 @@ import sys
 from run_step8a_runtime import Game, tty_transcript
 
 release, output = sys.argv[1:3]
-os.environ["CUSTOMROOM"] = "4"
+feature = sys.argv[3] if len(sys.argv) > 3 else "4"
+os.environ["CUSTOMROOM"] = feature
 game = Game(release, output)
 
 
@@ -16,7 +17,8 @@ def identity(g):
     g.send("#WIZCUSTOMROOMS\n", 1)
     g.settle()
     text = tty_transcript("".join(g.raw[start:])) + "\n" + g.text()
-    return list(dict.fromkeys(re.findall(r"Custom ID 4, room \d+, bounds \d+,\d+-\d+,\d+, type \d+/\d+",text)))
+    return list(dict.fromkeys(re.findall(r"Custom ID " + re.escape(feature)
+                                        + r", room \d+, bounds \d+,\d+-\d+,\d+, type \d+/\d+",text)))
 
 
 def level(g, dl):

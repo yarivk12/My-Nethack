@@ -2756,6 +2756,12 @@ fill_special_room(struct mkroom *croom)
         fill_special_room(croom->sbrooms[i]);
     }
 
+    if (croom->custom_id == CUSTOM_LIBRARY && croom->needfill == FILL_NORMAL) {
+        fill_library(croom);
+        croom->needfill = FILL_NONE;
+        return;
+    }
+
     if (croom->rtype == OROOM || croom->rtype == THEMEROOM
         || croom->needfill == FILL_NONE)
         return;

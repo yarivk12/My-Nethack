@@ -17,7 +17,7 @@ import shutil
 import subprocess
 
 NAMES = ["Giant Court", "Real Zoo", "Dragon Lair", "Wizard Study",
-         "Storeroom Vault v1", "Super Honeycomb", "Dragon Hall"]
+         "Storeroom Vault v1", "Super Honeycomb", "Dragon Hall", "Library"]
 PACKAGE_FILES = ("NetHack.exe", "nhdat500", "symbols.template", "sysconf.template",
                  "nethackrc.template", "Guidebook.txt", "opthelp", "license")
 
@@ -57,13 +57,16 @@ def rows(text, prefix):
 def focused(release, out):
     exe = prepare(release, out / "game")
     run(exe, out / "selector.log", STEP11_MODE="selector")
+    run(exe, out / "shop-types.log", STEP11_MODE="shop-types")
+    run(exe, out / "library.log", STEP11_MODE="library")
     run(exe, out / "excluded.log", STEP11_MODE="excluded")
     run(exe, out / "metadata.log", STEP11_MODE="metadata")
     run(exe, out / "accepted-bones.log", STEP11_MODE="bones", CUSTOMROOM="4")
+    run(exe, out / "library-bones.log", STEP11_MODE="bones", CUSTOMROOM="8")
     for feature in (4, 5):
         run(exe, out / f"escape-{feature}.log", STEP11_MODE="escape", CUSTOMROOM=str(feature))
-    for feature in range(1, 8):
-        for shop in [None, "g", {1: "t", 2: "z", 3: "z", 6: "b"}.get(feature)]:
+    for feature in range(1, 9):
+        for shop in [None, "g", {1: "t", 2: "z", 3: "z", 6: "b", 8: "z"}.get(feature)]:
             if shop is None and (out / f"feature-{feature}-none.log").exists():
                 continue
             variables = dict(STEP11_MODE="forced", CUSTOMROOM=str(feature))
@@ -76,11 +79,19 @@ def focused(release, out):
             assert output.count("PASS actual savelev/getlev") == 9
             coexist = rows(output, "COEXIST")
             if shop == "g": assert any(r["shops"] for r in coexist)
-            elif shop: assert any(r["samebase"] for r in coexist)
+            elif shop:
+                assert any(r["vanilla"] if feature == 8 else r["samebase"] for r in coexist)
+            if feature == 8:
+                assert output.count("You enter a library!") == 3
     run(exe, out / "clean-failure.log", STEP11_MODE="forced", CUSTOMROOM="4",
         STEP11_CLEAN_FAILURE="1")
     run(exe, out / "partial-failure.log", STEP11_MODE="forced", CUSTOMROOM="4",
         STEP11_PARTIAL_FAILURE="1")
+    for lo, hi in [(30, 59), (60, 99), (100, 149), (150, 195)]:
+        output = run(exe, out / f"library-band-{lo}.log", STEP11_MODE="forced", CUSTOMROOM="8",
+                     STEP11_MIN_DL=str(lo), STEP11_MAX_DL=str(hi))
+        assert sum(r["emissions"] for r in rows(output, "LEVEL")) == 3
+        assert output.count("You enter a library!") == 3
     print("PASS focused selector, all features, recurrence, coexistence, level/bones codecs, clean and partial failures")
 
 
@@ -97,7 +108,7 @@ def probability(release, out, games):
     assert games == 1000, "Change the predeclared corpus only in a documented confirmation batch"
     corpus = {"seeds": [110001, 111000], "depths": [[1, 14], [40, 57]],
               "wizard": False, "forcing": False, "interval_z": 3.2,
-              "placement_family_alpha": 0.05, "features": 7,
+              "placement_family_alpha": 0.05, "features": len(NAMES),
               "cluster": "fresh game process"}
     (out / "corpus.json").write_text(json.dumps(corpus, indent=2))
     executables = [prepare(release, out / f"worker-{i}") for i in range(4)]
@@ -122,7 +133,7 @@ def probability(release, out, games):
         distribution[0] = games - len(recurrence)
         n, s, k = len(eligible), len(selected), len(complete)
         # Bonferroni one-sided exact bound when no placement failures.
-        lower = (0.05/7)**(1/s) if s and k == s else wilson(k, s)[0]
+        lower = (0.05/len(NAMES))**(1/s) if s and k == s else wilson(k, s)[0]
         results[name] = dict(eligible=n, selected=s, attempts=sum(r["attempts"] for r in selected),
                              completed=k, failures=s-k, selection_rate=s/n,
                              appearance_rate=k/n, placement_rate=k/s if s else 0,
@@ -143,7 +154,7 @@ def probability(release, out, games):
             # Also bound success for the first selected occurrence in each
             # independent game; this avoids treating repeated rooms within a
             # game as independent placement evidence.
-            results[name]["first_per_game_placement_lower"] = (0.05/7)**(1/independent_games)
+            results[name]["first_per_game_placement_lower"] = (0.05/len(NAMES))**(1/independent_games)
         assert wilson(s, n)[0] <= 0.03 <= wilson(s, n)[1], results[name]
         assert k/s >= 0.98, results[name]
     results["overall"] = dict(levels=len(data), any_custom=sum(r["emissions"] for r in data),

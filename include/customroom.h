@@ -7,7 +7,7 @@ enum custom_feature_id {
     CUSTOM_NONE = 0,
     CUSTOM_GIANT_COURT = 1, CUSTOM_REAL_ZOO = 2, CUSTOM_DRAGON_LAIR = 3,
     CUSTOM_WIZARD_STUDY = 4, CUSTOM_STOREROOM = 5,
-    CUSTOM_HONEYCOMB = 6, CUSTOM_DRAGON_HALL = 7
+    CUSTOM_HONEYCOMB = 6, CUSTOM_DRAGON_HALL = 7, CUSTOM_LIBRARY = 8
 };
 enum custom_backend { CUSTOM_CLASSIC = 1, CUSTOM_LUA = 2 };
 enum custom_progress {
@@ -36,6 +36,12 @@ struct custom_generation {
     int progress, attempts, emissions;
     boolean rolled;
     int vanilla_attempt, vanilla_placements;
+#ifdef STEP11_TEST
+    boolean shop_candidate, shop_large;
+    int shop_selected_type, shop_type;
+    int shop_room_candidates, shop_stairs_blocked;
+    int shop_door_mismatch, shop_invalid_shapes;
+#endif
 };
 extern const struct custom_descriptor custom_registry[];
 extern const int custom_registry_count;
@@ -49,4 +55,5 @@ extern void custom_reset(void);
 extern void custom_begin(const struct custom_context *);
 extern struct mkroom *custom_classic_room(unsigned, int);
 extern void custom_diagnostics(void);
+extern void fill_library(struct mkroom *);
 #endif

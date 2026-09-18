@@ -10,7 +10,22 @@
 
 extern void step11_generate(void);
 extern void step11_repeat_backends(void);
+extern void step12_library_tables(void);
+extern void step12_library_validate(struct mkroom *);
+extern void step12_library_fixture(int, int, int, boolean);
+extern void step12_library_loose_case(int, int);
+extern const struct shclass shtypes[];
 static int baby_requests, adult_requests;
+static int library_messages;
+
+static void
+capture_library_message(const char *message)
+{
+    if (!strcmp(message, "You enter a library!")) {
+        ++library_messages;
+        puts(message);
+    }
+}
 
 void
 step11_monster_request(int pm, boolean waiting)
@@ -33,8 +48,10 @@ selector_gate(void)
     struct custom_descriptor entries[40];
     struct custom_context c = { TRUE, 50, 50, 50, 197 };
     int i, j, k, outcome, counts[256], eligible;
-    const int boundaries[] = { 0, 1, 12, 13, 14, 15, 20, 21, 22,
-                               29, 30, 31, 195, 196, 197, 198, 199, 200 };
+    const int boundaries[] = { 0, 1, 4, 5, 12, 13, 14, 15, 20, 21, 22,
+                               29, 30, 31, 59, 60, 99, 100, 149, 150,
+                               195, 196, 197, 198, 199, 200 };
+    assert(custom_registry_count == 8); /* Step 12 appends Library. */
     assert(!custom_validate(custom_registry, custom_registry_count));
     for (i = 0; i < SIZE(boundaries); ++i)
         for (j = 0; j < SIZE(boundaries); ++j) {
@@ -50,6 +67,16 @@ selector_gate(void)
             eligible = 0;
             for (k = 0; k < custom_registry_count; ++k) {
                 int want = custom_eligible(&custom_registry[k], &c) ? 300 : 0;
+                if (custom_registry[k].id == CUSTOM_LIBRARY)
+                    assert(want == (c.dlevel >= 5 && c.dlevel <= 199 ? 300 : 0));
+                else if (k < 3)
+                    assert(want == (c.dlevel >= 30 && c.dlevel <= 199
+                                   && c.logical_depth < c.medusa_depth ? 300 : 0));
+                else
+                    assert(want == ((k == 3 ? c.difficulty >= 14
+                                     : k == 4 ? c.difficulty <= 14
+                                     : k == 5 ? c.difficulty >= 13
+                                              : c.difficulty >= 21) ? 300 : 0));
                 assert(counts[custom_registry[k].id] == want);
                 eligible += want;
             }
@@ -104,7 +131,7 @@ selector_gate(void)
     for (i = 0; i < 100000; ++i)
         ++counts[custom_select(custom_registry, custom_registry_count,
                                &c, rn2(10000))];
-    for (i = 0; i < 8; ++i)
+    for (i = 0; i <= CUSTOM_LIBRARY; ++i)
         printf("SELECTOR|id=%d|count=%d|draws=100000\n", i, counts[i]);
     puts("PASS exhaustive production selector: boundaries, permutations, empty, invalid, overrides, overflow");
 }
@@ -130,7 +157,7 @@ validate_room(struct mkroom *r)
     struct monst *mon;
     struct obj *obj;
     struct trap *trap;
-    assert(r->custom_id > 0 && r->custom_id <= 7);
+    assert(r->custom_id > 0 && r->custom_id <= CUSTOM_LIBRARY);
     assert(r->needfill == 0);
     assert(!has_upstairs(r) && !has_dnstairs(r));
     for (x = r->lx; x <= r->hx; ++x)
@@ -190,6 +217,9 @@ validate_room(struct mkroom *r)
                 || trap->ttyp == TRAPDOOR;
         }
     switch (r->custom_id) {
+    case CUSTOM_LIBRARY:
+        step12_library_validate(r);
+        break;
     case CUSTOM_WIZARD_STUDY:
         assert(cells == 9 && !r->needjoining && !r->doorct);
         assert(teleports == 1 && books >= 3 && itemunits >= 7);
@@ -382,7 +412,7 @@ coexistence_and_entry(void)
         for (j = 0; j < svn.nroom; ++j)
             if (!svr.rooms[j].custom_id && svr.rooms[j].rtype == r->rtype)
                 ++vanilla;
-        if (r->rtype != THEMEROOM) {
+        if (r->rtype != THEMEROOM || r->custom_id == CUSTOM_LIBRARY) {
             int rt = r->rtype, old_vanilla = vanilla;
             unsigned id = r->custom_id;
             int x, y;
@@ -392,10 +422,21 @@ coexistence_and_entry(void)
  entered:
             memset(u.urooms, 0, sizeof u.urooms);
             memset(u.ushops, 0, sizeof u.ushops);
-            check_special_room(FALSE);
-            assert(r->rtype == OROOM && r->custom_id == id);
-            check_special_room(FALSE);
-            assert(r->rtype == OROOM && r->custom_id == id);
+            {
+                void (*saved_print)(const char *) = windowprocs.win_raw_print;
+                boolean saved_init = iflags.window_inited;
+                int before = library_messages;
+                iflags.window_inited = FALSE;
+                windowprocs.win_raw_print = capture_library_message;
+                check_special_room(FALSE);
+                assert(r->rtype == OROOM && r->custom_id == id);
+                check_special_room(FALSE);
+                assert(r->rtype == OROOM && r->custom_id == id);
+                if (id == CUSTOM_LIBRARY)
+                    assert(library_messages == before + (rt == THEMEROOM ? 1 : 0));
+                windowprocs.win_raw_print = saved_print;
+                iflags.window_inited = saved_init;
+            }
             if (old_vanilla) {
                 if (rt == COURT) assert(svl.level.flags.has_court);
                 if (rt == ZOO) assert(svl.level.flags.has_zoo);
@@ -403,8 +444,82 @@ coexistence_and_entry(void)
             }
         }
     }
-    printf("COEXIST|samebase=%d|shops=%d\n",vanilla,shops);
+    {
+        int other = 0;
+        for (i = 0; i < svn.nroom; ++i)
+            if (!svr.rooms[i].custom_id && svr.rooms[i].rtype > OROOM
+                && svr.rooms[i].rtype != THEMEROOM && svr.rooms[i].rtype < SHOPBASE)
+                ++other;
+        printf("COEXIST|samebase=%d|shops=%d|vanilla=%d\n",vanilla,shops,other);
+    }
 }
+
+static void
+setup_large_shop_host(void)
+{
+    struct mkroom *room;
+
+    clear_level_structures();
+    add_room(10, 5, 15, 10, TRUE, OROOM, FALSE);
+    room = &svr.rooms[0];
+    levl[9][7].typ = DOOR;
+    levl[9][7].doormask = D_ISOPEN;
+    add_door(9, 7, room);
+    assert(room->doorct == 1);
+    assert((room->hx - room->lx + 1) * (room->hy - room->ly + 1) > 20);
+}
+
+#ifdef USE_ISAAC64
+static unsigned long
+seed_for_shop_type(int target)
+{
+    unsigned long seed;
+
+    for (seed = 1; seed < 100000UL; ++seed) {
+        int i, roll;
+
+        init_isaac64(seed, rn2);
+        roll = rnd(100);
+        for (i = 0; (roll -= shtypes[i].prob) > 0; ++i)
+            continue;
+        if (i == target)
+            return seed;
+    }
+    assert(0); /* every positive configured probability must be reachable */
+    return 0;
+}
+
+static void
+shop_type_gate(void)
+{
+    int selected;
+
+    for (selected = 0; selected < FODDERSHOP - SHOPBASE + 1; ++selected) {
+        unsigned long seed = seed_for_shop_type(selected);
+        int final_type;
+
+        setup_large_shop_host();
+        init_isaac64(seed, rn2);
+        do_mkroom(SHOPBASE);
+        final_type = svr.rooms[0].rtype;
+        printf("SHOP_TYPE|selected=%d|final=%d|large=1|seed=%lu\n",
+               SHOPBASE + selected, final_type, seed);
+        assert(final_type == SHOPBASE + selected);
+        assert(svr.rooms[0].needfill == FILL_NORMAL);
+    }
+
+    setup_large_shop_host();
+    init_isaac64(seed_for_shop_type(WANDSHOP - SHOPBASE), rn2);
+    do_mkroom(SHOPBASE);
+    assert(svr.rooms[0].rtype == WANDSHOP);
+    fill_special_room(&svr.rooms[0]);
+    assert(svr.rooms[0].resident != 0);
+    assert(ESHK(svr.rooms[0].resident)->shoptype == WANDSHOP);
+    coexistence_and_entry();
+    puts("PASS final Step 5 shop types preserve all configured selections in "
+         "large rooms; native stocking and billing work");
+}
+#endif
 
 static void
 accepted_bones(void)
@@ -450,8 +565,12 @@ int
 step11_test_main(void)
 {
     const char *mode = getenv("STEP11_MODE"), *v = getenv("STEP11_SEED");
+    const char *min_v = getenv("STEP11_MIN_DL");
+    const char *max_v = getenv("STEP11_MAX_DL");
     unsigned long seed = v ? strtoul(v, NULL, 10) : 110001UL;
     int i, dl, samples = 0;
+    int min_dl = min_v ? atoi(min_v) : 0;
+    int max_dl = max_v ? atoi(max_v) : 0;
     boolean bone_test = mode && !strcmp(mode, "bones");
     boolean escape_test = mode && !strcmp(mode, "escape");
     boolean forced = mode && (!strcmp(mode, "forced") || bone_test || escape_test);
@@ -482,10 +601,34 @@ step11_test_main(void)
     gy.youmonst.data = &mons[gu.urole.mnum];
     u.umonnum = u.umonster = gu.urole.mnum;
     for (i = 0; i < A_MAX; ++i) ABASE(i) = AMAX(i) = 12;
+    if (mode && !strcmp(mode, "library")) {
+        const int depths[] = {5, 29, 30, 59, 60, 99, 100, 149, 150, 199};
+        int j, k;
+        step12_library_tables();
+        for (i = 0; i < SIZE(depths); ++i)
+            for (j = 0; j < 100; j += 5)
+                for (k = 0; k < 2; ++k) {
+                    step12_library_fixture(depths[i], k ? 299 : 0, j, k);
+                    free_level();
+                }
+        for (j = 0; j < 20; ++j)
+            for (k = 0; k < 2; ++k) {
+                step12_library_loose_case(j, k);
+                free_level();
+            }
+        puts("PASS Library deterministic native fixtures");
+        return 0;
+    }
     if (mode && !strcmp(mode, "metadata")) {
         metadata_roundtrip();
         return 0;
     }
+#ifdef USE_ISAAC64
+    if (mode && !strcmp(mode, "shop-types")) {
+        shop_type_gate();
+        return 0;
+    }
+#endif
     if (mode && !strcmp(mode, "excluded")) {
         s_level *slev;
         branch *br;
@@ -537,10 +680,15 @@ step11_test_main(void)
         return 0;
     }
     for (dl = 1; dl <= 195; ++dl) {
-        if (!forced && dl > 14 && (dl < 40 || dl > 57)) continue;
+        if (min_v && max_v) {
+            if (dl < min_dl || dl > max_dl)
+                continue;
+        } else if (!forced && dl > 14 && (dl < 40 || dl > 57)) {
+            continue;
+        }
         if (forced && dl < 2) continue;
         u.uz.dnum = medusa_level.dnum; u.uz.dlevel = dl;
-        if (Is_special(&u.uz) || Is_branchlev(&u.uz)) continue;
+        if (forced && (Is_special(&u.uz) || Is_branchlev(&u.uz))) continue;
         gi.in_mklev = TRUE;
         baby_requests = adult_requests = 0;
         step11_generate();
@@ -555,17 +703,28 @@ step11_test_main(void)
                 printf("REQUESTS|baby=%d|adult=%d\n",baby_requests,adult_requests);
             }
         }
-        printf("LEVEL|seed=%lu|dl=%d|diff=%d|rolled=%d|selected=%u|attempts=%d|emissions=%d|state=%d|vanilla_attempt=%d|vanilla_placements=%d",
+        printf("LEVEL|seed=%lu|dl=%d|diff=%d|rolled=%d|selected=%u|attempts=%d|emissions=%d|state=%d|vanilla_attempt=%d|vanilla_placements=%d|shop_candidate=%d|shop_result=%d|shop_success=%d|shop_selected_type=%d|shop_type=%d|shop_large=%d|shop_room_candidates=%d|shop_stairs_blocked=%d|shop_door_mismatch=%d|shop_invalid_shapes=%d",
                seed,dl,custom_generation.context.difficulty,custom_generation.rolled,
                custom_generation.selected,custom_generation.attempts,
                custom_generation.emissions,custom_generation.progress,
-               custom_generation.vanilla_attempt,custom_generation.vanilla_placements);
+               custom_generation.vanilla_attempt,custom_generation.vanilla_placements,
+               custom_generation.shop_candidate,
+               custom_generation.vanilla_attempt == SHOPBASE,
+               custom_generation.vanilla_attempt == SHOPBASE
+                   && custom_generation.vanilla_placements > 0,
+               custom_generation.shop_selected_type,
+               custom_generation.shop_type, custom_generation.shop_large,
+               custom_generation.shop_room_candidates,
+               custom_generation.shop_stairs_blocked,
+               custom_generation.shop_door_mismatch,
+               custom_generation.shop_invalid_shapes);
         for (i = 0; i < custom_registry_count; ++i)
             printf("|e%d=%d", i+1, custom_eligible(&custom_registry[i], &custom_generation.context));
         puts("");
         for (i = 0; i < svn.nroom; ++i)
             if (svr.rooms[i].custom_id) {
-                validate_room(&svr.rooms[i]);
+                if (!min_v || !max_v || svr.rooms[i].custom_id == CUSTOM_LIBRARY)
+                    validate_room(&svr.rooms[i]);
                 ++samples;
             }
         if (bone_test && custom_generation.emissions) {
@@ -578,10 +737,13 @@ step11_test_main(void)
             return 0;
         }
         if (forced && custom_generation.emissions) {
+            boolean library = custom_generation.selected == CUSTOM_LIBRARY;
             level_roundtrip(FALSE);
             coexistence_and_entry();
             level_roundtrip(FALSE);
             level_roundtrip(TRUE);
+            if (library)
+                coexistence_and_entry(); /* restored/revisited Library stays discovered */
         }
         if (clean && custom_generation.selected) {
             assert(custom_generation.progress == CUSTOM_CLEAN_FAILURE);

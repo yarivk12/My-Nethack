@@ -382,7 +382,9 @@ const struct custom_descriptor custom_registry[] = {
     { CUSTOM_HONEYCOMB, "Super Honeycomb", CUSTOM_LUA, BEEHIVE,
       "Super Honeycomb", 0, 0, 0, 13, 0, FALSE },
     { CUSTOM_DRAGON_HALL, "Dragon Hall", CUSTOM_LUA, THEMEROOM,
-      "Dragon hall", 0, 0, 0, 21, 0, FALSE }
+      "Dragon hall", 0, 0, 0, 21, 0, FALSE },
+    { CUSTOM_LIBRARY, "Library", CUSTOM_CLASSIC, THEMEROOM, "library",
+      300, 5, 199, 0, 0, FALSE }
 };
 const int custom_registry_count = SIZE(custom_registry);
 struct custom_generation custom_generation;
@@ -405,7 +407,9 @@ custom_validate(const struct custom_descriptor *entries, int count)
             return "invalid backend";
         if (d->backend == CUSTOM_CLASSIC
             && !((d->roomtype == COURT && !strcmp(d->target, "court"))
-                 || (d->roomtype == ZOO && !strcmp(d->target, "zoo"))))
+                 || (d->roomtype == ZOO && !strcmp(d->target, "zoo"))
+                 || (d->id == CUSTOM_LIBRARY && d->roomtype == THEMEROOM
+                     && !strcmp(d->target, "library"))))
             return "unresolved classic target";
         if (d->probability < 0 || d->probability > CUSTOM_OUTCOMES)
             return "invalid probability";
@@ -458,6 +462,9 @@ void
 custom_reset(void)
 {
     memset(&custom_generation, 0, sizeof custom_generation);
+#ifdef STEP11_TEST
+    custom_generation.shop_selected_type = custom_generation.shop_type = -1;
+#endif
 }
 
 void
@@ -1252,7 +1259,7 @@ clear_level_structures(void)
 
 #define ROOM_IS_FILLABLE(croom) \
     ((croom->rtype == OROOM || croom->rtype == THEMEROOM)       \
-     && croom->needfill == FILL_NORMAL)
+     && croom->needfill == FILL_NORMAL && croom->custom_id != CUSTOM_LIBRARY)
 
 /* Fill a "random" room (i.e. a typical non-special room in the Dungeons of
    Doom) with random monsters, objects, and dungeon features.
@@ -1270,7 +1277,8 @@ fill_ordinary_room(
     coordxy x, y;
     boolean skip_chests = FALSE;
 
-    if (croom->rtype != OROOM && croom->rtype != THEMEROOM)
+    if (croom->custom_id == CUSTOM_LIBRARY
+        || (croom->rtype != OROOM && croom->rtype != THEMEROOM))
         return;
 
     /* If there are subrooms, fill them now - we don't want an outer room
@@ -1865,6 +1873,11 @@ makelevel(void)
         /* make up to 1 special room, with type dependent on depth;
            note that mkroom doesn't guarantee a room gets created, and that
            this step only sets the room's rtype - it doesn't fill it yet. */
+#ifdef STEP11_TEST
+        custom_generation.shop_candidate = (boolean) (u_depth > 1
+            && u_depth < depth(&medusa_level)
+            && svn.nroom >= room_threshold);
+#endif
         if (wizard && nh_getenv("SHOPTYPE"))
             custom_vanilla(SHOPBASE);
         else if (u_depth > 1 && u_depth < depth(&medusa_level)

@@ -238,7 +238,8 @@ probability corpus. No production Outlands function was changed.
 
 ## Adding a future compatible room
 
-For a hypothetical Library (not implemented): reserve a new explicit nonzero
+Step 12 implements Library as ID 8; see [step12.md](step12.md) for its native
+adapter, rules, and validation. For another compatible room, reserve a new explicit nonzero
 saved ID, adapt only its constructor/content and dependencies, add its named
 target to the separate custom Lua table or a narrow classic adapter, then add
 one registry descriptor with default probability and independent eligibility

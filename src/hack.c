@@ -3726,6 +3726,14 @@ check_special_room(boolean newlev)
          * and temples should remain TEMPLEs,
          * but everything else gives a message only the first time */
         switch (rt) {
+        case THEMEROOM:
+            if (step6b_type == CUSTOM_LIBRARY)
+                You("enter a library!");
+            else {
+                msg_given = FALSE;
+                rt = 0;
+            }
+            break;
         case ZOO:
             if (step6b_type == CUSTOM_DRAGON_LAIR)
                 You("enter a dragon lair...");

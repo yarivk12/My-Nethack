@@ -977,7 +977,7 @@ dosdoor(coordxy x, coordxy y, struct mkroom *aroom, int type)
                      && (svm.mvitals[PM_GIANT_MIMIC].mvflags & G_GONE))) {
                 /* make a mimic instead */
                 levl[x][y].doormask = D_NODOOR;
-                mtmp = makemon(mkclass(S_MIMIC, 0), x, y, NO_MM_FLAGS);
+                mtmp = enhancement_makemon(mkclass(S_MIMIC, 0), x, y, NO_MM_FLAGS);
                 if (mtmp)
                     set_mimic_sym(mtmp);
             }
@@ -1113,12 +1113,12 @@ makeniche(int trap_type)
                     (void) mksobj_at(SCR_TELEPORTATION, xx, yy + dy, TRUE,
                                      FALSE);
                 if (!rn2(3))
-                    (void) mkobj_at(RANDOM_CLASS, xx, yy + dy, TRUE);
+                    (void) enhancement_mkobj_at(RANDOM_CLASS, xx, yy + dy, TRUE);
             }
         }
         if (In_mithardir_catacombs(&u.uz)) {
             if (!rn2(2))
-                (void) makemon(&mons[PM_ALABASTER_MUMMY], xx, yy + dy, NO_MM_FLAGS);
+                (void) enhancement_makemon(&mons[PM_ALABASTER_MUMMY], xx, yy + dy, NO_MM_FLAGS);
             else
                 (void) mksobj_at(mith_tile_type(), xx, yy + dy, TRUE, FALSE);
         }
@@ -1304,7 +1304,7 @@ fill_ordinary_room(
        we have to check for monsters on the stairs anyway. */
 
     if ((u.uhave.amulet || !rn2(3)) && somexyspace(croom, &pos)) {
-        tmonst = makemon((struct permonst *) 0, pos.x, pos.y, MM_NOGRP);
+        tmonst = enhancement_makemon((struct permonst *) 0, pos.x, pos.y, MM_NOGRP);
         if (tmonst && tmonst->data == &mons[PM_GIANT_SPIDER]
             && !occupied(pos.x, pos.y))
             (void) maketrap(pos.x, pos.y, WEB);
@@ -1430,7 +1430,7 @@ fill_ordinary_room(
                 };
                 int oclass = ROLL_FROM(extra_classes);
 
-                otmp = mkobj(oclass, FALSE);
+                otmp = enhancement_mkobj(oclass, FALSE);
                 if (oclass == SPBOOK_no_NOVEL) {
                     int pass, maxpass = (depth(&u.uz) > 2) ? 2 : 3;
 
@@ -1438,7 +1438,7 @@ fill_ordinary_room(
                        and taking the lower-level book; do that three
                        times if on level 1 or 2, twice when deeper */
                     for (pass = 1; pass <= maxpass; ++pass) {
-                        struct obj *otmp2 = mkobj(oclass, FALSE);
+                        struct obj *otmp2 = enhancement_mkobj(oclass, FALSE);
 
                         if (objects[otmp->otyp].oc_level
                             <= objects[otmp2->otyp].oc_level) {
@@ -1488,7 +1488,7 @@ fill_ordinary_room(
 
  skip_nonrogue:
     if (!rn2(3) && somexyspace(croom, &pos)) {
-        (void) mkobj_at(RANDOM_CLASS, pos.x, pos.y, TRUE);
+        (void) enhancement_mkobj_at(RANDOM_CLASS, pos.x, pos.y, TRUE);
         trycnt = 0;
         while (!rn2(5)) {
             if (++trycnt > 100) {
@@ -1496,7 +1496,7 @@ fill_ordinary_room(
                 break;
             }
             if (somexyspace(croom, &pos)) {
-                (void) mkobj_at(RANDOM_CLASS, pos.x, pos.y, TRUE);
+                (void) enhancement_mkobj_at(RANDOM_CLASS, pos.x, pos.y, TRUE);
             }
         }
     }
@@ -1601,10 +1601,10 @@ mith_liquify(coordxy x, coordxy y, boolean edge)
             else if (dep > 15 && !rn2(3)) monster = PM_GIANT_EEL;
             else if (dep > 11 && !rn2(2)) monster = PM_SHARK;
             else if (dep > 7 && rn2(4)) monster = PM_PIRANHA;
-            (void) makemon(&mons[monster], x, y, NO_MM_FLAGS);
+            (void) enhancement_makemon(&mons[monster], x, y, NO_MM_FLAGS);
         }
         if (!rn2(max(1, 140 - dep)))
-            (void) mkobj_at(RANDOM_CLASS, x, y, FALSE);
+            (void) enhancement_mkobj_at(RANDOM_CLASS, x, y, FALSE);
         else if (!rn2(max(1, 100 - dep)))
             (void) mkgold((long) rn1(10 * level_difficulty(), 10), x, y);
     }
@@ -1698,7 +1698,7 @@ mith_poolroom(void)
             for (y = room->ly + 1; y < room->hy; ++y) {
                 (void) set_levltyp(x, y, POOL);
                 if (depth(&u.uz) > 8 && !rn2(16))
-                    (void) makemon(&mons[rn2(2) ? PM_GIANT_EEL : PM_ELECTRIC_EEL],
+                    (void) enhancement_makemon(&mons[rn2(2) ? PM_GIANT_EEL : PM_ELECTRIC_EEL],
                                    x, y, NO_MM_FLAGS);
             }
         return;
@@ -1736,7 +1736,7 @@ mith_catacombs(void)
             continue;
         if (!rn2(3)) {
             x = somex(room); y = somey(room);
-            (void) makemon(rn2(2) ? &mons[PM_ALABASTER_MUMMY] : (struct permonst *) 0,
+            (void) enhancement_makemon(rn2(2) ? &mons[PM_ALABASTER_MUMMY] : (struct permonst *) 0,
                            x, y, NO_MM_FLAGS);
         }
         if (!rn2(svn.nroom * 5 / 2))
@@ -2065,7 +2065,7 @@ mineralize(int kelp_pool, int kelp_moat, int goldprob, int gemprob,
                 }
                 if (rn2(1000) < gemprob) {
                     for (cnt = rnd(2 + dunlev(&u.uz) / 3); cnt > 0; cnt--)
-                        if ((otmp = mkobj(GEM_CLASS, FALSE)) != 0) {
+                        if ((otmp = enhancement_mkobj(GEM_CLASS, FALSE)) != 0) {
                             if (otmp->otyp == ROCK) {
                                 dealloc_obj(otmp); /* discard it */
                             } else {
@@ -2413,7 +2413,7 @@ mktrap_victim(struct trap *ttmp)
         /* these items are always cursed, both for flavour (owned
            by a dead adventurer, bones-pile-style) and for balance
            (less useful to use, and encourage pets to avoid the trap) */
-        otmp = mkobj(poss_class, FALSE);
+        otmp = enhancement_mkobj(poss_class, FALSE);
         curse(otmp);
         /* for mktrap_victim(), PIT is actually an exploded LANDMINE */
         if (ttmp->ttyp == PIT && breaktest(otmp)) {
@@ -2650,7 +2650,7 @@ mktrap(
     kind = t ? t->ttyp : NO_TRAP;
 
     if (kind == WEB && !(mktrapflags & MKTRAP_NOSPIDERONWEB))
-        (void) makemon(&mons[PM_GIANT_SPIDER], m.x, m.y, NO_MM_FLAGS);
+        (void) enhancement_makemon(&mons[PM_GIANT_SPIDER], m.x, m.y, NO_MM_FLAGS);
     if (t && (mktrapflags & MKTRAP_SEEN))
         t->tseen = TRUE;
     if (kind == MAGIC_PORTAL && (u.ucamefrom.dnum || u.ucamefrom.dlevel)) {
@@ -2929,7 +2929,7 @@ mkgrave(struct mkroom *croom)
         add_to_buried(gold);
     }
     for (tryct = rn2(5); tryct; tryct--) {
-        otmp = mkobj(RANDOM_CLASS, TRUE);
+        otmp = enhancement_mkobj(RANDOM_CLASS, TRUE);
         if (!otmp)
             return;
         curse(otmp);

@@ -599,7 +599,7 @@ mith_shop_stock(int shop, struct obj *otmp, int x, int y)
         }
     }
     if (list) {
-        replacement = mksobj_at(list[rn2(n)], x, y, TRUE, TRUE);
+        replacement = enhancement_mksobj_at(list[rn2(n)], x, y, TRUE, TRUE);
         if (replacement) {
             delobj(otmp);
             otmp = replacement;
@@ -662,9 +662,9 @@ mkshobj_at(const struct shclass *shp, int sx, int sy, boolean mkspecl)
         if (atype == VEGETARIAN_CLASS)
             mkveggy_at(sx, sy);
         else if (atype < 0)
-            stock = mksobj_at(-atype, sx, sy, TRUE, TRUE);
+            stock = enhancement_mksobj_at(-atype, sx, sy, TRUE, TRUE);
         else
-            stock = mkobj_at(atype, sx, sy, TRUE);
+            stock = enhancement_mkobj_at(atype, sx, sy, TRUE);
         mith_shop_stock(SHOPBASE + (int) (shp - shtypes), stock, sx, sy);
     }
 }

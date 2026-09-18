@@ -10,9 +10,18 @@ from pathlib import Path
 
 CHANGES = json.loads(Path(__file__).with_name(
     'step13_historical_changes.json').read_text(encoding='utf8'))
+STEP14_CHANGES = json.loads(Path(__file__).with_name(
+    'step14_historical_changes.json').read_text(encoding='utf8'))
 
 
 def project(path, text):
+    # First remove exact reviewed Step 14 hunks. Earlier checkpoint inputs
+    # have neither these hunks nor necessarily Step 13's surrounding context;
+    # their bytes still face the unchanged historical equality assertion.
+    for hunk in STEP14_CHANGES.get(path, []):
+        if hunk['after'] in text:
+            assert text.count(hunk['after']) == 1, (path, 'ambiguous Step 14 hunk')
+            text = text.replace(hunk['after'], hunk['before'], 1)
     for hunk in CHANGES.get(path, []):
         after, before = hunk['after'], hunk['before']
         if after in text:

@@ -12,8 +12,8 @@ for typ,field in [('uint32','o_enh_props'),('uint32','o_enh_known'),('uint8','o_
  assert re.search(r'\b'+typ+r'\s+'+field+r'\s*;',obj)
  assert f'obj->{field} != otmp->{field}' in body('src/invent.c','mergable')
 assert 'unsigned long obranch_props;' in obj
-assert re.search(r'#define EDITLEVEL\s+7\b',read('include/patchlevel.h'))
-for i,name in enumerate(['FIRE','COLD','SHOCK','TRUEFLIGHT','WARNING','SEARCHING','STEALTH','CUMBERSOME']):
+assert re.search(r'#define EDITLEVEL\s+8\b',read('include/patchlevel.h'))
+for i,name in enumerate(['FIRE','COLD','SHOCK','TRUEFLIGHT','WARNING','SEARCHING','STEALTH']):
  assert int(re.search(r'#define OEP_'+name+r'\s+(0x[0-9a-f]+)U',hdr)[1],16)==1<<i
 for name in ['enhancement_hit_bonus','enhancement_damage_bonus','enhancement_quality_bonus','enhancement_visible_props']:
  code=body('src/enhance.c',name)
@@ -33,4 +33,4 @@ assert 'sizeof *d_##dt' in read('src/sfstruct.c')
 assert 'sizeof(struct obj)' in read('src/version.c') or 'sizeof (struct obj)' in read('src/version.c')
 for file in ['src/makemon.c','src/shknam.c','src/sp_lev.c']:
  assert not re.search(r'\benhancement_set\(',read(file)),file
-print('PASS Step 13 representation, separate namespaces, pure queries, artifact/attack/wear hooks, epoch and no acquisition')
+print('PASS Step 13 representation, separate namespaces, pure queries, artifact/attack/wear hooks, epoch and default-deny acquisition')

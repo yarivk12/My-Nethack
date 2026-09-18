@@ -1326,6 +1326,7 @@ mksobj(int otyp, boolean init, boolean artif)
         otmp = mk_artifact(otmp, (aligntyp) A_NONE, 99, FALSE);
     }
     otmp->owt = weight(otmp);
+    enhancement_created(otmp);
     return otmp;
 }
 

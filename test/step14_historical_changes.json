@@ -1,0 +1,318 @@
+{
+  "include/hack.h": [
+    {
+      "before": "                                     * mesg for ^G */\n#define MM_IGNORELAVA   0x00080000L /* ignore lava when positioning */\n#define MM_MINVIS       0x00100000L /* for ^G/create_particular */\n/* if more MM_ flag masks are added, skip or renumber the GP_ one(s) */\n#define GP_ALLOW_XY     0x00200000L /* [actually used by enexto() to decide\n                                     * whether to make an extra call to\n",
+      "after": "                                     * mesg for ^G */\n#define MM_IGNORELAVA   0x00080000L /* ignore lava when positioning */\n#define MM_MINVIS       0x00100000L /* for ^G/create_particular */\n#define MM_NATURAL      0x00200000L /* opt in original natural equipment */\n/* if more MM_ flag masks are added, skip or renumber the GP_ one(s) */\n#define GP_ALLOW_XY     0x00200000L /* [actually used by enexto() to decide\n                                     * whether to make an extra call to\n"
+    }
+  ],
+  "src/allmain.c": [
+    {
+      "before": "\n        if (Very_fast) { /* speed boots, potion, or spell */\n            /* gain a free action on 2/3 of turns */\n            if (rn2(3) != 0)\n                moveamt += NORMAL_SPEED;\n        } else if (Fast) { /* intrinsic */\n            /* gain a free action on 1/3 of turns */\n            if (rn2(3) == 0)\n",
+      "after": "\n        if (Very_fast) { /* speed boots, potion, or spell */\n            /* gain a free action on 2/3 of turns */\n            if (rn2(3) != 0) {\n                moveamt += NORMAL_SPEED;\n                enhancement_observe_worn(FAST);\n            }\n        } else if (Fast) { /* intrinsic */\n            /* gain a free action on 1/3 of turns */\n            if (rn2(3) == 0)\n"
+    },
+    {
+      "before": "    if (!rn2(u.uevent.udemigod ? 25\n             : (depth(&u.uz) > depth(&stronghold_level)) ? 50\n             : 70))\n        (void) makemon((struct permonst *) 0, 0, 0, NO_MM_FLAGS);\n}\n\n#if defined(MICRO) || defined(WIN32)\n",
+      "after": "    if (!rn2(u.uevent.udemigod ? 25\n             : (depth(&u.uz) > depth(&stronghold_level)) ? 50\n             : 70))\n        (void) enhancement_makemon((struct permonst *) 0, 0, 0, NO_MM_FLAGS);\n}\n\n#if defined(MICRO) || defined(WIN32)\n"
+    },
+    {
+      "before": "        }\n    }\n\n    if (reached_full)\n        interrupt_multi(\"You are in full health.\");\n}\n",
+      "after": "        }\n    }\n\n    if (heal > 0 && Regeneration && !(Sleepy && u.usleep))\n        enhancement_observe_worn(REGENERATION);\n    if (reached_full)\n        interrupt_multi(\"You are in full health.\");\n}\n"
+    }
+  ],
+  "src/makemon.c": [
+    {
+      "before": "    if (type == PM_DEEPEST_ONE) {\n        for (num = rn1(3, 3); num >= 0; --num)\n            (void) makemon(&mons[PM_DEEPER_ONE], mtmp->mx, mtmp->my,\n                           MM_ADJACENTOK);\n        for (num = rn1(10, 10); num >= 0; --num)\n            (void) makemon(&mons[PM_DEEP_ONE], mtmp->mx, mtmp->my,\n                           MM_ADJACENTOK);\n    } else if (type == PM_DEEPER_ONE) {\n        for (num = rn1(10, 3); num >= 0; --num)\n            (void) makemon(&mons[PM_DEEP_ONE], mtmp->mx, mtmp->my,\n                           MM_ADJACENTOK);\n    } else if (type == PM_ALABASTER_ELF_ELDER) {\n        if (rn2(2)) {\n            companion = makemon(&mons[PM_ALABASTER_ELF_ELDER], mtmp->mx,\n                                 mtmp->my, MM_ADJACENTOK);\n            if (companion)\n                m_initsgrp(companion, mtmp->mx, mtmp->my, mmflags);\n        }\n        companion = makemon(&mons[PM_ALABASTER_ELF], mtmp->mx, mtmp->my,\n                             MM_ADJACENTOK);\n        if (companion)\n            m_initlgrp(companion, mtmp->mx, mtmp->my, mmflags);\n    }\n",
+      "after": "    if (type == PM_DEEPEST_ONE) {\n        for (num = rn1(3, 3); num >= 0; --num)\n            (void) makemon(&mons[PM_DEEPER_ONE], mtmp->mx, mtmp->my,\n                           (MM_ADJACENTOK | (mmflags & MM_NATURAL)));\n        for (num = rn1(10, 10); num >= 0; --num)\n            (void) makemon(&mons[PM_DEEP_ONE], mtmp->mx, mtmp->my,\n                           (MM_ADJACENTOK | (mmflags & MM_NATURAL)));\n    } else if (type == PM_DEEPER_ONE) {\n        for (num = rn1(10, 3); num >= 0; --num)\n            (void) makemon(&mons[PM_DEEP_ONE], mtmp->mx, mtmp->my,\n                           (MM_ADJACENTOK | (mmflags & MM_NATURAL)));\n    } else if (type == PM_ALABASTER_ELF_ELDER) {\n        if (rn2(2)) {\n            companion = makemon(&mons[PM_ALABASTER_ELF_ELDER], mtmp->mx,\n                                 mtmp->my, (MM_ADJACENTOK | (mmflags & MM_NATURAL)));\n            if (companion)\n                m_initsgrp(companion, mtmp->mx, mtmp->my, mmflags);\n        }\n        companion = makemon(&mons[PM_ALABASTER_ELF], mtmp->mx, mtmp->my,\n                             (MM_ADJACENTOK | (mmflags & MM_NATURAL)));\n        if (companion)\n            m_initlgrp(companion, mtmp->mx, mtmp->my, mmflags);\n    }\n"
+    },
+    {
+      "before": "    }\n\n    if (allow_minvent) {\n        if (is_armed(ptr))\n            m_initweap(mtmp); /* equip with weapons / armor */\n        m_initinv(mtmp); /* add on a few special items incl. more armor */\n        m_dowear(mtmp, TRUE);\n\n        if (!rn2(100) && is_domestic(ptr)\n",
+      "after": "    }\n\n    if (allow_minvent) {\n        enum enhancement_context old_context = enhancement_context_set(\n            (mmflags & MM_NATURAL) ? ENH_CONTEXT_MONSTER : ENH_CONTEXT_NONE);\n        if (is_armed(ptr))\n            m_initweap(mtmp); /* equip with weapons / armor */\n        m_initinv(mtmp); /* add on a few special items incl. more armor */\n        (void) enhancement_context_set(old_context);\n        m_dowear(mtmp, TRUE);\n\n        if (!rn2(100) && is_domestic(ptr)\n"
+    }
+  ],
+  "src/mhitm.c": [
+    {
+      "before": "    if (mhm.done)\n        return mhm.hitflags;\n\n    if (!mhm.damage)\n        return mhm.hitflags;\n\n    if (mattk->adtyp == AD_PHYS || mattk->adtyp == AD_DRLI || mattk->adtyp == AD_VAMP\n",
+      "after": "    if (mhm.done)\n        return mhm.hitflags;\n\n    if (!mhm.damage\n        && !((mattk->aatyp == AT_WEAP || (mattk->aatyp == AT_CLAW && mwep))\n             && enhancement_elemental_contact(mwep, (struct obj *) 0, ENHANCE_MELEE)))\n        return mhm.hitflags;\n\n    if (mattk->adtyp == AD_PHYS || mattk->adtyp == AD_DRLI || mattk->adtyp == AD_VAMP\n"
+    },
+    {
+      "before": "                      (mattk->aatyp == AT_WEAP || mattk->aatyp == AT_CLAW)\n                          ? mwep : (struct obj *) 0);\n    if (mattk->aatyp == AT_WEAP || (mattk->aatyp == AT_CLAW && mwep))\n        mhm.damage += enhancement_weapon_effects(mwep, (struct obj *) 0,\n                                                mdef, mhm.damage, ENHANCE_MELEE);\n    if (mattk->aatyp == AT_WEAP || (mattk->aatyp == AT_CLAW && mwep))\n        mhm.damage += mith_weapon_effects(mwep, mdef, mhm.damage);\n    mdef->mhp -= mhm.damage;\n    if (mdef->mhp < 1) {\n        if (m_at(mdef->mx, mdef->my) == magr) { /* see gulpmm() */\n",
+      "after": "                      (mattk->aatyp == AT_WEAP || mattk->aatyp == AT_CLAW)\n                          ? mwep : (struct obj *) 0);\n    if (mattk->aatyp == AT_WEAP || (mattk->aatyp == AT_CLAW && mwep))\n        mhm.damage += mith_weapon_effects(mwep, mdef, mhm.damage);\n    if (mattk->aatyp == AT_WEAP || (mattk->aatyp == AT_CLAW && mwep))\n        mhm.damage += enhancement_weapon_effects(mwep, (struct obj *) 0,\n                                                mdef, mhm.damage, ENHANCE_MELEE);\n    mdef->mhp -= mhm.damage;\n    if (mdef->mhp < 1) {\n        if (m_at(mdef->mx, mdef->my) == magr) { /* see gulpmm() */\n"
+    }
+  ],
+  "src/mhitu.c": [
+    {
+      "before": "            }\n        }\n    } else if (unotthere) { /* Displaced */\n        /* give 'displaced' message even if hero is Blind */\n        if (compat)\n            pline(\"%s smiles %s at your %sdisplaced image...\", Monst_name,\n",
+      "after": "            }\n        }\n    } else if (unotthere) { /* Displaced */\n        enhancement_observe_worn(DISPLACED);\n        /* give 'displaced' message even if hero is Blind */\n        if (compat)\n            pline(\"%s smiles %s at your %sdisplaced image...\", Monst_name,\n"
+    },
+    {
+      "before": "            mhm.damage = 1;\n    }\n\n    if (mhm.damage > 0) {\n        /* [Half_physical_damage isn't applied to mhm.permdmg] */\n        if (Half_physical_damage\n            /* Mitre of Holiness, even if not currently blessed */\n",
+      "after": "            mhm.damage = 1;\n    }\n\n    if (mhm.damage > 0\n        || (mattk->aatyp == AT_WEAP\n            && enhancement_elemental_contact(mhm.weapon, (struct obj *) 0, ENHANCE_MELEE))) {\n        /* [Half_physical_damage isn't applied to mhm.permdmg] */\n        if (Half_physical_damage\n            /* Mitre of Holiness, even if not currently blessed */\n"
+    },
+    {
+      "before": "        mhm.damage += mith_iron_contact(mtmp, &gy.youmonst, mattk->aatyp,\n                          mattk->aatyp == AT_WEAP ? mhm.weapon : (struct obj *) 0);\n        if (mattk->aatyp == AT_WEAP)\n            mhm.damage += enhancement_weapon_effects(mhm.weapon, (struct obj *) 0,\n                                      &gy.youmonst, mhm.damage, ENHANCE_MELEE);\n        if (mattk->aatyp == AT_WEAP)\n            mhm.damage += mith_weapon_effects(mhm.weapon, &gy.youmonst,\n                                              mhm.damage);\n\n        if (mhm.permdmg) { /* Death's life force drain */\n            int lowerlimit, *hpmax_p;\n",
+      "after": "        mhm.damage += mith_iron_contact(mtmp, &gy.youmonst, mattk->aatyp,\n                          mattk->aatyp == AT_WEAP ? mhm.weapon : (struct obj *) 0);\n        if (mattk->aatyp == AT_WEAP)\n            mhm.damage += mith_weapon_effects(mhm.weapon, &gy.youmonst,\n                                              mhm.damage);\n        if (mattk->aatyp == AT_WEAP)\n            mhm.damage += enhancement_weapon_effects(mhm.weapon, (struct obj *) 0,\n                                      &gy.youmonst, mhm.damage, ENHANCE_MELEE);\n\n        if (mhm.permdmg) { /* Death's life force drain */\n            int lowerlimit, *hpmax_p;\n"
+    }
+  ],
+  "src/mklev.c": [
+    {
+      "before": "                     && (svm.mvitals[PM_GIANT_MIMIC].mvflags & G_GONE))) {\n                /* make a mimic instead */\n                levl[x][y].doormask = D_NODOOR;\n                mtmp = makemon(mkclass(S_MIMIC, 0), x, y, NO_MM_FLAGS);\n                if (mtmp)\n                    set_mimic_sym(mtmp);\n            }\n",
+      "after": "                     && (svm.mvitals[PM_GIANT_MIMIC].mvflags & G_GONE))) {\n                /* make a mimic instead */\n                levl[x][y].doormask = D_NODOOR;\n                mtmp = enhancement_makemon(mkclass(S_MIMIC, 0), x, y, NO_MM_FLAGS);\n                if (mtmp)\n                    set_mimic_sym(mtmp);\n            }\n"
+    },
+    {
+      "before": "                    (void) mksobj_at(SCR_TELEPORTATION, xx, yy + dy, TRUE,\n                                     FALSE);\n                if (!rn2(3))\n                    (void) mkobj_at(RANDOM_CLASS, xx, yy + dy, TRUE);\n            }\n        }\n        if (In_mithardir_catacombs(&u.uz)) {\n            if (!rn2(2))\n                (void) makemon(&mons[PM_ALABASTER_MUMMY], xx, yy + dy, NO_MM_FLAGS);\n            else\n                (void) mksobj_at(mith_tile_type(), xx, yy + dy, TRUE, FALSE);\n        }\n",
+      "after": "                    (void) mksobj_at(SCR_TELEPORTATION, xx, yy + dy, TRUE,\n                                     FALSE);\n                if (!rn2(3))\n                    (void) enhancement_mkobj_at(RANDOM_CLASS, xx, yy + dy, TRUE);\n            }\n        }\n        if (In_mithardir_catacombs(&u.uz)) {\n            if (!rn2(2))\n                (void) enhancement_makemon(&mons[PM_ALABASTER_MUMMY], xx, yy + dy, NO_MM_FLAGS);\n            else\n                (void) mksobj_at(mith_tile_type(), xx, yy + dy, TRUE, FALSE);\n        }\n"
+    },
+    {
+      "before": "       we have to check for monsters on the stairs anyway. */\n\n    if ((u.uhave.amulet || !rn2(3)) && somexyspace(croom, &pos)) {\n        tmonst = makemon((struct permonst *) 0, pos.x, pos.y, MM_NOGRP);\n        if (tmonst && tmonst->data == &mons[PM_GIANT_SPIDER]\n            && !occupied(pos.x, pos.y))\n            (void) maketrap(pos.x, pos.y, WEB);\n",
+      "after": "       we have to check for monsters on the stairs anyway. */\n\n    if ((u.uhave.amulet || !rn2(3)) && somexyspace(croom, &pos)) {\n        tmonst = enhancement_makemon((struct permonst *) 0, pos.x, pos.y, MM_NOGRP);\n        if (tmonst && tmonst->data == &mons[PM_GIANT_SPIDER]\n            && !occupied(pos.x, pos.y))\n            (void) maketrap(pos.x, pos.y, WEB);\n"
+    },
+    {
+      "before": "                };\n                int oclass = ROLL_FROM(extra_classes);\n\n                otmp = mkobj(oclass, FALSE);\n                if (oclass == SPBOOK_no_NOVEL) {\n                    int pass, maxpass = (depth(&u.uz) > 2) ? 2 : 3;\n\n",
+      "after": "                };\n                int oclass = ROLL_FROM(extra_classes);\n\n                otmp = enhancement_mkobj(oclass, FALSE);\n                if (oclass == SPBOOK_no_NOVEL) {\n                    int pass, maxpass = (depth(&u.uz) > 2) ? 2 : 3;\n\n"
+    },
+    {
+      "before": "                       and taking the lower-level book; do that three\n                       times if on level 1 or 2, twice when deeper */\n                    for (pass = 1; pass <= maxpass; ++pass) {\n                        struct obj *otmp2 = mkobj(oclass, FALSE);\n\n                        if (objects[otmp->otyp].oc_level\n                            <= objects[otmp2->otyp].oc_level) {\n",
+      "after": "                       and taking the lower-level book; do that three\n                       times if on level 1 or 2, twice when deeper */\n                    for (pass = 1; pass <= maxpass; ++pass) {\n                        struct obj *otmp2 = enhancement_mkobj(oclass, FALSE);\n\n                        if (objects[otmp->otyp].oc_level\n                            <= objects[otmp2->otyp].oc_level) {\n"
+    },
+    {
+      "before": "\n skip_nonrogue:\n    if (!rn2(3) && somexyspace(croom, &pos)) {\n        (void) mkobj_at(RANDOM_CLASS, pos.x, pos.y, TRUE);\n        trycnt = 0;\n        while (!rn2(5)) {\n            if (++trycnt > 100) {\n",
+      "after": "\n skip_nonrogue:\n    if (!rn2(3) && somexyspace(croom, &pos)) {\n        (void) enhancement_mkobj_at(RANDOM_CLASS, pos.x, pos.y, TRUE);\n        trycnt = 0;\n        while (!rn2(5)) {\n            if (++trycnt > 100) {\n"
+    },
+    {
+      "before": "                break;\n            }\n            if (somexyspace(croom, &pos)) {\n                (void) mkobj_at(RANDOM_CLASS, pos.x, pos.y, TRUE);\n            }\n        }\n    }\n",
+      "after": "                break;\n            }\n            if (somexyspace(croom, &pos)) {\n                (void) enhancement_mkobj_at(RANDOM_CLASS, pos.x, pos.y, TRUE);\n            }\n        }\n    }\n"
+    },
+    {
+      "before": "            else if (dep > 15 && !rn2(3)) monster = PM_GIANT_EEL;\n            else if (dep > 11 && !rn2(2)) monster = PM_SHARK;\n            else if (dep > 7 && rn2(4)) monster = PM_PIRANHA;\n            (void) makemon(&mons[monster], x, y, NO_MM_FLAGS);\n        }\n        if (!rn2(max(1, 140 - dep)))\n            (void) mkobj_at(RANDOM_CLASS, x, y, FALSE);\n        else if (!rn2(max(1, 100 - dep)))\n            (void) mkgold((long) rn1(10 * level_difficulty(), 10), x, y);\n    }\n",
+      "after": "            else if (dep > 15 && !rn2(3)) monster = PM_GIANT_EEL;\n            else if (dep > 11 && !rn2(2)) monster = PM_SHARK;\n            else if (dep > 7 && rn2(4)) monster = PM_PIRANHA;\n            (void) enhancement_makemon(&mons[monster], x, y, NO_MM_FLAGS);\n        }\n        if (!rn2(max(1, 140 - dep)))\n            (void) enhancement_mkobj_at(RANDOM_CLASS, x, y, FALSE);\n        else if (!rn2(max(1, 100 - dep)))\n            (void) mkgold((long) rn1(10 * level_difficulty(), 10), x, y);\n    }\n"
+    },
+    {
+      "before": "            for (y = room->ly + 1; y < room->hy; ++y) {\n                (void) set_levltyp(x, y, POOL);\n                if (depth(&u.uz) > 8 && !rn2(16))\n                    (void) makemon(&mons[rn2(2) ? PM_GIANT_EEL : PM_ELECTRIC_EEL],\n                                   x, y, NO_MM_FLAGS);\n            }\n        return;\n",
+      "after": "            for (y = room->ly + 1; y < room->hy; ++y) {\n                (void) set_levltyp(x, y, POOL);\n                if (depth(&u.uz) > 8 && !rn2(16))\n                    (void) enhancement_makemon(&mons[rn2(2) ? PM_GIANT_EEL : PM_ELECTRIC_EEL],\n                                   x, y, NO_MM_FLAGS);\n            }\n        return;\n"
+    },
+    {
+      "before": "            continue;\n        if (!rn2(3)) {\n            x = somex(room); y = somey(room);\n            (void) makemon(rn2(2) ? &mons[PM_ALABASTER_MUMMY] : (struct permonst *) 0,\n                           x, y, NO_MM_FLAGS);\n        }\n        if (!rn2(svn.nroom * 5 / 2))\n",
+      "after": "            continue;\n        if (!rn2(3)) {\n            x = somex(room); y = somey(room);\n            (void) enhancement_makemon(rn2(2) ? &mons[PM_ALABASTER_MUMMY] : (struct permonst *) 0,\n                           x, y, NO_MM_FLAGS);\n        }\n        if (!rn2(svn.nroom * 5 / 2))\n"
+    },
+    {
+      "before": "                }\n                if (rn2(1000) < gemprob) {\n                    for (cnt = rnd(2 + dunlev(&u.uz) / 3); cnt > 0; cnt--)\n                        if ((otmp = mkobj(GEM_CLASS, FALSE)) != 0) {\n                            if (otmp->otyp == ROCK) {\n                                dealloc_obj(otmp); /* discard it */\n                            } else {\n",
+      "after": "                }\n                if (rn2(1000) < gemprob) {\n                    for (cnt = rnd(2 + dunlev(&u.uz) / 3); cnt > 0; cnt--)\n                        if ((otmp = enhancement_mkobj(GEM_CLASS, FALSE)) != 0) {\n                            if (otmp->otyp == ROCK) {\n                                dealloc_obj(otmp); /* discard it */\n                            } else {\n"
+    },
+    {
+      "before": "        /* these items are always cursed, both for flavour (owned\n           by a dead adventurer, bones-pile-style) and for balance\n           (less useful to use, and encourage pets to avoid the trap) */\n        otmp = mkobj(poss_class, FALSE);\n        curse(otmp);\n        /* for mktrap_victim(), PIT is actually an exploded LANDMINE */\n        if (ttmp->ttyp == PIT && breaktest(otmp)) {\n",
+      "after": "        /* these items are always cursed, both for flavour (owned\n           by a dead adventurer, bones-pile-style) and for balance\n           (less useful to use, and encourage pets to avoid the trap) */\n        otmp = enhancement_mkobj(poss_class, FALSE);\n        curse(otmp);\n        /* for mktrap_victim(), PIT is actually an exploded LANDMINE */\n        if (ttmp->ttyp == PIT && breaktest(otmp)) {\n"
+    },
+    {
+      "before": "    kind = t ? t->ttyp : NO_TRAP;\n\n    if (kind == WEB && !(mktrapflags & MKTRAP_NOSPIDERONWEB))\n        (void) makemon(&mons[PM_GIANT_SPIDER], m.x, m.y, NO_MM_FLAGS);\n    if (t && (mktrapflags & MKTRAP_SEEN))\n        t->tseen = TRUE;\n    if (kind == MAGIC_PORTAL && (u.ucamefrom.dnum || u.ucamefrom.dlevel)) {\n",
+      "after": "    kind = t ? t->ttyp : NO_TRAP;\n\n    if (kind == WEB && !(mktrapflags & MKTRAP_NOSPIDERONWEB))\n        (void) enhancement_makemon(&mons[PM_GIANT_SPIDER], m.x, m.y, NO_MM_FLAGS);\n    if (t && (mktrapflags & MKTRAP_SEEN))\n        t->tseen = TRUE;\n    if (kind == MAGIC_PORTAL && (u.ucamefrom.dnum || u.ucamefrom.dlevel)) {\n"
+    },
+    {
+      "before": "        add_to_buried(gold);\n    }\n    for (tryct = rn2(5); tryct; tryct--) {\n        otmp = mkobj(RANDOM_CLASS, TRUE);\n        if (!otmp)\n            return;\n        curse(otmp);\n",
+      "after": "        add_to_buried(gold);\n    }\n    for (tryct = rn2(5); tryct; tryct--) {\n        otmp = enhancement_mkobj(RANDOM_CLASS, TRUE);\n        if (!otmp)\n            return;\n        curse(otmp);\n"
+    }
+  ],
+  "src/mkmaze.c": [
+    {
+      "before": "        }\n    }\n    if (rn2(1000) < gemprob) {\n        if ((otmp = mkobj(GEM_CLASS, FALSE)) != 0) {\n            if (otmp->otyp == ROCK)\n                dealloc_obj(otmp);\n            else\n",
+      "after": "        }\n    }\n    if (rn2(1000) < gemprob) {\n        if ((otmp = enhancement_mkobj(GEM_CLASS, FALSE)) != 0) {\n            if (otmp->otyp == ROCK)\n                dealloc_obj(otmp);\n            else\n"
+    },
+    {
+      "before": "    }\n    migr_booty_item(rn2(2) ? LONG_SWORD : SILVER_SABER, gang);\n    /* create the leader of the orc gang */\n    mtmp = makemon(&mons[PM_ORC_CAPTAIN], 0, 0, MM_NONAME);\n    if (mtmp) {\n        mtmp = christen_monst(mtmp, upstart(gang));\n        mtmp->mpeaceful = 0;\n",
+      "after": "    }\n    migr_booty_item(rn2(2) ? LONG_SWORD : SILVER_SABER, gang);\n    /* create the leader of the orc gang */\n    mtmp = enhancement_makemon(&mons[PM_ORC_CAPTAIN], 0, 0, MM_NONAME);\n    if (mtmp) {\n        mtmp = christen_monst(mtmp, upstart(gang));\n        mtmp->mpeaceful = 0;\n"
+    },
+    {
+      "before": "        int mtyp;\n\n        mtyp = rn2((PM_ORC_SHAMAN - PM_ORC) + 1) + PM_ORC;\n        mtmp = makemon(&mons[mtyp], 0, 0, MM_NONAME);\n        if (mtmp) {\n            shiny_orc_stuff(mtmp);\n            migrate_orc(mtmp, 0UL);\n",
+      "after": "        int mtyp;\n\n        mtyp = rn2((PM_ORC_SHAMAN - PM_ORC) + 1) + PM_ORC;\n        mtmp = enhancement_makemon(&mons[mtyp], 0, 0, MM_NONAME);\n        if (mtmp) {\n            shiny_orc_stuff(mtmp);\n            migrate_orc(mtmp, 0UL);\n"
+    },
+    {
+      "before": "\n    for (i = rn1(8, 11); i; i--) {\n        mazexy(&mm);\n        (void) mkobj_at(rn2(2) ? GEM_CLASS : RANDOM_CLASS, mm.x, mm.y, TRUE);\n    }\n    for (i = rn1(10, 2); i; i--) {\n        mazexy(&mm);\n",
+      "after": "\n    for (i = rn1(8, 11); i; i--) {\n        mazexy(&mm);\n        (void) enhancement_mkobj_at(rn2(2) ? GEM_CLASS : RANDOM_CLASS, mm.x, mm.y, TRUE);\n    }\n    for (i = rn1(10, 2); i; i--) {\n        mazexy(&mm);\n"
+    },
+    {
+      "before": "    }\n    for (i = rn2(3); i; i--) {\n        mazexy(&mm);\n        (void) makemon(&mons[PM_MINOTAUR], mm.x, mm.y, NO_MM_FLAGS);\n    }\n    for (i = rn1(5, 7); i; i--) {\n        mazexy(&mm);\n        (void) makemon((struct permonst *) 0, mm.x, mm.y, NO_MM_FLAGS);\n    }\n    for (i = rn1(6, 7); i; i--) {\n        mazexy(&mm);\n",
+      "after": "    }\n    for (i = rn2(3); i; i--) {\n        mazexy(&mm);\n        (void) enhancement_makemon(&mons[PM_MINOTAUR], mm.x, mm.y, NO_MM_FLAGS);\n    }\n    for (i = rn1(5, 7); i; i--) {\n        mazexy(&mm);\n        (void) enhancement_makemon((struct permonst *) 0, mm.x, mm.y, NO_MM_FLAGS);\n    }\n    for (i = rn1(6, 7); i; i--) {\n        mazexy(&mm);\n"
+    }
+  ],
+  "src/mkobj.c": [
+    {
+      "before": "        otmp = mk_artifact(otmp, (aligntyp) A_NONE, 99, FALSE);\n    }\n    otmp->owt = weight(otmp);\n    return otmp;\n}\n\n",
+      "after": "        otmp = mk_artifact(otmp, (aligntyp) A_NONE, 99, FALSE);\n    }\n    otmp->owt = weight(otmp);\n    enhancement_created(otmp);\n    return otmp;\n}\n\n"
+    }
+  ],
+  "src/mkroom.c": [
+    {
+      "before": "staticfn struct obj *\nlibrary_item(int roll, int subroll)\n{\n    if (roll < 25) return mkobj(SCROLL_CLASS, FALSE);\n    if (roll < 65) return mkobj(SPBOOK_CLASS, FALSE);\n    if (roll < 85)\n        return mkobj(subroll < 33 ? WAND_CLASS\n                     : subroll < 66 ? RING_CLASS : AMULET_CLASS, FALSE);\n    return mksobj(roll < 95\n                  ? (subroll < 50 ? MAGIC_MARKER : MAGIC_WHISTLE)\n",
+      "after": "staticfn struct obj *\nlibrary_item(int roll, int subroll)\n{\n    if (roll < 25) return enhancement_mkobj(SCROLL_CLASS, FALSE);\n    if (roll < 65) return enhancement_mkobj(SPBOOK_CLASS, FALSE);\n    if (roll < 85)\n        return enhancement_mkobj(subroll < 33 ? WAND_CLASS\n                     : subroll < 66 ? RING_CLASS : AMULET_CLASS, FALSE);\n    return mksobj(roll < 95\n                  ? (subroll < 50 ? MAGIC_MARKER : MAGIC_WHISTLE)\n"
+    },
+    {
+      "before": "    if (MON_AT(x, y)) return;\n    pm = library_species(theme, theme == 1 ? 0 : LIBRARY_RN2(2));\n    if (pm == NON_PM) return;\n    mon = makemon(&mons[pm], x, y, MM_ASLEEP | MM_NOGRP);\n    if (mon) mon->msleeping = 1;\n}\n\n",
+      "after": "    if (MON_AT(x, y)) return;\n    pm = library_species(theme, theme == 1 ? 0 : LIBRARY_RN2(2));\n    if (pm == NON_PM) return;\n    mon = enhancement_makemon(&mons[pm], x, y, MM_ASLEEP | MM_NOGRP);\n    if (mon) mon->msleeping = 1;\n}\n\n"
+    },
+    {
+      "before": "    for (x = room->lx; x <= room->hx; ++x)\n        for (y = room->ly; y <= room->hy; ++y)\n            if (library_floor(room, x, y) && !sobj_at(CHEST, x, y) && !LIBRARY_RN2(20))\n                (void) mkobj_at(LIBRARY_RN2(2) ? SCROLL_CLASS : SPBOOK_CLASS, x, y, FALSE);\n}\n\n#ifdef STEP11_TEST\n",
+      "after": "    for (x = room->lx; x <= room->hx; ++x)\n        for (y = room->ly; y <= room->hy; ++y)\n            if (library_floor(room, x, y) && !sobj_at(CHEST, x, y) && !LIBRARY_RN2(20))\n                (void) enhancement_mkobj_at(LIBRARY_RN2(2) ? SCROLL_CLASS : SPBOOK_CLASS, x, y, FALSE);\n}\n\n#ifdef STEP11_TEST\n"
+    },
+    {
+      "before": "        : (i > 5) ? PM_ELVEN_MONARCH\n        : (i > 2) ? PM_DWARF_RULER\n        : PM_GNOME_RULER;\n    struct monst *mon = makemon(&mons[pm], x, y, NO_MM_FLAGS);\n\n    if (mon) {\n        mon->msleeping = 1;\n",
+      "after": "        : (i > 5) ? PM_ELVEN_MONARCH\n        : (i > 2) ? PM_DWARF_RULER\n        : PM_GNOME_RULER;\n    struct monst *mon = enhancement_makemon(&mons[pm], x, y, NO_MM_FLAGS);\n\n    if (mon) {\n        mon->msleeping = 1;\n"
+    },
+    {
+      "before": "            if (type == COURT && IS_THRONE(levl[sx][sy].typ))\n                continue;\n            /* Do not turn an exhausted imported population into random\n             * monsters via makemon(NULL). Vanilla filling stays unchanged. */\n            if (giantcourt || realzoo || dragonlair) {\n                struct permonst *pm = giantcourt ? mkclass(S_GIANT, 0)\n                    : dragonlair ? mkclass(S_DRAGON, 0) : realzoomon();\n                mon = pm ? makemon(pm, sx, sy, MM_ASLEEP | MM_NOGRP) : NULL;\n            } else\n            mon = makemon((type == COURT)\n                           ? courtmon()\n                           : (type == BARRACKS)\n                              ? squadmon()\n",
+      "after": "            if (type == COURT && IS_THRONE(levl[sx][sy].typ))\n                continue;\n            /* Do not turn an exhausted imported population into random\n             * monsters via enhancement_makemon(NULL). Vanilla filling stays unchanged. */\n            if (giantcourt || realzoo || dragonlair) {\n                struct permonst *pm = giantcourt ? mkclass(S_GIANT, 0)\n                    : dragonlair ? mkclass(S_DRAGON, 0) : realzoomon();\n                mon = pm ? enhancement_makemon(pm, sx, sy, MM_ASLEEP | MM_NOGRP) : NULL;\n            } else\n            mon = enhancement_makemon((type == COURT)\n                           ? courtmon()\n                           : (type == BARRACKS)\n                              ? squadmon()\n"
+    },
+    {
+      "before": "                    if (sobj) {\n                        for (i = rn2(5); i; i--)\n                            (void) add_to_container(\n                                sobj, mkobj(RANDOM_CLASS, FALSE));\n                        sobj->owt = weight(sobj);\n                    }\n                }\n                break;\n            case ANTHOLE:\n                if (!rn2(3))\n                    (void) mkobj_at(FOOD_CLASS, sx, sy, FALSE);\n                break;\n            }\n        }\n",
+      "after": "                    if (sobj) {\n                        for (i = rn2(5); i; i--)\n                            (void) add_to_container(\n                                sobj, enhancement_mkobj(RANDOM_CLASS, FALSE));\n                        sobj->owt = weight(sobj);\n                    }\n                }\n                break;\n            case ANTHOLE:\n                if (!rn2(3))\n                    (void) enhancement_mkobj_at(FOOD_CLASS, sx, sy, FALSE);\n                break;\n            }\n        }\n"
+    },
+    {
+      "before": "            && (!revive_corpses\n                || !(otmp = sobj_at(CORPSE, cc.x, cc.y))\n                || !revive(otmp, FALSE)))\n            (void) makemon(mdat, cc.x, cc.y, mm_flags);\n    }\n    svl.level.flags.graveyard = TRUE; /* reduced chance for undead corpse */\n}\n",
+      "after": "            && (!revive_corpses\n                || !(otmp = sobj_at(CORPSE, cc.x, cc.y))\n                || !revive(otmp, FALSE)))\n            (void) enhancement_makemon(mdat, cc.x, cc.y, mm_flags);\n    }\n    svl.level.flags.graveyard = TRUE; /* reduced chance for undead corpse */\n}\n"
+    },
+    {
+      "before": "                        levl[sx][sy].typ = POOL;\n                        if (!eelct || !rn2(4)) {\n                            /* mkclass() won't do, as we might get kraken */\n                            (void) makemon(rn2(5)\n                                              ? &mons[PM_GIANT_EEL]\n                                              : rn2(2)\n                                                 ? &mons[PM_PIRANHA]\n",
+      "after": "                        levl[sx][sy].typ = POOL;\n                        if (!eelct || !rn2(4)) {\n                            /* mkclass() won't do, as we might get kraken */\n                            (void) enhancement_makemon(rn2(5)\n                                              ? &mons[PM_GIANT_EEL]\n                                              : rn2(2)\n                                                 ? &mons[PM_PIRANHA]\n"
+    },
+    {
+      "before": "                            eelct++;\n                        }\n                    } else if (!rn2(4)) /* swamps tend to be moldy */\n                        (void) makemon(mkclass(S_FUNGUS, 0), sx, sy,\n                                       NO_MM_FLAGS);\n                }\n            }\n",
+      "after": "                            eelct++;\n                        }\n                    } else if (!rn2(4)) /* swamps tend to be moldy */\n                        (void) enhancement_makemon(mkclass(S_FUNGUS, 0), sx, sy,\n                                       NO_MM_FLAGS);\n                }\n            }\n"
+    },
+    {
+      "before": "                monster = PM_SHARK;\n            else if (dep > 7 && rn2(4))\n                monster = PM_PIRANHA;\n            (void) makemon(&mons[monster], x, y, NO_MM_FLAGS);\n        }\n        if (!rn2(max(1, 140 - dep)))\n            (void) mkobj_at(RANDOM_CLASS, x, y, FALSE);\n        else if (!rn2(max(1, 100 - dep)))\n            (void) mkgold((long) rn1(10 * level_difficulty(), 10), x, y);\n    }\n",
+      "after": "                monster = PM_SHARK;\n            else if (dep > 7 && rn2(4))\n                monster = PM_PIRANHA;\n            (void) enhancement_makemon(&mons[monster], x, y, NO_MM_FLAGS);\n        }\n        if (!rn2(max(1, 140 - dep)))\n            (void) enhancement_mkobj_at(RANDOM_CLASS, x, y, FALSE);\n        else if (!rn2(max(1, 100 - dep)))\n            (void) mkgold((long) rn1(10 * level_difficulty(), 10), x, y);\n    }\n"
+    },
+    {
+      "before": "            if (!outlands_area(x - 2, y - 2, 5, 5, FALSE))\n                continue;\n            outlands_wall_box(x - 2, y - 2, 5, 5, CORR);\n            (void) makemon(&mons[PM_AMM_KAMEREL], x, y, MM_ADJACENTOK);\n            placed = TRUE;\n        }\n    }\n",
+      "after": "            if (!outlands_area(x - 2, y - 2, 5, 5, FALSE))\n                continue;\n            outlands_wall_box(x - 2, y - 2, 5, 5, CORR);\n            (void) enhancement_makemon(&mons[PM_AMM_KAMEREL], x, y, MM_ADJACENTOK);\n            placed = TRUE;\n        }\n    }\n"
+    },
+    {
+      "before": "        y = ty + rn2(25) - 12;\n        if (isok(x, y) && levl[x][y].typ == PUDDLE\n            && !outlands_protected[x][y] && !m_at(x, y) && !t_at(x, y))\n            (void) makemon(&mons[PM_HUDOR_KAMEREL], x, y, MM_ADJACENTOK);\n    }\n}\n\n",
+      "after": "        y = ty + rn2(25) - 12;\n        if (isok(x, y) && levl[x][y].typ == PUDDLE\n            && !outlands_protected[x][y] && !m_at(x, y) && !t_at(x, y))\n            (void) enhancement_makemon(&mons[PM_HUDOR_KAMEREL], x, y, MM_ADJACENTOK);\n    }\n}\n\n"
+    },
+    {
+      "before": "        y = iy + rn2(25) - 12;\n        if (isok(x, y) && levl[x][y].typ == PUDDLE && !m_at(x, y)\n            && !t_at(x, y) && !outlands_protected[x][y])\n            (void) makemon(&mons[PM_HUDOR_KAMEREL], x, y, MM_ADJACENTOK);\n    }\n    c = rnd(3) + rn2(3);\n    while (c-- > 0) {\n",
+      "after": "        y = iy + rn2(25) - 12;\n        if (isok(x, y) && levl[x][y].typ == PUDDLE && !m_at(x, y)\n            && !t_at(x, y) && !outlands_protected[x][y])\n            (void) enhancement_makemon(&mons[PM_HUDOR_KAMEREL], x, y, MM_ADJACENTOK);\n    }\n    c = rnd(3) + rn2(3);\n    while (c-- > 0) {\n"
+    },
+    {
+      "before": "        y = iy + rn2(25) - 12;\n        if (isok(x, y) && levl[x][y].typ == PUDDLE && !m_at(x, y)\n            && !t_at(x, y) && !outlands_protected[x][y])\n            (void) makemon(&mons[PM_SHARAB_KAMEREL], x, y, MM_ADJACENTOK);\n    }\n}\n\n",
+      "after": "        y = iy + rn2(25) - 12;\n        if (isok(x, y) && levl[x][y].typ == PUDDLE && !m_at(x, y)\n            && !t_at(x, y) && !outlands_protected[x][y])\n            (void) enhancement_makemon(&mons[PM_SHARAB_KAMEREL], x, y, MM_ADJACENTOK);\n    }\n}\n\n"
+    },
+    {
+      "before": "                    (void) mksobj_at(POT_BOOZE, x + i, y + j, TRUE, FALSE);\n            }\n        for (i = 1 + rn2(3); i > 0; --i)\n            (void) makemon(&mons[PM_DEEP_ONE], x + rnd(2), y + rnd(2),\n                           MM_ADJACENTOK);\n        if (left)\n            outlands_door(x + 3, y + 2);\n",
+      "after": "                    (void) mksobj_at(POT_BOOZE, x + i, y + j, TRUE, FALSE);\n            }\n        for (i = 1 + rn2(3); i > 0; --i)\n            (void) enhancement_makemon(&mons[PM_DEEP_ONE], x + rnd(2), y + rnd(2),\n                           MM_ADJACENTOK);\n        if (left)\n            outlands_door(x + 3, y + 2);\n"
+    },
+    {
+      "before": "        for (i = 1; i < 4; ++i)\n            for (j = 1; j < 4; ++j)\n                if (!rn2(3))\n                    (void) mkobj_at(rn2(2) ? WEAPON_CLASS\n                                           : rn2(2) ? TOOL_CLASS : ARMOR_CLASS,\n                                    x + i, y + j, FALSE);\n        for (i = rnd(3) + rn2(2); i > 0; --i)\n            (void) makemon(&mons[PM_PLUMACH_RILMANI], x + rnd(3), y + rnd(3),\n                           MM_ADJACENTOK);\n        switch (rn2(pathto)) {\n        case 0: outlands_door(x + 2, y); break;\n",
+      "after": "        for (i = 1; i < 4; ++i)\n            for (j = 1; j < 4; ++j)\n                if (!rn2(3))\n                    (void) enhancement_mkobj_at(rn2(2) ? WEAPON_CLASS\n                                           : rn2(2) ? TOOL_CLASS : ARMOR_CLASS,\n                                    x + i, y + j, FALSE);\n        for (i = rnd(3) + rn2(2); i > 0; --i)\n            (void) enhancement_makemon(&mons[PM_PLUMACH_RILMANI], x + rnd(3), y + rnd(3),\n                           MM_ADJACENTOK);\n        switch (rn2(pathto)) {\n        case 0: outlands_door(x + 2, y); break;\n"
+    },
+    {
+      "before": "        if (outlands_area(i, y, 4, 4, TRUE)) {\n            outlands_wall_box(i, y, 4, 4, CORR);\n            outlands_door(i + 2, y + 3);\n            (void) makemon(&mons[PM_PLUMACH_RILMANI], i + 1, y + 1,\n                           MM_ADJACENTOK);\n        }\n        if (outlands_area(i, y + 7, 4, 4, TRUE)) {\n            outlands_wall_box(i, y + 7, 4, 4, CORR);\n            outlands_door(i + 2, y + 7);\n            (void) makemon(&mons[PM_PLUMACH_RILMANI], i + 1, y + 8,\n                           MM_ADJACENTOK);\n        }\n    }\n",
+      "after": "        if (outlands_area(i, y, 4, 4, TRUE)) {\n            outlands_wall_box(i, y, 4, 4, CORR);\n            outlands_door(i + 2, y + 3);\n            (void) enhancement_makemon(&mons[PM_PLUMACH_RILMANI], i + 1, y + 1,\n                           MM_ADJACENTOK);\n        }\n        if (outlands_area(i, y + 7, 4, 4, TRUE)) {\n            outlands_wall_box(i, y + 7, 4, 4, CORR);\n            outlands_door(i + 2, y + 7);\n            (void) enhancement_makemon(&mons[PM_PLUMACH_RILMANI], i + 1, y + 8,\n                           MM_ADJACENTOK);\n        }\n    }\n"
+    },
+    {
+      "before": "    }\n    if (!montoostrong(PM_SHATTERED_ZIGGURAT_WIZARD,\n                      (level_difficulty() + u.ulevel) / 2 + 5)) {\n        (void) makemon(&mons[PM_SHATTERED_ZIGGURAT_WIZARD],\n                       x + size / 2, y + size / 2, MM_ADJACENTOK);\n        for (i = rnd(6) + rnd(4); i > 0; --i)\n            (void) makemon(&mons[PM_SHATTERED_ZIGGURAT_KNIGHT],\n                           x + size / 2, y + size / 2, MM_ADJACENTOK);\n    } else\n        for (i = rnd(4); i > 0; --i)\n            (void) makemon(&mons[PM_SHATTERED_ZIGGURAT_KNIGHT],\n                           x + size / 2, y + size / 2, MM_ADJACENTOK);\n    for (i = rn1(6, 6); i > 0; --i)\n        (void) makemon(&mons[PM_SHATTERED_ZIGGURAT_CULTIST],\n                       x + size / 2, y + size / 2, MM_ADJACENTOK);\n}\n\n",
+      "after": "    }\n    if (!montoostrong(PM_SHATTERED_ZIGGURAT_WIZARD,\n                      (level_difficulty() + u.ulevel) / 2 + 5)) {\n        (void) enhancement_makemon(&mons[PM_SHATTERED_ZIGGURAT_WIZARD],\n                       x + size / 2, y + size / 2, MM_ADJACENTOK);\n        for (i = rnd(6) + rnd(4); i > 0; --i)\n            (void) enhancement_makemon(&mons[PM_SHATTERED_ZIGGURAT_KNIGHT],\n                           x + size / 2, y + size / 2, MM_ADJACENTOK);\n    } else\n        for (i = rnd(4); i > 0; --i)\n            (void) enhancement_makemon(&mons[PM_SHATTERED_ZIGGURAT_KNIGHT],\n                           x + size / 2, y + size / 2, MM_ADJACENTOK);\n    for (i = rn1(6, 6); i > 0; --i)\n        (void) enhancement_makemon(&mons[PM_SHATTERED_ZIGGURAT_CULTIST],\n                       x + size / 2, y + size / 2, MM_ADJACENTOK);\n}\n\n"
+    }
+  ],
+  "src/mondata.c": [
+    {
+      "before": "boolean\nmith_displaced(struct monst *mon)\n{\n    return mon->data == &mons[PM_WRAITHWORM]\n           || mon->data == &mons[PM_FIRST_WRAITHWORM]\n           || mon->data == &mons[PM_ASPECT_OF_THE_SILENCE]\n           || mon->data == &mons[PM_SHARAB_KAMEREL]\n",
+      "after": "boolean\nmith_displaced(struct monst *mon)\n{\n    return enhancement_mon_confers(mon, DISPLACED)\n           || mon->data == &mons[PM_WRAITHWORM]\n           || mon->data == &mons[PM_FIRST_WRAITHWORM]\n           || mon->data == &mons[PM_ASPECT_OF_THE_SILENCE]\n           || mon->data == &mons[PM_SHARAB_KAMEREL]\n"
+    },
+    {
+      "before": "    for (; o; o = o->nobj)\n        if (((o->owornmask & slotmask) != 0L\n             && (objects[o->otyp].oc_oprop == ANTIMAGIC\n                 || Is_chromatic_armor(o)))\n            || (o->oartifact && defends_when_carried(AD_MAGM, o)))\n            return TRUE;\n",
+      "after": "    for (; o; o = o->nobj)\n        if (((o->owornmask & slotmask) != 0L\n             && (objects[o->otyp].oc_oprop == ANTIMAGIC\n                 || enhancement_confers(o, ANTIMAGIC)\n                 || Is_chromatic_armor(o)))\n            || (o->oartifact && defends_when_carried(AD_MAGM, o)))\n            return TRUE;\n"
+    },
+    {
+      "before": "{\n    struct monst *mtmp;\n\n    if (seenres == M_SEEN_NOTHING || u.uswallow)\n        return;\n\n",
+      "after": "{\n    struct monst *mtmp;\n\n    if (seenres & M_SEEN_FIRE) enhancement_observe_worn(FIRE_RES);\n    if (seenres & M_SEEN_COLD) enhancement_observe_worn(COLD_RES);\n    if (seenres & M_SEEN_ELEC) enhancement_observe_worn(SHOCK_RES);\n    if (seenres & M_SEEN_POISON) enhancement_observe_worn(POISON_RES);\n    if (seenres == M_SEEN_NOTHING || u.uswallow)\n        return;\n\n"
+    }
+  ],
+  "src/monmove.c": [
+    {
+      "before": "        healmon(mon, 10, 0);\n    if (!(mon->data->mflags3 & M3_NOREGEN)\n        && (svm.moves % 20 == 0 || regenerates(mon->data)\n            || ((mon->data->mflags3 & M3_BLINKER) && !mon->mflee)))\n        healmon(mon, 1, 0);\n    if (mon->mspec_used)\n",
+      "after": "        healmon(mon, 10, 0);\n    if (!(mon->data->mflags3 & M3_NOREGEN)\n        && (svm.moves % 20 == 0 || regenerates(mon->data)\n            || enhancement_mon_confers(mon, REGENERATION)\n            || ((mon->data->mflags3 & M3_BLINKER) && !mon->mflee)))\n        healmon(mon, 1, 0);\n    if (mon->mspec_used)\n"
+    }
+  ],
+  "src/mplayer.c": [
+    {
+      "before": "        if (tryct > 50)\n            return;\n\n        (void) mk_mplayer(&mons[pm], (coordxy) x, (coordxy) y, special);\n        num--;\n    }\n}\n",
+      "after": "        if (tryct > 50)\n            return;\n\n        {\n            enum enhancement_context old_context =\n                enhancement_context_set(ENH_CONTEXT_MONSTER);\n            (void) mk_mplayer(&mons[pm], (coordxy) x, (coordxy) y, special);\n            (void) enhancement_context_set(old_context);\n        }\n        num--;\n    }\n}\n"
+    }
+  ],
+  "src/mthrowu.c": [
+    {
+      "before": "            }\n            if (!is_acid)\n                dam = mith_physical_damage(&gy.youmonst, obj, AT_WEAP, dam);\n            dam += enhancement_weapon_effects(obj, launcher, &gy.youmonst, dam, use);\n            if (obj && (obj->oclass == WEAPON_CLASS || is_weptool(obj)))\n                dam += mith_weapon_effects(obj, &gy.youmonst, dam);\n            losehp(dam, knm, kprefix); /* physical missile or acid damage */\n            exercise(A_STR, FALSE);\n        }\n",
+      "after": "            }\n            if (!is_acid)\n                dam = mith_physical_damage(&gy.youmonst, obj, AT_WEAP, dam);\n            if (obj && (obj->oclass == WEAPON_CLASS || is_weptool(obj)))\n                dam += mith_weapon_effects(obj, &gy.youmonst, dam);\n\n            dam += enhancement_weapon_effects(obj, launcher, &gy.youmonst, dam, use);\n            losehp(dam, knm, kprefix); /* physical missile or acid damage */\n            exercise(A_STR, FALSE);\n        }\n"
+    },
+    {
+      "before": "\n        /* might already be dead (if petrified) */\n        if (!harmless && !DEADMONSTER(mtmp)) {\n            damage += enhancement_weapon_effects(otmp, launcher, mtmp, damage, use);\n            if (otmp->oclass == WEAPON_CLASS || is_weptool(otmp))\n                damage += mith_weapon_effects(otmp, mtmp, damage);\n            mtmp->mhp -= damage;\n            if (DEADMONSTER(mtmp)) {\n                if (vis || (verbose && !gm.mtarget))\n",
+      "after": "\n        /* might already be dead (if petrified) */\n        if (!harmless && !DEADMONSTER(mtmp)) {\n            if (otmp->oclass == WEAPON_CLASS || is_weptool(otmp))\n                damage += mith_weapon_effects(otmp, mtmp, damage);\n\n            damage += enhancement_weapon_effects(otmp, launcher, mtmp, damage, use);\n            mtmp->mhp -= damage;\n            if (DEADMONSTER(mtmp)) {\n                if (vis || (verbose && !gm.mtarget))\n"
+    },
+    {
+      "before": "            observe_object(singleobj);\n\n        mtmp = m_at(gb.bhitpos.x, gb.bhitpos.y);\n        if (mtmp && shade_miss(mon, mtmp, singleobj, TRUE, TRUE)) {\n            /* if mtmp is a shade and missile passes harmlessly through it,\n               give message and skip it in order to keep going */\n            mtmp = (struct monst *) 0;\n",
+      "after": "            observe_object(singleobj);\n\n        mtmp = m_at(gb.bhitpos.x, gb.bhitpos.y);\n        if (mtmp && !enhancement_elemental_contact(singleobj, enh_launcher, enh_use)\n            && shade_miss(mon, mtmp, singleobj, TRUE, TRUE)) {\n            /* if mtmp is a shade and missile passes harmlessly through it,\n               give message and skip it in order to keep going */\n            mtmp = (struct monst *) 0;\n"
+    }
+  ],
+  "src/muse.c": [
+    {
+      "before": "{\n    struct obj *orefl = which_armor(mon, W_ARMS);\n\n    if (step10b_innate_reflection(mon->data)) {\n        if (str)\n            pline(str, s_suffix(mon_nam(mon)), \"body\");\n",
+      "after": "{\n    struct obj *orefl = which_armor(mon, W_ARMS);\n\n    if (enhancement_mon_confers(mon, REFLECTING)) {\n        if (str)\n            pline(str, s_suffix(mon_nam(mon)), \"armor\");\n        return TRUE;\n    }\n\n    if (step10b_innate_reflection(mon->data)) {\n        if (str)\n            pline(str, s_suffix(mon_nam(mon)), \"body\");\n"
+    },
+    {
+      "before": "boolean\nureflects(const char *fmt, const char *str)\n{\n    /* Check from outermost to innermost objects */\n    if (EReflecting & W_ARMS) {\n        if (fmt && str) {\n            pline(fmt, str, \"shield\");\n            makeknown(SHIELD_OF_REFLECTION);\n        }\n        return TRUE;\n    } else if (EReflecting & W_WEP) {\n",
+      "after": "boolean\nureflects(const char *fmt, const char *str)\n{\n    if (fmt && str && EReflecting)\n        enhancement_observe_worn(REFLECTING);\n    /* Check from outermost to innermost objects */\n    if (EReflecting & W_ARMS) {\n        if (fmt && str) {\n            pline(fmt, str, \"shield\");\n            if (uarms && uarms->otyp == SHIELD_OF_REFLECTION)\n                makeknown(SHIELD_OF_REFLECTION);\n            else if (uarms && enhancement_confers(uarms, REFLECTING))\n                uarms->o_enh_known |= OEP_REFLECTION;\n        }\n        return TRUE;\n    } else if (EReflecting & W_WEP) {\n"
+    },
+    {
+      "before": "    } else if (EReflecting & W_ARM) {\n        if (fmt && str)\n            pline(fmt, str, uskin ? \"luster\" : \"armor\");\n        return TRUE;\n    } else if (gy.youmonst.data == &mons[PM_SILVER_DRAGON]\n               || gy.youmonst.data == &mons[PM_CAVE_CHROMATIC_DRAGON]) {\n",
+      "after": "    } else if (EReflecting & W_ARM) {\n        if (fmt && str)\n            pline(fmt, str, uskin ? \"luster\" : \"armor\");\n        return TRUE;\n    } else if (EReflecting & W_ARMOR) {\n        if (fmt && str)\n            pline(fmt, str, \"armor\");\n        return TRUE;\n    } else if (gy.youmonst.data == &mons[PM_SILVER_DRAGON]\n               || gy.youmonst.data == &mons[PM_CAVE_CHROMATIC_DRAGON]) {\n"
+    }
+  ],
+  "src/objnam.c": [
+    {
+      "before": "            Snprintf(buf, (size_t) (buf_end - buf + 1), \"%s\", named);\n            ConcUpdate(buf);\n        }\n    }\n    if (pluralize) {\n        obufp = makeplural(buf);\n",
+      "after": "            Snprintf(buf, (size_t) (buf_end - buf + 1), \"%s\", named);\n            ConcUpdate(buf);\n        }\n        enhancement_suffix(obj, iflags.override_ID, prefix, sizeof prefix);\n        if (*prefix)\n            Concat(buf, 0, prefix);\n    }\n    if (pluralize) {\n        obufp = makeplural(buf);\n"
+    }
+  ],
+  "src/shknam.c": [
+    {
+      "before": "        }\n    }\n    if (list) {\n        replacement = mksobj_at(list[rn2(n)], x, y, TRUE, TRUE);\n        if (replacement) {\n            delobj(otmp);\n            otmp = replacement;\n",
+      "after": "        }\n    }\n    if (list) {\n        replacement = enhancement_mksobj_at(list[rn2(n)], x, y, TRUE, TRUE);\n        if (replacement) {\n            delobj(otmp);\n            otmp = replacement;\n"
+    },
+    {
+      "before": "        if (atype == VEGETARIAN_CLASS)\n            mkveggy_at(sx, sy);\n        else if (atype < 0)\n            stock = mksobj_at(-atype, sx, sy, TRUE, TRUE);\n        else\n            stock = mkobj_at(atype, sx, sy, TRUE);\n        mith_shop_stock(SHOPBASE + (int) (shp - shtypes), stock, sx, sy);\n    }\n}\n",
+      "after": "        if (atype == VEGETARIAN_CLASS)\n            mkveggy_at(sx, sy);\n        else if (atype < 0)\n            stock = enhancement_mksobj_at(-atype, sx, sy, TRUE, TRUE);\n        else\n            stock = enhancement_mkobj_at(atype, sx, sy, TRUE);\n        mith_shop_stock(SHOPBASE + (int) (shp - shtypes), stock, sx, sy);\n    }\n}\n"
+    }
+  ],
+  "src/uhitm.c": [
+    {
+      "before": "        hmd.dmg = mith_physical_damage(mon, (struct obj *) 0, AT_WEAP,\n                                        hmd.dmg);\n\n    if (!hmd.already_killed && hmd.dmg > 0)\n        enhancement_observe_hit(hmd.enhance_obj, enh_launcher, mon, enh_use);\n    if (!hmd.already_killed)\n        hmd.dmg += enhancement_weapon_effects(hmd.enhance_obj\n                          ? hmd.enhance_obj : &enhancement_snapshot,\n                          enh_launcher, mon, hmd.dmg, enh_use);\n    if (hmd.ispoisoned)\n        hmon_hitmon_poison(&hmd, mon, obj);\n    if (hmd.use_weapon_skill && !hmd.already_killed)\n        hmd.dmg += mith_weapon_effects(obj, mon, hmd.dmg);\n\n    if (hmd.dmg < 1) {\n        boolean mon_is_shade = (shadelike(mon->data));\n",
+      "after": "        hmd.dmg = mith_physical_damage(mon, (struct obj *) 0, AT_WEAP,\n                                        hmd.dmg);\n\n    if (!hmd.already_killed)\n        enhancement_observe_hit(hmd.enhance_obj, enh_launcher, mon, enh_use);\n    if (hmd.ispoisoned)\n        hmon_hitmon_poison(&hmd, mon, obj);\n    if (hmd.use_weapon_skill && !hmd.already_killed)\n        hmd.dmg += mith_weapon_effects(obj, mon, hmd.dmg);\n\n    if (!hmd.already_killed)\n        hmd.dmg += enhancement_weapon_effects(hmd.enhance_obj\n                          ? hmd.enhance_obj : &enhancement_snapshot,\n                          enh_launcher, mon, hmd.dmg, enh_use);\n\n    if (hmd.dmg < 1) {\n        boolean mon_is_shade = (shadelike(mon->data));\n"
+    },
+    {
+      "before": "    boolean youagr = (magr == &gy.youmonst), youdef = (mdef == &gy.youmonst);\n\n    /* we're using dmgval() for zero/not-zero, not for actual damage amount */\n    if (!shadelike(mdef->data) || (obj && dmgval(obj, mdef)))\n        return FALSE;\n\n    if (verbose\n",
+      "after": "    boolean youagr = (magr == &gy.youmonst), youdef = (mdef == &gy.youmonst);\n\n    /* we're using dmgval() for zero/not-zero, not for actual damage amount */\n    if (!shadelike(mdef->data)\n        || enhancement_elemental_contact(obj, (struct obj *) 0, ENHANCE_MELEE)\n        || (obj && dmgval(obj, mdef)))\n        return FALSE;\n\n    if (verbose\n"
+    }
+  ],
+  "src/worn.c": [
+    {
+      "before": "    }\n\n    for (otmp = mon->minvent; otmp; otmp = otmp->nobj)\n        if (otmp->owornmask && objects[otmp->otyp].oc_oprop == FAST)\n            break;\n    if (otmp) /* speed boots */\n        mon->mspeed = MFAST;\n",
+      "after": "    }\n\n    for (otmp = mon->minvent; otmp; otmp = otmp->nobj)\n        if (otmp->owornmask && (objects[otmp->otyp].oc_oprop == FAST\n                               || enhancement_confers(otmp, FAST)))\n            break;\n    if (otmp) /* speed boots */\n        mon->mspeed = MFAST;\n"
+    },
+    {
+      "before": "    int which = (int) objects[obj->otyp].oc_oprop,\n        altwhich = altprop(obj),\n        chromwhich = Is_chromatic_armor(obj) ? FIRE_RES : 0;\n\n    unseen = !canseemon(mon);\n    if (chromwhich)\n        which = chromwhich++;\n    if (!which && !altwhich)\n        goto maybe_blocks;\n\n again:\n    if (on) {\n",
+      "after": "    int which = (int) objects[obj->otyp].oc_oprop,\n        altwhich = altprop(obj),\n        chromwhich = Is_chromatic_armor(obj) ? FIRE_RES : 0;\n    int enh_index = 0;\n\n    unseen = !canseemon(mon);\n    if (chromwhich)\n        which = chromwhich++;\n    if (!which && !altwhich)\n        goto enhancement_properties;\n\n again:\n    if (on) {\n"
+    },
+    {
+      "before": "            for (otmp = mon->minvent; otmp; otmp = otmp->nobj) {\n                if (otmp == obj || !otmp->owornmask)\n                    continue;\n                if ((int) objects[otmp->otyp].oc_oprop == which)\n                    break;\n                /* check whether 'otmp' confers target property as an extra\n                   one rather than as the one specified for it in objects[] */\n",
+      "after": "            for (otmp = mon->minvent; otmp; otmp = otmp->nobj) {\n                if (otmp == obj || !otmp->owornmask)\n                    continue;\n                if ((int) objects[otmp->otyp].oc_oprop == which\n                    || enhancement_confers(otmp, which))\n                    break;\n                /* check whether 'otmp' confers target property as an extra\n                   one rather than as the one specified for it in objects[] */\n"
+    },
+    {
+      "before": "       resistance to the hero so do likewise for monster who wears one */\n    if (altwhich && which != altwhich) {\n        which = altwhich;\n        goto again;\n    }\n    if (chromwhich && chromwhich <= STONE_RES) {\n",
+      "after": "       resistance to the hero so do likewise for monster who wears one */\n    if (altwhich && which != altwhich) {\n        which = altwhich;\n        altwhich = 0;\n        goto again;\n    }\n    if (chromwhich && chromwhich <= STONE_RES) {\n"
+    },
+    {
+      "before": "        goto again;\n    }\n\n maybe_blocks:\n    /* obj->owornmask has been cleared by this point, so we can't use it.\n       However, since monsters don't wield armor, we don't have to guard\n       against that and can get away with a blanket worn-mask value. */\n",
+      "after": "        goto again;\n    }\n\n enhancement_properties:\n    while (enh_index < SIZE(enhancement_catalog)) {\n        int prop = enhancement_catalog[enh_index++].native_property;\n        if (prop && enhancement_confers(obj, prop)) {\n            which = prop;\n            goto again;\n        }\n    }\n\n    /* obj->owornmask has been cleared by this point, so we can't use it.\n       However, since monsters don't wield armor, we don't have to guard\n       against that and can get away with a blanket worn-mask value. */\n"
+    }
+  ]
+}

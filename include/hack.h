@@ -1187,6 +1187,7 @@ typedef uint32_t mmflags_nht;     /* makemon MM_ flags */
                                      * mesg for ^G */
 #define MM_IGNORELAVA   0x00080000L /* ignore lava when positioning */
 #define MM_MINVIS       0x00100000L /* for ^G/create_particular */
+#define MM_NATURAL      0x00200000L /* opt in original natural equipment */
 /* if more MM_ flag masks are added, skip or renumber the GP_ one(s) */
 #define GP_ALLOW_XY     0x00200000L /* [actually used by enexto() to decide
                                      * whether to make an extra call to

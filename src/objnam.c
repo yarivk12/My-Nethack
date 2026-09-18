@@ -995,6 +995,9 @@ xname_flags(
             Snprintf(buf, (size_t) (buf_end - buf + 1), "%s", named);
             ConcUpdate(buf);
         }
+        enhancement_suffix(obj, iflags.override_ID, prefix, sizeof prefix);
+        if (*prefix)
+            Concat(buf, 0, prefix);
     }
     if (pluralize) {
         obufp = makeplural(buf);

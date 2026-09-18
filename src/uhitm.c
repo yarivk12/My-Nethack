@@ -1904,16 +1904,17 @@ hmon_hitmon(
         hmd.dmg = mith_physical_damage(mon, (struct obj *) 0, AT_WEAP,
                                         hmd.dmg);
 
-    if (!hmd.already_killed && hmd.dmg > 0)
-        enhancement_observe_hit(hmd.enhance_obj, enh_launcher, mon, enh_use);
     if (!hmd.already_killed)
-        hmd.dmg += enhancement_weapon_effects(hmd.enhance_obj
-                          ? hmd.enhance_obj : &enhancement_snapshot,
-                          enh_launcher, mon, hmd.dmg, enh_use);
+        enhancement_observe_hit(hmd.enhance_obj, enh_launcher, mon, enh_use);
     if (hmd.ispoisoned)
         hmon_hitmon_poison(&hmd, mon, obj);
     if (hmd.use_weapon_skill && !hmd.already_killed)
         hmd.dmg += mith_weapon_effects(obj, mon, hmd.dmg);
+
+    if (!hmd.already_killed)
+        hmd.dmg += enhancement_weapon_effects(hmd.enhance_obj
+                          ? hmd.enhance_obj : &enhancement_snapshot,
+                          enh_launcher, mon, hmd.dmg, enh_use);
 
     if (hmd.dmg < 1) {
         boolean mon_is_shade = (shadelike(mon->data));
@@ -2133,7 +2134,9 @@ shade_miss(
     boolean youagr = (magr == &gy.youmonst), youdef = (mdef == &gy.youmonst);
 
     /* we're using dmgval() for zero/not-zero, not for actual damage amount */
-    if (!shadelike(mdef->data) || (obj && dmgval(obj, mdef)))
+    if (!shadelike(mdef->data)
+        || enhancement_elemental_contact(obj, (struct obj *) 0, ENHANCE_MELEE)
+        || (obj && dmgval(obj, mdef)))
         return FALSE;
 
     if (verbose

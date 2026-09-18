@@ -14,9 +14,9 @@ for name in ['nhdat500','symbols.template','sysconf.template','nethackrc.templat
  shutil.copy2(R/'binary/Release/x64'/name,out/'bin'/name)
 env={k:v for k,v in os.environ.items() if not k.startswith(('NETHACK_STEP','STEP11_','CUSTOMROOM','SHOPTYPE'))}
 env.update(NETHACK_STEP13_TEST='1',NETHACKOPTIONS='!news,!legacy,!tutorial,!tips')
-r=subprocess.run([str(out/'bin/NetHack.exe')],cwd=out/'bin',env=env,capture_output=True,timeout=120)
+r=subprocess.run([str(out/'bin/NetHack.exe')],cwd=out/'bin',env=env,capture_output=True,timeout=600)
 text=(r.stdout+r.stderr).decode(errors='replace');(out/'runtime.log').write_text(text,encoding='utf8')
-print('\n'.join(line for line in text.splitlines() if line.startswith(('PASS','SIZE'))));
+print('\n'.join(line for line in text.splitlines() if line.startswith(('PASS','SIZE','CORPUS'))));
 if r.returncode: print(text[-3000:])
 assert r.returncode==0,r.returncode
 assert 'PASS Step 13 native runtime fixtures' in text

@@ -2813,6 +2813,12 @@ mon_reflects(struct monst *mon, const char *str)
 {
     struct obj *orefl = which_armor(mon, W_ARMS);
 
+    if (enhancement_mon_confers(mon, REFLECTING)) {
+        if (str)
+            pline(str, s_suffix(mon_nam(mon)), "armor");
+        return TRUE;
+    }
+
     if (step10b_innate_reflection(mon->data)) {
         if (str)
             pline(str, s_suffix(mon_nam(mon)), "body");
@@ -2864,11 +2870,16 @@ mon_reflects(struct monst *mon, const char *str)
 boolean
 ureflects(const char *fmt, const char *str)
 {
+    if (fmt && str && EReflecting)
+        enhancement_observe_worn(REFLECTING);
     /* Check from outermost to innermost objects */
     if (EReflecting & W_ARMS) {
         if (fmt && str) {
             pline(fmt, str, "shield");
-            makeknown(SHIELD_OF_REFLECTION);
+            if (uarms && uarms->otyp == SHIELD_OF_REFLECTION)
+                makeknown(SHIELD_OF_REFLECTION);
+            else if (uarms && enhancement_confers(uarms, REFLECTING))
+                uarms->o_enh_known |= OEP_REFLECTION;
         }
         return TRUE;
     } else if (EReflecting & W_WEP) {
@@ -2885,6 +2896,10 @@ ureflects(const char *fmt, const char *str)
     } else if (EReflecting & W_ARM) {
         if (fmt && str)
             pline(fmt, str, uskin ? "luster" : "armor");
+        return TRUE;
+    } else if (EReflecting & W_ARMOR) {
+        if (fmt && str)
+            pline(fmt, str, "armor");
         return TRUE;
     } else if (gy.youmonst.data == &mons[PM_SILVER_DRAGON]
                || gy.youmonst.data == &mons[PM_CAVE_CHROMATIC_DRAGON]) {

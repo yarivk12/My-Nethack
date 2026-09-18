@@ -347,7 +347,12 @@ create_mplayers(int num, boolean special)
         if (tryct > 50)
             return;
 
-        (void) mk_mplayer(&mons[pm], (coordxy) x, (coordxy) y, special);
+        {
+            enum enhancement_context old_context =
+                enhancement_context_set(ENH_CONTEXT_MONSTER);
+            (void) mk_mplayer(&mons[pm], (coordxy) x, (coordxy) y, special);
+            (void) enhancement_context_set(old_context);
+        }
         num--;
     }
 }

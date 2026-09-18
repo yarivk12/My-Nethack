@@ -314,6 +314,7 @@ mon_regen(struct monst *mon, boolean digest_meal)
         healmon(mon, 10, 0);
     if (!(mon->data->mflags3 & M3_NOREGEN)
         && (svm.moves % 20 == 0 || regenerates(mon->data)
+            || enhancement_mon_confers(mon, REGENERATION)
             || ((mon->data->mflags3 & M3_BLINKER) && !mon->mflee)))
         healmon(mon, 1, 0);
     if (mon->mspec_used)

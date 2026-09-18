@@ -155,9 +155,10 @@ thitu_enhanced(
             }
             if (!is_acid)
                 dam = mith_physical_damage(&gy.youmonst, obj, AT_WEAP, dam);
-            dam += enhancement_weapon_effects(obj, launcher, &gy.youmonst, dam, use);
             if (obj && (obj->oclass == WEAPON_CLASS || is_weptool(obj)))
                 dam += mith_weapon_effects(obj, &gy.youmonst, dam);
+
+            dam += enhancement_weapon_effects(obj, launcher, &gy.youmonst, dam, use);
             losehp(dam, knm, kprefix); /* physical missile or acid damage */
             exercise(A_STR, FALSE);
         }
@@ -508,9 +509,10 @@ ohitmon_enhanced(
 
         /* might already be dead (if petrified) */
         if (!harmless && !DEADMONSTER(mtmp)) {
-            damage += enhancement_weapon_effects(otmp, launcher, mtmp, damage, use);
             if (otmp->oclass == WEAPON_CLASS || is_weptool(otmp))
                 damage += mith_weapon_effects(otmp, mtmp, damage);
+
+            damage += enhancement_weapon_effects(otmp, launcher, mtmp, damage, use);
             mtmp->mhp -= damage;
             if (DEADMONSTER(mtmp)) {
                 if (vis || (verbose && !gm.mtarget))
@@ -747,7 +749,8 @@ m_throw(
             observe_object(singleobj);
 
         mtmp = m_at(gb.bhitpos.x, gb.bhitpos.y);
-        if (mtmp && shade_miss(mon, mtmp, singleobj, TRUE, TRUE)) {
+        if (mtmp && !enhancement_elemental_contact(singleobj, enh_launcher, enh_use)
+            && shade_miss(mon, mtmp, singleobj, TRUE, TRUE)) {
             /* if mtmp is a shade and missile passes harmlessly through it,
                give message and skip it in order to keep going */
             mtmp = (struct monst *) 0;

@@ -356,10 +356,10 @@ library_density(int dl)
 staticfn struct obj *
 library_item(int roll, int subroll)
 {
-    if (roll < 25) return mkobj(SCROLL_CLASS, FALSE);
-    if (roll < 65) return mkobj(SPBOOK_CLASS, FALSE);
+    if (roll < 25) return enhancement_mkobj(SCROLL_CLASS, FALSE);
+    if (roll < 65) return enhancement_mkobj(SPBOOK_CLASS, FALSE);
     if (roll < 85)
-        return mkobj(subroll < 33 ? WAND_CLASS
+        return enhancement_mkobj(subroll < 33 ? WAND_CLASS
                      : subroll < 66 ? RING_CLASS : AMULET_CLASS, FALSE);
     return mksobj(roll < 95
                   ? (subroll < 50 ? MAGIC_MARKER : MAGIC_WHISTLE)
@@ -381,7 +381,7 @@ library_monster(int theme, int x, int y)
     if (MON_AT(x, y)) return;
     pm = library_species(theme, theme == 1 ? 0 : LIBRARY_RN2(2));
     if (pm == NON_PM) return;
-    mon = makemon(&mons[pm], x, y, MM_ASLEEP | MM_NOGRP);
+    mon = enhancement_makemon(&mons[pm], x, y, MM_ASLEEP | MM_NOGRP);
     if (mon) mon->msleeping = 1;
 }
 
@@ -453,7 +453,7 @@ fill_library(struct mkroom *room)
     for (x = room->lx; x <= room->hx; ++x)
         for (y = room->ly; y <= room->hy; ++y)
             if (library_floor(room, x, y) && !sobj_at(CHEST, x, y) && !LIBRARY_RN2(20))
-                (void) mkobj_at(LIBRARY_RN2(2) ? SCROLL_CLASS : SPBOOK_CLASS, x, y, FALSE);
+                (void) enhancement_mkobj_at(LIBRARY_RN2(2) ? SCROLL_CLASS : SPBOOK_CLASS, x, y, FALSE);
 }
 
 #ifdef STEP11_TEST
@@ -500,7 +500,7 @@ mk_zoo_thronemon(coordxy x, coordxy y, boolean giantcourt)
         : (i > 5) ? PM_ELVEN_MONARCH
         : (i > 2) ? PM_DWARF_RULER
         : PM_GNOME_RULER;
-    struct monst *mon = makemon(&mons[pm], x, y, NO_MM_FLAGS);
+    struct monst *mon = enhancement_makemon(&mons[pm], x, y, NO_MM_FLAGS);
 
     if (mon) {
         mon->msleeping = 1;
@@ -604,13 +604,13 @@ fill_zoo(struct mkroom *sroom)
             if (type == COURT && IS_THRONE(levl[sx][sy].typ))
                 continue;
             /* Do not turn an exhausted imported population into random
-             * monsters via makemon(NULL). Vanilla filling stays unchanged. */
+             * monsters via enhancement_makemon(NULL). Vanilla filling stays unchanged. */
             if (giantcourt || realzoo || dragonlair) {
                 struct permonst *pm = giantcourt ? mkclass(S_GIANT, 0)
                     : dragonlair ? mkclass(S_DRAGON, 0) : realzoomon();
-                mon = pm ? makemon(pm, sx, sy, MM_ASLEEP | MM_NOGRP) : NULL;
+                mon = pm ? enhancement_makemon(pm, sx, sy, MM_ASLEEP | MM_NOGRP) : NULL;
             } else
-            mon = makemon((type == COURT)
+            mon = enhancement_makemon((type == COURT)
                            ? courtmon()
                            : (type == BARRACKS)
                               ? squadmon()
@@ -692,14 +692,14 @@ fill_zoo(struct mkroom *sroom)
                     if (sobj) {
                         for (i = rn2(5); i; i--)
                             (void) add_to_container(
-                                sobj, mkobj(RANDOM_CLASS, FALSE));
+                                sobj, enhancement_mkobj(RANDOM_CLASS, FALSE));
                         sobj->owt = weight(sobj);
                     }
                 }
                 break;
             case ANTHOLE:
                 if (!rn2(3))
-                    (void) mkobj_at(FOOD_CLASS, sx, sy, FALSE);
+                    (void) enhancement_mkobj_at(FOOD_CLASS, sx, sy, FALSE);
                 break;
             }
         }
@@ -755,7 +755,7 @@ mkundead(
             && (!revive_corpses
                 || !(otmp = sobj_at(CORPSE, cc.x, cc.y))
                 || !revive(otmp, FALSE)))
-            (void) makemon(mdat, cc.x, cc.y, mm_flags);
+            (void) enhancement_makemon(mdat, cc.x, cc.y, mm_flags);
     }
     svl.level.flags.graveyard = TRUE; /* reduced chance for undead corpse */
 }
@@ -842,7 +842,7 @@ mkswamp(void) /* Michiel Huisjes & Fred de Wilde */
                         levl[sx][sy].typ = POOL;
                         if (!eelct || !rn2(4)) {
                             /* mkclass() won't do, as we might get kraken */
-                            (void) makemon(rn2(5)
+                            (void) enhancement_makemon(rn2(5)
                                               ? &mons[PM_GIANT_EEL]
                                               : rn2(2)
                                                  ? &mons[PM_PIRANHA]
@@ -851,7 +851,7 @@ mkswamp(void) /* Michiel Huisjes & Fred de Wilde */
                             eelct++;
                         }
                     } else if (!rn2(4)) /* swamps tend to be moldy */
-                        (void) makemon(mkclass(S_FUNGUS, 0), sx, sy,
+                        (void) enhancement_makemon(mkclass(S_FUNGUS, 0), sx, sy,
                                        NO_MM_FLAGS);
                 }
             }
@@ -1561,10 +1561,10 @@ neuliquify(coordxy x, coordxy y, boolean edge)
                 monster = PM_SHARK;
             else if (dep > 7 && rn2(4))
                 monster = PM_PIRANHA;
-            (void) makemon(&mons[monster], x, y, NO_MM_FLAGS);
+            (void) enhancement_makemon(&mons[monster], x, y, NO_MM_FLAGS);
         }
         if (!rn2(max(1, 140 - dep)))
-            (void) mkobj_at(RANDOM_CLASS, x, y, FALSE);
+            (void) enhancement_mkobj_at(RANDOM_CLASS, x, y, FALSE);
         else if (!rn2(max(1, 100 - dep)))
             (void) mkgold((long) rn1(10 * level_difficulty(), 10), x, y);
     }
@@ -1744,7 +1744,7 @@ mkkamereltowers(void)
             if (!outlands_area(x - 2, y - 2, 5, 5, FALSE))
                 continue;
             outlands_wall_box(x - 2, y - 2, 5, 5, CORR);
-            (void) makemon(&mons[PM_AMM_KAMEREL], x, y, MM_ADJACENTOK);
+            (void) enhancement_makemon(&mons[PM_AMM_KAMEREL], x, y, MM_ADJACENTOK);
             placed = TRUE;
         }
     }
@@ -1754,7 +1754,7 @@ mkkamereltowers(void)
         y = ty + rn2(25) - 12;
         if (isok(x, y) && levl[x][y].typ == PUDDLE
             && !outlands_protected[x][y] && !m_at(x, y) && !t_at(x, y))
-            (void) makemon(&mons[PM_HUDOR_KAMEREL], x, y, MM_ADJACENTOK);
+            (void) enhancement_makemon(&mons[PM_HUDOR_KAMEREL], x, y, MM_ADJACENTOK);
     }
 }
 
@@ -1804,7 +1804,7 @@ mkminorspire(void)
         y = iy + rn2(25) - 12;
         if (isok(x, y) && levl[x][y].typ == PUDDLE && !m_at(x, y)
             && !t_at(x, y) && !outlands_protected[x][y])
-            (void) makemon(&mons[PM_HUDOR_KAMEREL], x, y, MM_ADJACENTOK);
+            (void) enhancement_makemon(&mons[PM_HUDOR_KAMEREL], x, y, MM_ADJACENTOK);
     }
     c = rnd(3) + rn2(3);
     while (c-- > 0) {
@@ -1812,7 +1812,7 @@ mkminorspire(void)
         y = iy + rn2(25) - 12;
         if (isok(x, y) && levl[x][y].typ == PUDDLE && !m_at(x, y)
             && !t_at(x, y) && !outlands_protected[x][y])
-            (void) makemon(&mons[PM_SHARAB_KAMEREL], x, y, MM_ADJACENTOK);
+            (void) enhancement_makemon(&mons[PM_SHARAB_KAMEREL], x, y, MM_ADJACENTOK);
     }
 }
 
@@ -1852,7 +1852,7 @@ mkfishinghut(boolean left)
                     (void) mksobj_at(POT_BOOZE, x + i, y + j, TRUE, FALSE);
             }
         for (i = 1 + rn2(3); i > 0; --i)
-            (void) makemon(&mons[PM_DEEP_ONE], x + rnd(2), y + rnd(2),
+            (void) enhancement_makemon(&mons[PM_DEEP_ONE], x + rnd(2), y + rnd(2),
                            MM_ADJACENTOK);
         if (left)
             outlands_door(x + 3, y + 2);
@@ -1949,11 +1949,11 @@ mkpluhomestead(void)
         for (i = 1; i < 4; ++i)
             for (j = 1; j < 4; ++j)
                 if (!rn2(3))
-                    (void) mkobj_at(rn2(2) ? WEAPON_CLASS
+                    (void) enhancement_mkobj_at(rn2(2) ? WEAPON_CLASS
                                            : rn2(2) ? TOOL_CLASS : ARMOR_CLASS,
                                     x + i, y + j, FALSE);
         for (i = rnd(3) + rn2(2); i > 0; --i)
-            (void) makemon(&mons[PM_PLUMACH_RILMANI], x + rnd(3), y + rnd(3),
+            (void) enhancement_makemon(&mons[PM_PLUMACH_RILMANI], x + rnd(3), y + rnd(3),
                            MM_ADJACENTOK);
         switch (rn2(pathto)) {
         case 0: outlands_door(x + 2, y); break;
@@ -2025,13 +2025,13 @@ mkpluvillage(void)
         if (outlands_area(i, y, 4, 4, TRUE)) {
             outlands_wall_box(i, y, 4, 4, CORR);
             outlands_door(i + 2, y + 3);
-            (void) makemon(&mons[PM_PLUMACH_RILMANI], i + 1, y + 1,
+            (void) enhancement_makemon(&mons[PM_PLUMACH_RILMANI], i + 1, y + 1,
                            MM_ADJACENTOK);
         }
         if (outlands_area(i, y + 7, 4, 4, TRUE)) {
             outlands_wall_box(i, y + 7, 4, 4, CORR);
             outlands_door(i + 2, y + 7);
-            (void) makemon(&mons[PM_PLUMACH_RILMANI], i + 1, y + 8,
+            (void) enhancement_makemon(&mons[PM_PLUMACH_RILMANI], i + 1, y + 8,
                            MM_ADJACENTOK);
         }
     }
@@ -2118,17 +2118,17 @@ mkinvertzigg(void)
     }
     if (!montoostrong(PM_SHATTERED_ZIGGURAT_WIZARD,
                       (level_difficulty() + u.ulevel) / 2 + 5)) {
-        (void) makemon(&mons[PM_SHATTERED_ZIGGURAT_WIZARD],
+        (void) enhancement_makemon(&mons[PM_SHATTERED_ZIGGURAT_WIZARD],
                        x + size / 2, y + size / 2, MM_ADJACENTOK);
         for (i = rnd(6) + rnd(4); i > 0; --i)
-            (void) makemon(&mons[PM_SHATTERED_ZIGGURAT_KNIGHT],
+            (void) enhancement_makemon(&mons[PM_SHATTERED_ZIGGURAT_KNIGHT],
                            x + size / 2, y + size / 2, MM_ADJACENTOK);
     } else
         for (i = rnd(4); i > 0; --i)
-            (void) makemon(&mons[PM_SHATTERED_ZIGGURAT_KNIGHT],
+            (void) enhancement_makemon(&mons[PM_SHATTERED_ZIGGURAT_KNIGHT],
                            x + size / 2, y + size / 2, MM_ADJACENTOK);
     for (i = rn1(6, 6); i > 0; --i)
-        (void) makemon(&mons[PM_SHATTERED_ZIGGURAT_CULTIST],
+        (void) enhancement_makemon(&mons[PM_SHATTERED_ZIGGURAT_CULTIST],
                        x + size / 2, y + size / 2, MM_ADJACENTOK);
 }
 

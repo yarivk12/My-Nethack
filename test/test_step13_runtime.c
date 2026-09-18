@@ -22,7 +22,7 @@ extern struct obj *step13_restore_chain(NHFILE *);
 _Static_assert(sizeof(uint32) == 4 && sizeof(uint8) == 1, "fixed width");
 _Static_assert(sizeof(struct obj) == 112, "Windows x64 object size (baseline 104)");
 _Static_assert(OQ_STANDARD == 0 && OQ_FINE == 1 && OQ_EXCEPTIONAL == 2, "qualities");
-_Static_assert(OEP_ALL == 255U && OEF_QUALITY_KNOWN == 1U, "masks");
+_Static_assert(OEP_ALL == 0x01ffff7fU && OEF_QUALITY_KNOWN == 1U, "masks");
 
 static void
 test_message(const char *s)
@@ -46,15 +46,20 @@ matrix(void)
     for (i = 1; i < NUM_OBJECTS; ++i) {
         struct obj *o = item(i);
         boolean eligible = !o->oartifact && (o->oclass == WEAPON_CLASS
-            || o->oclass == ARMOR_CLASS || is_weptool(o) || is_ammo(o) || is_missile(o));
+            || o->oclass == ARMOR_CLASS);
         ZERO(o);
         assert(enhancement_eligible(o) == eligible);
         for (q = 0; q <= 2; ++q) {
             assert(enhancement_set(o, 0, q, FALSE) == eligible);
-            for (bit = 1; bit <= OEP_CUMBERSOME; bit <<= 1) {
-                boolean allowed = eligible && (o->oclass == ARMOR_CLASS
-                    ? !!(bit & OEP_WORN) : !(bit & OEP_WORN)
-                      && (bit != OEP_TRUEFLIGHT || is_launcher(o) || is_ammo(o) || is_missile(o)));
+            for (bit = 1; bit <= OEP_REFLECTION; bit <<= 1) {
+                int ci;
+                boolean allowed = FALSE;
+                for (ci=0;ci<24;++ci) if(enhancement_catalog[ci].bit==bit) {
+                    int prop=enhancement_catalog[ci].native_property;
+                    allowed=eligible && (o->oclass==ARMOR_CLASS
+                      ? prop && !enhancement_native_property(o,prop)
+                      : !prop && (bit!=OEP_TRUEFLIGHT || is_launcher(o) || is_ammo(o) || is_missile(o) || is_spear(o)));
+                }
                 assert(enhancement_property_allowed(o, bit) == allowed);
                 assert(enhancement_set(o, bit, q, FALSE) == allowed);
             }
@@ -85,12 +90,12 @@ combat(void)
     m.data = &mons[PM_HUMAN]; m.mhp = m.mhpmax = 1000;
     HBlinded = 1; /* effect messages aren't part of RNG fixtures */
     for (q = 0; q <= 2; ++q) {
-        assert(enhancement_set(o, OEP_TRUEFLIGHT | OEP_CUMBERSOME, q, FALSE));
-        assert(enhancement_set(bow, OEP_TRUEFLIGHT | OEP_CUMBERSOME, 2-q, FALSE));
-        assert(enhancement_hit_bonus(o,bow,&m,ENHANCE_AMMO) == 2-q);
+        assert(enhancement_set(o, OEP_TRUEFLIGHT, q, FALSE));
+        assert(enhancement_set(bow, OEP_TRUEFLIGHT, 2-q, FALSE));
+        assert(enhancement_hit_bonus(o,bow,&m,ENHANCE_AMMO) == 4-q);
         assert(enhancement_damage_bonus(o,bow,&m,ENHANCE_AMMO) == q);
-        assert(enhancement_hit_bonus(o,bow,&m,ENHANCE_THROWN) == q);
-        assert(enhancement_hit_bonus(o,bow,&m,ENHANCE_MELEE) == q-2);
+        assert(enhancement_hit_bonus(o,bow,&m,ENHANCE_THROWN) == q+2);
+        assert(enhancement_hit_bonus(o,bow,&m,ENHANCE_MELEE) == q);
         assert(enhancement_damage_bonus(o,bow,&m,ENHANCE_THROWN) == q);
     }
     for (bit = OEP_FIRE, prop = FIRE_RES; bit <= OEP_SHOCK; bit <<= 1) {
@@ -100,7 +105,7 @@ combat(void)
         saved = *o;
         for (use = ENHANCE_MELEE; use <= ENHANCE_AMMO; ++use)
             for (seed = 1; seed <= 20; ++seed) {
-                init_isaac64(seed, rn2); want = rnd(4); next = rn2(100000);
+                init_isaac64(seed, rn2); want = d(1,4); if(use==ENHANCE_AMMO) want += d(1,4); next = rn2(100000);
                 init_isaac64(seed, rn2);
                 value = enhancement_weapon_effects(o,bow,&m,10,use);
                 assert(value == want && rn2(100000) == next); SAME(o,&saved);
@@ -115,7 +120,7 @@ combat(void)
                 m.mintrinsics=0;u.uprops[prop].intrinsic=0;
             }
     }
-    enhancement_set(o,OEP_FIRE|OEP_COLD|OEP_SHOCK,OQ_EXCEPTIONAL,FALSE);
+    enhancement_set(o,OEP_FIRE|OEP_COLD,OQ_EXCEPTIONAL,FALSE);
     saved=*o;
     for(seed=1;seed<=100;++seed) {
         int base;
@@ -131,19 +136,23 @@ combat(void)
     gt.thrownobj=o;
     (void)enhancement_weapon_effects(o,bow,&gy.youmonst,10,ENHANCE_AMMO);
     assert(!o->o_enh_known);gt.thrownobj=NULL;
-    assert(!enhancement_weapon_effects(o,bow,&m,0,ENHANCE_AMMO));
+    assert(enhancement_weapon_effects(o,bow,&m,0,ENHANCE_AMMO)>0);
     bow->oartifact=ART_EXCALIBUR; /* query guard independent of normalization */
     assert(enhancement_hit_bonus(o,bow,&m,ENHANCE_AMMO)==0);
     assert(enhancement_damage_bonus(o,bow,&m,ENHANCE_AMMO)==2);
     bow->oartifact=0;
     obfree(o,NULL);obfree(bow,NULL);HBlinded=0;
-    puts("PASS pure queries, native dmgval RNG, exactly-once 1d4, resistance, shot union/split and monster knowledge");
+    puts("PASS pure queries, native dmgval RNG, independent component dice, resistance, shot source stacking and monster knowledge");
 }
 
 extern int step13_hitmu(struct monst *, struct obj *);
 extern int step13_mdamagem(struct monst *, struct monst *, struct obj *);
 extern int step13_thitu(struct obj **, struct obj *, enum enhance_use);
 extern boolean step13_ohitmon(struct monst *, struct obj *, struct obj *, enum enhance_use);
+
+#include "test_step14_combat.c"
+#include "test_step14_generation.c"
+#include "test_step14_names.c"
 
 static void
 combat_paths(void)
@@ -184,10 +193,10 @@ combat_paths(void)
                 d->mintrinsics=0;u.uprops[prop].intrinsic=0;
             }
             assert(losses[0]>0 && losses[2]==losses[0]);
-            assert(losses[1]-losses[0]>=1 && losses[1]-losses[0]<=4);
+            assert(losses[1]-losses[0]>=1 && losses[1]-losses[0]<=((path==2||path==6||path==8)?8:4));
         }
     HBlinded=0;
-    puts("PASS actual hero melee/throw/shot, monster melee vs hero/monster and thrown/shot vs hero/monster: one 1d4, resistance and duplicate-source union");
+    puts("PASS actual hero melee/throw/shot, monster melee vs hero/monster and thrown/shot vs hero/monster: 1d4 per source, resistance and source stacking");
 }
 
 static void
@@ -200,11 +209,11 @@ armor(void)
     for(i=0;i<7;++i) for(q=0;q<=2;++q) {
         struct obj *o=item(types[i]), snapshot;
         o=addinv(o);setworn(o,slots[i]);find_ac();ac=u.uac;
-        assert(enhancement_set(o,OEP_WORN,q,FALSE));snapshot=*o;
+        assert(enhancement_set(o,OEP_WARNING|OEP_SEARCHING,q,FALSE));snapshot=*o;
         assert(u.uac==ac-q);
-        assert((EWarning&slots[i]) && (ESearching&slots[i]) && (EStealth&slots[i]));
+        assert((EWarning&slots[i]) && (ESearching&slots[i]));
         setnotworn(o);
-        assert(!(EWarning&slots[i]) && !(ESearching&slots[i]) && !(EStealth&slots[i]));
+        assert(!(EWarning&slots[i]) && !(ESearching&slots[i]));
         freeinv(o);add_to_minv(&m,o);o->owornmask=slots[i];m.misc_worn_check=slots[i];
         ac=find_mac(&m);o->o_enh_quality=0;assert(find_mac(&m)==ac+q);o->o_enh_quality=q;
         update_mon_extrinsics(&m,o,TRUE,TRUE);SAME(o,&snapshot);
@@ -233,13 +242,13 @@ lifecycle_names(void)
     int field;
     o->quan=20;o->known=o->dknown=o->bknown=o->rknown=1;
     makeknown(o->otyp);Strcpy(base,doname(o));
-    enhancement_set(o,OEP_ELEMENTS|OEP_TRUEFLIGHT|OEP_CUMBERSOME,OQ_EXCEPTIONAL,FALSE);
+    enhancement_set(o,OEP_FIRE|OEP_PRIMORDIAL,OQ_EXCEPTIONAL,FALSE);
     assert(!strcmp(base,doname(o)));
     o->o_enh_known=OEP_FIRE;
-    Strcpy(name,xname(o));assert(strstr(name,"fire ")&&!strstr(name,"frost ")&&!strstr(name,"exceptional "));
+    Strcpy(name,xname(o));assert(strstr(name,"smoldering ")&&!strstr(name,"chilled ")&&!strstr(name,"exceptional "));
     o->o_enh_flags=OEF_QUALITY_KNOWN;
-    assert(strstr(xname(o),"exceptional fire "));
-    assert(!strstr(simpleonames(o),"fire ")&&!strstr(ysimple_name(o),"exceptional "));
+    assert(strstr(xname(o),"exceptional smoldering "));
+    assert(!strstr(simpleonames(o),"smoldering ")&&!strstr(ysimple_name(o),"exceptional "));
     fully_identify_obj(o);assert((o->o_enh_known & o->o_enh_props)==o->o_enh_props);
     assert(!not_fully_identified(o));
     enhancement_prefix(o,FALSE,tiny,sizeof tiny);assert(tiny[3]=='\0');
@@ -276,11 +285,11 @@ artifacts_prices(void)
     struct obj *o=item(LONG_SWORD),*other;
     int q,bits;
     for(q=0;q<=2;++q) for(bits=0;bits<256;++bits) {
-        long pct=100+10*q,bit;
+        long pct=100; int ci;
         struct obj *a=item(ARROW);
         if(enhancement_set(a,bits,q,FALSE)) {
-            for(bit=1;bit<OEP_CUMBERSOME;bit<<=1)if(bits&bit)pct+=20;
-            if(bits&OEP_CUMBERSOME)pct-=10;
+            for(ci=0;ci<24;++ci)if(bits&enhancement_catalog[ci].bit)pct+=50L<<(enhancement_catalog[ci].tier-1);
+            pct=pct*(100+10*q)/100;
             assert(enhancement_price(a,123)==123*pct/100);
             assert(enhancement_price(a,1)>=1);
             fully_identify_obj(a);assert(enhancement_price(a,123)==123*pct/100);
@@ -290,10 +299,10 @@ artifacts_prices(void)
     o->spe=3;
     {
         long base=step13_getprice(o,FALSE);
-        enhancement_set(o,OEP_FIRE|OEP_CUMBERSOME,OQ_EXCEPTIONAL,FALSE);
-        assert(step13_getprice(o,FALSE)==base*130/100);
-        assert(step13_getprice(o,TRUE)==base*130/100);
-        enhancement_identify(o);assert(step13_getprice(o,FALSE)==base*130/100);
+        enhancement_set(o,OEP_FIRE|OEP_PRIMORDIAL,OQ_EXCEPTIONAL,FALSE);
+        assert(step13_getprice(o,FALSE)==base*660/100);
+        assert(step13_getprice(o,TRUE)==base*660/100);
+        enhancement_identify(o);assert(step13_getprice(o,FALSE)==base*660/100);
     }
     enhancement_set(o,OEP_FIRE,OQ_FINE,FALSE);o=oname(o,"ordinary",ONAME_NO_FLAGS);
     assert(o->o_enh_props==OEP_FIRE);
@@ -385,6 +394,8 @@ chains(void)
     printf("PASS native saveobjchn/restobjchn %d active/knowledge/quality/flags combinations and nested containers\n",count);
 }
 
+#include "test_step14_persistence.c"
+
 static void
 version_gate(void)
 {
@@ -398,10 +409,10 @@ version_gate(void)
     f=get_freeing_nhfile();file_mode(f,READING,open("step13-version.tmp",O_RDONLY|O_BINARY));
     assert(read(f->fd,header,2)==2);assert(header[0]=='h');
     lseek(f->fd,2+header[1],SEEK_SET);Sfi_version_info(f,&v,"version_info");
-    assert((v.incarnation&255)==7);assert(check_version(&v,NULL,FALSE,0));
-    v.incarnation=(v.incarnation&~255UL)|6;
+    assert((v.incarnation&255)==8);assert(check_version(&v,NULL,FALSE,0));
+    v.incarnation=(v.incarnation&~255UL)|7;
     assert(!check_version(&v,NULL,FALSE,0));close_nhfile(f);
-    puts("PASS native critical sizes/epoch-7 header and controlled epoch-6 check_version rejection");
+    puts("PASS native critical sizes/epoch-8 header and controlled epoch-7 check_version rejection");
 }
 
 static int
@@ -474,7 +485,10 @@ step13_test_main(void)
     for(i=0;i<A_MAX;++i)ABASE(i)=AMAX(i)=18;
     for(x=1;x<COLNO-1;++x)for(y=1;y<ROWNO-1;++y)levl[x][y].typ=ROOM;
     printf("SIZE|obj=%zu|before=104|props=%zu|known=%zu|quality=%zu|flags=%zu|epoch=%d\n",sizeof(struct obj),sizeof(((struct obj*)0)->o_enh_props),sizeof(((struct obj*)0)->o_enh_known),sizeof(((struct obj*)0)->o_enh_quality),sizeof(((struct obj*)0)->o_enh_flags),EDITLEVEL);
-    matrix();combat();combat_paths();armor();lifecycle_names();artifacts_prices();billing();chains();version_gate();level_bones();
+    matrix();combat();combat_paths();armor();step14_combat_tests();
+    step14_names_prices_tests();step14_observation_tests();
+    step14_generation_tests();step14_corpus();step14_creation_tests();
+    lifecycle_names();artifacts_prices();billing();chains();step14_persistence_tests();version_gate();level_bones();
     puts("PASS Step 13 native runtime fixtures");return 0;
 }
 
@@ -483,7 +497,7 @@ static struct obj *
 fixture_item(const char *name)
 {
     struct obj *o=item(DAGGER);
-    enhancement_set(o,OEP_FIRE|OEP_CUMBERSOME,OQ_EXCEPTIONAL,FALSE);
+    enhancement_set(o,OEP_FIRE|OEP_PRIMORDIAL,OQ_EXCEPTIONAL,FALSE);
     o->o_enh_known=OEP_FIRE;o->o_enh_flags=OEF_QUALITY_KNOWN;
     return oname(o,name,ONAME_NO_FLAGS);
 }
@@ -495,7 +509,7 @@ check_fixture_chain(struct obj *chain)
     struct obj *o;
     for(o=chain;o;o=o->nobj) {
         if(has_oname(o)&&!strncmp(ONAME(o),"step13-",7)) {
-            assert(o->o_enh_props==(OEP_FIRE|OEP_CUMBERSOME));
+            assert(o->o_enh_props==(OEP_FIRE|OEP_PRIMORDIAL));
             assert(o->o_enh_known==OEP_FIRE&&o->o_enh_quality==OQ_EXCEPTIONAL);
             assert(o->o_enh_flags==OEF_QUALITY_KNOWN);++found;
         }

@@ -82,7 +82,7 @@ def project(path, text):
         "include/rm.h": (
             "    Bitfield(lethe, 1);        /* Step 10: amnesiac water, not new terrain */\n", ""),
         "src/mklev.c": ("    svl.level.flags.lethe = 0;\n", ""),
-        "include/patchlevel.h": ("#define EDITLEVEL 7", "#define EDITLEVEL 4"),
+        "include/patchlevel.h": ("#define EDITLEVEL 8", "#define EDITLEVEL 4"),
         "include/hack.h": (
             "\n/* Step 10 keeps serialized IDs append-only.  obj.oartifact is a char;\n"
             " * use the signed-char limit even on ports where plain char is unsigned. */\n"
@@ -126,7 +126,7 @@ if __name__ == "__main__":
         old = subprocess.check_output(["git", "show", "f27b7f20fd90da8dcb7aa0e90ee85f1af1123444:" + path], cwd=repo)
         old = old.decode("utf8").replace("\r\n", "\n")
         current = (repo / path).read_text(encoding="utf8")
-        expected = old.replace("#define EDITLEVEL 6", "#define EDITLEVEL 7")
+        expected = old.replace("#define EDITLEVEL 6", "#define EDITLEVEL 8")
         assert project(path, current) == project(path, expected), path
     assert "PM_OGRE_MAGE" in (repo / "src/mcastu.c").read_text(encoding="utf8")
     assert "PM_OGRE_MAGE" in (repo / "src/mhitu.c").read_text(encoding="utf8")

@@ -131,8 +131,10 @@ u_calc_moveamt(int wtcap)
 
         if (Very_fast) { /* speed boots, potion, or spell */
             /* gain a free action on 2/3 of turns */
-            if (rn2(3) != 0)
+            if (rn2(3) != 0) {
                 moveamt += NORMAL_SPEED;
+                enhancement_observe_worn(FAST);
+            }
         } else if (Fast) { /* intrinsic */
             /* gain a free action on 1/3 of turns */
             if (rn2(3) == 0)
@@ -181,7 +183,7 @@ maybe_generate_rnd_mon(void)
     if (!rn2(u.uevent.udemigod ? 25
              : (depth(&u.uz) > depth(&stronghold_level)) ? 50
              : 70))
-        (void) makemon((struct permonst *) 0, 0, 0, NO_MM_FLAGS);
+        (void) enhancement_makemon((struct permonst *) 0, 0, 0, NO_MM_FLAGS);
 }
 
 #if defined(MICRO) || defined(WIN32)
@@ -705,6 +707,8 @@ regen_hp(int wtcap)
         }
     }
 
+    if (heal > 0 && Regeneration && !(Sleepy && u.usleep))
+        enhancement_observe_worn(REGENERATION);
     if (reached_full)
         interrupt_multi("You are in full health.");
 }

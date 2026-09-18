@@ -1736,23 +1736,23 @@ mith_entourage(struct monst *mtmp, boolean anymon, mmflags_nht mmflags)
     if (type == PM_DEEPEST_ONE) {
         for (num = rn1(3, 3); num >= 0; --num)
             (void) makemon(&mons[PM_DEEPER_ONE], mtmp->mx, mtmp->my,
-                           MM_ADJACENTOK);
+                           (MM_ADJACENTOK | (mmflags & MM_NATURAL)));
         for (num = rn1(10, 10); num >= 0; --num)
             (void) makemon(&mons[PM_DEEP_ONE], mtmp->mx, mtmp->my,
-                           MM_ADJACENTOK);
+                           (MM_ADJACENTOK | (mmflags & MM_NATURAL)));
     } else if (type == PM_DEEPER_ONE) {
         for (num = rn1(10, 3); num >= 0; --num)
             (void) makemon(&mons[PM_DEEP_ONE], mtmp->mx, mtmp->my,
-                           MM_ADJACENTOK);
+                           (MM_ADJACENTOK | (mmflags & MM_NATURAL)));
     } else if (type == PM_ALABASTER_ELF_ELDER) {
         if (rn2(2)) {
             companion = makemon(&mons[PM_ALABASTER_ELF_ELDER], mtmp->mx,
-                                 mtmp->my, MM_ADJACENTOK);
+                                 mtmp->my, (MM_ADJACENTOK | (mmflags & MM_NATURAL)));
             if (companion)
                 m_initsgrp(companion, mtmp->mx, mtmp->my, mmflags);
         }
         companion = makemon(&mons[PM_ALABASTER_ELF], mtmp->mx, mtmp->my,
-                             MM_ADJACENTOK);
+                             (MM_ADJACENTOK | (mmflags & MM_NATURAL)));
         if (companion)
             m_initlgrp(companion, mtmp->mx, mtmp->my, mmflags);
     }
@@ -2086,9 +2086,12 @@ makemon(
     }
 
     if (allow_minvent) {
+        enum enhancement_context old_context = enhancement_context_set(
+            (mmflags & MM_NATURAL) ? ENH_CONTEXT_MONSTER : ENH_CONTEXT_NONE);
         if (is_armed(ptr))
             m_initweap(mtmp); /* equip with weapons / armor */
         m_initinv(mtmp); /* add on a few special items incl. more armor */
+        (void) enhancement_context_set(old_context);
         m_dowear(mtmp, TRUE);
 
         if (!rn2(100) && is_domestic(ptr)

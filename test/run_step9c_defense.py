@@ -25,7 +25,8 @@ monster = re.search(r'if \(otmp->otyp != ACID_VENOM\)\n +damage = mith_physical_
 parts.append('static int missile_hero(struct obj *obj, int dam, boolean is_acid) {'+hero+'return dam;}')
 parts.append('static int missile_mon(struct monst *mtmp, struct obj *otmp, int damage) {'+monster+'return damage;}')
 hits=(repo/'src/uhitm.c').read_text(encoding='utf8')
-guard=hits.split('    if (hmd.use_weapon_skill && !hmd.already_killed)',1)[1].split('    if (!hmd.already_killed && hmd.dmg > 0)',1)[0]
+guard=hits.split('    if (hmd.use_weapon_skill && !hmd.already_killed)',1)[1].split('        enhancement_observe_hit(',1)[0]
+guard=guard.rsplit('    if (!hmd.already_killed)',1)[0]
 parts.append('''static int hero_hit(struct monst *mon,struct obj *obj,int damage,
 boolean skilled,boolean physical,boolean dead) {
 struct {int dmg;boolean use_weapon_skill,get_dmg_bonus,already_killed;} hmd;

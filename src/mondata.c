@@ -239,7 +239,8 @@ resists_drli(struct monst *mon)
 boolean
 mith_displaced(struct monst *mon)
 {
-    return mon->data == &mons[PM_WRAITHWORM]
+    return enhancement_mon_confers(mon, DISPLACED)
+           || mon->data == &mons[PM_WRAITHWORM]
            || mon->data == &mons[PM_FIRST_WRAITHWORM]
            || mon->data == &mons[PM_ASPECT_OF_THE_SILENCE]
            || mon->data == &mons[PM_SHARAB_KAMEREL]
@@ -349,6 +350,7 @@ resists_magm(struct monst *mon)
     for (; o; o = o->nobj)
         if (((o->owornmask & slotmask) != 0L
              && (objects[o->otyp].oc_oprop == ANTIMAGIC
+                 || enhancement_confers(o, ANTIMAGIC)
                  || Is_chromatic_armor(o)))
             || (o->oartifact && defends_when_carried(AD_MAGM, o)))
             return TRUE;
@@ -1682,6 +1684,10 @@ monstseesu(unsigned long seenres)
 {
     struct monst *mtmp;
 
+    if (seenres & M_SEEN_FIRE) enhancement_observe_worn(FIRE_RES);
+    if (seenres & M_SEEN_COLD) enhancement_observe_worn(COLD_RES);
+    if (seenres & M_SEEN_ELEC) enhancement_observe_worn(SHOCK_RES);
+    if (seenres & M_SEEN_POISON) enhancement_observe_worn(POISON_RES);
     if (seenres == M_SEEN_NOTHING || u.uswallow)
         return;
 

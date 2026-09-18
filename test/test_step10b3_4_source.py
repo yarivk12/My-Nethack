@@ -85,7 +85,7 @@ assert "OBP_DEEP" in obj and "OBP_CONCORDANT" in obj
 # Current serialized identity/capacity and the phase boundary are fixed by
 # the focused C gates; this cross-check makes the closeout runner fail fast if
 # the production tables drift while those gates are being composed.
-assert "#define EDITLEVEL 7" in read("include/patchlevel.h")
+assert "#define EDITLEVEL 8" in read("include/patchlevel.h")
 assert "#define MAXDUNGEON 18" in read("include/global.h")
 assert subprocess.run(["git", "diff", "--quiet", "--", "README.md"],
                       cwd=repo).returncode == 0

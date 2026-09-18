@@ -816,7 +816,7 @@ shiny_orc_stuff(struct monst *mtmp)
         }
     }
     if (rn2(1000) < gemprob) {
-        if ((otmp = mkobj(GEM_CLASS, FALSE)) != 0) {
+        if ((otmp = enhancement_mkobj(GEM_CLASS, FALSE)) != 0) {
             if (otmp->otyp == ROCK)
                 dealloc_obj(otmp);
             else
@@ -896,7 +896,7 @@ stolen_booty(void)
     }
     migr_booty_item(rn2(2) ? LONG_SWORD : SILVER_SABER, gang);
     /* create the leader of the orc gang */
-    mtmp = makemon(&mons[PM_ORC_CAPTAIN], 0, 0, MM_NONAME);
+    mtmp = enhancement_makemon(&mons[PM_ORC_CAPTAIN], 0, 0, MM_NONAME);
     if (mtmp) {
         mtmp = christen_monst(mtmp, upstart(gang));
         mtmp->mpeaceful = 0;
@@ -933,7 +933,7 @@ stolen_booty(void)
         int mtyp;
 
         mtyp = rn2((PM_ORC_SHAMAN - PM_ORC) + 1) + PM_ORC;
-        mtmp = makemon(&mons[mtyp], 0, 0, MM_NONAME);
+        mtmp = enhancement_makemon(&mons[mtyp], 0, 0, MM_NONAME);
         if (mtmp) {
             shiny_orc_stuff(mtmp);
             migrate_orc(mtmp, 0UL);
@@ -1155,7 +1155,7 @@ populate_maze(void)
 
     for (i = rn1(8, 11); i; i--) {
         mazexy(&mm);
-        (void) mkobj_at(rn2(2) ? GEM_CLASS : RANDOM_CLASS, mm.x, mm.y, TRUE);
+        (void) enhancement_mkobj_at(rn2(2) ? GEM_CLASS : RANDOM_CLASS, mm.x, mm.y, TRUE);
     }
     for (i = rn1(10, 2); i; i--) {
         mazexy(&mm);
@@ -1163,11 +1163,11 @@ populate_maze(void)
     }
     for (i = rn2(3); i; i--) {
         mazexy(&mm);
-        (void) makemon(&mons[PM_MINOTAUR], mm.x, mm.y, NO_MM_FLAGS);
+        (void) enhancement_makemon(&mons[PM_MINOTAUR], mm.x, mm.y, NO_MM_FLAGS);
     }
     for (i = rn1(5, 7); i; i--) {
         mazexy(&mm);
-        (void) makemon((struct permonst *) 0, mm.x, mm.y, NO_MM_FLAGS);
+        (void) enhancement_makemon((struct permonst *) 0, mm.x, mm.y, NO_MM_FLAGS);
     }
     for (i = rn1(6, 7); i; i--) {
         mazexy(&mm);

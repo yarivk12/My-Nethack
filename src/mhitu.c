@@ -236,6 +236,7 @@ wildmiss(struct monst *mtmp, struct attack *mattk)
             }
         }
     } else if (unotthere) { /* Displaced */
+        enhancement_observe_worn(DISPLACED);
         /* give 'displaced' message even if hero is Blind */
         if (compat)
             pline("%s smiles %s at your %sdisplaced image...", Monst_name,
@@ -1315,7 +1316,9 @@ hitmu(struct monst *mtmp, struct attack *mattk)
             mhm.damage = 1;
     }
 
-    if (mhm.damage > 0) {
+    if (mhm.damage > 0
+        || (mattk->aatyp == AT_WEAP
+            && enhancement_elemental_contact(mhm.weapon, (struct obj *) 0, ENHANCE_MELEE))) {
         /* [Half_physical_damage isn't applied to mhm.permdmg] */
         if (Half_physical_damage
             /* Mitre of Holiness, even if not currently blessed */
@@ -1331,11 +1334,11 @@ hitmu(struct monst *mtmp, struct attack *mattk)
         mhm.damage += mith_iron_contact(mtmp, &gy.youmonst, mattk->aatyp,
                           mattk->aatyp == AT_WEAP ? mhm.weapon : (struct obj *) 0);
         if (mattk->aatyp == AT_WEAP)
-            mhm.damage += enhancement_weapon_effects(mhm.weapon, (struct obj *) 0,
-                                      &gy.youmonst, mhm.damage, ENHANCE_MELEE);
-        if (mattk->aatyp == AT_WEAP)
             mhm.damage += mith_weapon_effects(mhm.weapon, &gy.youmonst,
                                               mhm.damage);
+        if (mattk->aatyp == AT_WEAP)
+            mhm.damage += enhancement_weapon_effects(mhm.weapon, (struct obj *) 0,
+                                      &gy.youmonst, mhm.damage, ENHANCE_MELEE);
 
         if (mhm.permdmg) { /* Death's life force drain */
             int lowerlimit, *hpmax_p;

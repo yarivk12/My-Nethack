@@ -113,7 +113,7 @@ for field in ("obranch_material", "obranch_size", "obranch_props"):
 assert "Sfo_obj" in save and "Sfi_obj" in restore
 
 # B4 owns no topology, scheduler, ID, or edit-level change.
-assert "#define EDITLEVEL 7" in read("include/patchlevel.h")
+assert "#define EDITLEVEL 8" in read("include/patchlevel.h")
 assert "#define MAXDUNGEON 18" in global_h
 assert "DL111" not in read("dat/dungeon.lua")
 assert "step10c_level_context" in read("src/dungeon.c")

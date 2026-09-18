@@ -771,7 +771,8 @@ mon_adjust_speed(
     }
 
     for (otmp = mon->minvent; otmp; otmp = otmp->nobj)
-        if (otmp->owornmask && objects[otmp->otyp].oc_oprop == FAST)
+        if (otmp->owornmask && (objects[otmp->otyp].oc_oprop == FAST
+                               || enhancement_confers(otmp, FAST)))
             break;
     if (otmp) /* speed boots */
         mon->mspeed = MFAST;
@@ -828,12 +829,13 @@ update_mon_extrinsics(
     int which = (int) objects[obj->otyp].oc_oprop,
         altwhich = altprop(obj),
         chromwhich = Is_chromatic_armor(obj) ? FIRE_RES : 0;
+    int enh_index = 0;
 
     unseen = !canseemon(mon);
     if (chromwhich)
         which = chromwhich++;
     if (!which && !altwhich)
-        goto maybe_blocks;
+        goto enhancement_properties;
 
  again:
     if (on) {
@@ -911,7 +913,8 @@ update_mon_extrinsics(
             for (otmp = mon->minvent; otmp; otmp = otmp->nobj) {
                 if (otmp == obj || !otmp->owornmask)
                     continue;
-                if ((int) objects[otmp->otyp].oc_oprop == which)
+                if ((int) objects[otmp->otyp].oc_oprop == which
+                    || enhancement_confers(otmp, which))
                     break;
                 /* check whether 'otmp' confers target property as an extra
                    one rather than as the one specified for it in objects[] */
@@ -933,6 +936,7 @@ update_mon_extrinsics(
        resistance to the hero so do likewise for monster who wears one */
     if (altwhich && which != altwhich) {
         which = altwhich;
+        altwhich = 0;
         goto again;
     }
     if (chromwhich && chromwhich <= STONE_RES) {
@@ -940,7 +944,15 @@ update_mon_extrinsics(
         goto again;
     }
 
- maybe_blocks:
+ enhancement_properties:
+    while (enh_index < SIZE(enhancement_catalog)) {
+        int prop = enhancement_catalog[enh_index++].native_property;
+        if (prop && enhancement_confers(obj, prop)) {
+            which = prop;
+            goto again;
+        }
+    }
+
     /* obj->owornmask has been cleared by this point, so we can't use it.
        However, since monsters don't wield armor, we don't have to guard
        against that and can get away with a blanket worn-mask value. */

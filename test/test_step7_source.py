@@ -116,7 +116,7 @@ assert 'tomb-2' not in dungeon
 assert 'base = 200' in dungeon
 for path in ["sys/unix/Makefile.top","sys/windows/Makefile.nmake","sys/windows/vs/files.props"]:
     assert "tomb-1.lua" in now(path) and "tomb-2" not in now(path)
-assert "#define EDITLEVEL 7" in now("include/patchlevel.h") # Step 10 save epoch
+assert "#define EDITLEVEL 8" in now("include/patchlevel.h") # Step 10 save epoch
 print("PASS source: protected Step 5/6, vanilla wishing/lamp rub, exact Step 7/8/9 additions, classic one-level Tomb/manifests, Step 10 save epoch")
 
 for arg in sys.argv[1:]:

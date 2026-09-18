@@ -1146,7 +1146,9 @@ mdamagem(
     if (mhm.done)
         return mhm.hitflags;
 
-    if (!mhm.damage)
+    if (!mhm.damage
+        && !((mattk->aatyp == AT_WEAP || (mattk->aatyp == AT_CLAW && mwep))
+             && enhancement_elemental_contact(mwep, (struct obj *) 0, ENHANCE_MELEE)))
         return mhm.hitflags;
 
     if (mattk->adtyp == AD_PHYS || mattk->adtyp == AD_DRLI || mattk->adtyp == AD_VAMP
@@ -1158,10 +1160,10 @@ mdamagem(
                       (mattk->aatyp == AT_WEAP || mattk->aatyp == AT_CLAW)
                           ? mwep : (struct obj *) 0);
     if (mattk->aatyp == AT_WEAP || (mattk->aatyp == AT_CLAW && mwep))
+        mhm.damage += mith_weapon_effects(mwep, mdef, mhm.damage);
+    if (mattk->aatyp == AT_WEAP || (mattk->aatyp == AT_CLAW && mwep))
         mhm.damage += enhancement_weapon_effects(mwep, (struct obj *) 0,
                                                 mdef, mhm.damage, ENHANCE_MELEE);
-    if (mattk->aatyp == AT_WEAP || (mattk->aatyp == AT_CLAW && mwep))
-        mhm.damage += mith_weapon_effects(mwep, mdef, mhm.damage);
     mdef->mhp -= mhm.damage;
     if (mdef->mhp < 1) {
         if (m_at(mdef->mx, mdef->my) == magr) { /* see gulpmm() */

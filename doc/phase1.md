@@ -9,8 +9,10 @@ the preserved historical branch `phase0/dod-length`.
 
 Phase 1 is active on `phase1/equipment-enhancement`. Steps 13 and 14, the
 Step 15A forge foundation, and Step 15B recipe transactions are complete through
-the Phase 1 audit and closeout. Step 15C equipment-state inheritance is next,
-followed by Step 15D gemstone affixing. The finalized step documents govern
+the Phase 1 audit and closeout. Step 15C deterministic equipment-state
+inheritance is complete and validated; [Step 15](step15.md) records its separate
+native, production persistence and x64 package evidence. Step 15D gemstone
+affixing remains deferred. The finalized step documents govern
 current semantics; [the Phase 1 audit](phase1-audit.md) records validation and
 remaining limitations through Step 15B.
 
@@ -87,7 +89,7 @@ The original planning boundaries have been refined by finalized Step 15:
 1. **Step 13 — Unified Enhancement Engine + initial properties + quality**
 2. **Step 14 — Depth-scaled random enhanced equipment generation**
 3. **Step 15A/B — Forge foundation and recipe transactions**
-4. **Step 15C — Equipment-state inheritance** (deferred)
+4. **Step 15C — Deterministic equipment-state inheritance** (complete and validated)
 5. **Step 15D — Gemstone affixing** (deferred)
 6. **Step 16+ — Later combinations and progression** (not implemented)
 

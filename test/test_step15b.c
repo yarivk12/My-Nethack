@@ -85,6 +85,10 @@ forge_test_same_object(const struct obj *before, const struct obj *after)
     SAME(greased); SAME(opoisoned); SAME(oartifact); SAME(oextra);
     SAME(o_enh_props); SAME(o_enh_known); SAME(o_enh_quality); SAME(o_enh_flags);
     SAME(obranch_props); SAME(obranch_material); SAME(obranch_size);
+    SAME(tknown); SAME(cobj); SAME(age); SAME(timed); SAME(recharged);
+    SAME(bypass); SAME(no_charge); SAME(lamplit); SAME(globby); SAME(oeaten);
+    SAME(how_lost); SAME(nomerge); SAME(ox); SAME(oy); SAME(pickup_prev);
+    SAME(ghostly); SAME(olocked); SAME(obroken);
 #undef SAME
 }
 
@@ -509,6 +513,8 @@ forge_test_navigation(void)
     puts("PASS Step 15B native menus, all cancellation/back paths, exact confirmation, one-action success and reforging");
 }
 
+#include "test_step15c.c"
+
 void
 step15b_test_main(void)
 {
@@ -563,10 +569,13 @@ step15b_test_main(void)
         if (j == 2) assert(!forge_find(a[1].oid));
         for (other = gi.invent; other && other->otyp != r->output; other = other->nobj) ;
         assert(other && other->quan == 1 && other->dknown);
-        assert(!other->spe && !other->blessed && !other->cursed);
-        assert(!other->o_enh_props && !other->o_enh_quality);
+        assert(other->spe == 7 && !other->blessed && (int) other->cursed == (j == 1));
+        assert(other->o_enh_quality == (i == 4 ? OQ_STANDARD : OQ_EXCEPTIONAL));
+        assert(other->o_enh_props == (i == 4 || i == 11 ? 0
+                                     : i >= 8 ? OEP_FIRE_RES : OEP_FIRE));
         assert(!other->bknown && !other->rknown && !other->o_enh_known);
-        assert(!other->oextra && !other->obranch_material && !other->oeroded && !other->greased);
+        assert(!other->oextra && !other->obranch_material
+               && (int) other->oeroded == (j == 1 ? 2 : 0) && !other->greased);
         assert(!objects[r->output].oc_uses_known || !other->known);
         assert(objects[r->output].oc_name_known);
         forge_test_clear();
@@ -579,4 +588,5 @@ step15b_test_main(void)
     forge_test_ledger();
     forge_test_capacity_ledger();
     forge_test_many_stacks_and_counts();
+    step15c_test_main();
 }

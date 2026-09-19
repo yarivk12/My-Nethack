@@ -6,12 +6,14 @@ cover the accepted changes; this projection is not a behavioral oracle.
 """
 import json
 from pathlib import Path
+from step15c_source_projection import project as step15c_project
 
 CHANGES = json.loads(Path(__file__).with_name(
     'phase1_audit_historical_changes.json').read_text(encoding='utf8'))
 
 
 def project(path, text):
+    text = step15c_project(path, text)
     for hunk in CHANGES.get(path, []):
         if hunk['after'] in text:
             assert text.count(hunk['after']) == 1, (path, 'ambiguous audit hunk')

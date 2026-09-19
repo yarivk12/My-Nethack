@@ -4402,6 +4402,94 @@ forge_find(unsigned oid)
 static boolean forge_fail_construction;
 #endif
 
+/* Step 15C: transient values only; quantities do not weight the reductions. */
+struct forge_state {
+    boolean present, proof;
+    int quality, spe, buc, eroded, eroded2;
+    uint32 props;
+};
+
+staticfn void
+forge_gather(struct forge_state *state, struct obj *obj)
+{
+    int buc = bcsign(obj);
+
+    if (!state->present) {
+        state->quality = obj->o_enh_quality;
+        state->spe = obj->spe;
+        state->buc = buc;
+        state->eroded = obj->oeroded;
+        state->eroded2 = obj->oeroded2;
+        state->present = TRUE;
+    } else {
+        state->quality = max(state->quality, obj->o_enh_quality);
+        state->spe = max(state->spe, obj->spe);
+        state->buc = max(state->buc, buc);
+        state->eroded = min(state->eroded, (int) obj->oeroded);
+        state->eroded2 = min(state->eroded2, (int) obj->oeroded2);
+    }
+    state->props |= obj->o_enh_props;
+    state->proof |= obj->oerodeproof;
+}
+
+staticfn void
+forge_inherit(struct obj *obj, const struct forge_state *state)
+{
+    uint32 props = 0;
+    int i, best, count, low;
+
+    if (!state->present)
+        return;
+    if (enhancement_eligible(obj)) {
+        /* Filter each identity before ranking, using shared legality. Catalog
+         * order breaks ties; no pairwise restrictions exist in this engine. */
+        for (count = 0; count < 2; ++count) {
+            best = -1;
+            for (i = 0; i < SIZE(enhancement_catalog); ++i) {
+                const struct enhancement_entry *entry = &enhancement_catalog[i];
+                if ((state->props & entry->bit) && !(props & entry->bit)
+                    && enhancement_property_allowed(obj, entry->bit)
+                    && (best < 0 || entry->tier > enhancement_catalog[best].tier))
+                    best = i;
+            }
+            if (best >= 0)
+                props |= enhancement_catalog[best].bit;
+        }
+        (void) enhancement_set(obj, props,
+                              (enum enhancement_quality) state->quality, FALSE);
+    }
+    /* Native spe meanings: obj.h, charge_ok and readobjnam. Do not overwrite
+     * gender, fruit/tin/box flags, lamp contents, or other overloaded values.
+     * obj.h defines SPE_LIM and the -1 charge floor. Wishing/recharging
+     * balance limits and cancellation defaults are not inheritance caps. */
+    if (obj->oclass == WEAPON_CLASS || obj->oclass == ARMOR_CLASS
+        || is_weptool(obj)
+        || ((obj->oclass == RING_CLASS || obj->oclass == TOOL_CLASS)
+            && objects[obj->otyp].oc_charged)
+        || obj->oclass == WAND_CLASS) {
+        low = -SPE_LIM;
+        if (obj->oclass == WAND_CLASS
+            || (obj->oclass == TOOL_CLASS && !is_weptool(obj)))
+            low = -1;
+        obj->spe = (schar) max(low, min(SPE_LIM, state->spe));
+    }
+    /* Native setters exclude coins and maintain BUC-dependent state. */
+    if (state->buc > 0)
+        bless(obj);
+    else if (state->buc < 0)
+        curse(obj);
+    /* Match readobjnam's material/type gates, including glass armor and the
+     * crysknife's native fixed-form proof bit. Severity is not a damage type. */
+    if (erosion_matters(obj)) {
+        if (is_flammable(obj) || is_rustprone(obj) || is_crackable(obj))
+            obj->oeroded = state->eroded;
+        if (is_corrodeable(obj) || is_rottable(obj))
+            obj->oeroded2 = state->eroded2;
+        if (is_damageable(obj) || obj->otyp == CRYSKNIFE)
+            obj->oerodeproof = state->proof;
+    }
+}
+
 staticfn struct obj *
 forge_output(int typ)
 {
@@ -4427,6 +4515,7 @@ forge_commit(const struct forge_recipe *r, struct forge_allocation *a, int n)
     long totals[2] = { 0L, 0L }, used;
     int i, j, slot, slots = inv_cnt(FALSE);
     boolean merges = FALSE;
+    struct forge_state state = { 0 };
 
     /* Defensive consistency only: no second eligibility/recipe selection. */
     for (i = 0; i < n; ++i) {
@@ -4452,11 +4541,17 @@ forge_commit(const struct forge_recipe *r, struct forge_allocation *a, int n)
     }
     if (totals[0] != r->need[0].quantity || totals[1] != r->need[1].quantity)
         goto invalid;
+    for (i = 0; i < n; ++i)
+        if (a[i].quantity[0] || a[i].quantity[1])
+            forge_gather(&state, forge_find(a[i].oid));
     output = forge_output(r->output);
     if (!output)
         goto invalid;
+    forge_inherit(output, &state);
     /* addinv uses mergable and invlet_basic is the native pack-slot limit.
-     * Test only surviving objects; no tentative splitting or list edits. */
+     * Test only surviving objects; no tentative splitting or list edits.
+     * mergable does not inspect quan, so residual quantities affect only
+     * survival here. Compare the finalized actual AND knowledge state. */
     for (obj = gi.invent; obj; obj = obj->nobj) {
         used = 0L;
         for (i = 0; i < n; ++i)

@@ -557,8 +557,43 @@ step13_game_fixture(boolean resuming)
     int n,local_monster=0,migrating_monster=0;
     _set_error_mode(_OUT_TO_STDERR);
     _set_abort_behavior(0,_WRITE_ABORT_MSG|_CALL_REPORTFAULT);
+    /* Step 15C inspects unmodified production saves with this diagnostic
+     * executable. This is read-only verification, not item acquisition. */
+    if (getenv("STEP15C_GAME_CHECK")) {
+        int swords = 0, athames = 0;
+        assert(resuming);
+        for (o = gi.invent; o; o = o->nobj) {
+            if (o->otyp != TSURUGI && o->otyp != ATHAME) continue;
+            assert(o->quan == 1 && o->dknown && objects[o->otyp].oc_name_known);
+            assert(!o->known && !o->bknown && !o->rknown
+                   && !o->o_enh_known && !o->o_enh_flags);
+            assert(!o->blessed && !o->obranch_material
+                   && !o->greased && !o->opoisoned && !has_oname(o));
+            if (o->otyp == TSURUGI) {
+                assert(o->spe == 4 && !o->o_enh_quality && !o->o_enh_props);
+                assert(!o->cursed && !o->oeroded && !o->oeroded2 && !o->oerodeproof);
+                ++swords;
+            } else {
+                assert(o->spe == -2 && o->cursed && o->oeroded == 1
+                       && o->oeroded2 == 1 && o->oerodeproof
+                       && o->o_enh_quality == OQ_EXCEPTIONAL
+                       && o->o_enh_props == (OEP_FIRE | OEP_PRIMORDIAL));
+                ++athames;
+            }
+        }
+        assert(swords == 1 && athames == 1);
+        log = fopen("step15c-game-results.txt", "a"); assert(log);
+        fprintf(log, "PASS production forged tsurugi +4 and cursed -2 eroded/proof Exceptional Fire I/Primordial athame; actual state and hidden knowledge preserved\n");
+        fclose(log);
+        return;
+    }
     if(!resuming) {
-        addinv(fixture_item("step13-inventory"));
+        o = fixture_item("step13-inventory");
+        if (getenv("STEP15C_GAME_SEED")) {
+            o->spe = -5; o->cursed = 1;
+            o->oeroded = 1; o->oeroded2 = 2; o->oerodeproof = 1;
+        }
+        addinv(o);
         bag=item(SACK);inner=item(SACK);add_to_container(inner,fixture_item("step13-nested"));
         add_to_container(bag,inner);addinv(bag);
         o=fixture_item("step13-floor");place_object(o,u.ux,u.uy);

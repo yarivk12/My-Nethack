@@ -1,9 +1,9 @@
-# Phase 1 Step 15 — forge foundation and recipe transactions
+# Phase 1 Step 15 â€” forge foundation, recipes and state inheritance
 
 Step 15A implements forge terrain, natural placement, and war-hammer activation.
 Step 15B adds the locked recipe catalogue, native menus, exact ingredient
-allocation, and atomic crafting. Step 15C equipment-state inheritance and
-Step 15D gemstone affixing remain deferred. There are no repairs, charges,
+allocation, and atomic crafting. Step 15C adds deterministic equipment-state
+inheritance. Step 15D gemstone affixing remains deferred. There are no repairs, charges,
 cooldowns, smithing skills, recipe learning, or persistent forge provenance.
 
 ## Terrain and compatibility
@@ -32,7 +32,7 @@ selection terrain requests, terrain replacement, and map fragments. Ordinary
 non-forge terrain placement gains no new restriction; shop resolution is unchanged.
 A standalone `des.finalize_level` does not select forges.
 
-**EDITLEVEL 8 → 9** rejects old saves and bones through the existing version gate.
+**EDITLEVEL 8 â†’ 9** rejects old saves and bones through the existing version gate.
 Appending the terrain leaves existing real terrain IDs intact, but adding
 `S_forge` before the final dungeon symbol shifts subsequent glyph identities,
 including glyphs stored in map memory and mimic state. No `struct rm` layout,
@@ -48,7 +48,7 @@ Lua postprocessing, ordinary/special filling, mineralization, and topology
 finalization. Accepted bones bypass the wrapper. Standalone Lua finalization
 only finalizes topology.
 
-Eligibility is main Dungeons of Doom, absolute DL20–199 inclusive, excluding
+Eligibility is main Dungeons of Doom, absolute DL20â€“199 inclusive, excluding
 special/authored identities, branch junctions, other dungeon branches, and
 prototype/filler-authored levels. DL19 and DL200 are excluded. There is no
 room/maze/cavern eligibility test. Each eligible level executes exactly one
@@ -172,7 +172,10 @@ recipe returns to that category's recipes. Every such path is free and preserves
 inventory. A successful craft exits immediately and consumes one normal action.
 The activating hammer's state is unchanged.
 
-## Transactions and temporary output state
+## Step 15B transaction foundation (historical output policy)
+
+The transaction design below remains in use. Step 15C, specified next,
+supersedes only the completed result's plain-state policy.
 
 After confirmation, preflight checks allocation IDs, types, uniqueness, bounds
 and slot totals; it does not rerun ingredient eligibility. Output construction
@@ -203,6 +206,173 @@ No persistent state, object layout or save codec changed in 15B. `EDITLEVEL`
 remains 9 from 15A. Real equipment-state inheritance is exclusively Step 15C;
 gemstone affixing is exclusively Step 15D.
 
+## Step 15C finalized inheritance contract
+
+Every physical object with a positive combined consumed allocation contributes
+its actual state, including partially consumed stacks. Unselected matching
+inventory, contained items, and the activating hammer do not contribute. A
+shared stack contributes once even when it supplies both requirements. There
+is no primary donor or additional identification gate. Quantities have no
+weight: inventory/allocation/ingredient order and splitting equivalent amounts
+across identical-state stacks cannot change the result.
+
+The unchanged `forge_output` calls `mksobj(type, FALSE, FALSE)` under
+`ENH_CONTEXT_NONE`, restores the exact previous context, and marks only base
+type visibility. That fresh object is **not** a contributor. `forge_gather`
+captures only transient scalar values and a property mask; `forge_inherit`
+finalizes the supported categories before capacity preflight:
+
+| Actual state | Reduction |
+|---|---|
+| Quality | Highest Standard/Fine/Exceptional rank |
+| Properties | Union exact identities; filter target legality; tier descending, catalog-order ties; first two |
+| `spe` | Highest signed value, subject only to existing native safety limits |
+| BUC | Blessed > uncursed > cursed |
+| `oeroded`, `oeroded2` | Independent lowest numeric severity |
+| Erosion-proof | Logical OR |
+
+Initialization comes from the first consumed object. Thus two cursed inputs
+remain cursed; -5/-2 produces -2; two severity-1 contributors produce severity
+1. Proofing is independent of severity. Source damage descriptions do not
+transfer: an iron input's rust severity can become wooden output burn severity.
+No damage-type conversion, quantity averaging, property fusion, tier promotion,
+replacement roll, generated enhancement, or forge-specific balance cap exists.
+
+Property legality is tested before selection. Rejected high-tier candidates
+cannot hide legal lower-tier candidates, and rejecting every candidate still
+permits crafting. `enhancement_catalog` supplies identity, tier and order;
+`enhancement_property_allowed` supplies shared target legality, followed by
+`enhancement_set(..., FALSE)`. The finalized engine has no opposing-element or
+pairwise exclusions beyond exact identity deduplication and the two-property
+limit. Distinct tiers of the same element, Primordial plus another weapon
+property, and Magic Resistance plus Reflection remain legal.
+
+### Source-backed target capabilities
+
+These checks operate on the fresh output's actual type and native default
+material. Unsupported fields retain constructor defaults, including unrelated
+native meanings of `spe`; the forge does not widen eligibility.
+
+| Category | Existing native/shared rule used in `forge_inherit` |
+|---|---|
+| Quality/properties | `enhancement_eligible` and `enhancement_property_allowed` in `src/enhance.c`: non-artifact weapons/armor only; Trueflight uses native launcher/ammo/missile/spear classification; armor filters primary and secondary native powers (blue/white dragon armor, alchemy smock, chromatic armor). Weapon-tools remain ineligible for generic enhancements. |
+| Enchantment `spe` | `include/obj.h`'s native meanings and `src/objnam.c:readobjnam`: weapons, armor, `is_weptool`, charged rings. Signed values retain the full native `[-SPE_LIM, SPE_LIM]` range (`SPE_LIM=99`), not generation/wishing balance ranges. |
+| Charge `spe` | Wands and `TOOL_CLASS` with `oc_charged`, after weapon-tool handling; `src/read.c:charge_ok` and `readobjnam` distinguish charge state from age-based lamps. `include/obj.h` defines the charge floor as -1 for wands/charged tools; ceiling is `SPE_LIM`. Non-wizard wishing limits and cancellation defaults are not hard bounds and are not copied. No recharge roll or recharge-count inheritance. |
+| Other `spe` meanings | Preserve fresh defaults for noncharged rings, lamps, statues/figurines/corpses (gender), fruit/tins/eggs, containers, towels and other unsupported types. Field existence alone grants no capability. |
+| BUC | Native `bless`/`curse` in `src/mkobj.c`; coins are excluded by those setters. Fresh uncursed output remains uncursed for an uncursed reduction. Setters maintain native BUC-dependent behavior. |
+| `oeroded` | `src/objnam.c:readobjnam` gates: `erosion_matters` and flammable, rustprone or crackable (glass armor). |
+| `oeroded2` | `erosion_matters` and corrodeable or rottable. |
+| Proofing | `erosion_matters` and (`is_damageable` or `CRYSKNIFE`), preserving the native fixed-form crysknife exception. |
+
+`erosion_matters` supports weapons, armor, weapon-tools, balls and chains;
+material predicates live in `include/objclass.h` and `src/mkobj.c`. Consequently
+copper armor supports secondary corrosion without primary damage, glass armor
+supports primary cracking without secondary damage, and silver weapons support
+neither. Merely metallic non-weapon tools do not inherit erosion/proofing.
+The generic recipe engine still accepts permitted normal classes; test-only
+recipes exercise rings, wands, tools, food, potions, statues and coins without
+adding production recipes.
+
+### Allowlist, knowledge and transaction boundary
+
+Everything else retains fresh-output state. No material override, individual
+name, coating/poison, grease, input knowledge, worn/in-use state, inventory
+letter, identity, ownership/billing state, age/timer, runtime flag, linkage or
+future field is copied. Native creation and insertion assign legitimate output
+identity and inventory bookkeeping. Actual inheritance is identical for unknown
+and fully identified inputs. Normal Step 15B `dknown`/`makeknown` base knowledge
+remains; hidden enhancement, enchantment, BUC and proofing knowledge does not
+transfer. Normal later identification/observation, including hero-use-only
+elemental observation, remains unchanged.
+
+`forge_commit` revalidates the confirmed ID/type/quantity ledger and combined
+per-object consumption first. It then captures all contributor values, creates
+and finalizes a temporary output, and checks native capacity/merge compatibility
+against surviving inventory. `inv_cnt(FALSE)` and `invlet_basic` remain native;
+only completely consumed non-coin objects release slots. `mergable` is read-only
+and currently never reads quantity, so residual quantities affect survival but
+require no temporary object/inventory mutation. A fully consumed object cannot
+serve as a surviving merge target. Actual **and knowledge** state participate
+in the finalized output comparison; the forge never clears knowledge to merge.
+
+Only after preflight succeeds does the original consumption/`addinv` path run.
+There are no donor pointers in the reduction record, no donor reads after
+consumption, no preflight splitting/relinking/merging, no cloned inventory graph,
+and no floor fallback. Cancellation/rejection remains free and non-mutating;
+success consumes exact confirmed quantities and one turn. Inheritance/filtering
+consume no RNG. Constructor RNG remains native, with exact outer-context
+restoration. Native first-time base discovery can exercise Wisdom and consume
+its existing RNG draw; constructor/inheritance RNG checks isolate that behavior.
+
+No recipe, object/catalog identity, natural-generation rule, shared mechanic,
+object layout, save codec or version epoch changed. `EDITLEVEL` remains 9.
+Current-format persistence uses the normal object fields with no provenance or
+inheritance serializer. Step 15A and Step 13/14 behavior remain protected.
+
+### Step 15C validation (2026-09-19)
+
+Baseline: `phase1/equipment-enhancement`, HEAD
+`439f459b1afbe42fa7118874d4e22f772229d7e9`. Evidence is separately recorded under
+`_qa/step15c/`; all earlier 15B/audit evidence below is historical and retained.
+
+Commands use `C:/Python311/python.exe`. MSBuild was located through `vswhere`
+at `C:/Program Files (x86)/Microsoft Visual Studio/18/BuildTools/MSBuild/Current/Bin/MSBuild.exe`.
+
+| Command/suite | Step 15C result |
+|---|---|
+| `test/run_step15.py --out _qa/step15c/step15` | PASS all 12 production recipes; 1,880 new cases: 1,591 quality/BUC/signed-spe/erosion/proof reductions, 42 property selections, 115 target capabilities, 48 equivalent allocations/knowledge/allowlist snapshots, 16 finalized-output capacity cases, 64 zero-inheritance-RNG/context cases plus 4 construction-failure context controls. Later natural construction yields 7 enhanced objects in 100 fixed-seed controls. |
+| Retained Step 15B native coverage in the same runner | PASS 192 independent allocation cases (105 successes), 16 original capacity cases, 40-stack selection/count/cancellation, construction/allocation failure hooks, navigation, and 2,000 plain constructors across all contexts. Only completed-craft plain-output expectations changed. |
+| Retained Step 15A coverage in the same runner | PASS terrain, activation, trap/shop/light/permanence/provenance and level/bones fixtures; unchanged 1,000-level corpus: 114 selections/placements, no invalid/multiple placements. |
+| `test/run_step13.py --out _qa/step15c/step13` | PASS full affected enhancement/knowledge/combat/naming/value/lifecycle/codec suite: 108 native observation impacts, 5,724 price checks, 110,000 exact generation/RNG traces, million-object corpus, 5,345,280 finalized codec states plus 27,648 earlier cases. Large corpora ran because the authoritative aggregate includes them, not as added volume. |
+| `test/test_step{13,14,15,15b,15c}_source.py`; `test/test_phase1_audit_source.py` | PASS representation and shared-code identity; recipe order; capture/finalization/preflight/RNG boundary. New exact projection rejects 4 mutations; unchanged audit projection rejects 52 mutations across 14 files. Original historical manifests/baselines remain immutable. |
+| `MSBuild.exe sys/windows/vs/NetHack.sln /p:Configuration=Release /p:Platform=x64 /m /v:minimal /nologo` | PASS console, GUI, utilities, resources, tiles, DLB and ZIP. First overlapping build hit a shared `hacklib.lib` lock; serialized retry passed. Both logs retained. |
+| `test/test_step11_resources.py _qa/step13-donors/themerms.lua binary/Release/x64 vspackage/nethack-500-win-x64.zip` | PASS 199 protected files, 186 Lua resources, exact packaged console/GUI/DLB bytes and pinned donor definitions. |
+| `test/test_step9a_tiles.py`; `test/test_step9c_package.py binary/Release/x64/nhdat500` | PASS 2,868 tiles, 640x1574 bitmap capacity, unchanged forge artwork, Mithardir/dungeon/quest packaged data. |
+| `test/test_step9{a,b}_source.py _qa/step13-donors/unnethack.git binary/Release/x64/nhdat500`; `test/test_step9c_mirage_source.py _qa/step13-donors/dnethack.git`; Step 10 source scripts | PASS pinned donors, protected mechanics and historical projections. Initial missing-argument invocations were corrected and rerun with the pinned local donors. |
+| `test/run_step13_save.py _qa/step15c/step13/bin _qa/step15c/enhanced-save` | PASS full-game save/restore and native checkpoint recovery across eight enhanced ownership paths. |
+| `test/run_step15_save.py binary/Release/x64 _qa/step15c/production-reviewed _qa/step15c/step13/bin` | PASS final byte-identical production executable: explicit named selection, free cancellation, one-turn success, inherited +4 katana-to-tsurugi chain; cursed -2, severity-1/1, proofed Exceptional Fire I/Primordial athame from controlled enhanced inputs; level transition, save/restore, native `recover.exe`, and three independent diagnostic save inspections with hidden knowledge preserved. |
+| `git diff --check`; baseline/index/package hash checks | PASS; branch/HEAD unchanged, original index SHA256 `84a944c856f0fcad3617da57ce45d6eb85a39f546ee8652a6bfab83951831017` preserved, no staged changes. `workspace-package-check.json` records final package hashes. |
+
+The enhanced dagger originates in an explicitly diagnostic-created current-format
+save (`STEP13_GAME_FIXTURE` with `STEP15C_GAME_SEED`), not natural acquisition.
+Subsequent menu/gameplay commands run the unmodified production executable.
+Separate save copies after crafting, level traversal, and checkpoint recovery
+are restored by the diagnostic executable with `STEP15C_GAME_CHECK`, which checks
+actual fields and knowledge without identifying or modifying the forged items.
+The fixture-only additions were incrementally rebuilt after the full Step 13
+run; the production save checks exercise that final fixture binary. The live
+terminal checks use Lua's existing native-field view; no production debug API
+or enhancement-field export was added.
+
+The first updated completed-craft assertion failed on Step 15B's plain output,
+then passed after production integration (`red-plain-output.log`). A new RNG
+test initially included first-time discovery's native Wisdom draw; its corrected
+setup pre-discovers the synthetic target before comparing constructor RNG.
+Independent inheritance-only tail checks remain separate. No production RNG
+behavior was changed to satisfy the fixture.
+Review also removed MSVC qualifier/signedness warnings and verified the charge
+lower bound directly against `obj.h`, rather than applying the narrower
+non-wizard wishing limits. The final native suite, source/projection gates,
+Release build/package checks and production terminal/persistence replay passed
+after these corrections. Logs from earlier runs remain separate.
+
+Historical exceptions remain Step 7's `src/mklev.c` and Step 8A's
+`include/dungeon.h` identity mismatches; projected current bytes equal projected
+Step 15B HEAD bytes for both. The documented Win32 GUI startup residual is
+outside scope: GUI build/package success is not visual gameplay validation.
+Existing `mkmap.c` uninitialized-variable and unused-parameter build warnings
+remain. No Step 15C production warning, contract conflict or new persistent
+representation is introduced.
+
+Production changes: `src/apply.c`. Regression/integration changes:
+`test/test_step15b.c`, new `test/test_step15c.c`, `test/run_step15_save.py`,
+`test/test_step13_runtime.c` (diagnostic fixture/restore inspection only), and
+the narrow Step 15C projection/source gates with audit-projection composition.
+Documentation: this file and `doc/phase1.md`. The pre-existing index and local
+`.codegraph/` state are preserved; Step 15C remains unstaged, uncommitted and
+unpushed for review. No blocker or contract deviation remains; historical
+exceptions and the GUI manual residual above are not counted as passing gates.
+
 ## Shop invariant
 
 The terrain setter rejects forge placement inside existing shops. Lua map
@@ -213,9 +383,9 @@ the invalid forge square becomes ordinary room terrain. This narrow generation
 repair is the exception to forge permanence. Rectangular shop geometry is
 checked even before topology assigns room numbers. Forging never bills goods.
 
-## Current audit
+## Historical audit through Step 15B
 
-The [Phase 1 audit through 15B](phase1-audit.md) records the current validation,
+The [Phase 1 audit through 15B](phase1-audit.md) records the earlier validation,
 confirmed corrections and finalized closeout contracts. It adds exact
 allocation/capacity ledgers, native count/quantity boundaries, stronger terrain
 and provenance tests, and production repeated crafting. The original evidence
@@ -289,7 +459,7 @@ apply dispatch, Lua parser, and codecs. It is separate from production builds.
 ### Exactly 1,000 eligible generation cases
 
 The corpus runs in a fresh process, separate from other fixtures, using seeds
-150000–150999 (display seeds 160000–160999). Requested depths cycle over 20–199;
+150000â€“150999 (display seeds 160000â€“160999). Requested depths cycle over 20â€“199;
 known excluded identities advance to the next eligible depth before generation.
 The fixture fixes the deferred Ludios junction at DL18 so a sampled ordinary
 level cannot become a branch junction partway through generation. No forge

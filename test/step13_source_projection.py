@@ -7,6 +7,7 @@ Step 13's own source and native runtime gates test the excluded behavior.
 """
 import json
 from pathlib import Path
+from phase1_audit_projection import project as audit_project
 
 CHANGES = json.loads(Path(__file__).with_name(
     'step13_historical_changes.json').read_text(encoding='utf8'))
@@ -18,6 +19,7 @@ STEP15_CHANGES = json.loads(Path(__file__).with_name(
 
 
 def project(path, text):
+    text = audit_project(path, text)
     # Exact reviewed forge hunks; all other bytes retain historical protection.
     for hunk in STEP15_CHANGES.get(path, []):
         if hunk['after'] in text:

@@ -4247,6 +4247,499 @@ apply_ok(struct obj *obj)
     return GETOBJ_EXCLUDE_SELECTABLE;
 }
 
+/* Step 15B: recipes and allocations are entirely transient.  Keep the two
+ * explicit slots even when their types agree; quantities are pooled only for
+ * availability, formula comparison and the eventual per-object consumption. */
+struct forge_need {
+    short otyp, quantity;
+};
+struct forge_recipe {
+    short output;
+    struct forge_need need[2];
+};
+struct forge_allocation {
+    unsigned oid;
+    long quantity[2];
+};
+static const struct forge_recipe forge_recipes[] = {
+    { KATANA, { { LONG_SWORD, 1 }, { LONG_SWORD, 1 } } },
+    { TWO_HANDED_SWORD, { { LONG_SWORD, 1 }, { BROADSWORD, 1 } } },
+    { TSURUGI, { { KATANA, 1 }, { TWO_HANDED_SWORD, 1 } } },
+    { BATTLE_AXE, { { AXE, 1 }, { BROADSWORD, 1 } } },
+    { DWARVISH_MATTOCK, { { PICK_AXE, 1 }, { DWARVISH_SHORT_SWORD, 1 } } },
+    { TRIDENT, { { SCIMITAR, 1 }, { SPEAR, 1 } } },
+    { ATHAME, { { DAGGER, 1 }, { STILETTO, 1 } } },
+    { RUNESWORD, { { BROADSWORD, 1 }, { DAGGER, 1 } } },
+    { CHAIN_MAIL, { { RING_MAIL, 1 }, { RING_MAIL, 1 } } },
+    { SPLINT_MAIL, { { SCALE_MAIL, 1 }, { CHAIN_MAIL, 1 } } },
+    { PLATE_MAIL, { { SPLINT_MAIL, 1 }, { CHAIN_MAIL, 1 } } },
+    { ELVEN_SHIELD, { { ELVEN_DAGGER, 1 }, { SMALL_SHIELD, 1 } } }
+};
+
+staticfn boolean
+forge_type_allowed(int typ)
+{
+    struct obj obj = cg.zeroobj;
+
+    if (typ <= STRANGE_OBJECT || typ >= NUM_OBJECTS
+        || !OBJ_NAME(objects[typ]) || objects[typ].oc_unique)
+        return FALSE;
+    obj.otyp = typ;
+    /* Slabs have discovery/progression side effects even with init=FALSE. */
+    return !is_mith_slab(&obj);
+}
+
+staticfn long
+forge_required(const struct forge_recipe *r, int typ)
+{
+    return (r->need[0].otyp == typ ? (long) r->need[0].quantity : 0L)
+           + (r->need[1].otyp == typ ? (long) r->need[1].quantity : 0L);
+}
+
+staticfn boolean
+forge_catalog_valid(const struct forge_recipe *table, int count)
+{
+    int i, j, slot;
+
+    for (i = 0; i < count; ++i) {
+        if (!forge_type_allowed(table[i].output))
+            return FALSE;
+        for (slot = 0; slot < 2; ++slot)
+            if (!forge_type_allowed(table[i].need[slot].otyp)
+                || table[i].need[slot].quantity <= 0)
+                return FALSE;
+        for (j = 0; j < i; ++j)
+            if (forge_required(&table[j], table[i].need[0].otyp)
+                    == forge_required(&table[i], table[i].need[0].otyp)
+                && forge_required(&table[j], table[i].need[1].otyp)
+                    == forge_required(&table[i], table[i].need[1].otyp)
+                && forge_required(&table[i], table[j].need[0].otyp)
+                    == forge_required(&table[j], table[j].need[0].otyp)
+                && forge_required(&table[i], table[j].need[1].otyp)
+                    == forge_required(&table[j], table[j].need[1].otyp))
+                return FALSE;
+    }
+    return TRUE;
+}
+
+enum forge_reason {
+    FORGE_USABLE, FORGE_UNKNOWN, FORGE_EQUIPPED, FORGE_HAMMER,
+    FORGE_PROTECTED, FORGE_UNPAID, FORGE_CONTENTS, FORGE_ATTACHED,
+    FORGE_NOT_CARRIED, FORGE_REASON_COUNT
+};
+
+staticfn enum forge_reason
+forge_reason(struct obj *obj, struct obj *hammer)
+{
+    if (obj->where != OBJ_INVENT)
+        return FORGE_NOT_CARRIED;
+    /* Same base-type knowledge gates used by native object naming. Never
+     * classify an unknown object by its true type, even for diagnostics. */
+    if (!obj->dknown || !objects[obj->otyp].oc_name_known)
+        return FORGE_UNKNOWN;
+    if (obj == hammer)
+        return FORGE_HAMMER;
+    if (obj->owornmask)
+        return FORGE_EQUIPPED;
+    if (obj->oartifact || !forge_type_allowed(obj->otyp)
+        || (obj->otyp == CORPSE && obj->corpsenm >= LOW_PM
+            && is_rider(&mons[obj->corpsenm])))
+        return FORGE_PROTECTED;
+    if (is_unpaid(obj))
+        return FORGE_UNPAID;
+    if (Has_contents(obj))
+        return FORGE_CONTENTS;
+    /* canletgo's loadstone and welded paths can set bknown. Worn objects
+     * were rejected above; avoid its loadstone side effect as well. */
+    if ((obj->otyp == LOADSTONE && obj->cursed)
+        || (obj->otyp == LEASH && obj->leashmon) || obj->in_use
+        || !canletgo(obj, ""))
+        return FORGE_ATTACHED;
+    return FORGE_USABLE;
+}
+
+staticfn long
+forge_quantity(int typ, struct obj *hammer, long reasons[FORGE_REASON_COUNT])
+{
+    struct obj *obj;
+    enum forge_reason reason;
+    long total = 0;
+
+    for (obj = gi.invent; obj; obj = obj->nobj) {
+        reason = forge_reason(obj, hammer);
+        if (reason == FORGE_UNKNOWN || obj->otyp != typ)
+            continue;
+        if (reasons)
+            reasons[reason] = nowrap_add(reasons[reason], obj->quan);
+        if (reason == FORGE_USABLE)
+            total = nowrap_add(total, obj->quan);
+    }
+    return total;
+}
+
+staticfn boolean
+forge_available(const struct forge_recipe *r, struct obj *hammer)
+{
+    int slot;
+    for (slot = 0; slot < 2; ++slot)
+        if (forge_quantity(r->need[slot].otyp, hammer, (long *) 0)
+            < forge_required(r, r->need[slot].otyp))
+            return FALSE;
+    return TRUE;
+}
+
+staticfn struct obj *
+forge_find(unsigned oid)
+{
+    struct obj *obj;
+    for (obj = gi.invent; obj; obj = obj->nobj)
+        if (obj->o_id == oid)
+            return obj;
+    return (struct obj *) 0;
+}
+
+#ifdef STEP15_TEST
+static boolean forge_fail_construction;
+#endif
+
+staticfn struct obj *
+forge_output(int typ)
+{
+    enum enhancement_context old = enhancement_context_set(ENH_CONTEXT_NONE);
+    struct obj *obj;
+
+#ifdef STEP15_TEST
+    obj = forge_fail_construction ? (struct obj *) 0 : mksobj(typ, FALSE, FALSE);
+#else
+    obj = mksobj(typ, FALSE, FALSE);
+#endif
+
+    (void) enhancement_context_set(old);
+    if (obj)
+        obj->dknown = 1; /* crafted base type only, not full identification */
+    return obj;
+}
+
+staticfn int
+forge_commit(const struct forge_recipe *r, struct forge_allocation *a, int n)
+{
+    struct obj *obj, *output;
+    long totals[2] = { 0L, 0L }, used;
+    int i, j, slot, slots = inv_cnt(FALSE);
+    boolean merges = FALSE;
+
+    /* Defensive consistency only: no second eligibility/recipe selection. */
+    for (i = 0; i < n; ++i) {
+        obj = forge_find(a[i].oid);
+        if (!obj || a[i].quantity[0] < 0 || a[i].quantity[1] < 0
+            || a[i].quantity[0] > obj->quan
+            || a[i].quantity[1] > obj->quan - a[i].quantity[0])
+            goto invalid;
+        for (j = 0; j < i; ++j)
+            if (a[j].oid == a[i].oid)
+                goto invalid;
+        for (slot = 0; slot < 2; ++slot) {
+            if (a[i].quantity[slot]
+                && obj->otyp != r->need[slot].otyp)
+                goto invalid;
+            if (a[i].quantity[slot] > r->need[slot].quantity - totals[slot])
+                goto invalid;
+            totals[slot] += a[i].quantity[slot];
+        }
+        if (a[i].quantity[0] + a[i].quantity[1] == obj->quan
+            && obj->oclass != COIN_CLASS)
+            --slots;
+    }
+    if (totals[0] != r->need[0].quantity || totals[1] != r->need[1].quantity)
+        goto invalid;
+    output = forge_output(r->output);
+    if (!output)
+        goto invalid;
+    /* addinv uses mergable and invlet_basic is the native pack-slot limit.
+     * Test only surviving objects; no tentative splitting or list edits. */
+    for (obj = gi.invent; obj; obj = obj->nobj) {
+        used = 0L;
+        for (i = 0; i < n; ++i)
+            if (a[i].oid == obj->o_id)
+                used = a[i].quantity[0] + a[i].quantity[1];
+        if (used < obj->quan && mergable(obj, output))
+            merges = TRUE;
+    }
+    if (slots + (merges || output->oclass == COIN_CLASS ? 0 : 1) > invlet_basic) {
+        obfree(output, (struct obj *) 0);
+        You("have no room in your pack for the forged item.");
+        return ECMD_OK;
+    }
+
+    /* No fallible operations remain. Consume each unique ID once; never
+     * retain or follow a pointer across useupall/freeinv/obfree mutations. */
+    for (i = 0; i < n; ++i) {
+        used = a[i].quantity[0] + a[i].quantity[1];
+        if (!used)
+            continue;
+        obj = forge_find(a[i].oid);
+        if (used == obj->quan)
+            useupall(obj);
+        else {
+            obj->quan -= used; /* native useup's partial-stack path */
+            obj->owt = weight(obj);
+        }
+    }
+    makeknown(r->output);
+    output = addinv(output);
+    prinv("You forge:", output, 1L);
+    encumber_msg();
+    return ECMD_TIME;
+
+ invalid:
+    pline("The forge cannot complete this allocation.");
+    return ECMD_OK;
+}
+
+staticfn int
+forge_category(int typ)
+{
+    switch (objects[typ].oc_class) {
+    case WEAPON_CLASS: return 0;
+    case ARMOR_CLASS: return 1;
+    case TOOL_CLASS: return 2;
+    default: return 3;
+    }
+}
+
+staticfn void
+forge_menu_line(winid win, int id, char letter, const char *text)
+{
+    anything any = cg.zeroany;
+    any.a_int = id;
+    add_menu(win, &nul_glyphinfo, &any, letter, 0, ATR_NONE, NO_COLOR,
+             text, MENU_ITEMFLAGS_NONE);
+}
+
+staticfn int
+forge_menu_pick(winid win, const char *prompt, long *count)
+{
+    menu_item *selected = (menu_item *) 0;
+    int result = 0;
+
+    end_menu(win, prompt);
+    if (select_menu(win, PICK_ONE, &selected) > 0) {
+        result = selected[0].item.a_int;
+        if (count)
+            *count = selected[0].count;
+    }
+    free((genericptr_t) selected);
+    destroy_nhwindow(win);
+    return result;
+}
+
+staticfn void
+forge_formula(const struct forge_recipe *r, char *buf)
+{
+    char first[BUFSZ];
+    long n = r->need[0].quantity;
+    const char *name = OBJ_NAME(objects[r->need[0].otyp]);
+
+    if (r->need[0].otyp == r->need[1].otyp)
+        n += r->need[1].quantity;
+    Sprintf(first, "%ld %s", n, n == 1 ? name : makeplural(name));
+    if (r->need[0].otyp == r->need[1].otyp) {
+        Strcpy(buf, first);
+    } else {
+        n = r->need[1].quantity;
+        name = OBJ_NAME(objects[r->need[1].otyp]);
+        Sprintf(buf, "%s + %ld %s", first, n,
+                n == 1 ? name : makeplural(name));
+    }
+}
+
+staticfn void
+forge_inspect(const struct forge_recipe *r, struct obj *hammer)
+{
+    static const char *const reasons[FORGE_REASON_COUNT] = {
+        "eligible", "", "equipped", "activating hammer", "protected",
+        "unpaid", "non-empty", "cannot be relinquished", "not carried"
+    };
+    int slot, i;
+    long counts[FORGE_REASON_COUNT];
+    char buf[BUFSZ];
+    winid win = create_nhwindow(NHW_TEXT);
+
+    for (slot = 0; slot < 2; ++slot) {
+        int typ = r->need[slot].otyp;
+        if (slot && typ == r->need[0].otyp)
+            continue;
+        (void) memset(counts, 0, sizeof counts);
+        (void) forge_quantity(typ, hammer, counts);
+        Sprintf(buf, "Requires %ld %s: %ld eligible.",
+                forge_required(r, typ), makeplural(OBJ_NAME(objects[typ])),
+                counts[FORGE_USABLE]);
+        putstr(win, 0, buf);
+        for (i = FORGE_EQUIPPED; i < FORGE_REASON_COUNT; ++i)
+            if (counts[i]) {
+                Sprintf(buf, "  %ld %s.", counts[i], reasons[i]);
+                putstr(win, 0, buf);
+            }
+    }
+    display_nhwindow(win, TRUE);
+    destroy_nhwindow(win);
+}
+
+/* Normal inventory names on a shallow display copy. xname/doname may observe
+ * or set priest BUC knowledge; tentative allocation must not do either. */
+staticfn char *
+forge_inventory_name(struct obj *obj)
+{
+    struct obj copy = *obj;
+    char *name;
+    ++gd.distantname;
+    name = doname(&copy);
+    --gd.distantname;
+    return name;
+}
+
+staticfn boolean
+forge_allocate(const struct forge_recipe *r, struct obj *hammer,
+               struct forge_allocation *a, int n)
+{
+    int slot, i, choice;
+    long left, remaining, count;
+    struct obj *obj;
+    char buf[BUFSZ], prompt[BUFSZ];
+    winid win;
+
+    for (slot = 0; slot < 2; ++slot) {
+        left = r->need[slot].quantity;
+        while (left > 0) {
+            win = create_nhwindow(NHW_MENU);
+            start_menu(win, MENU_BEHAVE_STANDARD);
+            for (i = 0; i < n; ++i) {
+                obj = forge_find(a[i].oid);
+                if (obj->otyp != r->need[slot].otyp
+                    || forge_reason(obj, hammer) != FORGE_USABLE)
+                    continue;
+                remaining = obj->quan - a[i].quantity[0] - a[i].quantity[1];
+                if (remaining <= 0)
+                    continue;
+                Sprintf(buf, "%.180s [%ld available]", forge_inventory_name(obj),
+                        remaining);
+                forge_menu_line(win, i + 1, obj->invlet, buf);
+            }
+            Sprintf(prompt, "Choose %ld %s (prefix a count to contribute fewer)",
+                    left, makeplural(OBJ_NAME(objects[r->need[slot].otyp])));
+            choice = forge_menu_pick(win, prompt, &count);
+            if (choice <= 0)
+                return FALSE;
+            i = choice - 1;
+            obj = forge_find(a[i].oid);
+            remaining = obj->quan - a[i].quantity[0] - a[i].quantity[1];
+            if (count == -1L)
+                count = min(left, remaining); /* native select-all default */
+            if (count <= 0 || count > remaining || count > left) {
+                pline("Choose no more than %ld.", min(left, remaining));
+                continue;
+            }
+            a[i].quantity[slot] += count;
+            left -= count;
+        }
+    }
+    return TRUE;
+}
+
+staticfn boolean
+forge_confirm(const struct forge_recipe *r, struct forge_allocation *a, int n)
+{
+    int i;
+    long used;
+    char buf[BUFSZ];
+    winid win = create_nhwindow(NHW_MENU);
+
+    start_menu(win, MENU_BEHAVE_STANDARD);
+    Sprintf(buf, "Forge one %s, consuming:", OBJ_NAME(objects[r->output]));
+    forge_menu_line(win, 0, 0, buf);
+    for (i = 0; i < n; ++i) {
+        used = a[i].quantity[0] + a[i].quantity[1];
+        if (used) {
+            struct obj *obj = forge_find(a[i].oid);
+            Sprintf(buf, "%ld from %c - %.180s", used, obj->invlet,
+                    forge_inventory_name(obj));
+            forge_menu_line(win, 0, 0, buf);
+        }
+    }
+    forge_menu_line(win, 1, 'y', "Yes, forge this item");
+    forge_menu_line(win, 2, 'n', "No, return to recipes");
+    return forge_menu_pick(win, "Confirm crafting?", (long *) 0) == 1;
+}
+
+staticfn int
+forge_menu(struct obj *hammer)
+{
+    static const char *const categories[] = { "Weapons", "Armor", "Tools", "Other" };
+    int i, category, recipe, present[4] = { 0, 0, 0, 0 }, n, result;
+    struct obj *obj;
+    struct forge_allocation *a;
+    const struct forge_recipe *r;
+    winid win;
+    char formula[BUFSZ], buf[BUFSZ];
+
+    if (!forge_catalog_valid(forge_recipes, SIZE(forge_recipes)))
+        panic("Invalid static forge catalogue");
+    for (i = 0; i < SIZE(forge_recipes); ++i)
+        present[forge_category(forge_recipes[i].output)]++;
+    win = create_nhwindow(NHW_MENU);
+    start_menu(win, MENU_BEHAVE_STANDARD);
+    forge_menu_line(win, 1, 'f', "Forge an item");
+    if (!forge_menu_pick(win, "Use the forge", (long *) 0))
+        return ECMD_OK;
+    for (;;) {
+        win = create_nhwindow(NHW_MENU);
+        start_menu(win, MENU_BEHAVE_STANDARD);
+        for (i = 0; i < 4; ++i)
+            forge_menu_line(win, present[i] ? i + 1 : 0, 0, categories[i]);
+        category = forge_menu_pick(win, "Choose a category", (long *) 0) - 1;
+        if (category < 0)
+            return ECMD_OK;
+        for (;;) {
+            win = create_nhwindow(NHW_MENU);
+            start_menu(win, MENU_BEHAVE_STANDARD);
+            for (i = 0; i < SIZE(forge_recipes); ++i) {
+                r = &forge_recipes[i];
+                if (forge_category(r->output) != category)
+                    continue;
+                forge_formula(r, formula);
+                Sprintf(buf, "%s - %s [%s]", OBJ_NAME(objects[r->output]),
+                        formula, forge_available(r, hammer) ? "Available"
+                                                           : "Unavailable");
+                forge_menu_line(win, i + 1, 0, buf);
+            }
+            recipe = forge_menu_pick(win, categories[category], (long *) 0) - 1;
+            if (recipe < 0)
+                break;
+            r = &forge_recipes[recipe];
+            if (!forge_available(r, hammer)) {
+                forge_inspect(r, hammer);
+                continue;
+            }
+            for (n = 0, obj = gi.invent; obj; obj = obj->nobj)
+                ++n;
+            a = (struct forge_allocation *) alloc(n * sizeof *a);
+            (void) memset(a, 0, n * sizeof *a);
+            for (i = 0, obj = gi.invent; obj; obj = obj->nobj)
+                a[i++].oid = obj->o_id;
+            result = ECMD_OK;
+            if (forge_allocate(r, hammer, a, n) && forge_confirm(r, a, n))
+                result = forge_commit(r, a, n);
+            free((genericptr_t) a);
+            if (result == ECMD_TIME)
+                return result;
+        }
+    }
+}
+
+#ifdef STEP15_TEST
+#include "../test/test_step15b.c"
+#endif
+
 /* One entry point for forge operations. Rejections use the no-time ECMD_OK
  * convention of do_break_wand strength and use_pole state gates. Step 15B
  * extends the final operation without changing the activation rule. */
@@ -4264,8 +4757,7 @@ forge_interact(struct obj *hammer)
         You("are too weak to use the forge.");
         return ECMD_OK;
     }
-    You("know no forge operations yet.");
-    return ECMD_TIME;
+    return forge_menu(hammer);
 }
 
 /* the #apply command, 'a' */

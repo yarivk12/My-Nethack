@@ -79,6 +79,9 @@ set_levltyp(coordxy x, coordxy y, schar newtyp)
     if (isok(x, y) && newtyp >= STONE && newtyp < MAX_TYPE) {
         schar oldtyp = levl[x][y].typ;
 
+        if (IS_FORGE(newtyp) && (forge_in_shop(x, y) || t_at(x, y)))
+            return FALSE;
+
         /* hack for secret doors in garden theme rooms */
         if (oldtyp == SDOOR && newtyp == AIR) {
             /* levl[][].typ stays SDOOR rather than change to AIR */
@@ -298,6 +301,8 @@ staticfn boolean
 okay(coordxy x, coordxy y, coordxy dir)
 {
     mz_move(x, y, dir);
+    if (isok(x, y) && IS_FORGE(levl[x][y].typ))
+        return FALSE;
     mz_move(x, y, dir);
     if (x < 3 || y < 3 || x > gx.x_maze_max || y > gy.y_maze_max
         || levl[x][y].typ != STONE)
@@ -1310,7 +1315,7 @@ walkfrom(coordxy x, coordxy y, schar typ)
     while (pos) {
         x = (int) mazex[pos];
         y = (int) mazey[pos];
-        if (!IS_DOOR(levl[x][y].typ)) {
+        if (!IS_DOOR(levl[x][y].typ) && !IS_FORGE(levl[x][y].typ)) {
             /* might still be on edge of MAP, so don't overwrite */
             levl[x][y].typ = typ;
             levl[x][y].flags = 0;
@@ -1349,7 +1354,7 @@ walkfrom(coordxy x, coordxy y, schar typ)
             typ = ROOM;
     }
 
-    if (!IS_DOOR(levl[x][y].typ)) {
+    if (!IS_DOOR(levl[x][y].typ) && !IS_FORGE(levl[x][y].typ)) {
         /* might still be on edge of MAP, so don't overwrite */
         levl[x][y].typ = typ;
         levl[x][y].flags = 0;

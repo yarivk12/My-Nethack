@@ -7,9 +7,12 @@ The exact baseline is the annotated tag `phase0-dod-expansion-complete`, which
 points to commit `216bf60903cbde8b3ef1de33aeb7368a09ba6719`, the final commit on
 the preserved historical branch `phase0/dod-length`.
 
-Phase 1 is active on `phase1/equipment-enhancement`. Step 13 is the next
-milestone. This transition establishes planning and repository state only.
-No Step 13 gameplay implementation or data-structure design is part of it.
+Phase 1 is active on `phase1/equipment-enhancement`. Steps 13 and 14, the
+Step 15A forge foundation, and Step 15B recipe transactions are complete through
+the Phase 1 audit and closeout. Step 15C equipment-state inheritance is next,
+followed by Step 15D gemstone affixing. The finalized step documents govern
+current semantics; [the Phase 1 audit](phase1-audit.md) records validation and
+remaining limitations through Step 15B.
 
 ## Objective
 
@@ -59,8 +62,9 @@ Phase 1 design is constrained by the following principles:
 - Donor probability curves and power values must not be copied blindly into
   My-Nethack's 200-level DoD.
 
-The actual Step 13 data structure is intentionally not designed or implemented
-by this transition.
+The shared representation and lifecycle contract are defined in
+[Step 13](step13.md), with the finalized catalog and acquisition rules in
+[Step 14](step14.md).
 
 ## Persistence policy
 
@@ -76,16 +80,16 @@ requiring preservation. Therefore:
 - saves and bones created by the resulting new implementation must still
   function correctly within that implementation.
 
-## Planned milestones
+## Milestones
 
-These milestones are planning boundaries, not completed work:
+The original planning boundaries have been refined by finalized Step 15:
 
 1. **Step 13 — Unified Enhancement Engine + initial properties + quality**
 2. **Step 14 — Depth-scaled random enhanced equipment generation**
-3. **Step 15 — Forging**
-4. **Step 16 — Gemstone affixing**
-5. **Step 17 — Advanced properties and combinations**
-6. **Step 18 — Endgame / Mythic-Lite progression**
+3. **Step 15A/B — Forge foundation and recipe transactions**
+4. **Step 15C — Equipment-state inheritance** (deferred)
+5. **Step 15D — Gemstone affixing** (deferred)
+6. **Step 16+ — Later combinations and progression** (not implemented)
 
 Optional later extensions may include dragon-scaled armor, monster-essence
 concepts, and explicitly designed artifact interactions.
@@ -93,9 +97,9 @@ concepts, and explicitly designed artifact interactions.
 These milestone boundaries may be refined by later design work without changing
 the overall Phase 1 objective.
 
-## Step 13 entry requirement
+## Historical Step 13 entry requirement
 
-Step 13 must begin with a current-HEAD architecture/design audit. Earlier
+Step 13 required a then-current-HEAD architecture/design audit. Earlier
 enhancement research remains useful background, but it was performed against
 an earlier repository snapshot and must not substitute for inspection of the
 current Phase 1 codebase.

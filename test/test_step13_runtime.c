@@ -484,9 +484,20 @@ step13_test_main(void)
     gy.youmonst.data=&mons[PM_HUMAN];u.umonnum=u.umonster=PM_HUMAN;
     for(i=0;i<A_MAX;++i)ABASE(i)=AMAX(i)=18;
     for(x=1;x<COLNO-1;++x)for(y=1;y<ROWNO-1;++y)levl[x][y].typ=ROOM;
+    /* Native projectile animation must not flush an uninitialized test port. */
+    flush_screen(-1);
     printf("SIZE|obj=%zu|before=104|props=%zu|known=%zu|quality=%zu|flags=%zu|epoch=%d\n",sizeof(struct obj),sizeof(((struct obj*)0)->o_enh_props),sizeof(((struct obj*)0)->o_enh_known),sizeof(((struct obj*)0)->o_enh_quality),sizeof(((struct obj*)0)->o_enh_flags),EDITLEVEL);
+    if(getenv("STEP13_COMBAT_ONLY")) {
+        combat();combat_paths();armor();step14_combat_tests();
+        step14_hero_use_observation_tests();step14_observation_tests();
+        puts("PASS Step 13 focused combat/knowledge fixtures");return 0;
+    }
     matrix();combat();combat_paths();armor();step14_combat_tests();
+    step14_hero_use_observation_tests();
     step14_names_prices_tests();step14_observation_tests();
+    step14_audit_lifecycle_observation_tests();
+    step14_audit_polymorph_context_tests();
+    step14_audit_monster_transform_tests();
     step14_generation_tests();step14_corpus();step14_creation_tests();
     lifecycle_names();artifacts_prices();billing();chains();step14_persistence_tests();version_gate();level_bones();
     puts("PASS Step 13 native runtime fixtures");return 0;
@@ -513,9 +524,28 @@ check_fixture_chain(struct obj *chain)
             assert(o->o_enh_known==OEP_FIRE&&o->o_enh_quality==OQ_EXCEPTIONAL);
             assert(o->o_enh_flags==OEF_QUALITY_KNOWN);++found;
         }
+        if(o->cobj) {
+            struct obj *child;
+            for(child=o->cobj;child;child=child->nobj)
+                assert(child->where==OBJ_CONTAINED&&child->ocontainer==o);
+        }
         found+=check_fixture_chain(o->cobj);
     }
     return found;
+}
+
+static int
+fixture_named(struct obj *chain, const char *name, int where)
+{
+    int count=0;
+    struct obj *o;
+    for(o=chain;o;o=o->nobj) {
+        if(has_oname(o)&&!strcmp(ONAME(o),name)) {
+            assert(o->where==where);++count;
+        }
+        count+=fixture_named(o->cobj,name,where);
+    }
+    return count;
 }
 
 void
@@ -524,7 +554,7 @@ step13_game_fixture(boolean resuming)
     struct obj *o,*bag,*inner;
     struct monst *m;
     FILE *log;
-    int n;
+    int n,local_monster=0,migrating_monster=0;
     _set_error_mode(_OUT_TO_STDERR);
     _set_abort_behavior(0,_WRITE_ABORT_MSG|_CALL_REPORTFAULT);
     if(!resuming) {
@@ -538,13 +568,36 @@ step13_game_fixture(boolean resuming)
         m=makemon(&mons[PM_HUMAN],u.ux,u.uy,MM_ADJACENTOK|NO_MINVENT);
         assert(m);m->mpeaceful=TRUE;m->msleeping=TRUE;
         add_to_minv(m,fixture_item("step13-monster"));
+        m=makemon(&mons[PM_HUMAN],u.ux,u.uy,MM_ADJACENTOK|NO_MINVENT);
+        assert(m);m->mpeaceful=TRUE;m->msleeping=TRUE;
+        add_to_minv(m,fixture_item("step13-migrating-monster"));
+        {
+            d_level dest=u.uz;
+            ++dest.dlevel;
+            migrate_to_level(m,ledger_no(&dest),MIGR_RANDOM,NULL);
+        }
     }
     n=check_fixture_chain(gi.invent)+check_fixture_chain(fobj)
        +check_fixture_chain(svl.level.buriedobjlist)+check_fixture_chain(gm.migrating_objs)
        +check_fixture_chain(gb.billobjs);
-    for(m=fmon;m;m=m->nmon)n+=check_fixture_chain(m->minvent);
-    assert(n==7);
+    for(m=fmon;m;m=m->nmon) {
+        n+=check_fixture_chain(m->minvent);
+        local_monster+=fixture_named(m->minvent,"step13-monster",OBJ_MINVENT);
+        for(o=m->minvent;o;o=o->nobj)assert(o->ocarry==m);
+    }
+    for(m=gm.migrating_mons;m;m=m->nmon) {
+        n+=check_fixture_chain(m->minvent);
+        migrating_monster+=fixture_named(m->minvent,"step13-migrating-monster",OBJ_MINVENT);
+        for(o=m->minvent;o;o=o->nobj)assert(o->ocarry==m);
+    }
+    assert(n==8&&local_monster==1&&migrating_monster==1);
+    assert(fixture_named(gi.invent,"step13-inventory",OBJ_INVENT)==1);
+    assert(fixture_named(gi.invent,"step13-nested",OBJ_CONTAINED)==1);
+    assert(fixture_named(fobj,"step13-floor",OBJ_FLOOR)==1);
+    assert(fixture_named(svl.level.buriedobjlist,"step13-buried",OBJ_BURIED)==1);
+    assert(fixture_named(gm.migrating_objs,"step13-migrating",OBJ_MIGRATING)==1);
+    assert(fixture_named(gb.billobjs,"step13-bill",OBJ_ONBILL)==1);
     log=fopen("step13-game-results.txt","a");assert(log);
-    fprintf(log,"PASS %s all seven ownership chains and nested container state\n",resuming?"restored":"created");
+    fprintf(log,"PASS %s all eight ownership paths, migrating monster, container/monster backlinks and named owner identities\n",resuming?"restored":"created");
     fclose(log);
 }

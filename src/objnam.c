@@ -3669,6 +3669,10 @@ wizterrainwish(struct _readobjnam_data *d)
        or place furniture on existing traps which shouldn't be allowed) */
     lev = &levl[x][y];
     oldtyp = lev->typ;
+    /* Keep terrain wishes from bypassing permanent terrain.  Returning
+     * null still lets readobjnam resolve an ordinary object wish. */
+    if (IS_FORGE(oldtyp))
+        return (struct obj *) 0;
     is_dbridge = (oldtyp == DRAWBRIDGE_DOWN || oldtyp == DRAWBRIDGE_UP);
     p = eos(bp);
     if (!BSTRCMPI(bp, p - 8, "fountain")) {

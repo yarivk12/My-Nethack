@@ -1,9 +1,10 @@
-# Phase 1 Step 15A — forge foundation
+# Phase 1 Step 15 — forge foundation and recipe transactions
 
 Step 15A implements forge terrain, natural placement, and war-hammer activation.
-Step 15B is the future recipe and crafting-transaction phase. No recipes,
-ingredients, crafted objects, inheritance, repairs, charges, cooldowns, smithing
-skills, environmental forge interactions, or recipe UI are implemented.
+Step 15B adds the locked recipe catalogue, native menus, exact ingredient
+allocation, and atomic crafting. Step 15C equipment-state inheritance and
+Step 15D gemstone affixing remain deferred. There are no repairs, charges,
+cooldowns, smithing skills, recipe learning, or persistent forge provenance.
 
 ## Terrain and compatibility
 
@@ -24,7 +25,12 @@ radius-based light source. Ordinary objects can rest on it normally.
 Lua uses the previously unused map character `f`, through both `des.map` and
 `des.terrain({ x=..., y=..., typ='f', lit=0 })`. Forge lighting overrides `lit=0`.
 Explicit placement is independent of depth, branch, probability, and natural
-room restrictions. A standalone `des.finalize_level` does not select forges.
+room restrictions, except that a forge may never exist inside a shop. Authored
+placement on an already-trapped square is rejected: the trap, underlying terrain,
+lighting, and square metadata remain unchanged. This applies to coordinate and
+selection terrain requests, terrain replacement, and map fragments. Ordinary
+non-forge terrain placement gains no new restriction; shop resolution is unchanged.
+A standalone `des.finalize_level` does not select forges.
 
 **EDITLEVEL 8 → 9** rejects old saves and bones through the existing version gate.
 Appending the terrain leaves existing real terrain IDs intact, but adding
@@ -84,11 +90,184 @@ alignment/touch restrictions or side effects from becoming forge requirements.
 Native apply hands/capacity preflight is retained. State rejections use
 `ECMD_OK` (no time), following `do_break_wand`'s strength rejection and existing
 `use_pole` preflight gates. Invalid entry-point terrain/type returns `ECMD_FAIL`.
-Valid activation says “You know no forge operations yet.” and returns
-`ECMD_TIME`, one normal action. It changes no item, enhancement, or terrain.
-There is no placeholder menu.
+Valid activation opens the native forge menu. Opening, browsing, inspection,
+cancellation and transaction rejection return `ECMD_OK`, without a turn.
+Only successful crafting returns `ECMD_TIME`, then exits the interaction.
+This supersedes Step 15A's temporary one-turn activation message.
 
-## Validation evidence
+## Step 15B catalogue and workflow
+
+The action menu offers only **Forge an item**. Categories are always Weapons,
+Armor, Tools, Other; empty categories are nonselectable. Category derives from
+the output's native object class, with weapon ammunition under Weapons.
+Recipes are known from the beginning and list true output/ingredient names,
+complete quantities, and Available/Unavailable status. No inventory object is
+identified by reading a recipe. Unavailable recipes remain selectable for
+inspection and return to the same list.
+
+The central `forge_recipes` table in `src/apply.c` has one output type and exactly
+two fixed ingredient slots, each an exact type and positive quantity. There is
+no output-quantity field: each craft makes one object. Catalogue validation
+rejects invalid, unique/protected and progression-slab types, nonpositive counts,
+and duplicate unordered input formulas. Same-type quantities are aggregated for
+duplicate checking; different formulas may share an output. Invalid static
+catalogues are development errors (`panic`), not random crafting failures.
+
+The curated order groups the sword chain, other weapon conversions, then the
+armor progression:
+
+| # | Output | Ingredients |
+|---|---|---|
+| 1 | katana | 2 long swords |
+| 2 | two-handed sword | long sword + broadsword |
+| 3 | tsurugi | katana + two-handed sword |
+| 4 | battle-axe | axe + broadsword |
+| 5 | dwarvish mattock | pick-axe + dwarvish short sword |
+| 6 | trident | scimitar + spear |
+| 7 | athame | dagger + stiletto |
+| 8 | runesword | broadsword + dagger |
+| 9 | chain mail | 2 ring mails |
+| 10 | splint mail | scale mail + chain mail |
+| 11 | plate mail | splint mail + chain mail |
+| 12 | elven shield | elven dagger + small shield |
+
+There are no object imports. The engine permits other normal classes in future
+explicit recipes. Importing a future object must separately decide its source
+policy (normal generation, forge-only, or another source); it must not implicitly
+enable random generation or bring in unrelated donor content.
+
+## Ingredients, knowledge and allocation
+
+Only top-level carried objects participate. Floor and contained items are never
+candidates. Base-type knowledge uses native `dknown` and `oc_name_known` gates;
+unknown objects contribute neither availability nor diagnostic reason counts.
+The same inspection text is produced when an unknown matching item is absent.
+Inspection reports required and eligible amounts and known exclusions.
+
+Exclude all equipped slots, the activating hammer, artifacts, unique/progression
+objects and Rider corpses, unpaid objects, non-empty containers, in-use items,
+cursed loadstones and attached leashes. Native `is_unpaid`, `Has_contents`,
+equipment flags and `canletgo` supply the rules. The side-effecting cursed
+loadstone/welded branches of `canletgo` are guarded before invoking it, preserving
+knowledge on cancellation. Ordinary cursed unequipped weapons remain usable.
+Quality, enhancements, enchantment, BUC, material, erosion, names, poison and
+grease do not affect exact-type matching.
+
+Native `NHW_MENU`, `PICK_ONE` and menu counts let the player choose each exact
+stack and contribution. A slot can take several contributions; an overlarge
+count is rejected and reprompted. Without an explicit count, a selected stack
+contributes up to that slot's remaining requirement. Even a sole candidate must
+be selected. One stack can supply both same-type slots without double-counting.
+Normal inventory names are formatted on a display copy with observation
+suppressed, so selection does not change the original objects' knowledge.
+
+Transient descriptors contain object IDs and two allocated quantities. Selection
+never splits, unlinks, consumes, reserves or changes inventory quantities. Final
+confirmation lists the output and every exact stack, inventory letter and
+combined consumed quantity, with explicit Yes/No choices.
+
+Navigation: cancel action/category exits; cancel recipe list returns to
+categories; cancel allocation, decline confirmation or inspect an unavailable
+recipe returns to that category's recipes. Every such path is free and preserves
+inventory. A successful craft exits immediately and consumes one normal action.
+The activating hammer's state is unchanged.
+
+## Transactions and temporary output state
+
+After confirmation, preflight checks allocation IDs, types, uniqueness, bounds
+and slot totals; it does not rerun ingredient eligibility. Output construction
+precedes consumption. Pack acceptance uses the native `inv_cnt(FALSE)`,
+`invlet_basic` and `mergable` rules, subtracting fully consumed non-coin stacks
+and testing merges only against surviving objects. At a full pack, a released
+slot or compatible surviving output stack permits crafting. Otherwise the free
+output is destroyed and ingredients remain intact, with no turn spent.
+
+Commit reacquires each unique object ID immediately before consumption, uses
+`useupall` for exhausted stacks and the native `useup` quantity/weight pattern
+for partial stacks, then `addinv` for the prepared output. It never follows a
+freed object pointer or uses floor fallback. Normal inventory merging, weight
+and burden updates apply; no forge carrying-capacity subsystem exists. Native
+allocation failure is fatal globally, but the diagnostic construction-failure
+hook proves that an unexpected null output aborts without consumption.
+
+`mksobj(type, FALSE, FALSE)` supplies canonical native default initialization.
+The existing enhancement context is temporarily set to `ENH_CONTEXT_NONE` and
+restored because even the non-random constructor reaches `enhancement_created`.
+No enhancement fields/extensions are fabricated or cleared by forge code.
+The result inherits no ingredient state: no quality, properties, enchantment,
+BUC, material, erosion, names, poison or grease. `makeknown` and `dknown` expose
+the base type only; full identification is not called. The result is an ordinary
+non-artifact item usable in later recipes, with no saved forged flag.
+
+No persistent state, object layout or save codec changed in 15B. `EDITLEVEL`
+remains 9 from 15A. Real equipment-state inheritance is exclusively Step 15C;
+gemstone affixing is exclusively Step 15D.
+
+## Shop invariant
+
+The terrain setter rejects forge placement inside existing shops. Lua map
+placement checks before clearing room membership, including irregular shops.
+Lua region completion and final level topology remove a pre-existing forge if
+the area subsequently becomes a shop: shop designation takes precedence and
+the invalid forge square becomes ordinary room terrain. This narrow generation
+repair is the exception to forge permanence. Rectangular shop geometry is
+checked even before topology assigns room numbers. Forging never bills goods.
+
+## Current audit
+
+The [Phase 1 audit through 15B](phase1-audit.md) records the current validation,
+confirmed corrections and finalized closeout contracts. It adds exact
+allocation/capacity ledgers, native count/quantity boundaries, stronger terrain
+and provenance tests, and production repeated crafting. The original evidence
+below is retained as a historical snapshot; current commands and counts are in
+the audit report.
+
+## Step 15B preaudit validation
+
+- `python test/test_step15b_source.py`: exactly the locked 12 formulas and curated
+  order, native transaction integration, no splitting or floor fallback.
+- `python test/run_step15.py --out _qa/step15b-diagnostic`: all 12 crafts; default
+  output despite altered inputs; duplicate formula rejection; unknown/absent
+  diagnostics; eligibility exclusions; exact multi-stack counts; selection and
+  cancellation nonmutation; native menu/back paths; confirmation; capacity
+  rejection, merging and freed slots; invalid-allocation and construction faults;
+  2,000 outputs without enhancements under an active natural-generation context;
+  reforging; Lua shop exclusion; and all affected 15A activation/level/bones gates.
+- Its unchanged 1,000-level corpus produces 114 selections and 114 valid forge
+  placements, zero invalid/multiple placements, as before 15B.
+- Step 13/14 structural and native regressions pass: 50,000 exact RNG traces,
+  one million generated objects, stacking, knowledge, billing, combat, names,
+  and 5,345,280 finalized persistence states. Step 15's protected enhancement
+  and codec source-identity gate remains unchanged and passes.
+- Authoritative x64 Release solution build passes, including console, GUI,
+  utilities, tiles, DLB and `vspackage/nethack-500-win-x64.zip`. Resource validation
+  confirms 199 protected files, 186 packaged Lua resources and exact ZIP equality
+  for the freshly built EXEs/DLB. Existing `mkmap.c` and unused-parameter compiler
+  warnings remain; forge production and test code add no warnings.
+- `python test/run_step15_save.py binary/Release/x64
+  _qa/step15b-production-2` passes through the real production terminal: named
+  +4 and -3 swords explicitly selected, exact final confirmation, one plain
+  katana, zero-turn cancellation, exactly one turn on success, level transitions,
+  full save/restore and native `recover.exe` checkpoint recovery. Lua-created
+  ingredients are first viewed in inventory, since `u.giveobj` bypasses native
+  pickup observation and does not set `dknown` by itself.
+- The current-code `STEP11_TEST` x64 build and focused Step 11/12 suite pass:
+  selectors, every custom feature, recurrence, coexistence with shops, room
+  metadata, level/bones codecs, and clean/partial generation failures.
+
+Evidence: `_qa/step15b-diagnostic`, `_qa/step15b-enhancement`,
+`_qa/step15b-release-build.log`, `_qa/step15b-production-2`,
+`_qa/step15b-step11-focused`. No implementation blocker remains. The production
+terminal path is automated; interactive GUI gameplay remains a manual review
+item, as requested.
+
+15B changes are in `src/apply.c`, forge/shop placement integration in
+`src/mklev.c`, `src/mkmaze.c`, `src/sp_lev.c`, declarations in `include/extern.h`,
+`test/test_step15b.c`, `test/test_step15b_source.py`, the updated Step 15 native
+and production terminal fixtures, and this document. All changes remain
+uncommitted/unpushed. The existing untracked `.codegraph/` is preserved.
+
+## Step 15A historical validation evidence
 
 The dedicated `STEP15_TEST` executable links the real engine, native RNG,
 apply dispatch, Lua parser, and codecs. It is separate from production builds.

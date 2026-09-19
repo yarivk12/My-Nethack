@@ -28,6 +28,15 @@ for file in ['monsters.txt','objects.txt','other.txt']:
         # Generated mapping comments identify source indices. Every new
         # entry must be reachable, including male/female glyph variants.
         assert re.search(re.escape(file)+':0*'+str(index)+r'\b',generated),(file,name)
+        if file == 'other.txt' and name == 'forge':
+            # Step 15A deliberately introduced original forge artwork. Pin
+            # that exact reviewed asset; retain donor-reuse checks elsewhere.
+            forge_source=subprocess.check_output(['git','show',
+                '17d070c1290cafe64c7f40d52a2888521477ecd0:'+path],cwd=repo).decode()
+            approved=[p for _,n,p in tiles(forge_source) if n=='forge']
+            assert approved==[pixels],(file,name,'changed Step 15A artwork')
+            print('PASS glyph/tile',file,index,name,'matches pinned Step 15A artwork')
+            continue
         originals=[n for _,n,p in original if p==pixels]
         assert originals,(file,name,'undocumented new artwork')
         print('PASS glyph/tile',file,index,name,'reuses',originals[0])

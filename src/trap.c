@@ -527,7 +527,8 @@ maketrap(coordxy x, coordxy y, int typ)
     struct trap *ttmp;
     struct rm *lev = &levl[x][y];
 
-    if (typ == TRAPPED_DOOR || typ == TRAPPED_CHEST)
+    if (IS_FORGE(lev->typ)
+        || typ == TRAPPED_DOOR || typ == TRAPPED_CHEST)
         return (struct trap *) 0;
 
     if ((ttmp = t_at(x, y)) != 0) {

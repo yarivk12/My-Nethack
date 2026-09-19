@@ -141,7 +141,8 @@ enhancement_observe_worn(int prop)
     struct obj *obj, *source = 0;
     int i;
     long sources = u.uprops[prop].extrinsic;
-    if (u.uprops[prop].intrinsic || u.uprops[prop].blocked)
+    if (u.uprops[prop].intrinsic || u.uprops[prop].blocked
+        || (prop == DISPLACED && u.mith_timers[MITH_VAUL]))
         return;
     for (obj = gi.invent; obj; obj = obj->nobj)
         if ((obj->owornmask & W_ARMOR) && enhancement_confers(obj, prop)) {

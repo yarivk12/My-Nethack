@@ -2965,8 +2965,8 @@ fill_empty_maze(void)
         mapfact = (int) ((mapcount * 100L) / mapcountmax);
         for (x = rnd((int) (20 * mapfact) / 100); x; x--) {
             maze1xy(&mm, DRY);
-            (void) mkobj_at(rn2(2) ? GEM_CLASS : RANDOM_CLASS, mm.x, mm.y,
-                            TRUE);
+            (void) enhancement_mkobj_at(rn2(2) ? GEM_CLASS : RANDOM_CLASS,
+                                       mm.x, mm.y, TRUE);
         }
         for (x = rnd((int) (12 * mapfact) / 100); x; x--) {
             struct trap *ttmp;
@@ -2979,11 +2979,13 @@ fill_empty_maze(void)
         }
         for (x = rn2(2); x; x--) {
             maze1xy(&mm, DRY);
-            (void) makemon(&mons[PM_MINOTAUR], mm.x, mm.y, NO_MM_FLAGS);
+            (void) enhancement_makemon(&mons[PM_MINOTAUR], mm.x, mm.y,
+                                       NO_MM_FLAGS);
         }
         for (x = rnd((int) (12 * mapfact) / 100); x; x--) {
             maze1xy(&mm, DRY);
-            (void) makemon((struct permonst *) 0, mm.x, mm.y, NO_MM_FLAGS);
+            (void) enhancement_makemon((struct permonst *) 0, mm.x, mm.y,
+                                       NO_MM_FLAGS);
         }
         for (x = rn2((int) (15 * mapfact) / 100); x; x--) {
             maze1xy(&mm, DRY);
@@ -3001,6 +3003,14 @@ fill_empty_maze(void)
         }
     }
 }
+
+#ifdef STEP13_TEST
+void
+step14_fill_empty_maze(void)
+{
+    fill_empty_maze();
+}
+#endif
 
 staticfn void
 splev_initlev(lev_init *linit)
@@ -4186,6 +4196,7 @@ lspo_room(lua_State *L)
                  * backend. Explicit geometry or contents denotes a scripted
                  * area even when the author calls its room type ordinary. */
                 if (tmproom.x != -1 || tmproom.w != -1
+                    || tmproom.xalign != -1 || tmproom.yalign != -1
                     || tmproom.rlit != -1 || !tmproom.needfill
                     || lua_type(L, -1) == LUA_TFUNCTION)
                     forge_exclude_area(tmpcr->lx, tmpcr->ly,
@@ -4284,6 +4295,8 @@ l_create_stairway(lua_State *L, boolean using_ladder)
 
     get_location_coord(&x, &y, DRY, gc.coder->croom, scoord);
     set_ok_location_func(NULL);
+    if (IS_FORGE(levl[x][y].typ))
+        return 0;
     if ((badtrap = t_at(x, y)) != 0)
         deltrap(badtrap);
     SpLev_Map[x][y] = 1;
@@ -4369,7 +4382,7 @@ lspo_grave(lua_State *L)
 
     get_location_coord(&x, &y, DRY, gc.coder->croom, scoord);
 
-    if (isok(x, y) && !t_at(x, y)) {
+    if (isok(x, y) && !IS_FORGE(levl[x][y].typ) && !t_at(x, y)) {
         levl[x][y].typ = GRAVE;
         make_grave(x, y, txt); /* note: 'txt' might be Null */
     }
@@ -4749,6 +4762,8 @@ sel_set_door(coordxy dx, coordxy dy, genericptr_t arg)
     coordxy typ = *(coordxy *) arg;
     coordxy x = dx, y = dy;
 
+    if (IS_FORGE(levl[x][y].typ))
+        return;
     if (!IS_DOOR(levl[x][y].typ) && levl[x][y].typ != SDOOR)
         levl[x][y].typ = (typ & D_SECRET) ? SDOOR : DOOR;
     if (typ & D_SECRET) {
@@ -5811,6 +5826,7 @@ lspo_region(lua_State *L)
         }
     }
 
+    forge_check_shops();
     return 0;
 }
 
@@ -5933,7 +5949,7 @@ lspo_mazewalk(lua_State *L)
         impossible("mazewalk: Bad direction");
     }
 
-    if (!IS_DOOR(levl[x][y].typ)) {
+    if (!IS_DOOR(levl[x][y].typ) && !IS_FORGE(levl[x][y].typ)) {
         levl[x][y].typ = ftyp;
         levl[x][y].flags = 0;
     }
@@ -5950,8 +5966,10 @@ lspo_mazewalk(lua_State *L)
             x--;
 
         /* no need for IS_DOOR check; out of map bounds */
-        levl[x][y].typ = ftyp;
-        levl[x][y].flags = 0;
+        if (!IS_FORGE(levl[x][y].typ)) {
+            levl[x][y].typ = ftyp;
+            levl[x][y].flags = 0;
+        }
     }
 
     if (!(y % 2)) {
@@ -6387,6 +6405,12 @@ TODO: gc.coder->croom needs to be updated
                     continue;
                 }
                 if (mptyp >= MAX_TYPE)
+                    continue;
+                /* Reject forge conflicts before map loading clears metadata;
+                 * the terrain setter enforces the same placement rules. */
+                if (IS_FORGE(levl[x][y].typ)
+                    || (IS_FORGE(mptyp)
+                        && (forge_in_shop(x, y) || t_at(x, y))))
                     continue;
                 /* clear out levl: load_common_data may set them */
                 levl[x][y].flags = 0;

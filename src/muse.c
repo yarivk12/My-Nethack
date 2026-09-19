@@ -2878,8 +2878,6 @@ ureflects(const char *fmt, const char *str)
             pline(fmt, str, "shield");
             if (uarms && uarms->otyp == SHIELD_OF_REFLECTION)
                 makeknown(SHIELD_OF_REFLECTION);
-            else if (uarms && enhancement_confers(uarms, REFLECTING))
-                uarms->o_enh_known |= OEP_REFLECTION;
         }
         return TRUE;
     } else if (EReflecting & W_WEP) {

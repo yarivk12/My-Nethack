@@ -175,7 +175,7 @@ flood_fill_rm(
 
     for (i = sx; i <= WIDTH && levl[i][sy].typ == fg_typ; i++) {
         levl[i][sy].roomno = rmno;
-        levl[i][sy].lit = lit;
+        levl[i][sy].lit = IS_FORGE(levl[i][sy].typ) ? 1 : lit;
         if (anyroom) {
             /* add walls to room as well */
             coordxy ii, jj;

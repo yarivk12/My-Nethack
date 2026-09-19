@@ -1328,8 +1328,12 @@ cancel_item(struct obj *obj)
             Your("armor feels looser.");
         if (worn)
             setworn((struct obj *) 0, W_ARM);
-        if (carrier && mask)
+        if (carrier && mask) {
+            /* Speed recalculation scans worn inventory, so the old source
+             * must already be unworn while its properties are removed. */
+            obj->owornmask = 0L;
             update_mon_extrinsics(carrier, obj, FALSE, TRUE);
+        }
         enhancement_change_type(obj, obj->otyp + GRAY_DRAGON_SCALES - GRAY_DRAGON_SCALE_MAIL);
         if (worn) {
             setworn(obj, W_ARM);
@@ -1339,8 +1343,10 @@ cancel_item(struct obj *obj)
                 EPoison_resistance |= W_ARM;
             disp.botl = TRUE;
         }
-        if (carrier && mask)
+        if (carrier && mask) {
+            obj->owornmask = mask;
             update_mon_extrinsics(carrier, obj, TRUE, TRUE);
+        }
         if (old_light)
             maybe_adjust_light(obj, old_light);
     }
@@ -1753,6 +1759,7 @@ struct obj *
 poly_obj(struct obj *obj, int id)
 {
     struct obj *otmp;
+    enum enhancement_context old_context;
     coordxy ox = 0, oy = 0;
     long old_wornmask, new_wornmask = 0L;
     boolean can_merge = (id == STRANGE_OBJECT);
@@ -1760,6 +1767,7 @@ poly_obj(struct obj *obj, int id)
 
     if (obj->otyp == BOULDER)
         sokoban_guilt();
+    old_context = enhancement_context_set(ENH_CONTEXT_NONE);
     if (id == STRANGE_OBJECT) { /* preserve symbol */
         int try_limit = 3;
         unsigned magic_obj = objects[obj->otyp].oc_magic;
@@ -1786,6 +1794,7 @@ poly_obj(struct obj *obj, int id)
             set_corpsenm(otmp, obj->corpsenm);
 #undef USES_CORPSENM
     }
+    (void) enhancement_context_set(old_context);
 
     /* preserve quantity */
     otmp->quan = obj->quan;
@@ -1942,6 +1951,17 @@ poly_obj(struct obj *obj, int id)
             otmp->quan /= 2L;  /* some material has been lost */
         }
         break;
+    }
+
+    /* Replacing an object with its own base type is not an enhancement
+     * transformation.  Copy after all native type adjustments, before the
+     * replacement is billed or worn; a real type change keeps the zeros
+     * supplied by its non-natural constructor. */
+    if (otmp->otyp == obj->otyp && enhancement_eligible(otmp)) {
+        otmp->o_enh_props = obj->o_enh_props;
+        otmp->o_enh_known = obj->o_enh_known;
+        otmp->o_enh_quality = obj->o_enh_quality;
+        otmp->o_enh_flags = obj->o_enh_flags;
     }
 
     /* update the weight */

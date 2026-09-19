@@ -149,16 +149,17 @@ step14_armor_tests(void)
         u.uprops[props[j]].intrinsic = intrinsic;
         freeinv(a); freeinv(b); obfree(a, NULL); obfree(b, NULL);
     }
-    for (j = 0; j < SIZE(bits); ++j) {
+    for (i = 0; i < SIZE(types); ++i) for (j = 0; j < SIZE(bits); ++j) {
         struct monst m = { 0 };
-        struct obj *a = item(LOW_BOOTS), *b = item(LEATHER_GLOVES);
+        struct obj *a = item(types[i]),
+                   *b = item(i == 3 ? LOW_BOOTS : LEATHER_GLOVES);
         long moves = svm.moves;
         m.data = &mons[PM_HUMAN]; m.mhp = 50; m.mhpmax = 100;
         assert(enhancement_set(a, bits[j], OQ_STANDARD, FALSE));
         assert(enhancement_set(b, bits[j], OQ_STANDARD, FALSE));
         add_to_minv(&m, a); add_to_minv(&m, b);
-        a->owornmask = W_ARMF; b->owornmask = W_ARMG;
-        m.misc_worn_check = W_ARMF | W_ARMG;
+        a->owornmask = slots[i]; b->owornmask = i == 3 ? W_ARMF : W_ARMG;
+        m.misc_worn_check = a->owornmask | b->owornmask;
         update_mon_extrinsics(&m, a, TRUE, TRUE);
         update_mon_extrinsics(&m, b, TRUE, TRUE);
         if (j >= 3 && j <= 6) assert(m.mextrinsics & res_to_mr(props[j]));
@@ -310,4 +311,141 @@ step14_combat_tests(void)
     step14_armor_tests();
     step14_combat_path_tests();
     step14_shade_tests();
+}
+
+/* Knowledge policy belongs to the hero hit caller, not to the common damage
+ * calculator. Keep targets genuinely visible: the older nine-path mechanics
+ * corpus deliberately blinds the hero and cannot prove this distinction. */
+static void
+step14_hero_use_observation_tests(void)
+{
+    struct monst *attacker=makemon(&mons[PM_HUMAN],31,10,NO_MINVENT);
+    struct monst *defender=makemon(&mons[PM_HUMAN],32,11,NO_MINVENT);
+    const uint32 effects=OEP_FIRE_II|OEP_PRIMORDIAL;
+    int path,condition,pass,loss[3],tail[3],cases=0,survivors=0;
+    int oldx=u.ux,oldy=u.uy,oldhp=u.uhp,oldhpmax=u.uhpmax,oldac=u.uac;
+    long blind=HBlinded,fire=HFire_resistance,cold=HCold_resistance,
+         shock=HShock_resistance,conduct=u.uconduct.weaphit;
+    int viz_attacker=gv.viz_array[10][31],viz_hero=gv.viz_array[10][32],
+        viz_defender=gv.viz_array[11][32];
+    boolean mon_moving=svc.context.mon_moving;
+    assert(attacker && defender && !gi.invent && !uwep);
+    attacker->m_lev=100;attacker->minvis=defender->minvis=0;
+    u.ux=32;u.uy=10;u.uconduct.weaphit=10;
+    gv.viz_array[10][31]=gv.viz_array[10][32]=
+        gv.viz_array[11][32]=IN_SIGHT|COULD_SEE;
+
+    /* Hero melee/throw/shot, monster melee against hero/monster, and actual
+     * monster m_throw flights (throw/shot) against hero/monster. */
+    for(path=0;path<9;++path)for(condition=0;condition<4;++condition) {
+        boolean shot=path==2||path==6||path==8;
+        boolean hero_target=path==3||path==5||path==6;
+        uint32 learned=condition==0?effects
+            :condition==1?OEP_PRIMORDIAL:0;
+        int low=condition==2?0:condition==1?10:18;
+        int high=condition==2?0:condition==1?60:102;
+        for(pass=0;pass<3;++pass) {
+            struct obj *weapon=item(shot?ARROW:DAGGER),*bow=item(BOW);
+            struct obj *landed;
+            struct obj weapon_state,bow_state;
+            unsigned projectile_id;
+            weapon->spe=50; /* certain native projectile hit; not enhancement */
+            assert(enhancement_set(weapon,pass?effects:0,OQ_FINE,FALSE));
+            assert(enhancement_set(bow,pass?effects:0,OQ_EXCEPTIONAL,FALSE));
+            if(pass==2) {
+                enhancement_identify(weapon);enhancement_identify(bow);
+            }
+            weapon_state=*weapon;bow_state=*bow;
+            u.uhp=u.uhpmax=defender->mhp=defender->mhpmax=2000;
+            u.uac=10;
+            HBlinded=condition==3?1:0;
+            defender->mintrinsics=condition==2?MR_FIRE|MR_COLD|MR_ELEC
+                :condition==1?MR_FIRE:0;
+            HFire_resistance=condition==1||condition==2?FROMOUTSIDE:0;
+            HCold_resistance=HShock_resistance=condition==2?FROMOUTSIDE:0;
+            if(condition!=3) {
+                assert(!Blind && canseemon(attacker) && canseemon(defender));
+            }
+            if(path<3) {
+                bow=addinv(bow);
+                if(shot)setuwep(bow);
+                if(path==0) {
+                    weapon=addinv(weapon);setuwep(weapon);
+                }
+            } else {
+                if(path>=5)weapon->quan=2;
+                add_to_minv(attacker,weapon);add_to_minv(attacker,bow);
+                MON_WEP(attacker)=shot?bow:weapon;
+                MON_WEP(attacker)->owornmask=W_WEP;
+                attacker->misc_worn_check=W_WEP;
+            }
+            svc.context.mon_moving=path>=3;
+            init_isaac64(150013UL,rn2);
+            if(path<3)
+                (void)hmon(defender,weapon,path==0?HMON_MELEE:HMON_THROWN,10);
+            else if(path==3)(void)step13_hitmu(attacker,weapon);
+            else if(path==4)(void)step13_mdamagem(attacker,defender,weapon);
+            else {
+                gm.marcher=attacker;gm.mtarget=hero_target?NULL:defender;
+                m_throw(attacker,attacker->mx,attacker->my,1,
+                        hero_target?0:1,1,weapon);
+                gm.marcher=gm.mtarget=NULL;
+                projectile_id=svc.context.objsplit.child_oid;
+                assert(weapon->quan==1 && weapon->where==OBJ_MINVENT
+                       && weapon->ocarry==attacker);
+                assert(bow->where==OBJ_MINVENT && bow->ocarry==attacker);
+                assert(MON_WEP(attacker)==(shot?bow:weapon));
+                assert(!gt.thrownobj);
+                /* Reacquire by ID: native flight may destroy ammunition. */
+                landed=find_oid(projectile_id);
+                if(landed) {
+                    assert(landed->where==OBJ_FLOOR && landed->quan==1);
+                    SAME(landed,&weapon_state);++survivors;
+                    obj_extract_self(landed);obfree(landed,NULL);
+                }
+            }
+            tail[pass]=rn2(1000000);
+            loss[pass]=2000-(hero_target?u.uhp:defender->mhp);
+            assert(weapon->o_enh_props==weapon_state.o_enh_props
+                   && weapon->o_enh_quality==weapon_state.o_enh_quality
+                   && weapon->o_enh_flags==weapon_state.o_enh_flags);
+            assert(bow->o_enh_props==bow_state.o_enh_props
+                   && bow->o_enh_quality==bow_state.o_enh_quality
+                   && bow->o_enh_flags==bow_state.o_enh_flags);
+            if(path<3 && pass==1) {
+                assert(weapon->o_enh_known==learned);
+                assert(bow->o_enh_known==(shot?learned:0));
+            } else {
+                assert(weapon->o_enh_known==weapon_state.o_enh_known);
+                assert(bow->o_enh_known==bow_state.o_enh_known);
+            }
+            if(path<3) {
+                setuwep(NULL);
+                if(carried(weapon))freeinv(weapon);
+                freeinv(bow);
+            } else {
+                assert(weapon->where==OBJ_MINVENT && weapon->ocarry==attacker);
+                assert(bow->where==OBJ_MINVENT && bow->ocarry==attacker);
+                setmnotwielded(attacker,MON_WEP(attacker));
+                attacker->misc_worn_check=0;
+                obj_extract_self(weapon);obj_extract_self(bow);
+                assert(!attacker->minvent);
+            }
+            obfree(weapon,NULL);obfree(bow,NULL);++cases;
+        }
+        assert(loss[0]>0);
+        assert(loss[1]-loss[0]>=low*(shot?2:1));
+        assert(loss[1]-loss[0]<=high*(shot?2:1));
+        assert(loss[1]==loss[2] && tail[1]==tail[2]);
+    }
+    assert(cases==108 && survivors>0);
+    defender->mintrinsics=0;
+    HBlinded=blind;HFire_resistance=fire;HCold_resistance=cold;
+    HShock_resistance=shock;svc.context.mon_moving=mon_moving;
+    u.ux=oldx;u.uy=oldy;u.uhp=oldhp;u.uhpmax=oldhpmax;u.uac=oldac;
+    u.uconduct.weaphit=conduct;
+    mongone(attacker);mongone(defender);
+    gv.viz_array[10][31]=viz_attacker;gv.viz_array[10][32]=viz_hero;
+    gv.viz_array[11][32]=viz_defender;
+    printf("PASS hero-use-only elemental observation: %d native impacts, nine visible/blind combat paths, resistance/Primordial, knowledge-independent damage/RNG, %d surviving monster projectiles\n",cases,survivors);
 }

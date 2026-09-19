@@ -21,10 +21,11 @@ by assignment, normalization, and natural selection. Knowledge can also describe
 absence; visibility is always the intersection of known and actual properties.
 `OEF_QUALITY_KNOWN` remains bit 0 of the flags byte.
 
-**EDITLEVEL is 8 (Step 13 used 7).** Narrowed eligibility, removed state,
+**Current EDITLEVEL is 9 (Step 13 used 7; Step 14 used 8).** Step 14's narrowed eligibility, removed state,
 changed combinations and elemental-source stacking change persisted semantics.
 Old save/bones data is rejected by the native version gate, not silently
-reinterpreted. No old-save migration is provided or implied.
+reinterpreted. Step 15A advanced the epoch to 9 for forge glyph identities;
+Step 15B retains 9. No old-save migration is provided or implied.
 
 ## Shared mechanics
 
@@ -62,7 +63,10 @@ Speed, white-dragon Slow Digestion, alchemy-smock resistance and chromatic armor
 
 Unknown equipment has its full mechanics. Full identification reveals quality
 and properties. Visible unresisted elemental components identify their supplying
-properties, including Primordial when any component manifests. Trueflight needs
+properties during hero use, including Primordial when any component manifests.
+Visible monster-owned melee, thrown, or fired attacks do not identify their
+weapon, ammunition, or launcher properties. Damage and resistance use actual
+state regardless of knowledge. Trueflight needs
 normal identification. The established Step 13 Searching/Warning/Stealth equip
 observations remain. Other supported observations use native speed, healing,
 displacement, resistance and reflection events and require an attributable source;
@@ -95,5 +99,8 @@ stacking/resistances/physical separation, identification, naming, pricing,
 split/merge, artifact/type changes, billing and native level/bones codecs.
 Persistence includes 5,345,280 finalized legal active-mask × class-relevant
 knowledge-mask × quality × flags states, plus the retained low-byte knowledge
-matrix and nested-container fixtures. Full-game save/recovery retains seven
-ownership chains. Step 14 records commands, statistical counts and build evidence.
+matrix and nested-container fixtures. The audit strengthened the independent
+state oracle and full-game save/recovery checks to eight ownership paths,
+including migrating monster inventory and ownership backlinks. Current commands,
+results, and limitations are recorded in [the audit](phase1-audit.md); Step 14
+retains its historical statistical and build evidence.

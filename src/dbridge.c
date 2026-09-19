@@ -238,6 +238,8 @@ create_drawbridge(coordxy x, coordxy y, int dir, boolean flag)
     boolean horiz;
     boolean lava = levl[x][y].typ == LAVAPOOL; /* assume initialized map */
 
+    if (IS_FORGE(levl[x][y].typ))
+        return FALSE;
     x2 = x;
     y2 = y;
     switch (dir) {

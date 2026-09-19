@@ -2024,8 +2024,12 @@ makemon(
     } else if (mndx == PM_PESTILENCE) {
         mitem = POT_SICKNESS;
     }
-    if (mitem != STRANGE_OBJECT && allow_minvent)
+    if (mitem != STRANGE_OBJECT && allow_minvent) {
+        enum enhancement_context old_context = enhancement_context_set(
+            (mmflags & MM_NATURAL) ? ENH_CONTEXT_MONSTER : ENH_CONTEXT_NONE);
         (void) mongets(mtmp, mitem);
+        (void) enhancement_context_set(old_context);
+    }
 
     if (gi.in_mklev) {
         if ((is_ndemon(ptr) || mndx == PM_WUMPUS

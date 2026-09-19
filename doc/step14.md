@@ -139,8 +139,11 @@ flags equality. Splits and movement never initiate enhancement generation.
 ## Knowledge, naming and valuation
 
 Knowledge never gates mechanics. Full identification reveals all properties and
-quality. Elemental use reveals only visibly effective components; Primordial is
+quality. Hero elemental use reveals only visibly effective components; Primordial is
 known when any of its components manifests. Fully resisted effects stay hidden.
+Monster-owned melee and projectile use does not reveal weapon, ammunition, or
+launcher properties, even when visible. This knowledge rule never changes damage,
+resistance, Primordial components, or projectile mechanics.
 Trueflight never identifies just from a hit. Existing Step 13 passive observations
 are retained; native resistance, speed, healing, displacement and reflection events
 can reveal a unique attributable worn source. Redundant intrinsic or extrinsic
@@ -174,7 +177,13 @@ explicitly rejects obsolete semantics through the established version mechanism.
 There is no migration or new codec. Save/restore, level reload, bones, recovery,
 monster/hero/floor/container/migration and bill chains retain the same fields.
 
-## Deterministic and statistical validation
+## Historical Step 14 deterministic and statistical validation
+
+The counts below describe the Step 14 checkpoint. The current audit retains
+the million-object corpus and codec volume, expands exact generation/RNG
+traces to 110,000 and full-game persistence to eight ownership paths, and adds
+independent filtering, pricing and allocation oracles. Current commands and
+executed results are in [the Phase 1 audit](phase1-audit.md).
 
 The extended Step 13 diagnostic harness tests every object-table recipient,
 native secondary-property filtering, all armor properties/slots, exact component
@@ -212,9 +221,9 @@ low-byte knowledge cases and nested containers. Batches use native object dispos
 to bound memory. The full-game fixture checks seven ownership chains through
 save/restore and real checkpoint recovery, not just a synthetic memory copy.
 
-## Commands and evidence
+## Historical Step 14 commands and evidence
 
-All current enhancement/native gates, the focused Step 11/12 suite, save/recovery,
+At the Step 14 checkpoint, enhancement/native gates, the focused Step 11/12 suite, save/recovery,
 and the authoritative x64 Release/package validation passed. Production warnings
 remain the pre-existing unused `trop`/GUI `fmt` parameters and potentially
 uninitialized `mkmap.c` coordinates; no new enhancement warning remains.
@@ -241,9 +250,11 @@ pre-existing untracked `.codegraph/` index is preserved.
 
 ## Step 14 status
 
-Step 14 is complete on `phase1/equipment-enhancement`. This document records the
-finalized implementation and current validation evidence. Step 15 is the next
-development step; no Step 15 work is included here.
+Step 14 is complete on `phase1/equipment-enhancement`. This document records its
+finalized contract and historical validation evidence. Step 15A and 15B are now
+implemented; inheritance (15C) and affixing (15D) remain deferred. The
+[Phase 1 audit](phase1-audit.md) records current validation, expanded independent
+oracles, and corrections to native creation and lifecycle paths.
 
 ## Changed-file inventory
 

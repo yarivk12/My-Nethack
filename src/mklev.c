@@ -283,24 +283,33 @@ do_room_or_subroom(struct mkroom *croom,
         croom->needjoining = TRUE;
         for (x = lowx - 1; x <= hix + 1; x++)
             for (y = lowy - 1; y <= hiy + 1; y += (hiy - lowy + 2)) {
+                if (IS_FORGE(levl[x][y].typ))
+                    continue;
                 levl[x][y].typ = HWALL;
                 levl[x][y].horizontal = 1; /* For open/secret doors. */
             }
         for (x = lowx - 1; x <= hix + 1; x += (hix - lowx + 2))
             for (y = lowy; y <= hiy; y++) {
+                if (IS_FORGE(levl[x][y].typ))
+                    continue;
                 levl[x][y].typ = VWALL;
                 levl[x][y].horizontal = 0; /* For open/secret doors. */
             }
         for (x = lowx; x <= hix; x++) {
             lev = &levl[x][lowy];
-            for (y = lowy; y <= hiy; y++)
-                lev++->typ = ROOM;
+            for (y = lowy; y <= hiy; y++, lev++)
+                if (!IS_FORGE(lev->typ))
+                    lev->typ = ROOM;
         }
         if (is_room) {
-            levl[lowx - 1][lowy - 1].typ = TLCORNER;
-            levl[hix + 1][lowy - 1].typ = TRCORNER;
-            levl[lowx - 1][hiy + 1].typ = BLCORNER;
-            levl[hix + 1][hiy + 1].typ = BRCORNER;
+            if (!IS_FORGE(levl[lowx - 1][lowy - 1].typ))
+                levl[lowx - 1][lowy - 1].typ = TLCORNER;
+            if (!IS_FORGE(levl[hix + 1][lowy - 1].typ))
+                levl[hix + 1][lowy - 1].typ = TRCORNER;
+            if (!IS_FORGE(levl[lowx - 1][hiy + 1].typ))
+                levl[lowx - 1][hiy + 1].typ = BLCORNER;
+            if (!IS_FORGE(levl[hix + 1][hiy + 1].typ))
+                levl[hix + 1][hiy + 1].typ = BRCORNER;
         } else { /* a subroom */
             wallification(lowx - 1, lowy - 1, hix + 1, hiy + 1);
         }
@@ -2149,6 +2158,38 @@ forge_generate(void)
     return 2;
 }
 
+/* Shop geometry is also checked before topology assigns roomno, and after
+ * des.map clears it. Irregular shops use their native membership mask. */
+boolean
+forge_in_shop(coordxy x, coordxy y)
+{
+    int i;
+    struct mkroom *room;
+
+    if (inside_shop(x, y))
+        return TRUE;
+    for (i = 0; i < SIZE(svr.rooms); ++i) {
+        room = &svr.rooms[i];
+        if (room->rtype >= SHOPBASE && !room->irregular
+            && x >= room->lx && x <= room->hx
+            && y >= room->ly && y <= room->hy)
+            return TRUE;
+    }
+    return FALSE;
+}
+
+void
+forge_check_shops(void)
+{
+    coordxy x, y;
+    for (x = 1; x < COLNO; ++x)
+        for (y = 0; y < ROWNO; ++y)
+            if (IS_FORGE(levl[x][y].typ) && forge_in_shop(x, y))
+                /* Invalid authored combination: the shop takes precedence.
+                 * This generation repair intentionally bypasses permanence. */
+                levl[x][y].typ = ROOM;
+}
+
 void
 level_finalize_topology(void)
 {
@@ -2180,6 +2221,7 @@ level_finalize_topology(void)
        entered; svr.rooms[].orig_rtype always retains original rtype value */
     for (ridx = 0; ridx < SIZE(svr.rooms); ridx++)
         svr.rooms[ridx].orig_rtype = svr.rooms[ridx].rtype;
+    forge_check_shops();
 }
 
 /* The Lua topology finalizer must not run natural feature selection. Only
@@ -2809,6 +2851,8 @@ mkstairs(
         impossible("mkstairs:  bogus stair attempt at <%d,%d>", x, y);
         return;
     }
+    if (IS_FORGE(levl[x][y].typ))
+        return;
     if (force)
         levl[x][y].typ = ROOM;
     ltyp = levl[x][y].typ; /* somexyspace() allows ice */
@@ -3166,6 +3210,9 @@ mkinvpos(coordxy x, coordxy y, int dist)
         return;
     }
 
+    if (IS_FORGE(lev->typ))
+        return;
+
     /* clear traps */
     if ((ttmp = t_at(x, y)) != 0)
         deltrap(ttmp);
@@ -3236,6 +3283,14 @@ mkinvpos(coordxy x, coordxy y, int dist)
 #undef x_maze_min
 #undef y_maze_min
 }
+
+#ifdef STEP15_TEST
+void
+step15_invoke_position(coordxy x, coordxy y, int dist)
+{
+    mkinvpos(x, y, dist);
+}
+#endif
 
 /* reduces clutter in mkinvokearea() while avoiding potential static analyzer
    confusion about using isok(x,y) to control access to levl[x][y] */

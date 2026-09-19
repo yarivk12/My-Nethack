@@ -113,6 +113,8 @@ extern long timet_delta(time_t, time_t);
 extern void do_blinding_ray(struct obj *) NONNULLPTRS;
 extern int doapply(void);
 extern int forge_interact(struct obj *);
+extern boolean forge_in_shop(coordxy, coordxy);
+extern void forge_check_shops(void);
 extern boolean forge_eligible(void);
 extern void forge_exclude_area(coordxy, coordxy, coordxy, coordxy);
 extern boolean forge_candidate(coordxy, coordxy);

@@ -1,5 +1,6 @@
 """Focused forge integration wiring guard; runtime tests prove behavior."""
 from pathlib import Path
+from phase1_audit_projection import project as audit_project
 R=Path(__file__).resolve().parents[1]
 def read(p): return (R/p).read_text()
 assert 'FORGE' in read('include/rm.h'), 'forge terrain missing'
@@ -15,8 +16,8 @@ for path in ['include/enhance.h','include/obj.h','src/enhance.c','src/makemon.c'
              'src/mhitu.c','src/mthrowu.c','src/uhitm.c','src/worn.c','src/objnam.c',
              'src/save.c','src/restore.c','src/bones.c','util/recover.c']:
     old=subprocess.check_output(['git','show',BASE+':'+path],cwd=R).decode().replace('\r\n','\n')
-    assert read(path)==old,path
+    assert audit_project(path, read(path))==old,path
 symbols=[int(n) for n in re.findall(r'PCHAR2?\(\s*(\d+)',read('include/defsym.h'))]
 assert symbols==list(range(len(symbols))), 'contiguous symbol ids'
 assert re.search(r'#define EDITLEVEL\s+9\b',read('include/patchlevel.h'))
-print('PASS protected enhancement/codec source identity, contiguous symbols and epoch 9')
+print('PASS protected enhancement/codec source identity outside exact audited corrections, contiguous symbols and epoch 9')

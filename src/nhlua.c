@@ -388,6 +388,7 @@ static const struct {
                 { 's', SAND },
                 { 'e', SOIL },
                 { 'G', GRASS },
+                { 'f', FORGE },
                 { 'F', IRONBARS }, /* Fe = iron */
                 { 'x', MAX_TYPE }, /* "see-through" */
                 { 'B', CROSSWALL }, /* hack: boundary location */

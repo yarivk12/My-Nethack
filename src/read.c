@@ -2644,7 +2644,7 @@ set_lit(coordxy x, coordxy y, genericptr_t val)
             gremlins = gremlin;
         }
     } else {
-        levl[x][y].lit = 0;
+        levl[x][y].lit = IS_FORGE(levl[x][y].typ) ? 1 : 0;
         snuff_light_source(x, y);
     }
 }

@@ -99,20 +99,21 @@ enum levl_typ_types {
     SAND = 42,   /* Mithardir white dust */
     SOIL = 43,
     GRASS = 44,
-    MAX_TYPE  = 45,
+    FORGE = 45, /* permanent, lit crafting site */
+    MAX_TYPE  = 46,
     /* for special levels */
-    MATCH_WALL = 46,
+    MATCH_WALL = 47,
 
     /* these aren't levl[][].typ values, they're additional indices
        into terrain_descr[] for status feedback */
-    xFLOOR     = 47,
-    xGROUND    = 48,
-    xOPENDOOR  = 49,
-    xSHUTDOOR  = 50,
-    xSWAMP     = 51,
-    xSUBMERGED = 52,
-    xSEA       = 53,
-    xWATERWALL = 54,
+    xFLOOR     = 48,
+    xGROUND    = 49,
+    xOPENDOOR  = 50,
+    xSHUTDOOR  = 51,
+    xSWAMP     = 52,
+    xSUBMERGED = 53,
+    xSEA       = 54,
+    xWATERWALL = 55,
 
     INVALID_TYPE = 127
 };
@@ -143,13 +144,14 @@ enum levl_typ_types {
 #define IS_POOL(typ) ((typ) >= POOL && (typ) <= DRAWBRIDGE_UP)
 #define IS_LAVA(typ) ((typ) == LAVAPOOL || (typ) == LAVAWALL)
 #define IS_THRONE(typ) ((typ) == THRONE)
+#define IS_FORGE(typ) ((typ) == FORGE)
 #define IS_FOUNTAIN(typ) ((typ) == FOUNTAIN)
 #define IS_SINK(typ) ((typ) == SINK)
 #define IS_GRAVE(typ) ((typ) == GRAVE)
 #define IS_ALTAR(typ) ((typ) == ALTAR)
 #define IS_DRAWBRIDGE(typ) \
     ((typ) == DRAWBRIDGE_UP || (typ) == DRAWBRIDGE_DOWN)
-#define IS_FURNITURE(typ) ((typ) >= STAIRS && (typ) <= ALTAR)
+#define IS_FURNITURE(typ) (((typ) >= STAIRS && (typ) <= ALTAR) || IS_FORGE(typ))
 #define IS_AIR(typ) ((typ) == AIR || (typ) == CLOUD)
 #define IS_SOFT(typ) ((typ) == AIR || (typ) == CLOUD || IS_POOL(typ) \
                       || IS_BOG(typ) || IS_PUDDLE(typ) || IS_SAND(typ))
@@ -336,7 +338,8 @@ struct rm {
 #define SET_LIT_NOCHANGE -2
 
 #define CAN_OVERWRITE_TERRAIN(ttyp) \
-    (iflags.debug_overwrite_stairs || !((ttyp) == LADDER || (ttyp) == STAIRS))
+    (!IS_FORGE(ttyp) \
+     && (iflags.debug_overwrite_stairs || !((ttyp) == LADDER || (ttyp) == STAIRS)))
 
 /*
  * Add wall angle viewing by defining "modes" for each wall type.  Each

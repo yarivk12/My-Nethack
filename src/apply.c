@@ -4199,6 +4199,9 @@ apply_ok(struct obj *obj)
     if (obj->oclass == COIN_CLASS)
         return GETOBJ_DOWNPLAY;
 
+    if (obj->otyp == WAR_HAMMER && IS_FORGE(levl[u.ux][u.uy].typ))
+        return GETOBJ_SUGGEST;
+
     /* certain weapons */
     if (obj->oclass == WEAPON_CLASS
         && (is_pick(obj) || is_axe(obj) || is_pole(obj)
@@ -4244,6 +4247,27 @@ apply_ok(struct obj *obj)
     return GETOBJ_EXCLUDE_SELECTABLE;
 }
 
+/* One entry point for forge operations. Rejections use the no-time ECMD_OK
+ * convention of do_break_wand strength and use_pole state gates. Step 15B
+ * extends the final operation without changing the activation rule. */
+int
+forge_interact(struct obj *hammer)
+{
+    if (!IS_FORGE(levl[u.ux][u.uy].typ) || !hammer
+        || hammer->otyp != WAR_HAMMER)
+        return ECMD_FAIL;
+    if (Confusion || Stunned) {
+        You("are too %s to use the forge.", Confusion ? "confused" : "stunned");
+        return ECMD_OK;
+    }
+    if (ACURR(A_STR) < 4) {
+        You("are too weak to use the forge.");
+        return ECMD_OK;
+    }
+    You("know no forge operations yet.");
+    return ECMD_TIME;
+}
+
 /* the #apply command, 'a' */
 int
 doapply(void)
@@ -4261,6 +4285,9 @@ doapply(void)
     obj = getobj("use or apply", apply_ok, GETOBJ_NOFLAGS);
     if (!obj)
         return ECMD_CANCEL;
+
+    if (obj->otyp == WAR_HAMMER && IS_FORGE(levl[u.ux][u.uy].typ))
+        return forge_interact(obj);
 
     if (!retouch_object(&obj, FALSE))
         return ECMD_TIME; /* evading your grasp costs a turn; just be

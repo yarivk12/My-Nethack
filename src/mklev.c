@@ -5,6 +5,10 @@
 
 #include "hack.h"
 
+/* Generation-only provenance: scripted OROOMs can look ordinary after Lua.
+ * Coordinate storage survives room sorting; never serialized. */
+static boolean forge_scripted[COLNO][ROWNO];
+
 /* for UNIX, Rand #def'd to (long)lrand48() or (long)random() */
 /* croom->lx etc are schar (width <= int), so % arith ensures that */
 /* conversion of result to int is reasonable */
@@ -1190,6 +1194,7 @@ clear_level_structures(void)
         lev = &levl[x][0];
         for (y = 0; y < ROWNO; y++) {
             *lev++ = zerorm;
+            forge_scripted[x][y] = FALSE;
             svl.level.objects[x][y] = (struct obj *) 0;
             svl.level.monsters[x][y] = (struct monst *) 0;
         }
@@ -2080,6 +2085,70 @@ mineralize(int kelp_pool, int kelp_moat, int goldprob, int gemprob,
             }
 }
 
+/* Eligibility deliberately says nothing about room/maze/cavern topology.
+ * Authored dungeon fillers and branch junctions are not ordinary DoD levels. */
+boolean
+forge_eligible(void)
+{
+    int dl = depth(&u.uz);
+    return u.uz.dnum == medusa_level.dnum && dl >= 20 && dl <= 199
+        && !Is_special(&u.uz) && !Is_branchlev(&u.uz)
+        && !svd.dungeons[u.uz.dnum].proto[0]
+        && !svd.dungeons[u.uz.dnum].fill_lvl[0];
+}
+
+void
+forge_exclude_area(coordxy lx, coordxy ly, coordxy hx, coordxy hy)
+{
+    coordxy x, y;
+    for (x = max(1, lx); x <= min(COLNO - 1, hx); ++x)
+        for (y = max(0, ly); y <= min(ROWNO - 1, hy); ++y)
+            forge_scripted[x][y] = TRUE;
+}
+
+boolean
+forge_candidate(coordxy x, coordxy y)
+{
+    struct mkroom *room;
+    int r;
+    if (!isok(x, y) || forge_scripted[x][y]
+        || levl[x][y].typ != ROOM || levl[x][y].edge
+        || t_at(x, y) || stairway_at(x, y))
+        return FALSE;
+    r = levl[x][y].roomno - ROOMOFFSET;
+    if (r < 0 || r >= svn.nroom)
+        return FALSE;
+    room = &svr.rooms[r];
+    return room->rtype == OROOM && room->orig_rtype == OROOM
+        && !room->custom_id && !room->nsubrooms && !room->irregular
+        && x >= room->lx && x <= room->hx
+        && y >= room->ly && y <= room->hy;
+}
+
+/* Transient outcome: -1 excluded, 0 not selected, 1 placement failure,
+ * 2 placed. No scheduler or per-game state. Reservoir sampling is uniform
+ * across legal squares, and never repeats the selection roll. */
+int
+forge_generate(void)
+{
+    coordxy x, y, fx = 0, fy = 0;
+    int candidates = 0;
+    if (!forge_eligible())
+        return -1;
+    if (rn2(100) >= 12)
+        return 0;
+    for (x = 1; x < COLNO; ++x)
+        for (y = 0; y < ROWNO; ++y)
+            if (forge_candidate(x, y) && !rn2(++candidates)) {
+                fx = x;
+                fy = y;
+            }
+    if (!candidates)
+        return 1;
+    (void) set_levltyp(fx, fy, FORGE);
+    return 2;
+}
+
 void
 level_finalize_topology(void)
 {
@@ -2113,6 +2182,31 @@ level_finalize_topology(void)
         svr.rooms[ridx].orig_rtype = svr.rooms[ridx].rtype;
 }
 
+/* The Lua topology finalizer must not run natural feature selection. Only
+ * fresh procedural generation reaches this wrapper (accepted bones bypass it). */
+#ifdef STEP15_TEST
+int step15_forge_result;
+#endif
+staticfn void
+generate_level(void)
+{
+    makelevel();
+    level_finalize_topology();
+#ifdef STEP15_TEST
+    step15_forge_result = forge_generate();
+#else
+    (void) forge_generate();
+#endif
+}
+
+#ifdef STEP15_TEST
+void
+step15_generate(void)
+{
+    generate_level();
+}
+#endif
+
 void
 mklev(void)
 {
@@ -2125,9 +2219,7 @@ mklev(void)
         return;
 
     gi.in_mklev = TRUE;
-    makelevel();
-
-    level_finalize_topology();
+    generate_level();
 
     reseed_random(rn2);
     reseed_random(rn2_on_display_rng);
@@ -3212,8 +3304,7 @@ mk_knox_portal(coordxy x, coordxy y)
 void
 step11_generate(void)
 {
-    makelevel();
-    level_finalize_topology();
+    generate_level();
 }
 
 void

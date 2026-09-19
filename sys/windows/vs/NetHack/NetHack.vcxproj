@@ -80,6 +80,7 @@
       <PreprocessorDefinitions>WIN32CON;NO_TILE_C;DLB;SND_LIB_WINDSOUND;USER_SOUNDS;SND_SOUNDEFFECTS_AUTOMAP;_LIB;HAS_STDINT_H;HAS_INTTYPES_H;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard_C>stdclatest</LanguageStandard_C>
       <PreprocessorDefinitions Condition="'$(STEP9_TOPOLOGY_TEST)'=='true'">STEP9_TOPOLOGY_TEST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(STEP15_TEST)'=='true'">STEP15_TEST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(STEP13_TEST)'=='true'">STEP13_TEST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(STEP11_TEST)'=='true'">STEP11_TEST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(STEP10C_C_TEST)'=='true'">STEP10C_C_TEST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -243,6 +244,7 @@
     <ClCompile Include="$(SrcDir)sfbase.c" />
     <ClCompile Include="$(SrcDir)revision.c" />
     <ClCompile Condition="'$(STEP9_TOPOLOGY_TEST)'=='true'" Include="$(RootDir)test\test_step9_topology_runtime.c" />
+    <ClCompile Condition="'$(STEP15_TEST)'=='true'" Include="$(RootDir)test\test_step15_runtime.c" />
     <ClCompile Condition="'$(STEP13_TEST)'=='true'" Include="$(RootDir)test\test_step13_runtime.c" />
     <ClCompile Condition="'$(STEP11_TEST)'=='true'" Include="$(RootDir)test\test_step11_runtime.c" />
     <ClCompile Condition="'$(STEP10C_C_TEST)'=='true'" Include="$(RootDir)test\test_step10c_c_runtime.c" />

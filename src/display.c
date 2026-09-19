@@ -2400,6 +2400,9 @@ back_to_glyph(coordxy x, coordxy y)
     case SOIL:
         idx = S_soil;
         break;
+    case FORGE:
+        idx = S_forge;
+        break;
     case GRASS:
         idx = S_grass;
         break;
@@ -3209,7 +3212,7 @@ static const char *const type_names[MAX_TYPE] = {
     "IRON_BARS", "DOOR", "CORR", "ROOM", "STAIRS", "LADDER", "FOUNTAIN",
     "THRONE", "SINK", "GRAVE", "ALTAR", "ICE", "DRAWBRIDGE_DOWN", "AIR",
     "CLOUD", "DEADTREE", "BOG", "ICEWALL", "CRYSTALICEWALL",
-    "PUDDLE", "SAND", "SOIL", "GRASS"
+    "PUDDLE", "SAND", "SOIL", "GRASS", "FORGE"
 };
 
 staticfn const char *

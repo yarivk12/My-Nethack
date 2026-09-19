@@ -700,7 +700,8 @@ m_postmove_effect(struct monst *mtmp)
         create_gas_cloud(x, y, 1, 0); /* harmless vapor */
 
     /* Donor Shadow darkens the square it leaves, unless cancelled. */
-    if (is_shadow(mtmp->data) && !mtmp->mcan)
+    if (is_shadow(mtmp->data) && !mtmp->mcan
+        && !IS_FORGE(levl[x][y].typ))
         levl[x][y].lit = 0;
 }
 

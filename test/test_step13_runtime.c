@@ -409,10 +409,10 @@ version_gate(void)
     f=get_freeing_nhfile();file_mode(f,READING,open("step13-version.tmp",O_RDONLY|O_BINARY));
     assert(read(f->fd,header,2)==2);assert(header[0]=='h');
     lseek(f->fd,2+header[1],SEEK_SET);Sfi_version_info(f,&v,"version_info");
-    assert((v.incarnation&255)==8);assert(check_version(&v,NULL,FALSE,0));
-    v.incarnation=(v.incarnation&~255UL)|7;
+    assert((v.incarnation&255)==9);assert(check_version(&v,NULL,FALSE,0));
+    v.incarnation=(v.incarnation&~255UL)|8;
     assert(!check_version(&v,NULL,FALSE,0));close_nhfile(f);
-    puts("PASS native critical sizes/epoch-8 header and controlled epoch-7 check_version rejection");
+    puts("PASS native critical sizes/epoch-9 header and controlled epoch-8 check_version rejection");
 }
 
 static int

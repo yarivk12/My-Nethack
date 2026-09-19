@@ -214,6 +214,8 @@ dig_check(struct monst *madeby, coordxy x, coordxy y)
 {
     struct trap *ttmp = t_at(x, y);
 
+    if (IS_FORGE(levl[x][y].typ))
+        return DIGCHECK_FAIL_TOOHARD;
     if (On_stairs(x, y)) {
         stairway *stway = stairway_at(x, y);
         if (stway->isladder) {
@@ -606,7 +608,10 @@ furniture_handled(coordxy x, coordxy y, boolean madeby_u)
 {
     struct rm *lev = &levl[x][y];
 
-    if (IS_FOUNTAIN(lev->typ)) {
+    if (IS_FORGE(lev->typ)) {
+        if (madeby_u)
+            pline_The("forge is too hard to dig through.");
+    } else if (IS_FOUNTAIN(lev->typ)) {
         dogushforth(FALSE);
         SET_FOUNTAIN_WARNED(x, y); /* force dryup */
         dryup(x, y, madeby_u);

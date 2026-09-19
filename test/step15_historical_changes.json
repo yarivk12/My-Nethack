@@ -1,0 +1,980 @@
+{
+  "include/defsym.h": [
+    {
+      "before": "    PCHAR(53, '.', S_sand, \"white dust\", CLR_WHITE)\n    PCHAR(54, '.', S_soil, \"soil\", CLR_BROWN)\n    PCHAR(55, '.', S_grass, \"grass\", CLR_GREEN)\n    PCHAR( 56, '}',  S_water,  \"water\", CLR_BRIGHT_BLUE)\n    /* end dungeon characters                                          */\n    /*                                                                 */\n    /* begin traps                                                     */\n    /*                                                                 */\n    PCHAR( 57, '^',  S_arrow_trap, \"arrow trap\", HI_METAL)\n    PCHAR( 58, '^',  S_dart_trap, \"dart trap\", HI_METAL)\n    PCHAR( 59, '^',  S_falling_rock_trap, \"falling rock trap\", CLR_GRAY)\n    PCHAR( 60, '^',  S_squeaky_board, \"squeaky board\", CLR_BROWN)\n    PCHAR( 61, '^',  S_bear_trap, \"bear trap\", HI_METAL)\n    PCHAR( 62, '^',  S_land_mine, \"land mine\", CLR_RED)\n    PCHAR( 63, '^',  S_rolling_boulder_trap, \"rolling boulder trap\", CLR_GRAY)\n    PCHAR( 64, '^',  S_sleeping_gas_trap, \"sleeping gas trap\", HI_ZAP)\n    PCHAR( 65, '^',  S_rust_trap, \"rust trap\", CLR_BLUE)\n    PCHAR( 66, '^',  S_fire_trap, \"fire trap\", CLR_ORANGE)\n    PCHAR( 67, '^',  S_pit, \"pit\", CLR_BLACK)\n    PCHAR( 68, '^',  S_spiked_pit, \"spiked pit\", CLR_BLACK)\n    PCHAR( 69, '^',  S_hole, \"hole\", CLR_BROWN)\n    PCHAR( 70, '^',  S_trap_door, \"trap door\", CLR_BROWN)\n    PCHAR( 71, '^',  S_teleportation_trap, \"teleportation trap\", CLR_MAGENTA)\n    PCHAR( 72, '^',  S_level_teleporter, \"level teleporter\", CLR_MAGENTA)\n    PCHAR( 73, '^',  S_magic_portal, \"magic portal\", CLR_BRIGHT_MAGENTA)\n    PCHAR( 74, '\"',  S_web, \"web\", CLR_GRAY)\n    PCHAR( 75, '^',  S_statue_trap, \"statue trap\", CLR_GRAY)\n    PCHAR( 76, '^',  S_magic_trap, \"magic trap\", HI_ZAP)\n    PCHAR2(77, '^',  S_anti_magic_trap, \"anti magic trap\", \"anti-magic field\",\n                                        HI_ZAP)\n    PCHAR( 78, '^',  S_polymorph_trap, \"polymorph trap\", CLR_BRIGHT_GREEN)\n    PCHAR( 79, '~',  S_vibrating_square, \"vibrating square\", CLR_MAGENTA)\n    PCHAR( 80, '^',  S_trapped_door, \"trapped door\", CLR_ORANGE)\n    PCHAR( 81, '^',  S_trapped_chest, \"trapped chest\", CLR_ORANGE)\n    PCHAR(82, '^', S_ice_trap, \"ice trap\", CLR_WHITE)\n    /* end traps                                                       */\n    /* end cmap B */\n    /*                                                                   */\n",
+      "after": "    PCHAR(53, '.', S_sand, \"white dust\", CLR_WHITE)\n    PCHAR(54, '.', S_soil, \"soil\", CLR_BROWN)\n    PCHAR(55, '.', S_grass, \"grass\", CLR_GREEN)\n    PCHAR(56, '{', S_forge, \"forge\", CLR_ORANGE)\n    PCHAR( 57, '}',  S_water,  \"water\", CLR_BRIGHT_BLUE)\n    /* end dungeon characters                                          */\n    /*                                                                 */\n    /* begin traps                                                     */\n    /*                                                                 */\n    PCHAR( 58, '^',  S_arrow_trap, \"arrow trap\", HI_METAL)\n    PCHAR( 59, '^',  S_dart_trap, \"dart trap\", HI_METAL)\n    PCHAR( 60, '^',  S_falling_rock_trap, \"falling rock trap\", CLR_GRAY)\n    PCHAR( 61, '^',  S_squeaky_board, \"squeaky board\", CLR_BROWN)\n    PCHAR( 62, '^',  S_bear_trap, \"bear trap\", HI_METAL)\n    PCHAR( 63, '^',  S_land_mine, \"land mine\", CLR_RED)\n    PCHAR( 64, '^',  S_rolling_boulder_trap, \"rolling boulder trap\", CLR_GRAY)\n    PCHAR( 65, '^',  S_sleeping_gas_trap, \"sleeping gas trap\", HI_ZAP)\n    PCHAR( 66, '^',  S_rust_trap, \"rust trap\", CLR_BLUE)\n    PCHAR( 67, '^',  S_fire_trap, \"fire trap\", CLR_ORANGE)\n    PCHAR( 68, '^',  S_pit, \"pit\", CLR_BLACK)\n    PCHAR( 69, '^',  S_spiked_pit, \"spiked pit\", CLR_BLACK)\n    PCHAR( 70, '^',  S_hole, \"hole\", CLR_BROWN)\n    PCHAR( 71, '^',  S_trap_door, \"trap door\", CLR_BROWN)\n    PCHAR( 72, '^',  S_teleportation_trap, \"teleportation trap\", CLR_MAGENTA)\n    PCHAR( 73, '^',  S_level_teleporter, \"level teleporter\", CLR_MAGENTA)\n    PCHAR( 74, '^',  S_magic_portal, \"magic portal\", CLR_BRIGHT_MAGENTA)\n    PCHAR( 75, '\"',  S_web, \"web\", CLR_GRAY)\n    PCHAR( 76, '^',  S_statue_trap, \"statue trap\", CLR_GRAY)\n    PCHAR( 77, '^',  S_magic_trap, \"magic trap\", HI_ZAP)\n    PCHAR2(78, '^',  S_anti_magic_trap, \"anti magic trap\", \"anti-magic field\",\n                                        HI_ZAP)\n    PCHAR( 79, '^',  S_polymorph_trap, \"polymorph trap\", CLR_BRIGHT_GREEN)\n    PCHAR( 80, '~',  S_vibrating_square, \"vibrating square\", CLR_MAGENTA)\n    PCHAR( 81, '^',  S_trapped_door, \"trapped door\", CLR_ORANGE)\n    PCHAR( 82, '^',  S_trapped_chest, \"trapped chest\", CLR_ORANGE)\n    PCHAR(83, '^', S_ice_trap, \"ice trap\", CLR_WHITE)\n    /* end traps                                                       */\n    /* end cmap B */\n    /*                                                                   */\n"
+    },
+    {
+      "before": "    /*                                                                   */\n    /* zap colors are changed by reset_glyphmap() to match type of beam */\n    /*                                                                   */\n    PCHAR2(83, '|',  S_vbeam, \"vertical beam\", \"\", CLR_GRAY)\n    PCHAR2(84, '-',  S_hbeam, \"horizontal beam\", \"\", CLR_GRAY)\n    PCHAR2(85, '\\\\', S_lslant, \"left slant beam\", \"\", CLR_GRAY)\n    PCHAR2(86, '/',  S_rslant, \"right slant beam\", \"\", CLR_GRAY)\n    /* start cmap C */\n    PCHAR2(87, '*',  S_digbeam, \"dig beam\", \"\", CLR_WHITE)\n    PCHAR2(88, '!',  S_flashbeam, \"flash beam\", \"\", CLR_WHITE)\n    PCHAR2(89, ')',  S_boomleft, \"boom left\", \"\", HI_WOOD)\n    PCHAR2(90, '(',  S_boomright, \"boom right\", \"\", HI_WOOD)\n    /* 4 magic shield symbols                                          */\n    PCHAR2(91, '0',  S_ss1, \"shield1\", \"\", HI_ZAP)\n    PCHAR2(92, '#',  S_ss2, \"shield2\", \"\", HI_ZAP)\n    PCHAR2(93, '@',  S_ss3, \"shield3\", \"\", HI_ZAP)\n    PCHAR2(94, '*',  S_ss4, \"shield4\", \"\", HI_ZAP)\n    PCHAR( 95, '#',  S_poisoncloud, \"poison cloud\", CLR_BRIGHT_GREEN)\n    /* for a time S_goodpos was a question mark, but dollar sign is the\n       default keystroke for getpos() to toggle goodpos glyphs on or off */\n    PCHAR(96, '#', S_dustcloud, \"dust cloud\", CLR_WHITE)\n    PCHAR( 97, '$',  S_goodpos, \"valid position\", HI_ZAP)\n    /* end cmap C */\n    /*                                                             */\n    /* The 8 swallow symbols.  Do NOT separate.                    */\n",
+      "after": "    /*                                                                   */\n    /* zap colors are changed by reset_glyphmap() to match type of beam */\n    /*                                                                   */\n    PCHAR2(84, '|',  S_vbeam, \"vertical beam\", \"\", CLR_GRAY)\n    PCHAR2(85, '-',  S_hbeam, \"horizontal beam\", \"\", CLR_GRAY)\n    PCHAR2(86, '\\\\', S_lslant, \"left slant beam\", \"\", CLR_GRAY)\n    PCHAR2(87, '/',  S_rslant, \"right slant beam\", \"\", CLR_GRAY)\n    /* start cmap C */\n    PCHAR2(88, '*',  S_digbeam, \"dig beam\", \"\", CLR_WHITE)\n    PCHAR2(89, '!',  S_flashbeam, \"flash beam\", \"\", CLR_WHITE)\n    PCHAR2(90, ')',  S_boomleft, \"boom left\", \"\", HI_WOOD)\n    PCHAR2(91, '(',  S_boomright, \"boom right\", \"\", HI_WOOD)\n    /* 4 magic shield symbols                                          */\n    PCHAR2(92, '0',  S_ss1, \"shield1\", \"\", HI_ZAP)\n    PCHAR2(93, '#',  S_ss2, \"shield2\", \"\", HI_ZAP)\n    PCHAR2(94, '@',  S_ss3, \"shield3\", \"\", HI_ZAP)\n    PCHAR2(95, '*',  S_ss4, \"shield4\", \"\", HI_ZAP)\n    PCHAR( 96, '#',  S_poisoncloud, \"poison cloud\", CLR_BRIGHT_GREEN)\n    /* for a time S_goodpos was a question mark, but dollar sign is the\n       default keystroke for getpos() to toggle goodpos glyphs on or off */\n    PCHAR(97, '#', S_dustcloud, \"dust cloud\", CLR_WHITE)\n    PCHAR( 98, '$',  S_goodpos, \"valid position\", HI_ZAP)\n    /* end cmap C */\n    /*                                                             */\n    /* The 8 swallow symbols.  Do NOT separate.                    */\n"
+    },
+    {
+      "before": "    /*      4 5 6                                                  */\n    /*      7 8 9                                                  */\n    /*                                                             */\n    PCHAR2(98, '/',  S_sw_tl, \"swallow top left\", \"\", CLR_GREEN)      /*1*/\n    PCHAR2(99, '-',  S_sw_tc, \"swallow top center\", \"\", CLR_GREEN)    /*2*/\n    PCHAR2(100, '\\\\', S_sw_tr, \"swallow top right\", \"\", CLR_GREEN)     /*3*/\n    PCHAR2(101, '|',  S_sw_ml, \"swallow middle left\", \"\", CLR_GREEN)   /*4*/\n    PCHAR2(102, '|',  S_sw_mr, \"swallow middle right\", \"\", CLR_GREEN)  /*6*/\n    PCHAR2(103, '\\\\', S_sw_bl, \"swallow bottom left\", \"\", CLR_GREEN)   /*7*/\n    PCHAR2(104, '-',  S_sw_bc, \"swallow bottom center\", \"\", CLR_GREEN) /*8*/\n    PCHAR2(105, '/',  S_sw_br, \"swallow bottom right\", \"\", CLR_GREEN)  /*9*/\n    /*                                                             */\n    /* explosion colors are changed by reset_glyphmap() to match   */\n    /* the type of expl.                                           */\n",
+      "after": "    /*      4 5 6                                                  */\n    /*      7 8 9                                                  */\n    /*                                                             */\n    PCHAR2(99, '/',  S_sw_tl, \"swallow top left\", \"\", CLR_GREEN)      /*1*/\n    PCHAR2(100, '-',  S_sw_tc, \"swallow top center\", \"\", CLR_GREEN)    /*2*/\n    PCHAR2(101, '\\\\', S_sw_tr, \"swallow top right\", \"\", CLR_GREEN)     /*3*/\n    PCHAR2(102, '|',  S_sw_ml, \"swallow middle left\", \"\", CLR_GREEN)   /*4*/\n    PCHAR2(103, '|',  S_sw_mr, \"swallow middle right\", \"\", CLR_GREEN)  /*6*/\n    PCHAR2(104, '\\\\', S_sw_bl, \"swallow bottom left\", \"\", CLR_GREEN)   /*7*/\n    PCHAR2(105, '-',  S_sw_bc, \"swallow bottom center\", \"\", CLR_GREEN) /*8*/\n    PCHAR2(106, '/',  S_sw_br, \"swallow bottom right\", \"\", CLR_GREEN)  /*9*/\n    /*                                                             */\n    /* explosion colors are changed by reset_glyphmap() to match   */\n    /* the type of expl.                                           */\n"
+    },
+    {
+      "before": "    /*      |@|                                                    */\n    /*      \\-/                                                    */\n    /*                                                             */\n    PCHAR2(106, '/',  S_expl_tl, \"explosion top left\", \"\", CLR_ORANGE)\n    PCHAR2(107, '-',  S_expl_tc, \"explosion top center\", \"\", CLR_ORANGE)\n    PCHAR2(108, '\\\\', S_expl_tr, \"explosion top right\", \"\", CLR_ORANGE)\n    PCHAR2(109, '|',  S_expl_ml, \"explosion middle left\", \"\", CLR_ORANGE)\n    PCHAR2(110, ' ',  S_expl_mc, \"explosion middle center\", \"\", CLR_ORANGE)\n    PCHAR2(111, '|',  S_expl_mr, \"explosion middle right\", \"\", CLR_ORANGE)\n    PCHAR2(112, '\\\\', S_expl_bl, \"explosion bottom left\", \"\", CLR_ORANGE)\n    PCHAR2(113, '-', S_expl_bc, \"explosion bottom center\", \"\", CLR_ORANGE)\n    PCHAR2(114, '/', S_expl_br, \"explosion bottom right\", \"\", CLR_ORANGE)\n#undef PCHAR\n#undef PCHAR2\n#endif /* PCHAR_S_ENUM || PCHAR_PARSE || PCHAR_DRAWING || PCHAR_TILES\n",
+      "after": "    /*      |@|                                                    */\n    /*      \\-/                                                    */\n    /*                                                             */\n    PCHAR2(107, '/',  S_expl_tl, \"explosion top left\", \"\", CLR_ORANGE)\n    PCHAR2(108, '-',  S_expl_tc, \"explosion top center\", \"\", CLR_ORANGE)\n    PCHAR2(109, '\\\\', S_expl_tr, \"explosion top right\", \"\", CLR_ORANGE)\n    PCHAR2(110, '|',  S_expl_ml, \"explosion middle left\", \"\", CLR_ORANGE)\n    PCHAR2(111, ' ',  S_expl_mc, \"explosion middle center\", \"\", CLR_ORANGE)\n    PCHAR2(112, '|',  S_expl_mr, \"explosion middle right\", \"\", CLR_ORANGE)\n    PCHAR2(113, '\\\\', S_expl_bl, \"explosion bottom left\", \"\", CLR_ORANGE)\n    PCHAR2(114, '-', S_expl_bc, \"explosion bottom center\", \"\", CLR_ORANGE)\n    PCHAR2(115, '/', S_expl_br, \"explosion bottom right\", \"\", CLR_ORANGE)\n#undef PCHAR\n#undef PCHAR2\n#endif /* PCHAR_S_ENUM || PCHAR_PARSE || PCHAR_DRAWING || PCHAR_TILES\n"
+    }
+  ],
+  "include/extern.h": [
+    {
+      "before": "\nextern void do_blinding_ray(struct obj *) NONNULLPTRS;\nextern int doapply(void);\nextern int dorub(void);\nextern int dojump(void);\nextern int jump(int);\n",
+      "after": "\nextern void do_blinding_ray(struct obj *) NONNULLPTRS;\nextern int doapply(void);\nextern int forge_interact(struct obj *);\nextern boolean forge_eligible(void);\nextern void forge_exclude_area(coordxy, coordxy, coordxy, coordxy);\nextern boolean forge_candidate(coordxy, coordxy);\nextern int forge_generate(void);\nextern int dorub(void);\nextern int dojump(void);\nextern int jump(int);\n"
+    }
+  ],
+  "include/rm.h": [
+    {
+      "before": "    SAND = 42,   /* Mithardir white dust */\n    SOIL = 43,\n    GRASS = 44,\n    MAX_TYPE  = 45,\n    /* for special levels */\n    MATCH_WALL = 46,\n\n    /* these aren't levl[][].typ values, they're additional indices\n       into terrain_descr[] for status feedback */\n    xFLOOR     = 47,\n    xGROUND    = 48,\n    xOPENDOOR  = 49,\n    xSHUTDOOR  = 50,\n    xSWAMP     = 51,\n    xSUBMERGED = 52,\n    xSEA       = 53,\n    xWATERWALL = 54,\n\n    INVALID_TYPE = 127\n};\n",
+      "after": "    SAND = 42,   /* Mithardir white dust */\n    SOIL = 43,\n    GRASS = 44,\n    FORGE = 45, /* permanent, lit crafting site */\n    MAX_TYPE  = 46,\n    /* for special levels */\n    MATCH_WALL = 47,\n\n    /* these aren't levl[][].typ values, they're additional indices\n       into terrain_descr[] for status feedback */\n    xFLOOR     = 48,\n    xGROUND    = 49,\n    xOPENDOOR  = 50,\n    xSHUTDOOR  = 51,\n    xSWAMP     = 52,\n    xSUBMERGED = 53,\n    xSEA       = 54,\n    xWATERWALL = 55,\n\n    INVALID_TYPE = 127\n};\n"
+    },
+    {
+      "before": "#define IS_POOL(typ) ((typ) >= POOL && (typ) <= DRAWBRIDGE_UP)\n#define IS_LAVA(typ) ((typ) == LAVAPOOL || (typ) == LAVAWALL)\n#define IS_THRONE(typ) ((typ) == THRONE)\n#define IS_FOUNTAIN(typ) ((typ) == FOUNTAIN)\n#define IS_SINK(typ) ((typ) == SINK)\n#define IS_GRAVE(typ) ((typ) == GRAVE)\n#define IS_ALTAR(typ) ((typ) == ALTAR)\n#define IS_DRAWBRIDGE(typ) \\\n    ((typ) == DRAWBRIDGE_UP || (typ) == DRAWBRIDGE_DOWN)\n#define IS_FURNITURE(typ) ((typ) >= STAIRS && (typ) <= ALTAR)\n#define IS_AIR(typ) ((typ) == AIR || (typ) == CLOUD)\n#define IS_SOFT(typ) ((typ) == AIR || (typ) == CLOUD || IS_POOL(typ) \\\n                      || IS_BOG(typ) || IS_PUDDLE(typ) || IS_SAND(typ))\n",
+      "after": "#define IS_POOL(typ) ((typ) >= POOL && (typ) <= DRAWBRIDGE_UP)\n#define IS_LAVA(typ) ((typ) == LAVAPOOL || (typ) == LAVAWALL)\n#define IS_THRONE(typ) ((typ) == THRONE)\n#define IS_FORGE(typ) ((typ) == FORGE)\n#define IS_FOUNTAIN(typ) ((typ) == FOUNTAIN)\n#define IS_SINK(typ) ((typ) == SINK)\n#define IS_GRAVE(typ) ((typ) == GRAVE)\n#define IS_ALTAR(typ) ((typ) == ALTAR)\n#define IS_DRAWBRIDGE(typ) \\\n    ((typ) == DRAWBRIDGE_UP || (typ) == DRAWBRIDGE_DOWN)\n#define IS_FURNITURE(typ) (((typ) >= STAIRS && (typ) <= ALTAR) || IS_FORGE(typ))\n#define IS_AIR(typ) ((typ) == AIR || (typ) == CLOUD)\n#define IS_SOFT(typ) ((typ) == AIR || (typ) == CLOUD || IS_POOL(typ) \\\n                      || IS_BOG(typ) || IS_PUDDLE(typ) || IS_SAND(typ))\n"
+    },
+    {
+      "before": "#define SET_LIT_NOCHANGE -2\n\n#define CAN_OVERWRITE_TERRAIN(ttyp) \\\n    (iflags.debug_overwrite_stairs || !((ttyp) == LADDER || (ttyp) == STAIRS))\n\n/*\n * Add wall angle viewing by defining \"modes\" for each wall type.  Each\n",
+      "after": "#define SET_LIT_NOCHANGE -2\n\n#define CAN_OVERWRITE_TERRAIN(ttyp) \\\n    (!IS_FORGE(ttyp) \\\n     && (iflags.debug_overwrite_stairs || !((ttyp) == LADDER || (ttyp) == STAIRS)))\n\n/*\n * Add wall angle viewing by defining \"modes\" for each wall type.  Each\n"
+    }
+  ],
+  "src/apply.c": [
+    {
+      "before": "    if (obj->oclass == COIN_CLASS)\n        return GETOBJ_DOWNPLAY;\n\n    /* certain weapons */\n    if (obj->oclass == WEAPON_CLASS\n        && (is_pick(obj) || is_axe(obj) || is_pole(obj)\n",
+      "after": "    if (obj->oclass == COIN_CLASS)\n        return GETOBJ_DOWNPLAY;\n\n    if (obj->otyp == WAR_HAMMER && IS_FORGE(levl[u.ux][u.uy].typ))\n        return GETOBJ_SUGGEST;\n\n    /* certain weapons */\n    if (obj->oclass == WEAPON_CLASS\n        && (is_pick(obj) || is_axe(obj) || is_pole(obj)\n"
+    },
+    {
+      "before": "    return GETOBJ_EXCLUDE_SELECTABLE;\n}\n\n/* the #apply command, 'a' */\nint\ndoapply(void)\n",
+      "after": "    return GETOBJ_EXCLUDE_SELECTABLE;\n}\n\n/* One entry point for forge operations. Rejections use the no-time ECMD_OK\n * convention of do_break_wand strength and use_pole state gates. Step 15B\n * extends the final operation without changing the activation rule. */\nint\nforge_interact(struct obj *hammer)\n{\n    if (!IS_FORGE(levl[u.ux][u.uy].typ) || !hammer\n        || hammer->otyp != WAR_HAMMER)\n        return ECMD_FAIL;\n    if (Confusion || Stunned) {\n        You(\"are too %s to use the forge.\", Confusion ? \"confused\" : \"stunned\");\n        return ECMD_OK;\n    }\n    if (ACURR(A_STR) < 4) {\n        You(\"are too weak to use the forge.\");\n        return ECMD_OK;\n    }\n    You(\"know no forge operations yet.\");\n    return ECMD_TIME;\n}\n\n/* the #apply command, 'a' */\nint\ndoapply(void)\n"
+    },
+    {
+      "before": "    obj = getobj(\"use or apply\", apply_ok, GETOBJ_NOFLAGS);\n    if (!obj)\n        return ECMD_CANCEL;\n\n    if (!retouch_object(&obj, FALSE))\n        return ECMD_TIME; /* evading your grasp costs a turn; just be\n",
+      "after": "    obj = getobj(\"use or apply\", apply_ok, GETOBJ_NOFLAGS);\n    if (!obj)\n        return ECMD_CANCEL;\n\n    if (obj->otyp == WAR_HAMMER && IS_FORGE(levl[u.ux][u.uy].typ))\n        return forge_interact(obj);\n\n    if (!retouch_object(&obj, FALSE))\n        return ECMD_TIME; /* evading your grasp costs a turn; just be\n"
+    }
+  ],
+  "src/botl.c": [
+    {
+      "before": "       \"White-dust\",\n       \"Soil\",\n       \"Grass\",\n       /*\n        */\n/*45*/ \"\",              /* MAX_TYPE; skipped rather than overloaded */\n/*46*/ c_Wall,          /* MATCH_WALL for special levels; shouldn't happen */\n       /*\n        * additional terrain names that aren't simple levl[][].typ values\n        */\n/*47*/ \"Floor\",         /* substituted for room or corridor */\n/*48*/ \"Ground\",        /* 'room' on Earth level */\n       \"Open-door\",     /* open (not broken or doorless) */\n       \"Shut-door\",     /* closed or locked (or trapped) */\n       \"Swamp\",         /* Juiblex level */\n",
+      "after": "       \"White-dust\",\n       \"Soil\",\n       \"Grass\",\n       \"Forge\",\n       /*\n        */\n/*46*/ \"\",              /* MAX_TYPE; skipped rather than overloaded */\n/*47*/ c_Wall,          /* MATCH_WALL for special levels; shouldn't happen */\n       /*\n        * additional terrain names that aren't simple levl[][].typ values\n        */\n/*48*/ \"Floor\",         /* substituted for room or corridor */\n/*49*/ \"Ground\",        /* 'room' on Earth level */\n       \"Open-door\",     /* open (not broken or doorless) */\n       \"Shut-door\",     /* closed or locked (or trapped) */\n       \"Swamp\",         /* Juiblex level */\n"
+    }
+  ],
+  "src/cmd.c": [
+    {
+      "before": "    \"corridor\", \"room\", \"stairs\", \"ladder\", \"fountain\", \"throne\", \"sink\",\n    \"grave\", \"altar\", \"ice\", \"drawbridge down\", \"air\", \"cloud\",\n    \"dead tree\", \"muddy swamp\", \"ice wall\", \"crystal ice wall\",\n    \"shallow water\", \"white dust\", \"soil\", \"grass\",\n    /* not a real terrain type, but used for undiggable stone\n       by wiz_map_levltyp() */\n    \"unreachable/undiggable\",\n",
+      "after": "    \"corridor\", \"room\", \"stairs\", \"ladder\", \"fountain\", \"throne\", \"sink\",\n    \"grave\", \"altar\", \"ice\", \"drawbridge down\", \"air\", \"cloud\",\n    \"dead tree\", \"muddy swamp\", \"ice wall\", \"crystal ice wall\",\n    \"shallow water\", \"white dust\", \"soil\", \"grass\", \"forge\",\n    /* not a real terrain type, but used for undiggable stone\n       by wiz_map_levltyp() */\n    \"unreachable/undiggable\",\n"
+    }
+  ],
+  "src/dig.c": [
+    {
+      "before": "{\n    struct trap *ttmp = t_at(x, y);\n\n    if (On_stairs(x, y)) {\n        stairway *stway = stairway_at(x, y);\n        if (stway->isladder) {\n",
+      "after": "{\n    struct trap *ttmp = t_at(x, y);\n\n    if (IS_FORGE(levl[x][y].typ))\n        return DIGCHECK_FAIL_TOOHARD;\n    if (On_stairs(x, y)) {\n        stairway *stway = stairway_at(x, y);\n        if (stway->isladder) {\n"
+    },
+    {
+      "before": "{\n    struct rm *lev = &levl[x][y];\n\n    if (IS_FOUNTAIN(lev->typ)) {\n        dogushforth(FALSE);\n        SET_FOUNTAIN_WARNED(x, y); /* force dryup */\n        dryup(x, y, madeby_u);\n",
+      "after": "{\n    struct rm *lev = &levl[x][y];\n\n    if (IS_FORGE(lev->typ)) {\n        if (madeby_u)\n            pline_The(\"forge is too hard to dig through.\");\n    } else if (IS_FOUNTAIN(lev->typ)) {\n        dogushforth(FALSE);\n        SET_FOUNTAIN_WARNED(x, y); /* force dryup */\n        dryup(x, y, madeby_u);\n"
+    }
+  ],
+  "src/display.c": [
+    {
+      "before": "    case SOIL:\n        idx = S_soil;\n        break;\n    case GRASS:\n        idx = S_grass;\n        break;\n",
+      "after": "    case SOIL:\n        idx = S_soil;\n        break;\n    case FORGE:\n        idx = S_forge;\n        break;\n    case GRASS:\n        idx = S_grass;\n        break;\n"
+    },
+    {
+      "before": "    \"IRON_BARS\", \"DOOR\", \"CORR\", \"ROOM\", \"STAIRS\", \"LADDER\", \"FOUNTAIN\",\n    \"THRONE\", \"SINK\", \"GRAVE\", \"ALTAR\", \"ICE\", \"DRAWBRIDGE_DOWN\", \"AIR\",\n    \"CLOUD\", \"DEADTREE\", \"BOG\", \"ICEWALL\", \"CRYSTALICEWALL\",\n    \"PUDDLE\", \"SAND\", \"SOIL\", \"GRASS\"\n};\n\nstaticfn const char *\n",
+      "after": "    \"IRON_BARS\", \"DOOR\", \"CORR\", \"ROOM\", \"STAIRS\", \"LADDER\", \"FOUNTAIN\",\n    \"THRONE\", \"SINK\", \"GRAVE\", \"ALTAR\", \"ICE\", \"DRAWBRIDGE_DOWN\", \"AIR\",\n    \"CLOUD\", \"DEADTREE\", \"BOG\", \"ICEWALL\", \"CRYSTALICEWALL\",\n    \"PUDDLE\", \"SAND\", \"SOIL\", \"GRASS\", \"FORGE\"\n};\n\nstaticfn const char *\n"
+    }
+  ],
+  "src/dungeon.c": [
+    {
+      "before": "        return \"soil\";\n    else if (levtyp == GRASS)\n        return \"grass\";\n    else if (IS_ANY_ICEWALL(levtyp))\n        return levtyp == CRYSTALICEWALL ? \"crystal ice wall\" : \"ice wall\";\n    else if (is_ice(x, y))\n",
+      "after": "        return \"soil\";\n    else if (levtyp == GRASS)\n        return \"grass\";\n    else if (IS_FORGE(levtyp))\n        return \"forge\";\n    else if (IS_ANY_ICEWALL(levtyp))\n        return levtyp == CRYSTALICEWALL ? \"crystal ice wall\" : \"ice wall\";\n    else if (is_ice(x, y))\n"
+    }
+  ],
+  "src/invent.c": [
+    {
+      "before": "        /* override door description for open drawbridge */\n        if (is_drawbridge_wall(x, y) >= 0)\n            dfeature = \"open drawbridge portcullis\", cmap = -1;\n    } else if (IS_FOUNTAIN(ltyp))\n        cmap = S_fountain; /* \"fountain\" */\n    else if (IS_THRONE(ltyp))\n        cmap = S_throne; /* \"opulent throne\" */\n",
+      "after": "        /* override door description for open drawbridge */\n        if (is_drawbridge_wall(x, y) >= 0)\n            dfeature = \"open drawbridge portcullis\", cmap = -1;\n    } else if (IS_FORGE(ltyp))\n        cmap = S_forge; /* \"forge\" */\n    else if (IS_FOUNTAIN(ltyp))\n        cmap = S_fountain; /* \"fountain\" */\n    else if (IS_THRONE(ltyp))\n        cmap = S_throne; /* \"opulent throne\" */\n"
+    }
+  ],
+  "src/mklev.c": [
+    {
+      "before": "/* NetHack may be freely redistributed.  See license for details. */\n\n#include \"hack.h\"\n\n/* for UNIX, Rand #def'd to (long)lrand48() or (long)random() */\n/* croom->lx etc are schar (width <= int), so % arith ensures that */\n",
+      "after": "/* NetHack may be freely redistributed.  See license for details. */\n\n#include \"hack.h\"\n\n/* Generation-only provenance: scripted OROOMs can look ordinary after Lua.\n * Coordinate storage survives room sorting; never serialized. */\nstatic boolean forge_scripted[COLNO][ROWNO];\n\n/* for UNIX, Rand #def'd to (long)lrand48() or (long)random() */\n/* croom->lx etc are schar (width <= int), so % arith ensures that */\n"
+    },
+    {
+      "before": "        lev = &levl[x][0];\n        for (y = 0; y < ROWNO; y++) {\n            *lev++ = zerorm;\n            svl.level.objects[x][y] = (struct obj *) 0;\n            svl.level.monsters[x][y] = (struct monst *) 0;\n        }\n",
+      "after": "        lev = &levl[x][0];\n        for (y = 0; y < ROWNO; y++) {\n            *lev++ = zerorm;\n            forge_scripted[x][y] = FALSE;\n            svl.level.objects[x][y] = (struct obj *) 0;\n            svl.level.monsters[x][y] = (struct monst *) 0;\n        }\n"
+    },
+    {
+      "before": "            }\n}\n\nvoid\nlevel_finalize_topology(void)\n{\n",
+      "after": "            }\n}\n\n/* Eligibility deliberately says nothing about room/maze/cavern topology.\n * Authored dungeon fillers and branch junctions are not ordinary DoD levels. */\nboolean\nforge_eligible(void)\n{\n    int dl = depth(&u.uz);\n    return u.uz.dnum == medusa_level.dnum && dl >= 20 && dl <= 199\n        && !Is_special(&u.uz) && !Is_branchlev(&u.uz)\n        && !svd.dungeons[u.uz.dnum].proto[0]\n        && !svd.dungeons[u.uz.dnum].fill_lvl[0];\n}\n\nvoid\nforge_exclude_area(coordxy lx, coordxy ly, coordxy hx, coordxy hy)\n{\n    coordxy x, y;\n    for (x = max(1, lx); x <= min(COLNO - 1, hx); ++x)\n        for (y = max(0, ly); y <= min(ROWNO - 1, hy); ++y)\n            forge_scripted[x][y] = TRUE;\n}\n\nboolean\nforge_candidate(coordxy x, coordxy y)\n{\n    struct mkroom *room;\n    int r;\n    if (!isok(x, y) || forge_scripted[x][y]\n        || levl[x][y].typ != ROOM || levl[x][y].edge\n        || t_at(x, y) || stairway_at(x, y))\n        return FALSE;\n    r = levl[x][y].roomno - ROOMOFFSET;\n    if (r < 0 || r >= svn.nroom)\n        return FALSE;\n    room = &svr.rooms[r];\n    return room->rtype == OROOM && room->orig_rtype == OROOM\n        && !room->custom_id && !room->nsubrooms && !room->irregular\n        && x >= room->lx && x <= room->hx\n        && y >= room->ly && y <= room->hy;\n}\n\n/* Transient outcome: -1 excluded, 0 not selected, 1 placement failure,\n * 2 placed. No scheduler or per-game state. Reservoir sampling is uniform\n * across legal squares, and never repeats the selection roll. */\nint\nforge_generate(void)\n{\n    coordxy x, y, fx = 0, fy = 0;\n    int candidates = 0;\n    if (!forge_eligible())\n        return -1;\n    if (rn2(100) >= 12)\n        return 0;\n    for (x = 1; x < COLNO; ++x)\n        for (y = 0; y < ROWNO; ++y)\n            if (forge_candidate(x, y) && !rn2(++candidates)) {\n                fx = x;\n                fy = y;\n            }\n    if (!candidates)\n        return 1;\n    (void) set_levltyp(fx, fy, FORGE);\n    return 2;\n}\n\nvoid\nlevel_finalize_topology(void)\n{\n"
+    },
+    {
+      "before": "        svr.rooms[ridx].orig_rtype = svr.rooms[ridx].rtype;\n}\n\nvoid\nmklev(void)\n{\n",
+      "after": "        svr.rooms[ridx].orig_rtype = svr.rooms[ridx].rtype;\n}\n\n/* The Lua topology finalizer must not run natural feature selection. Only\n * fresh procedural generation reaches this wrapper (accepted bones bypass it). */\n#ifdef STEP15_TEST\nint step15_forge_result;\n#endif\nstaticfn void\ngenerate_level(void)\n{\n    makelevel();\n    level_finalize_topology();\n#ifdef STEP15_TEST\n    step15_forge_result = forge_generate();\n#else\n    (void) forge_generate();\n#endif\n}\n\n#ifdef STEP15_TEST\nvoid\nstep15_generate(void)\n{\n    generate_level();\n}\n#endif\n\nvoid\nmklev(void)\n{\n"
+    },
+    {
+      "before": "        return;\n\n    gi.in_mklev = TRUE;\n    makelevel();\n\n    level_finalize_topology();\n\n    reseed_random(rn2);\n    reseed_random(rn2_on_display_rng);\n",
+      "after": "        return;\n\n    gi.in_mklev = TRUE;\n    generate_level();\n\n    reseed_random(rn2);\n    reseed_random(rn2_on_display_rng);\n"
+    },
+    {
+      "before": "void\nstep11_generate(void)\n{\n    makelevel();\n    level_finalize_topology();\n}\n\nvoid\n",
+      "after": "void\nstep11_generate(void)\n{\n    generate_level();\n}\n\nvoid\n"
+    }
+  ],
+  "src/mkmaze.c": [
+    {
+      "before": "             *  the way newtyp will use them, clear them.\n             */\n\n            if (IS_LAVA(newtyp)) /* [what about IS_LAVA(oldtyp)=>.lit = 0?] */\n                levl[x][y].lit = 1;\n            if (was_ice && newtyp != ICE) {\n                /* frozen corpses resume rotting, no more ice to melt away */\n",
+      "after": "             *  the way newtyp will use them, clear them.\n             */\n\n            /* [what about IS_LAVA(oldtyp)=>.lit = 0?] */\n            if (IS_LAVA(newtyp) || IS_FORGE(newtyp))\n                levl[x][y].lit = 1;\n            if (was_ice && newtyp != ICE) {\n                /* frozen corpses resume rotting, no more ice to melt away */\n"
+    },
+    {
+      "before": "                impossible(\"set_levltyp_lit(%d,%d,%d,%d)\",\n                           (int) x, (int) y, (int) typ, (int) lit);\n#endif /*EXTRA_SANITY_CHECKS*/\n            if (IS_LAVA(typ))\n                lit = 1;\n            else if (lit == SET_LIT_RANDOM)\n                lit = rn2(2);\n",
+      "after": "                impossible(\"set_levltyp_lit(%d,%d,%d,%d)\",\n                           (int) x, (int) y, (int) typ, (int) lit);\n#endif /*EXTRA_SANITY_CHECKS*/\n            if (IS_LAVA(typ) || IS_FORGE(typ))\n                lit = 1;\n            else if (lit == SET_LIT_RANDOM)\n                lit = rn2(2);\n"
+    }
+  ],
+  "src/monmove.c": [
+    {
+      "before": "        create_gas_cloud(x, y, 1, 0); /* harmless vapor */\n\n    /* Donor Shadow darkens the square it leaves, unless cancelled. */\n    if (is_shadow(mtmp->data) && !mtmp->mcan)\n        levl[x][y].lit = 0;\n}\n\n",
+      "after": "        create_gas_cloud(x, y, 1, 0); /* harmless vapor */\n\n    /* Donor Shadow darkens the square it leaves, unless cancelled. */\n    if (is_shadow(mtmp->data) && !mtmp->mcan\n        && !IS_FORGE(levl[x][y].typ))\n        levl[x][y].lit = 0;\n}\n\n"
+    }
+  ],
+  "src/nhlua.c": [
+    {
+      "before": "                { 's', SAND },\n                { 'e', SOIL },\n                { 'G', GRASS },\n                { 'F', IRONBARS }, /* Fe = iron */\n                { 'x', MAX_TYPE }, /* \"see-through\" */\n                { 'B', CROSSWALL }, /* hack: boundary location */\n",
+      "after": "                { 's', SAND },\n                { 'e', SOIL },\n                { 'G', GRASS },\n                { 'f', FORGE },\n                { 'F', IRONBARS }, /* Fe = iron */\n                { 'x', MAX_TYPE }, /* \"see-through\" */\n                { 'B', CROSSWALL }, /* hack: boundary location */\n"
+    }
+  ],
+  "src/read.c": [
+    {
+      "before": "            gremlins = gremlin;\n        }\n    } else {\n        levl[x][y].lit = 0;\n        snuff_light_source(x, y);\n    }\n}\n",
+      "after": "            gremlins = gremlin;\n        }\n    } else {\n        levl[x][y].lit = IS_FORGE(levl[x][y].typ) ? 1 : 0;\n        snuff_light_source(x, y);\n    }\n}\n"
+    }
+  ],
+  "src/sp_lev.c": [
+    {
+      "before": "    for (x = lowx; x <= hix; x++) {\n        lev = &levl[x][lowy];\n        for (y = lowy; y <= hiy; y++) {\n            lev->lit = IS_LAVA(lev->typ) ? 1 : litstate;\n            lev++;\n        }\n    }\n",
+      "after": "    for (x = lowx; x <= hix; x++) {\n        lev = &levl[x][lowy];\n        for (y = lowy; y <= hiy; y++) {\n            lev->lit = (IS_LAVA(lev->typ) || IS_FORGE(lev->typ)) ? 1 : litstate;\n            lev++;\n        }\n    }\n"
+    },
+    {
+      "before": "                gc.coder->n_subroom++;\n                update_croom();\n                lua_getfield(L, 1, \"contents\");\n                if (lua_type(L, -1) == LUA_TFUNCTION) {\n                    lua_remove(L, -2);\n                    l_push_mkroom_table(L, tmpcr);\n",
+      "after": "                gc.coder->n_subroom++;\n                update_croom();\n                lua_getfield(L, 1, \"contents\");\n                /* The default Lua ordinary room is the native random-room\n                 * backend. Explicit geometry or contents denotes a scripted\n                 * area even when the author calls its room type ordinary. */\n                if (tmproom.x != -1 || tmproom.w != -1\n                    || tmproom.rlit != -1 || !tmproom.needfill\n                    || lua_type(L, -1) == LUA_TFUNCTION)\n                    forge_exclude_area(tmpcr->lx, tmpcr->ly,\n                                       tmpcr->hx, tmpcr->hy);\n                if (lua_type(L, -1) == LUA_TFUNCTION) {\n                    lua_remove(L, -2);\n                    l_push_mkroom_table(L, tmpcr);\n"
+    },
+    {
+      "before": "{\n     int lit = *(int *) arg;\n\n     levl[x][y].lit = (IS_LAVA(levl[x][y].typ) || lit) ? 1 : 0;\n}\n\n/* Add to the room any doors within/bordering it */\n",
+      "after": "{\n     int lit = *(int *) arg;\n\n     levl[x][y].lit = (IS_LAVA(levl[x][y].typ) || IS_FORGE(levl[x][y].typ) || lit) ? 1 : 0;\n}\n\n/* Add to the room any doors within/bordering it */\n"
+    },
+    {
+      "before": "                }\n        }\n\n        /* Load the map */\n        for (y = gy.ystart; y < min(ROWNO, gy.ystart + gy.ysize); y++)\n            for (x = gx.xstart; x < min(COLNO, gx.xstart + gx.xsize); x++) {\n",
+      "after": "                }\n        }\n\n        /* Authored map fragments are never ordinary forge candidates. */\n        forge_exclude_area(gx.xstart, gy.ystart,\n                           gx.xstart + gx.xsize - 1,\n                           gy.ystart + gy.ysize - 1);\n        /* Load the map */\n        for (y = gy.ystart; y < min(ROWNO, gy.ystart + gy.ysize); y++)\n            for (x = gx.xstart; x < min(COLNO, gx.xstart + gx.xsize); x++) {\n"
+    }
+  ],
+  "sys/windows/vs/NetHack/NetHack.vcxproj": [
+    {
+      "before": "      <PreprocessorDefinitions>WIN32CON;NO_TILE_C;DLB;SND_LIB_WINDSOUND;USER_SOUNDS;SND_SOUNDEFFECTS_AUTOMAP;_LIB;HAS_STDINT_H;HAS_INTTYPES_H;%(PreprocessorDefinitions)</PreprocessorDefinitions>\n      <LanguageStandard_C>stdclatest</LanguageStandard_C>\n      <PreprocessorDefinitions Condition=\"'$(STEP9_TOPOLOGY_TEST)'=='true'\">STEP9_TOPOLOGY_TEST;%(PreprocessorDefinitions)</PreprocessorDefinitions>\n      <PreprocessorDefinitions Condition=\"'$(STEP13_TEST)'=='true'\">STEP13_TEST;%(PreprocessorDefinitions)</PreprocessorDefinitions>\n      <PreprocessorDefinitions Condition=\"'$(STEP11_TEST)'=='true'\">STEP11_TEST;%(PreprocessorDefinitions)</PreprocessorDefinitions>\n      <PreprocessorDefinitions Condition=\"'$(STEP10C_C_TEST)'=='true'\">STEP10C_C_TEST;%(PreprocessorDefinitions)</PreprocessorDefinitions>\n",
+      "after": "      <PreprocessorDefinitions>WIN32CON;NO_TILE_C;DLB;SND_LIB_WINDSOUND;USER_SOUNDS;SND_SOUNDEFFECTS_AUTOMAP;_LIB;HAS_STDINT_H;HAS_INTTYPES_H;%(PreprocessorDefinitions)</PreprocessorDefinitions>\n      <LanguageStandard_C>stdclatest</LanguageStandard_C>\n      <PreprocessorDefinitions Condition=\"'$(STEP9_TOPOLOGY_TEST)'=='true'\">STEP9_TOPOLOGY_TEST;%(PreprocessorDefinitions)</PreprocessorDefinitions>\n      <PreprocessorDefinitions Condition=\"'$(STEP15_TEST)'=='true'\">STEP15_TEST;%(PreprocessorDefinitions)</PreprocessorDefinitions>\n      <PreprocessorDefinitions Condition=\"'$(STEP13_TEST)'=='true'\">STEP13_TEST;%(PreprocessorDefinitions)</PreprocessorDefinitions>\n      <PreprocessorDefinitions Condition=\"'$(STEP11_TEST)'=='true'\">STEP11_TEST;%(PreprocessorDefinitions)</PreprocessorDefinitions>\n      <PreprocessorDefinitions Condition=\"'$(STEP10C_C_TEST)'=='true'\">STEP10C_C_TEST;%(PreprocessorDefinitions)</PreprocessorDefinitions>\n"
+    },
+    {
+      "before": "    <ClCompile Include=\"$(SrcDir)sfbase.c\" />\n    <ClCompile Include=\"$(SrcDir)revision.c\" />\n    <ClCompile Condition=\"'$(STEP9_TOPOLOGY_TEST)'=='true'\" Include=\"$(RootDir)test\\test_step9_topology_runtime.c\" />\n    <ClCompile Condition=\"'$(STEP13_TEST)'=='true'\" Include=\"$(RootDir)test\\test_step13_runtime.c\" />\n    <ClCompile Condition=\"'$(STEP11_TEST)'=='true'\" Include=\"$(RootDir)test\\test_step11_runtime.c\" />\n    <ClCompile Condition=\"'$(STEP10C_C_TEST)'=='true'\" Include=\"$(RootDir)test\\test_step10c_c_runtime.c\" />\n",
+      "after": "    <ClCompile Include=\"$(SrcDir)sfbase.c\" />\n    <ClCompile Include=\"$(SrcDir)revision.c\" />\n    <ClCompile Condition=\"'$(STEP9_TOPOLOGY_TEST)'=='true'\" Include=\"$(RootDir)test\\test_step9_topology_runtime.c\" />\n    <ClCompile Condition=\"'$(STEP15_TEST)'=='true'\" Include=\"$(RootDir)test\\test_step15_runtime.c\" />\n    <ClCompile Condition=\"'$(STEP13_TEST)'=='true'\" Include=\"$(RootDir)test\\test_step13_runtime.c\" />\n    <ClCompile Condition=\"'$(STEP11_TEST)'=='true'\" Include=\"$(RootDir)test\\test_step11_runtime.c\" />\n    <ClCompile Condition=\"'$(STEP10C_C_TEST)'=='true'\" Include=\"$(RootDir)test\\test_step10c_c_runtime.c\" />\n"
+    }
+  ],
+  "sys/windows/windmain.c": [
+    {
+      "before": "\n#ifdef STEP9_TOPOLOGY_TEST\nextern int step9_topology_test_main(void);\n#endif\n#ifdef STEP13_TEST\nextern int step13_test_main(void);\n",
+      "after": "\n#ifdef STEP9_TOPOLOGY_TEST\nextern int step9_topology_test_main(void);\n#endif\n#ifdef STEP15_TEST\nextern int step15_test_main(void);\n#endif\n#ifdef STEP13_TEST\nextern int step13_test_main(void);\n"
+    },
+    {
+      "before": "    }\n\n    copy_hack_content();\n#ifdef STEP13_TEST\n    if (getenv(\"NETHACK_STEP13_TEST\")) {\n        if (!dlb_init()) return EXIT_FAILURE;\n",
+      "after": "    }\n\n    copy_hack_content();\n#ifdef STEP15_TEST\n    if (getenv(\"NETHACK_STEP15_TEST\")) {\n        if (!dlb_init()) return EXIT_FAILURE;\n        return step15_test_main();\n    }\n#endif\n#ifdef STEP13_TEST\n    if (getenv(\"NETHACK_STEP13_TEST\")) {\n        if (!dlb_init()) return EXIT_FAILURE;\n"
+    }
+  ],
+  "win/share/other.txt": [
+    {
+      "before": "  .A.A.A.A.A.A.A.A\n  A.A.A.A.A.A.A.A.\n}\n# tile 60 (water)\n{\n  EEEEEEEEEEEEEEEE\n  EEEEEEEEEEEEEEEE\n",
+      "after": "  .A.A.A.A.A.A.A.A\n  A.A.A.A.A.A.A.A.\n}\n# tile 60 (forge)\n{\n  ................\n  .....XXXXXX.....\n  .....XSSSSX.....\n  .....XSSSSX.....\n  ....XXSSSSXX....\n  ...XSSSSSSSSX...\n  ..XSSQQQQQQSSX..\n  ..XSQQCDDCQQSX..\n  ..XSQCDHHDCQSX..\n  ..XSQCDDDDCQSX..\n  ..XSSXXXXXXSSX..\n  ..XSSSSSSSSSSX..\n  ..XXXXXXXXXXXX..\n  ...XX......XX...\n  ...XX......XX...\n  ................\n}\n# tile 61 (water)\n{\n  EEEEEEEEEEEEEEEE\n  EEEEEEEEEEEEEEEE\n"
+    },
+    {
+      "before": "  EEEEEEEEEEEEEEEE\n  EEEEEEEEEEEEEEEE\n}\n# tile 61 (arrow trap)\n{\n  ................\n  .....DDDDD......\n",
+      "after": "  EEEEEEEEEEEEEEEE\n  EEEEEEEEEEEEEEEE\n}\n# tile 62 (arrow trap)\n{\n  ................\n  .....DDDDD......\n"
+    },
+    {
+      "before": "  ......AAAAA.....\n  ................\n}\n# tile 62 (dart trap)\n{\n  ................\n  .....DDDDD......\n",
+      "after": "  ......AAAAA.....\n  ................\n}\n# tile 63 (dart trap)\n{\n  ................\n  .....DDDDD......\n"
+    },
+    {
+      "before": "  ......AAAAA.....\n  ................\n}\n# tile 63 (falling rock trap)\n{\n  ................\n  .....DDDDD......\n",
+      "after": "  ......AAAAA.....\n  ................\n}\n# tile 64 (falling rock trap)\n{\n  ................\n  .....DDDDD......\n"
+    },
+    {
+      "before": "  ......AAAAA.....\n  ................\n}\n# tile 64 (squeaky board)\n{\n  ................\n  .....DDDDD......\n",
+      "after": "  ......AAAAA.....\n  ................\n}\n# tile 65 (squeaky board)\n{\n  ................\n  .....DDDDD......\n"
+    },
+    {
+      "before": "  ......AAAAA.....\n  ................\n}\n# tile 65 (bear trap)\n{\n  ................\n  .....DDDDD......\n",
+      "after": "  ......AAAAA.....\n  ................\n}\n# tile 66 (bear trap)\n{\n  ................\n  .....DDDDD......\n"
+    },
+    {
+      "before": "  ......AAAAA.....\n  ................\n}\n# tile 66 (land mine)\n{\n  ................\n  .....DDDDD......\n",
+      "after": "  ......AAAAA.....\n  ................\n}\n# tile 67 (land mine)\n{\n  ................\n  .....DDDDD......\n"
+    },
+    {
+      "before": "  ......AAAAA.....\n  ................\n}\n# tile 67 (rolling boulder trap)\n{\n  ................\n  .....DDDDD......\n",
+      "after": "  ......AAAAA.....\n  ................\n}\n# tile 68 (rolling boulder trap)\n{\n  ................\n  .....DDDDD......\n"
+    },
+    {
+      "before": "  ......AAAAA.....\n  ................\n}\n# tile 68 (sleeping gas trap)\n{\n  ................\n  .....DDDDD......\n",
+      "after": "  ......AAAAA.....\n  ................\n}\n# tile 69 (sleeping gas trap)\n{\n  ................\n  .....DDDDD......\n"
+    },
+    {
+      "before": "  ......AAAAA.....\n  ................\n}\n# tile 69 (rust trap)\n{\n  ................\n  .....DDDDD......\n",
+      "after": "  ......AAAAA.....\n  ................\n}\n# tile 70 (rust trap)\n{\n  ................\n  .....DDDDD......\n"
+    },
+    {
+      "before": "  ......AAAAA.....\n  ................\n}\n# tile 70 (fire trap)\n{\n  ................\n  .....DDDDD......\n",
+      "after": "  ......AAAAA.....\n  ................\n}\n# tile 71 (fire trap)\n{\n  ................\n  .....DDDDD......\n"
+    },
+    {
+      "before": "  ......AAAAA.....\n  ................\n}\n# tile 71 (pit)\n{\n  AAAAAAAAAAAAAAAA\n  A.AAAAAAAAAAAABA\n",
+      "after": "  ......AAAAA.....\n  ................\n}\n# tile 72 (pit)\n{\n  AAAAAAAAAAAAAAAA\n  A.AAAAAAAAAAAABA\n"
+    },
+    {
+      "before": "  A.PPPPPPPPPPPPPA\n  AAAAAAAAAAAAAAAA\n}\n# tile 72 (spiked pit)\n{\n  AAAAAAAAAAAAAAAA\n  A.AAAAAAAAAAAABA\n",
+      "after": "  A.PPPPPPPPPPPPPA\n  AAAAAAAAAAAAAAAA\n}\n# tile 73 (spiked pit)\n{\n  AAAAAAAAAAAAAAAA\n  A.AAAAAAAAAAAABA\n"
+    },
+    {
+      "before": "  A.PPPPPPPPPPPPPA\n  AAAAAAAAAAAAAAAA\n}\n# tile 73 (hole)\n{\n  ................\n  ......AAAA......\n",
+      "after": "  A.PPPPPPPPPPPPPA\n  AAAAAAAAAAAAAAAA\n}\n# tile 74 (hole)\n{\n  ................\n  ......AAAA......\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 74 (trap door)\n{\n  AAAAAAAAAAAAAAAA\n  A.AAAAAAAAAAAABA\n",
+      "after": "  ................\n  ................\n}\n# tile 75 (trap door)\n{\n  AAAAAAAAAAAAAAAA\n  A.AAAAAAAAAAAABA\n"
+    },
+    {
+      "before": "  A.PPPPPPPPPPPPPA\n  AAAAAAAAAAAAAAAA\n}\n# tile 75 (teleportation trap)\n{\n  ................\n  .....DDDDD......\n",
+      "after": "  A.PPPPPPPPPPPPPA\n  AAAAAAAAAAAAAAAA\n}\n# tile 76 (teleportation trap)\n{\n  ................\n  .....DDDDD......\n"
+    },
+    {
+      "before": "  ......AAAAA.....\n  ................\n}\n# tile 76 (level teleporter)\n{\n  ................\n  .....DDADD......\n",
+      "after": "  ......AAAAA.....\n  ................\n}\n# tile 77 (level teleporter)\n{\n  ................\n  .....DDADD......\n"
+    },
+    {
+      "before": "  ......AAAAA.....\n  ................\n}\n# tile 77 (magic portal)\n{\n  ................\n  .....DDDDD......\n",
+      "after": "  ......AAAAA.....\n  ................\n}\n# tile 78 (magic portal)\n{\n  ................\n  .....DDDDD......\n"
+    },
+    {
+      "before": "  ......AAAAA.....\n  ................\n}\n# tile 78 (web)\n{\n  OAOA.OA...O....O\n  .O.NNNN.NOA..OOA\n",
+      "after": "  ......AAAAA.....\n  ................\n}\n# tile 79 (web)\n{\n  OAOA.OA...O....O\n  .O.NNNN.NOA..OOA\n"
+    },
+    {
+      "before": "  .OA.............\n  OA..............\n}\n# tile 79 (statue trap)\n{\n  ................\n  .....DDDDD......\n",
+      "after": "  .OA.............\n  OA..............\n}\n# tile 80 (statue trap)\n{\n  ................\n  .....DDDDD......\n"
+    },
+    {
+      "before": "  ......AAAAA.....\n  ................\n}\n# tile 80 (magic trap)\n{\n  ................\n  .....DDDDD......\n",
+      "after": "  ......AAAAA.....\n  ................\n}\n# tile 81 (magic trap)\n{\n  ................\n  .....DDDDD......\n"
+    },
+    {
+      "before": "  ......AAAAA.....\n  ................\n}\n# tile 81 (anti-magic field)\n{\n  ................\n  ......DDDDD.....\n",
+      "after": "  ......AAAAA.....\n  ................\n}\n# tile 82 (anti-magic field)\n{\n  ................\n  ......DDDDD.....\n"
+    },
+    {
+      "before": "  .....AAAAA......\n  ................\n}\n# tile 82 (polymorph trap)\n{\n  ................\n  .....DDDDD......\n",
+      "after": "  .....AAAAA......\n  ................\n}\n# tile 83 (polymorph trap)\n{\n  ................\n  .....DDDDD......\n"
+    },
+    {
+      "before": "  ......AAAAA.....\n  ................\n}\n# tile 83 (vibrating square)\n{\n  ................\n  ................\n",
+      "after": "  ......AAAAA.....\n  ................\n}\n# tile 84 (vibrating square)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 84 (trapped door)\n{\n  AAAAAAAAAAAAAAAA\n  AAAAAAAAAAAAAAAA\n",
+      "after": "  ................\n  ................\n}\n# tile 85 (trapped door)\n{\n  AAAAAAAAAAAAAAAA\n  AAAAAAAAAAAAAAAA\n"
+    },
+    {
+      "before": "  AAAAAAAAAAAAAAAA\n  AAAAAAAAAAAAAAAA\n}\n# tile 85 (trapped chest)\n{\n  ................\n  ................\n",
+      "after": "  AAAAAAAAAAAAAAAA\n  AAAAAAAAAAAAAAAA\n}\n# tile 86 (trapped chest)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  CKKKKKKKKKKJAA..\n  .NAAAAAAAAAAA...\n}\n# tile 86 (ice trap)\n{\n  ................\n  .....DDDDD......\n",
+      "after": "  CKKKKKKKKKKJAA..\n  .NAAAAAAAAAAA...\n}\n# tile 87 (ice trap)\n{\n  ................\n  .....DDDDD......\n"
+    },
+    {
+      "before": "  ......AAAAA.....\n  ................\n}\n# tile 87 (missile zap 1 0)\n{\n  .......II.......\n  ......IIII......\n",
+      "after": "  ......AAAAA.....\n  ................\n}\n# tile 88 (missile zap 1 0)\n{\n  .......II.......\n  ......IIII......\n"
+    },
+    {
+      "before": "  ......IIII......\n  .......II.......\n}\n# tile 88 (missile zap 1 1)\n{\n  ................\n  ................\n",
+      "after": "  ......IIII......\n  .......II.......\n}\n# tile 89 (missile zap 1 1)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 89 (missile zap 1 2)\n{\n  III.............\n  IIII............\n",
+      "after": "  ................\n  ................\n}\n# tile 90 (missile zap 1 2)\n{\n  III.............\n  IIII............\n"
+    },
+    {
+      "before": "  ............IIII\n  .............III\n}\n# tile 90 (missile zap 1 3)\n{\n  .............III\n  ............IIII\n",
+      "after": "  ............IIII\n  .............III\n}\n# tile 91 (missile zap 1 3)\n{\n  .............III\n  ............IIII\n"
+    },
+    {
+      "before": "  IIII............\n  III.............\n}\n# tile 91 (fire zap 2 0)\n{\n  .......CC.......\n  ......CCCC......\n",
+      "after": "  IIII............\n  III.............\n}\n# tile 92 (fire zap 2 0)\n{\n  .......CC.......\n  ......CCCC......\n"
+    },
+    {
+      "before": "  ......CCCC......\n  .......CC.......\n}\n# tile 92 (fire zap 2 1)\n{\n  ................\n  ................\n",
+      "after": "  ......CCCC......\n  .......CC.......\n}\n# tile 93 (fire zap 2 1)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 93 (fire zap 2 2)\n{\n  CCC.............\n  CCCC............\n",
+      "after": "  ................\n  ................\n}\n# tile 94 (fire zap 2 2)\n{\n  CCC.............\n  CCCC............\n"
+    },
+    {
+      "before": "  ............CCCC\n  .............CCC\n}\n# tile 94 (fire zap 2 3)\n{\n  .............CCC\n  ............CCCC\n",
+      "after": "  ............CCCC\n  .............CCC\n}\n# tile 95 (fire zap 2 3)\n{\n  .............CCC\n  ............CCCC\n"
+    },
+    {
+      "before": "  CCCC............\n  CCC.............\n}\n# tile 95 (frost zap 3 0)\n{\n  .......NN.......\n  ......NNNN......\n",
+      "after": "  CCCC............\n  CCC.............\n}\n# tile 96 (frost zap 3 0)\n{\n  .......NN.......\n  ......NNNN......\n"
+    },
+    {
+      "before": "  ......NNNN......\n  .......NN.......\n}\n# tile 96 (frost zap 3 1)\n{\n  ................\n  ................\n",
+      "after": "  ......NNNN......\n  .......NN.......\n}\n# tile 97 (frost zap 3 1)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 97 (frost zap 3 2)\n{\n  NNN.............\n  NNNN............\n",
+      "after": "  ................\n  ................\n}\n# tile 98 (frost zap 3 2)\n{\n  NNN.............\n  NNNN............\n"
+    },
+    {
+      "before": "  ............NNNN\n  .............NNN\n}\n# tile 98 (frost zap 3 3)\n{\n  .............NNN\n  ............NNNN\n",
+      "after": "  ............NNNN\n  .............NNN\n}\n# tile 99 (frost zap 3 3)\n{\n  .............NNN\n  ............NNNN\n"
+    },
+    {
+      "before": "  NNNN............\n  NNN.............\n}\n# tile 99 (sleep zap 4 0)\n{\n  .......BB.......\n  ......BBBB......\n",
+      "after": "  NNNN............\n  NNN.............\n}\n# tile 100 (sleep zap 4 0)\n{\n  .......BB.......\n  ......BBBB......\n"
+    },
+    {
+      "before": "  ......BBBB......\n  .......BB.......\n}\n# tile 100 (sleep zap 4 1)\n{\n  ................\n  ................\n",
+      "after": "  ......BBBB......\n  .......BB.......\n}\n# tile 101 (sleep zap 4 1)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 101 (sleep zap 4 2)\n{\n  BBB.............\n  BBBB............\n",
+      "after": "  ................\n  ................\n}\n# tile 102 (sleep zap 4 2)\n{\n  BBB.............\n  BBBB............\n"
+    },
+    {
+      "before": "  ............BBBB\n  .............BBB\n}\n# tile 102 (sleep zap 4 3)\n{\n  .............BBB\n  ............BBBB\n",
+      "after": "  ............BBBB\n  .............BBB\n}\n# tile 103 (sleep zap 4 3)\n{\n  .............BBB\n  ............BBBB\n"
+    },
+    {
+      "before": "  BBBB............\n  BBB.............\n}\n# tile 103 (death zap 5 0)\n{\n  .......AA.......\n  ......AAAA......\n",
+      "after": "  BBBB............\n  BBB.............\n}\n# tile 104 (death zap 5 0)\n{\n  .......AA.......\n  ......AAAA......\n"
+    },
+    {
+      "before": "  ......AAAA......\n  .......AA.......\n}\n# tile 104 (death zap 5 1)\n{\n  ................\n  ................\n",
+      "after": "  ......AAAA......\n  .......AA.......\n}\n# tile 105 (death zap 5 1)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 105 (death zap 5 2)\n{\n  AAA.............\n  AAAA............\n",
+      "after": "  ................\n  ................\n}\n# tile 106 (death zap 5 2)\n{\n  AAA.............\n  AAAA............\n"
+    },
+    {
+      "before": "  ............AAAA\n  .............AAA\n}\n# tile 106 (death zap 5 3)\n{\n  .............AAA\n  ............AAAA\n",
+      "after": "  ............AAAA\n  .............AAA\n}\n# tile 107 (death zap 5 3)\n{\n  .............AAA\n  ............AAAA\n"
+    },
+    {
+      "before": "  AAAA............\n  AAA.............\n}\n# tile 107 (lightning zap 6 0)\n{\n  .......NN.......\n  ......NNNN......\n",
+      "after": "  AAAA............\n  AAA.............\n}\n# tile 108 (lightning zap 6 0)\n{\n  .......NN.......\n  ......NNNN......\n"
+    },
+    {
+      "before": "  ......NNNN......\n  .......NN.......\n}\n# tile 108 (lightning zap 6 1)\n{\n  ................\n  ................\n",
+      "after": "  ......NNNN......\n  .......NN.......\n}\n# tile 109 (lightning zap 6 1)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 109 (lightning zap 6 2)\n{\n  NNN.............\n  NNNN............\n",
+      "after": "  ................\n  ................\n}\n# tile 110 (lightning zap 6 2)\n{\n  NNN.............\n  NNNN............\n"
+    },
+    {
+      "before": "  ............NNNN\n  .............NNN\n}\n# tile 110 (lightning zap 6 3)\n{\n  .............NNN\n  ............NNNN\n",
+      "after": "  ............NNNN\n  .............NNN\n}\n# tile 111 (lightning zap 6 3)\n{\n  .............NNN\n  ............NNNN\n"
+    },
+    {
+      "before": "  NNNN............\n  NNN.............\n}\n# tile 111 (poison gas zap 7 0)\n{\n  .......FF.......\n  ......FFFF......\n",
+      "after": "  NNNN............\n  NNN.............\n}\n# tile 112 (poison gas zap 7 0)\n{\n  .......FF.......\n  ......FFFF......\n"
+    },
+    {
+      "before": "  ......FFFF......\n  .......FF.......\n}\n# tile 112 (poison gas zap 7 1)\n{\n  ................\n  ................\n",
+      "after": "  ......FFFF......\n  .......FF.......\n}\n# tile 113 (poison gas zap 7 1)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 113 (poison gas zap 7 2)\n{\n  FFF.............\n  FFFF............\n",
+      "after": "  ................\n  ................\n}\n# tile 114 (poison gas zap 7 2)\n{\n  FFF.............\n  FFFF............\n"
+    },
+    {
+      "before": "  ............FFFF\n  .............FFF\n}\n# tile 114 (poison gas zap 7 3)\n{\n  .............FFF\n  ............FFFF\n",
+      "after": "  ............FFFF\n  .............FFF\n}\n# tile 115 (poison gas zap 7 3)\n{\n  .............FFF\n  ............FFFF\n"
+    },
+    {
+      "before": "  FFFF............\n  FFF.............\n}\n# tile 115 (acid zap 8 0)\n{\n  .......GG.......\n  ......GGGG......\n",
+      "after": "  FFFF............\n  FFF.............\n}\n# tile 116 (acid zap 8 0)\n{\n  .......GG.......\n  ......GGGG......\n"
+    },
+    {
+      "before": "  ......GGGG......\n  .......GG.......\n}\n# tile 116 (acid zap 8 1)\n{\n  ................\n  ................\n",
+      "after": "  ......GGGG......\n  .......GG.......\n}\n# tile 117 (acid zap 8 1)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 117 (acid zap 8 2)\n{\n  GGG.............\n  GGGG............\n",
+      "after": "  ................\n  ................\n}\n# tile 118 (acid zap 8 2)\n{\n  GGG.............\n  GGGG............\n"
+    },
+    {
+      "before": "  ............GGGG\n  .............GGG\n}\n# tile 118 (acid zap 8 3)\n{\n  .............GGG\n  ............GGGG\n",
+      "after": "  ............GGGG\n  .............GGG\n}\n# tile 119 (acid zap 8 3)\n{\n  .............GGG\n  ............GGGG\n"
+    },
+    {
+      "before": "  GGGG............\n  GGG.............\n}\n# tile 119 (lava zap 9 0)\n{\n  .......CC.......\n  ......CCCC......\n",
+      "after": "  GGGG............\n  GGG.............\n}\n# tile 120 (lava zap 9 0)\n{\n  .......CC.......\n  ......CCCC......\n"
+    },
+    {
+      "before": "  ......CCCC......\n  .......CC.......\n}\n# tile 120 (lava zap 9 1)\n{\n  ................\n  ................\n",
+      "after": "  ......CCCC......\n  .......CC.......\n}\n# tile 121 (lava zap 9 1)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 121 (lava zap 9 2)\n{\n  CCC.............\n  CCCC............\n",
+      "after": "  ................\n  ................\n}\n# tile 122 (lava zap 9 2)\n{\n  CCC.............\n  CCCC............\n"
+    },
+    {
+      "before": "  ............CCCC\n  .............CCC\n}\n# tile 122 (lava zap 9 3)\n{\n  .............CCC\n  ............CCCC\n",
+      "after": "  ............CCCC\n  .............CCC\n}\n# tile 123 (lava zap 9 3)\n{\n  .............CCC\n  ............CCCC\n"
+    },
+    {
+      "before": "  CCCC............\n  CCC.............\n}\n# tile 123 (dig beam)\n{\n  ....AAAA........\n  ..A....AA..AA...\n",
+      "after": "  CCCC............\n  CCC.............\n}\n# tile 124 (dig beam)\n{\n  ....AAAA........\n  ..A....AA..AA...\n"
+    },
+    {
+      "before": "  ....AA....AAA...\n  ................\n}\n# tile 124 (flash beam)\n{\n  ................\n  .....NNNNNN.....\n",
+      "after": "  ....AA....AAA...\n  ................\n}\n# tile 125 (flash beam)\n{\n  ................\n  .....NNNNNN.....\n"
+    },
+    {
+      "before": "  .....NNNNNN.....\n  ................\n}\n# tile 125 (boom left)\n{\n  ................\n  ................\n",
+      "after": "  .....NNNNNN.....\n  ................\n}\n# tile 126 (boom left)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 126 (boom right)\n{\n  ................\n  ................\n",
+      "after": "  ................\n  ................\n}\n# tile 127 (boom right)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 127 (shield1)\n{\n  ................\n  .....I....I.....\n",
+      "after": "  ................\n  ................\n}\n# tile 128 (shield1)\n{\n  ................\n  .....I....I.....\n"
+    },
+    {
+      "before": "  .....I....I.....\n  ................\n}\n# tile 128 (shield2)\n{\n  ................\n  .CCCCCCCCCCCCCCC\n",
+      "after": "  .....I....I.....\n  ................\n}\n# tile 129 (shield2)\n{\n  ................\n  .CCCCCCCCCCCCCCC\n"
+    },
+    {
+      "before": "  .CCCCCCCCCCCCCC.\n  ................\n}\n# tile 129 (shield3)\n{\n  .......HH.......\n  .......HH.......\n",
+      "after": "  .CCCCCCCCCCCCCC.\n  ................\n}\n# tile 130 (shield3)\n{\n  .......HH.......\n  .......HH.......\n"
+    },
+    {
+      "before": "  .......HH.......\n  .......HH.......\n}\n# tile 130 (shield4)\n{\n  ................\n  ......NNNNN.....\n",
+      "after": "  .......HH.......\n  .......HH.......\n}\n# tile 131 (shield4)\n{\n  ................\n  ......NNNNN.....\n"
+    },
+    {
+      "before": "  .....NNNNN......\n  ................\n}\n# tile 131 (poison cloud)\n{\n  BBBBBBBBBBBBBBBB\n  BBBBBFFFFFFFBBBB\n",
+      "after": "  .....NNNNN......\n  ................\n}\n# tile 132 (poison cloud)\n{\n  BBBBBBBBBBBBBBBB\n  BBBBBFFFFFFFBBBB\n"
+    },
+    {
+      "before": "  BBBBBBBBBBBBBBBB\n}\n# S_goodpos (dollar sign from generic coin tile)\n# tile 132 (dust cloud)\n{\n  BBBBBBBBBBBBBBBB\n  BBBBBFFFFFFFBBBB\n",
+      "after": "  BBBBBBBBBBBBBBBB\n}\n# S_goodpos (dollar sign from generic coin tile)\n# tile 133 (dust cloud)\n{\n  BBBBBBBBBBBBBBBB\n  BBBBBFFFFFFFBBBB\n"
+    },
+    {
+      "before": "  BBBBBBGGGGBBBBBB\n  BBBBBBBBBBBBBBBB\n}\n# tile 133 (valid position)\n{\n  ................\n  ................\n",
+      "after": "  BBBBBBGGGGBBBBBB\n  BBBBBBBBBBBBBBBB\n}\n# tile 134 (valid position)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 134 (swallow top left)\n{\n  AAAAAAADDDDDDAAA\n  AAAAADDDDDDDDDDD\n",
+      "after": "  ................\n  ................\n}\n# tile 135 (swallow top left)\n{\n  AAAAAAADDDDDDAAA\n  AAAAADDDDDDDDDDD\n"
+    },
+    {
+      "before": "  AAAADDDDDD......\n  AAAADDDDDD......\n}\n# tile 135 (swallow top center)\n{\n  AAAAAAAAAAAAAAAA\n  DDAAAAAAAAAAAAAA\n",
+      "after": "  AAAADDDDDD......\n  AAAADDDDDD......\n}\n# tile 136 (swallow top center)\n{\n  AAAAAAAAAAAAAAAA\n  DDAAAAAAAAAAAAAA\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 136 (swallow top right)\n{\n  AAAAAAAAAAAAAAAA\n  AAADDDDDAAAAAAAA\n",
+      "after": "  ................\n  ................\n}\n# tile 137 (swallow top right)\n{\n  AAAAAAAAAAAAAAAA\n  AAADDDDDAAAAAAAA\n"
+    },
+    {
+      "before": "  ....DDDDDDDDDDDD\n  ....DDDDDDDDDDDA\n}\n# tile 137 (swallow middle left)\n{\n  AAAADDDDDD......\n  AAAADDDDDDD.....\n",
+      "after": "  ....DDDDDDDDDDDD\n  ....DDDDDDDDDDDA\n}\n# tile 138 (swallow middle left)\n{\n  AAAADDDDDD......\n  AAAADDDDDDD.....\n"
+    },
+    {
+      "before": "  DDDDDDD.........\n  DDCCDDD.........\n}\n# tile 138 (swallow middle right)\n{\n  ....DDDDDDDDDDDA\n  ....DDDDDDDDDDDA\n",
+      "after": "  DDDDDDD.........\n  DDCCDDD.........\n}\n# tile 139 (swallow middle right)\n{\n  ....DDDDDDDDDDDA\n  ....DDDDDDDDDDDA\n"
+    },
+    {
+      "before": "  ......DDDDDDDDAA\n  .......DDDDDDDAA\n}\n# tile 139 (swallow bottom left)\n{\n  DDDCDDD.........\n  DDDCDDD.........\n",
+      "after": "  ......DDDDDDDDAA\n  .......DDDDDDDAA\n}\n# tile 140 (swallow bottom left)\n{\n  DDDCDDD.........\n  DDDCDDD.........\n"
+    },
+    {
+      "before": "  AAAAAAAAAAAADDDD\n  AAAAAAAAAAAAAADD\n}\n# tile 140 (swallow bottom center)\n{\n  ................\n  ................\n",
+      "after": "  AAAAAAAAAAAADDDD\n  AAAAAAAAAAAAAADD\n}\n# tile 141 (swallow bottom center)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  DDDDDDDDDDDDDDDD\n  DDDDDDDDDDDDDDAA\n}\n# tile 141 (swallow bottom right)\n{\n  ......DDDDDDDDAA\n  ......DDDDDDDDDA\n",
+      "after": "  DDDDDDDDDDDDDDDD\n  DDDDDDDDDDDDDDAA\n}\n# tile 142 (swallow bottom right)\n{\n  ......DDDDDDDDAA\n  ......DDDDDDDDDA\n"
+    },
+    {
+      "before": "  DDAAAAAAAAAAAAAA\n  AAAAAAAAAAAAAAAA\n}\n# tile 142 (explosion dark top left)\n{\n  ................\n  ................\n",
+      "after": "  DDAAAAAAAAAAAAAA\n  AAAAAAAAAAAAAAAA\n}\n# tile 143 (explosion dark top left)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  ..AAAA..AAAA....\n  ..AAA..AAAAA....\n}\n# tile 143 (explosion dark top center)\n{\n  ................\n  ................\n",
+      "after": "  ..AAAA..AAAA....\n  ..AAA..AAAAA....\n}\n# tile 144 (explosion dark top center)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  ........A.A.APAA\n  .PA...APAAAAAAAA\n}\n# tile 144 (explosion dark top right)\n{\n  ................\n  ................\n",
+      "after": "  ........A.A.APAA\n  .PA...APAAAAAAAA\n}\n# tile 145 (explosion dark top right)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  AA.A..A.AAAA....\n  A.AA..A.AAAAA...\n}\n# tile 145 (explosion dark middle left)\n{\n  ..AAA.A.AAA.....\n  ..AAA.AAAAA.AP..\n",
+      "after": "  AA.A..A.AAAA....\n  A.AA..A.AAAAA...\n}\n# tile 146 (explosion dark middle left)\n{\n  ..AAA.A.AAA.....\n  ..AAA.AAAAA.AP..\n"
+    },
+    {
+      "before": "  ..A.A...AAP...PA\n  ....A.........PA\n}\n# tile 146 (explosion dark middle center)\n{\n  APAAA..PPAPAAAAA\n  .APA..A.AAAPAAA.\n",
+      "after": "  ..A.A...AAP...PA\n  ....A.........PA\n}\n# tile 147 (explosion dark middle center)\n{\n  APAAA..PPAPAAAAA\n  .APA..A.AAAPAAA.\n"
+    },
+    {
+      "before": "  AAAAAAAAAAAAA.AA\n  AAAAAAAAAAA.HH..\n}\n# tile 147 (explosion dark middle right)\n{\n  ..AAA.A.A.AAAA..\n  ..AAAAA.A.AAAA..\n",
+      "after": "  AAAAAAAAAAAAA.AA\n  AAAAAAAAAAA.HH..\n}\n# tile 148 (explosion dark middle right)\n{\n  ..AAA.A.A.AAAA..\n  ..AAAAA.A.AAAA..\n"
+    },
+    {
+      "before": "  AAA...AAAAAAA...\n  ....PPAAAAAAAA..\n}\n# tile 148 (explosion dark bottom left)\n{\n  ....A.......A..P\n  ....A.......AA..\n",
+      "after": "  AAA...AAAAAAA...\n  ....PPAAAAAAAA..\n}\n# tile 149 (explosion dark bottom left)\n{\n  ....A.......A..P\n  ....A.......AA..\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 149 (explosion dark bottom center)\n{\n  PPPAAAAAPAAA.A..\n  AAPPAAPPPPA.A...\n",
+      "after": "  ................\n  ................\n}\n# tile 150 (explosion dark bottom center)\n{\n  PPPAAAAAPAAA.A..\n  AAPPAAPPPPA.A...\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 150 (explosion dark bottom right)\n{\n  ....P..AAAAAAA..\n  ..A..A.AA.A.AA..\n",
+      "after": "  ................\n  ................\n}\n# tile 151 (explosion dark bottom right)\n{\n  ....P..AAAAAAA..\n  ..A..A.AA.A.AA..\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 151 (explosion noxious top left)\n{\n  ................\n  ................\n",
+      "after": "  ................\n  ................\n}\n# tile 152 (explosion noxious top left)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  ..FFFF..FFFF....\n  ..FFF..FFFFF....\n}\n# tile 152 (explosion noxious top center)\n{\n  ................\n  ................\n",
+      "after": "  ..FFFF..FFFF....\n  ..FFF..FFFFF....\n}\n# tile 153 (explosion noxious top center)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  ........F.F.FGFF\n  .GH...HGHHFFFFFF\n}\n# tile 153 (explosion noxious top right)\n{\n  ................\n  ................\n",
+      "after": "  ........F.F.FGFF\n  .GH...HGHHFFFFFF\n}\n# tile 154 (explosion noxious top right)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  FF.F..F.FFFF....\n  F.FF..F.FFFFF...\n}\n# tile 154 (explosion noxious middle left)\n{\n  ..FFF.F.FFF.....\n  ..FFF.FFFFF.FG..\n",
+      "after": "  FF.F..F.FFFF....\n  F.FF..F.FFFFF...\n}\n# tile 155 (explosion noxious middle left)\n{\n  ..FFF.F.FFF.....\n  ..FFF.FFFFF.FG..\n"
+    },
+    {
+      "before": "  ..F.F...FHG...GH\n  ....F.........GH\n}\n# tile 155 (explosion noxious middle center)\n{\n  FGHFF..GGFGHFFFF\n  .HGH..F.FFHGFHF.\n",
+      "after": "  ..F.F...FHG...GH\n  ....F.........GH\n}\n# tile 156 (explosion noxious middle center)\n{\n  FGHFF..GGFGHFFFF\n  .HGH..F.FFHGFHF.\n"
+    },
+    {
+      "before": "  HHHHNHNHN.GGG.GF\n  GGGGNHHHGGG.HH..\n}\n# tile 156 (explosion noxious middle right)\n{\n  ..FFF.F.F.FFFF..\n  ..FFFFF.F.FFFF..\n",
+      "after": "  HHHHNHNHN.GGG.GF\n  GGGGNHHHGGG.HH..\n}\n# tile 157 (explosion noxious middle right)\n{\n  ..FFF.F.F.FFFF..\n  ..FFFFF.F.FFFF..\n"
+    },
+    {
+      "before": "  HFH...FFFFFFF...\n  ....GGFFFFFFFF..\n}\n# tile 157 (explosion noxious bottom left)\n{\n  ....F.......H..G\n  ....F.......FH..\n",
+      "after": "  HFH...FFFFFFF...\n  ....GGFFFFFFFF..\n}\n# tile 158 (explosion noxious bottom left)\n{\n  ....F.......H..G\n  ....F.......FH..\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 158 (explosion noxious bottom center)\n{\n  GGGHHHHHGHHH.H..\n  HHGGHHGGGGH.F...\n",
+      "after": "  ................\n  ................\n}\n# tile 159 (explosion noxious bottom center)\n{\n  GGGHHHHHGHHH.H..\n  HHGGHHGGGGH.F...\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 159 (explosion noxious bottom right)\n{\n  ....G..FFFFFFF..\n  ..F..F.FF.F.FF..\n",
+      "after": "  ................\n  ................\n}\n# tile 160 (explosion noxious bottom right)\n{\n  ....G..FFFFFFF..\n  ..F..F.FF.F.FF..\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 160 (explosion muddy top left)\n{\n  ................\n  ................\n",
+      "after": "  ................\n  ................\n}\n# tile 161 (explosion muddy top left)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  ..JJJJKKJJJJKKKK\n  ..JJJKKJJJJJKKKK\n}\n# tile 161 (explosion muddy top center)\n{\n  ................\n  ................\n",
+      "after": "  ..JJJJKKJJJJKKKK\n  ..JJJKKJJJJJKKKK\n}\n# tile 162 (explosion muddy top center)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  KKKKKKKKJKJKJCJJ\n  KCLKKKLCLLJJJJJJ\n}\n# tile 162 (explosion muddy top right)\n{\n  ................\n  ................\n",
+      "after": "  KKKKKKKKJKJKJCJJ\n  KCLKKKLCLLJJJJJJ\n}\n# tile 163 (explosion muddy top right)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  JJKJKKJKJJJJ....\n  JKJJKKJKJJJJJ...\n}\n# tile 163 (explosion muddy middle left)\n{\n  ..JJJKJKJJJKKKKK\n  ..JJJKJJJJJKJCKK\n",
+      "after": "  JJKJKKJKJJJJ....\n  JKJJKKJKJJJJJ...\n}\n# tile 164 (explosion muddy middle left)\n{\n  ..JJJKJKJJJKKKKK\n  ..JJJKJJJJJKJCKK\n"
+    },
+    {
+      "before": "  ..J.JKKKJLCKKKCL\n  ....JKKKKKKKKKCL\n}\n# tile 164 (explosion muddy middle center)\n{\n  JCLJJKKCCJCLJJJJ\n  KLCLKKJKJJLCJLJK\n",
+      "after": "  ..J.JKKKJLCKKKCL\n  ....JKKKKKKKKKCL\n}\n# tile 165 (explosion muddy middle center)\n{\n  JCLJJKKCCJCLJJJJ\n  KLCLKKJKJJLCJLJK\n"
+    },
+    {
+      "before": "  LLLLCLCLCKCCCKCJ\n  CCCCCLLLCCCKLLKK\n}\n# tile 165 (explosion muddy middle right)\n{\n  KKJJJKJKJKJJJJ..\n  KKJJJJJKJKJJJJ..\n",
+      "after": "  LLLLCLCLCKCCCKCJ\n  CCCCCLLLCCCKLLKK\n}\n# tile 166 (explosion muddy middle right)\n{\n  KKJJJKJKJKJJJJ..\n  KKJJJJJKJKJJJJ..\n"
+    },
+    {
+      "before": "  LJLKKKJJJJJJJ...\n  KKKKCCJJJJJJJJ..\n}\n# tile 166 (explosion muddy bottom left)\n{\n  ....JKKKKKKKLKKC\n  ....JKKKKKKKJLKK\n",
+      "after": "  LJLKKKJJJJJJJ...\n  KKKKCCJJJJJJJJ..\n}\n# tile 167 (explosion muddy bottom left)\n{\n  ....JKKKKKKKLKKC\n  ....JKKKKKKKJLKK\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 167 (explosion muddy bottom center)\n{\n  CCCLLLLLCLLLKLKK\n  LLCCLLCCCCLKJKKK\n",
+      "after": "  ................\n  ................\n}\n# tile 168 (explosion muddy bottom center)\n{\n  CCCLLLLLCLLLKLKK\n  LLCCLLCCCCLKJKKK\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 168 (explosion muddy bottom right)\n{\n  KKKKCKKJJJJJJJ..\n  KKJKKJKJJKJKJJ..\n",
+      "after": "  ................\n  ................\n}\n# tile 169 (explosion muddy bottom right)\n{\n  KKKKCKKJJJJJJJ..\n  KKJKKJKJJKJKJJ..\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 169 (explosion wet top left)\n{\n  ................\n  ................\n",
+      "after": "  ................\n  ................\n}\n# tile 170 (explosion wet top left)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  ..EEEEPPEEEEPPPP\n  ..EEEPPEEEEEPPPP\n}\n# tile 170 (explosion wet top center)\n{\n  ................\n  ................\n",
+      "after": "  ..EEEEPPEEEEPPPP\n  ..EEEPPEEEEEPPPP\n}\n# tile 171 (explosion wet top center)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  PPPPPPPPEPEPEBEE\n  PBNPPPNBEEEEEEEE\n}\n# tile 171 (explosion wet top right)\n{\n  ................\n  ................\n",
+      "after": "  PPPPPPPPEPEPEBEE\n  PBNPPPNBEEEEEEEE\n}\n# tile 172 (explosion wet top right)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  EEPEPPEPEEEE....\n  EPEEPPEPEEEEE...\n}\n# tile 172 (explosion wet middle left)\n{\n  ..EEEPEPEEEPPPPP\n  ..EEEPEEEEEPEBPP\n",
+      "after": "  EEPEPPEPEEEE....\n  EPEEPPEPEEEEE...\n}\n# tile 173 (explosion wet middle left)\n{\n  ..EEEPEPEEEPPPPP\n  ..EEEPEEEEEPEBPP\n"
+    },
+    {
+      "before": "  ..E.EPPPENBPPPBE\n  ....EPPPPPPPPPBE\n}\n# tile 173 (explosion wet middle center)\n{\n  EBNEEPPBBEBNEEEE\n  PNBNPPEPEEEBENEP\n",
+      "after": "  ..E.EPPPENBPPPBE\n  ....EPPPPPPPPPBE\n}\n# tile 174 (explosion wet middle center)\n{\n  EBNEEPPBBEBNEEEE\n  PNBNPPEPEEEBENEP\n"
+    },
+    {
+      "before": "  EEEEEEEEEPBBBPBE\n  BBBBEEEEBBBPNNPP\n}\n# tile 174 (explosion wet middle right)\n{\n  PPEEEPEPEPEEEE..\n  PPEEEEEPEPEEEE..\n",
+      "after": "  EEEEEEEEEPBBBPBE\n  BBBBEEEEBBBPNNPP\n}\n# tile 175 (explosion wet middle right)\n{\n  PPEEEPEPEPEEEE..\n  PPEEEEEPEPEEEE..\n"
+    },
+    {
+      "before": "  NENPPPEEEEEEE...\n  PPPPBBEEEEEEEE..\n}\n# tile 175 (explosion wet bottom left)\n{\n  ....EPPPPPPPNPPB\n  ....EPPPPPPPENPP\n",
+      "after": "  NENPPPEEEEEEE...\n  PPPPBBEEEEEEEE..\n}\n# tile 176 (explosion wet bottom left)\n{\n  ....EPPPPPPPNPPB\n  ....EPPPPPPPENPP\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 176 (explosion wet bottom center)\n{\n  BBBEEEEEBEEEPEPP\n  EEBBEEBBBBEPEPPP\n",
+      "after": "  ................\n  ................\n}\n# tile 177 (explosion wet bottom center)\n{\n  BBBEEEEEBEEEPEPP\n  EEBBEEBBBBEPEPPP\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 177 (explosion wet bottom right)\n{\n  PPPPBPPEEEEEEE..\n  PPEPPEPEEPEPEE..\n",
+      "after": "  ................\n  ................\n}\n# tile 178 (explosion wet bottom right)\n{\n  PPPPBPPEEEEEEE..\n  PPEPPEPEEPEPEE..\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 178 (explosion magical top left)\n{\n  ................\n  ................\n",
+      "after": "  ................\n  ................\n}\n# tile 179 (explosion magical top left)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  ..EEEEIIEEEEIIII\n  ..EEEIIEEEEEIIII\n}\n# tile 179 (explosion magical top center)\n{\n  ................\n  ................\n",
+      "after": "  ..EEEEIIEEEEIIII\n  ..EEEIIEEEEEIIII\n}\n# tile 180 (explosion magical top center)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  IIIIIIIIEIEIELEE\n  ILHIIIHLHHEEEEEE\n}\n# tile 180 (explosion magical top right)\n{\n  ................\n  ................\n",
+      "after": "  IIIIIIIIEIEIELEE\n  ILHIIIHLHHEEEEEE\n}\n# tile 181 (explosion magical top right)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  EEIEIIEIEEEE....\n  EIEEIIEIEEEEE...\n}\n# tile 181 (explosion magical middle left)\n{\n  ..EEEIEIEEEIIIII\n  ..EEEIEEEEEIEIII\n",
+      "after": "  EEIEIIEIEEEE....\n  EIEEIIEIEEEEE...\n}\n# tile 182 (explosion magical middle left)\n{\n  ..EEEIEIEEEIIIII\n  ..EEEIEEEEEIEIII\n"
+    },
+    {
+      "before": "  ..E.EIIIENIIIIIN\n  ....EIIIIIIIIIIN\n}\n# tile 182 (explosion magical middle center)\n{\n  EINEEIIIIEINEEEE\n  ININIIEIEENIENEI\n",
+      "after": "  ..E.EIIIENIIIIIN\n  ....EIIIIIIIIIIN\n}\n# tile 183 (explosion magical middle center)\n{\n  EINEEIIIIEINEEEE\n  ININIIEIEENIENEI\n"
+    },
+    {
+      "before": "  NNNNNNNNNIIIIIIE\n  IIIINNNNIIIINNII\n}\n# tile 183 (explosion magical middle right)\n{\n  IIEEEIEIEIEEEE..\n  IIEEEEEIEIEEEE..\n",
+      "after": "  NNNNNNNNNIIIIIIE\n  IIIINNNNIIIINNII\n}\n# tile 184 (explosion magical middle right)\n{\n  IIEEEIEIEIEEEE..\n  IIEEEEEIEIEEEE..\n"
+    },
+    {
+      "before": "  NENIIIEEEEEEE...\n  IIIIIIEEEEEEEE..\n}\n# tile 184 (explosion magical bottom left)\n{\n  ....EIIIIIIIHIII\n  ....EIIIIIIIEHII\n",
+      "after": "  NENIIIEEEEEEE...\n  IIIIIIEEEEEEEE..\n}\n# tile 185 (explosion magical bottom left)\n{\n  ....EIIIIIIIHIII\n  ....EIIIIIIIEHII\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 185 (explosion magical bottom center)\n{\n  IIINNNNNINNNINII\n  NNIINNIIIINIEIII\n",
+      "after": "  ................\n  ................\n}\n# tile 186 (explosion magical bottom center)\n{\n  IIINNNNNINNNINII\n  NNIINNIIIINIEIII\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 186 (explosion magical bottom right)\n{\n  IIIIIIIEEEEEEE..\n  IIEIIEIEEIEIEE..\n",
+      "after": "  ................\n  ................\n}\n# tile 187 (explosion magical bottom right)\n{\n  IIIIIIIEEEEEEE..\n  IIEIIEIEEIEIEE..\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 187 (explosion fiery top left)\n{\n  ................\n  ................\n",
+      "after": "  ................\n  ................\n}\n# tile 188 (explosion fiery top left)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  ..DDDDCCDDDDCCCC\n  ..DDDCCDDDDDCCCC\n}\n# tile 188 (explosion fiery top center)\n{\n  ................\n  ................\n",
+      "after": "  ..DDDDCCDDDDCCCC\n  ..DDDCCDDDDDCCCC\n}\n# tile 189 (explosion fiery top center)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  CCCCCCCCDCDCDLDD\n  CLHCCCHLHHDDDDDD\n}\n# tile 189 (explosion fiery top right)\n{\n  ................\n  ................\n",
+      "after": "  CCCCCCCCDCDCDLDD\n  CLHCCCHLHHDDDDDD\n}\n# tile 190 (explosion fiery top right)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  DDCDCCDCDDDD....\n  DCDDCCDCDDDDD...\n}\n# tile 190 (explosion fiery middle left)\n{\n  ..DDDCDCDDDCCCCC\n  ..DDDCDDDDDCDLCC\n",
+      "after": "  DDCDCCDCDDDD....\n  DCDDCCDCDDDDD...\n}\n# tile 191 (explosion fiery middle left)\n{\n  ..DDDCDCDDDCCCCC\n  ..DDDCDDDDDCDLCC\n"
+    },
+    {
+      "before": "  ..D.DCCCDHLCCCLH\n  ....DCCCCCCCCCLH\n}\n# tile 191 (explosion fiery middle center)\n{\n  DLHDDCCLLDLHDDDD\n  CHLHCCDCDDHLDHDC\n",
+      "after": "  ..D.DCCCDHLCCCLH\n  ....DCCCCCCCCCLH\n}\n# tile 192 (explosion fiery middle center)\n{\n  DLHDDCCLLDLHDDDD\n  CHLHCCDCDDHLDHDC\n"
+    },
+    {
+      "before": "  HHHHNHNHNCLLLCLD\n  LLLLNHHHLLLCHHCC\n}\n# tile 192 (explosion fiery middle right)\n{\n  CCDDDCDCDCDDDD..\n  CCDDDDDCDCDDDD..\n",
+      "after": "  HHHHNHNHNCLLLCLD\n  LLLLNHHHLLLCHHCC\n}\n# tile 193 (explosion fiery middle right)\n{\n  CCDDDCDCDCDDDD..\n  CCDDDDDCDCDDDD..\n"
+    },
+    {
+      "before": "  HDHCCCDDDDDDD...\n  CCCCLLDDDDDDDD..\n}\n# tile 193 (explosion fiery bottom left)\n{\n  ....DCCCCCCCHCCL\n  ....DCCCCCCCDHCC\n",
+      "after": "  HDHCCCDDDDDDD...\n  CCCCLLDDDDDDDD..\n}\n# tile 194 (explosion fiery bottom left)\n{\n  ....DCCCCCCCHCCL\n  ....DCCCCCCCDHCC\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 194 (explosion fiery bottom center)\n{\n  LLLHHHHHLHHHCHCC\n  HHLLHHLLLLHCDCCC\n",
+      "after": "  ................\n  ................\n}\n# tile 195 (explosion fiery bottom center)\n{\n  LLLHHHHHLHHHCHCC\n  HHLLHHLLLLHCDCCC\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 195 (explosion fiery bottom right)\n{\n  CCCCLCCDDDDDDD..\n  CCDCCDCDDCDCDD..\n",
+      "after": "  ................\n  ................\n}\n# tile 196 (explosion fiery bottom right)\n{\n  CCCCLCCDDDDDDD..\n  CCDCCDCDDCDCDD..\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 196 (explosion frosty top left)\n{\n  ................\n  ................\n",
+      "after": "  ................\n  ................\n}\n# tile 197 (explosion frosty top left)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  ..EEEEPPNBEEPPPP\n  ..EEEPPEEEEEPPPP\n}\n# tile 197 (explosion frosty top center)\n{\n  ................\n  ................\n",
+      "after": "  ..EEEEPPNBEEPPPP\n  ..EEEPPEEEEEPPPP\n}\n# tile 198 (explosion frosty top center)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  PPPPPPPPEPEPEBEE\n  PBNPPPNBNNEEEEEE\n}\n# tile 198 (explosion frosty top right)\n{\n  ................\n  ................\n",
+      "after": "  PPPPPPPPEPEPEBEE\n  PBNPPPNBNNEEEEEE\n}\n# tile 199 (explosion frosty top right)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  EEPEPPEPEEEE....\n  EPEEPPEPEEEEE...\n}\n# tile 199 (explosion frosty middle left)\n{\n  ..EEEPEPEEEPPPPP\n  ..EEEPEEEEEPEBPP\n",
+      "after": "  EEPEPPEPEEEE....\n  EPEEPPEPEEEEE...\n}\n# tile 200 (explosion frosty middle left)\n{\n  ..EEEPEPEEEPPPPP\n  ..EEEPEEEEEPEBPP\n"
+    },
+    {
+      "before": "  ..E.EPPPENBPPPBN\n  ....EPPPPPPPPPBN\n}\n# tile 200 (explosion frosty middle center)\n{\n  EBNEEPPBBEBNEEEE\n  PNBNPPEPEENBENEP\n",
+      "after": "  ..E.EPPPENBPPPBN\n  ....EPPPPPPPPPBN\n}\n# tile 201 (explosion frosty middle center)\n{\n  EBNEEPPBBEBNEEEE\n  PNBNPPEPEENBENEP\n"
+    },
+    {
+      "before": "  NNNNNNNNNPBBBPBE\n  BBBBNNNNBBBPNNPP\n}\n# tile 201 (explosion frosty middle right)\n{\n  PPEEEPEPEPEEEE..\n  PPEEEEEPEPEEEE..\n",
+      "after": "  NNNNNNNNNPBBBPBE\n  BBBBNNNNBBBPNNPP\n}\n# tile 202 (explosion frosty middle right)\n{\n  PPEEEPEPEPEEEE..\n  PPEEEEEPEPEEEE..\n"
+    },
+    {
+      "before": "  NENPPPEEEEEEE...\n  PPPPBBEEEEEEEE..\n}\n# tile 202 (explosion frosty bottom left)\n{\n  ....EPPPPPPPNPPB\n  ....EPPPPPPPENPP\n",
+      "after": "  NENPPPEEEEEEE...\n  PPPPBBEEEEEEEE..\n}\n# tile 203 (explosion frosty bottom left)\n{\n  ....EPPPPPPPNPPB\n  ....EPPPPPPPENPP\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 203 (explosion frosty bottom center)\n{\n  BBBNNNNNBNNNPNPP\n  NNBBNNBBBBNPEPPP\n",
+      "after": "  ................\n  ................\n}\n# tile 204 (explosion frosty bottom center)\n{\n  BBBNNNNNBNNNPNPP\n  NNBBNNBBBBNPEPPP\n"
+    },
+    {
+      "before": "  ................\n  ................\n}\n# tile 204 (explosion frosty bottom right)\n{\n  PPPPBPPEEEEEEE..\n  PPEPPEPEEPEPEE..\n",
+      "after": "  ................\n  ................\n}\n# tile 205 (explosion frosty bottom right)\n{\n  PPPPBPPEEEEEEE..\n  PPEPPEPEEPEPEE..\n"
+    },
+    {
+      "before": "  ...........N....\n  ................\n}\n# tile 205 (warning 0)\n{\n  ................\n  ................\n",
+      "after": "  ...........N....\n  ................\n}\n# tile 206 (warning 0)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  .......AA.......\n  ................\n}\n# tile 206 (warning 1)\n{\n  ................\n  ................\n",
+      "after": "  .......AA.......\n  ................\n}\n# tile 207 (warning 1)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  .......AA.......\n  ................\n}\n# tile 207 (warning 2)\n{\n  ................\n  ................\n",
+      "after": "  .......AA.......\n  ................\n}\n# tile 208 (warning 2)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  .......AA.......\n  ................\n}\n# tile 208 (warning 3)\n{\n  ................\n  ................\n",
+      "after": "  .......AA.......\n  ................\n}\n# tile 209 (warning 3)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  .......AA.......\n  ................\n}\n# tile 209 (warning 4)\n{\n  ................\n  ................\n",
+      "after": "  .......AA.......\n  ................\n}\n# tile 210 (warning 4)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  .......AA.......\n  ................\n}\n# tile 210 (warning 5)\n{\n  ................\n  ................\n",
+      "after": "  .......AA.......\n  ................\n}\n# tile 211 (warning 5)\n{\n  ................\n  ................\n"
+    },
+    {
+      "before": "  .......AA.......\n  ................\n}\n# tile 211 (unexplored)\n{\n  AAAAAAAAAAAAAAAA\n  AAAAAAAAAAAAAAAA\n",
+      "after": "  .......AA.......\n  ................\n}\n# tile 212 (unexplored)\n{\n  AAAAAAAAAAAAAAAA\n  AAAAAAAAAAAAAAAA\n"
+    },
+    {
+      "before": "  AAAAAAAAAAAAAAAA\n  AAAAAAAAAAAAAAAA\n}\n# tile 212 (nothing)\n{\n  AAAAAAAAAAAAAAAA\n  AAAAAAAAAAAAAAAA\n",
+      "after": "  AAAAAAAAAAAAAAAA\n  AAAAAAAAAAAAAAAA\n}\n# tile 213 (nothing)\n{\n  AAAAAAAAAAAAAAAA\n  AAAAAAAAAAAAAAAA\n"
+    },
+    {
+      "before": "  AAAAAAAAAAAAAAAA\n  AAAAAAAAAAAAAAAA\n}\n# tile 213 (mines walls vertical)\n{\n  AJJKKKACJAAJJJAA\n  AJKKKACLJJAJJJJA\n",
+      "after": "  AAAAAAAAAAAAAAAA\n  AAAAAAAAAAAAAAAA\n}\n# tile 214 (mines walls vertical)\n{\n  AJJKKKACJAAJJJAA\n  AJKKKACLJJAJJJJA\n"
+    },
+    {
+      "before": "  AAJACKCKKJJJAJAA\n  AAJCKKJAAAJJJJJA\n}\n# tile 214 (mines walls horizontal)\n{\n  AJAAAAAAJJAAAJAA\n  JJJAAAJJJJJAAAAJ\n",
+      "after": "  AAJACKCKKJJJAJAA\n  AAJCKKJAAAJJJJJA\n}\n# tile 215 (mines walls horizontal)\n{\n  AJAAAAAAJJAAAJAA\n  JJJAAAJJJJJAAAAJ\n"
+    },
+    {
+      "before": "  JJJJJJJJJJJJJJJJ\n  AAAAAAAAAAAAAAAA\n}\n# tile 215 (mines walls tlcorn)\n{\n  AAAAAAKCCKKJAAAA\n  AAAAKKCLCJKJJAAA\n",
+      "after": "  JJJJJJJJJJJJJJJJ\n  AAAAAAAAAAAAAAAA\n}\n# tile 216 (mines walls tlcorn)\n{\n  AAAAAAKCCKKJAAAA\n  AAAAKKCLCJKJJAAA\n"
+    },
+    {
+      "before": "  AAJACKCKKJJJAJAA\n  AAJCKKJAAAJJJJJA\n}\n# tile 216 (mines walls trcorn)\n{\n  AAAAAAKCCKKJAAAA\n  AAAAKKCLCJKJJAAA\n",
+      "after": "  AAJACKCKKJJJAJAA\n  AAJCKKJAAAJJJJJA\n}\n# tile 217 (mines walls trcorn)\n{\n  AAAAAAKCCKKJAAAA\n  AAAAKKCLCJKJJAAA\n"
+    },
+    {
+      "before": "  AAJACKCKKJJJAJAA\n  AAJCKKJAAAJJJJJA\n}\n# tile 217 (mines walls blcorn)\n{\n  AKKKAAKKKKAAJJJA\n  AKKAAKCCCJJJAAJA\n",
+      "after": "  AAJACKCKKJJJAJAA\n  AAJCKKJAAAJJJJJA\n}\n# tile 218 (mines walls blcorn)\n{\n  AKKKAAKKKKAAJJJA\n  AKKAAKCCCJJJAAJA\n"
+    },
+    {
+      "before": "  AJJJJJJJJJJJJJJJ\n  AAAAAAAAAAAAAAAA\n}\n# tile 218 (mines walls brcorn)\n{\n  AKKAAAKKAAAAJJJA\n  AKAAKKLCKAAAAAJA\n",
+      "after": "  AJJJJJJJJJJJJJJJ\n  AAAAAAAAAAAAAAAA\n}\n# tile 219 (mines walls brcorn)\n{\n  AKKAAAKKAAAAJJJA\n  AKAAKKLCKAAAAAJA\n"
+    },
+    {
+      "before": "  JJJJJJJJJJJJJJJA\n  AAAAAAAAAAAAAAAA\n}\n# tile 219 (mines walls cross wall)\n{\n  AAAAAAKCCKKJAAAA\n  AAAAKCCLCJKJJAAA\n",
+      "after": "  JJJJJJJJJJJJJJJA\n  AAAAAAAAAAAAAAAA\n}\n# tile 220 (mines walls cross wall)\n{\n  AAAAAAKCCKKJAAAA\n  AAAAKCCLCJKJJAAA\n"
+    },
+    {
+      "before": "  AAJACKCKKJJJAJAA\n  AAJCKKJAAAJJJJJA\n}\n# tile 220 (mines walls tuwall)\n{\n  AKKAAAKKKKAAJJJA\n  AKAAKKLCCJJJAAJA\n",
+      "after": "  AAJACKCKKJJJAJAA\n  AAJCKKJAAAJJJJJA\n}\n# tile 221 (mines walls tuwall)\n{\n  AKKAAAKKKKAAJJJA\n  AKAAKKLCCJJJAAJA\n"
+    },
+    {
+      "before": "  JJJJJJJJJJJJJJJJ\n  AAAAAAAAAAAAAAAA\n}\n# tile 221 (mines walls tdwall)\n{\n  AAAAAAKCCKKJAAAA\n  AAAAKCCLCJKJJAAA\n",
+      "after": "  JJJJJJJJJJJJJJJJ\n  AAAAAAAAAAAAAAAA\n}\n# tile 222 (mines walls tdwall)\n{\n  AAAAAAKCCKKJAAAA\n  AAAAKCCLCJKJJAAA\n"
+    },
+    {
+      "before": "  AAJACKCKKJJJAJAA\n  AAJCKKJAAAJJJJJA\n}\n# tile 222 (mines walls tlwall)\n{\n  AKKAACKCCKKJAJJA\n  AKACKKKLLJKJJAJA\n",
+      "after": "  AAJACKCKKJJJAJAA\n  AAJCKKJAAAJJJJJA\n}\n# tile 223 (mines walls tlwall)\n{\n  AKKAACKCCKKJAJJA\n  AKACKKKLLJKJJAJA\n"
+    },
+    {
+      "before": "  AAJACKCKKJJJAJAA\n  AAJCKKJAAAJJJJJA\n}\n# tile 223 (mines walls trwall)\n{\n  AKKAACKCCKKJAJJA\n  AKACKKCLCJKJJAJA\n",
+      "after": "  AAJACKCKKJJJAJAA\n  AAJCKKJAAAJJJJJA\n}\n# tile 224 (mines walls trwall)\n{\n  AKKAACKCCKKJAJJA\n  AKACKKCLCJKJJAJA\n"
+    },
+    {
+      "before": "  AAJACKCKKJJJAJAA\n  AAJCKKJAAAJJJJJA\n}\n# tile 224 (gehennom walls vertical)\n{\n  ALLDAJ11111JLLDA\n  ADDDAJ1J11JJDDDA\n",
+      "after": "  AAJACKCKKJJJAJAA\n  AAJCKKJAAAJJJJJA\n}\n# tile 225 (gehennom walls vertical)\n{\n  ALLDAJ11111JLLDA\n  ADDDAJ1J11JJDDDA\n"
+    },
+    {
+      "before": "  AJJJAJJ1111JJJJA\n  AD11AJJ1111JD1JA\n}\n# tile 225 (gehennom walls horizontal)\n{\n  AAALDDAAAAALDDAA\n  DDDLDDAJDDDLDDAJ\n",
+      "after": "  AJJJAJJ1111JJJJA\n  AD11AJJ1111JD1JA\n}\n# tile 226 (gehennom walls horizontal)\n{\n  AAALDDAAAAALDDAA\n  DDDLDDAJDDDLDDAJ\n"
+    },
+    {
+      "before": "  JJJJJJJJJJJJJJJJ\n  AAAAAAAAAAAAAAAA\n}\n# tile 226 (gehennom walls tlcorn)\n{\n  AAALLLLDDDDDDAAA\n  LLLLAAJJ1111DJJJ\n",
+      "after": "  JJJJJJJJJJJJJJJJ\n  AAAAAAAAAAAAAAAA\n}\n# tile 227 (gehennom walls tlcorn)\n{\n  AAALLLLDDDDDDAAA\n  LLLLAAJJ1111DJJJ\n"
+    },
+    {
+      "before": "  AJJJAJJ1111JJJJA\n  AD11AJJ1111JD1JA\n}\n# tile 227 (gehennom walls trcorn)\n{\n  AAALLLLDDDDDDAAA\n  LLLLAAJJ1111DJJJ\n",
+      "after": "  AJJJAJJ1111JJJJA\n  AD11AJJ1111JD1JA\n}\n# tile 228 (gehennom walls trcorn)\n{\n  AAALLLLDDDDDDAAA\n  LLLLAAJJ1111DJJJ\n"
+    },
+    {
+      "before": "  AJJJAJJ1111JJJJA\n  AD11AJJ1111JD1JA\n}\n# tile 228 (gehennom walls blcorn)\n{\n  AAALLLLDDDDDDAAA\n  LLLLAAJJ1111DJJJ\n",
+      "after": "  AJJJAJJ1111JJJJA\n  AD11AJJ1111JD1JA\n}\n# tile 229 (gehennom walls blcorn)\n{\n  AAALLLLDDDDDDAAA\n  LLLLAAJJ1111DJJJ\n"
+    },
+    {
+      "before": "  JJJJJJJJJJJJJJJJ\n  AAAAAAAAAAAAAAAA\n}\n# tile 229 (gehennom walls brcorn)\n{\n  AAALLLLDDDDDDAAA\n  LLLLAAJJ1111DJJJ\n",
+      "after": "  JJJJJJJJJJJJJJJJ\n  AAAAAAAAAAAAAAAA\n}\n# tile 230 (gehennom walls brcorn)\n{\n  AAALLLLDDDDDDAAA\n  LLLLAAJJ1111DJJJ\n"
+    },
+    {
+      "before": "  JJJJJJJJJJJJJJJJ\n  AAAAAAAAAAAAAAAA\n}\n# tile 230 (gehennom walls cross wall)\n{\n  AAALLLLDDDDDDAAA\n  LLLLAAJJ1111DJJJ\n",
+      "after": "  JJJJJJJJJJJJJJJJ\n  AAAAAAAAAAAAAAAA\n}\n# tile 231 (gehennom walls cross wall)\n{\n  AAALLLLDDDDDDAAA\n  LLLLAAJJ1111DJJJ\n"
+    },
+    {
+      "before": "  AJJJAJJ1111JJJJA\n  AD11AJJ1111JD1JA\n}\n# tile 231 (gehennom walls tuwall)\n{\n  AAALLLLDDDDDDAAA\n  LLLLAAJJ1111DJJJ\n",
+      "after": "  AJJJAJJ1111JJJJA\n  AD11AJJ1111JD1JA\n}\n# tile 232 (gehennom walls tuwall)\n{\n  AAALLLLDDDDDDAAA\n  LLLLAAJJ1111DJJJ\n"
+    },
+    {
+      "before": "  JJJJJJJJJJJJJJJJ\n  AAAAAAAAAAAAAAAA\n}\n# tile 232 (gehennom walls tdwall)\n{\n  AAALLLLDDDDDDAAA\n  LLLLAAJJ1111DJJJ\n",
+      "after": "  JJJJJJJJJJJJJJJJ\n  AAAAAAAAAAAAAAAA\n}\n# tile 233 (gehennom walls tdwall)\n{\n  AAALLLLDDDDDDAAA\n  LLLLAAJJ1111DJJJ\n"
+    },
+    {
+      "before": "  AJJJAJJ1111JJJJA\n  AD11AJJ1111JD1JA\n}\n# tile 233 (gehennom walls tlwall)\n{\n  AAALLLLDDDDDDAAA\n  LLLLAAJJ1111DJJJ\n",
+      "after": "  AJJJAJJ1111JJJJA\n  AD11AJJ1111JD1JA\n}\n# tile 234 (gehennom walls tlwall)\n{\n  AAALLLLDDDDDDAAA\n  LLLLAAJJ1111DJJJ\n"
+    },
+    {
+      "before": "  AJJJAJJ1111JJJJA\n  AD11AJJ1111JD1JA\n}\n# tile 234 (gehennom walls trwall)\n{\n  AAALLLLDDDDDDAAA\n  LLLLAAJJ1111DJJJ\n",
+      "after": "  AJJJAJJ1111JJJJA\n  AD11AJJ1111JD1JA\n}\n# tile 235 (gehennom walls trwall)\n{\n  AAALLLLDDDDDDAAA\n  LLLLAAJJ1111DJJJ\n"
+    },
+    {
+      "before": "  AJJJAJJ1111JJJJA\n  AD11AJJ1111JD1JA\n}\n# tile 235 (knox walls vertical)\n{\n  AJJJAAACJAAAJJJA\n  AJJJAACLJJAAJJJA\n",
+      "after": "  AJJJAJJ1111JJJJA\n  AD11AJJ1111JD1JA\n}\n# tile 236 (knox walls vertical)\n{\n  AJJJAAACJAAAJJJA\n  AJJJAACLJJAAJJJA\n"
+    },
+    {
+      "before": "  AAJAAACKKJAAAJAA\n  ACJJAAAAAAAACJJA\n}\n# tile 236 (knox walls horizontal)\n{\n  AJAAAJAAAJAAAJAA\n  JJJAAAJAJJJAAAJA\n",
+      "after": "  AAJAAACKKJAAAJAA\n  ACJJAAAAAAAACJJA\n}\n# tile 237 (knox walls horizontal)\n{\n  AJAAAJAAAJAAAJAA\n  JJJAAAJAJJJAAAJA\n"
+    },
+    {
+      "before": "  KJJACJJAKJJACJJA\n  AAAAAAAAAAAAAAAA\n}\n# tile 237 (knox walls tlcorn)\n{\n  AAAAAAKCJKAAAAAA\n  AAAAKKCLKJKKAAAA\n",
+      "after": "  KJJACJJAKJJACJJA\n  AAAAAAAAAAAAAAAA\n}\n# tile 238 (knox walls tlcorn)\n{\n  AAAAAAKCJKAAAAAA\n  AAAAKKCLKJKKAAAA\n"
+    },
+    {
+      "before": "  AAJAAACKKJAAAJAA\n  ACJJAAAAAAAACJJA\n}\n# tile 238 (knox walls trcorn)\n{\n  AAAAAAKCJKAAAAAA\n  AAAAKKCLKJKKAAAA\n",
+      "after": "  AAJAAACKKJAAAJAA\n  ACJJAAAAAAAACJJA\n}\n# tile 239 (knox walls trcorn)\n{\n  AAAAAAKCJKAAAAAA\n  AAAAKKCLKJKKAAAA\n"
+    },
+    {
+      "before": "  AAJAAACKKJAAAJAA\n  ACJJAAAAAAAACJJA\n}\n# tile 239 (knox walls blcorn)\n{\n  AAAAAAKCJKAAAAAA\n  AAAAKKCLKJKKAAAA\n",
+      "after": "  AAJAAACKKJAAAJAA\n  ACJJAAAAAAAACJJA\n}\n# tile 240 (knox walls blcorn)\n{\n  AAAAAAKCJKAAAAAA\n  AAAAKKCLKJKKAAAA\n"
+    },
+    {
+      "before": "  KJJACJJAKJJACJJA\n  AAAAAAAAAAAAAAAA\n}\n# tile 240 (knox walls brcorn)\n{\n  AAAAAAKCJKAAAAAA\n  AAAAKKCLKJKKAAAA\n",
+      "after": "  KJJACJJAKJJACJJA\n  AAAAAAAAAAAAAAAA\n}\n# tile 241 (knox walls brcorn)\n{\n  AAAAAAKCJKAAAAAA\n  AAAAKKCLKJKKAAAA\n"
+    },
+    {
+      "before": "  KJJACJJAKJJACJJA\n  AAAAAAAAAAAAAAAA\n}\n# tile 241 (knox walls cross wall)\n{\n  AAAAAAKCJKAAAAAA\n  AAAAKKCLKJKKAAAA\n",
+      "after": "  KJJACJJAKJJACJJA\n  AAAAAAAAAAAAAAAA\n}\n# tile 242 (knox walls cross wall)\n{\n  AAAAAAKCJKAAAAAA\n  AAAAKKCLKJKKAAAA\n"
+    },
+    {
+      "before": "  AAJAAACKKJAAAJAA\n  ACJJAAAAAAAACJJA\n}\n# tile 242 (knox walls tuwall)\n{\n  AAAAAAKCJKAAAAAA\n  AAAAKKCLKJKKAAAA\n",
+      "after": "  AAJAAACKKJAAAJAA\n  ACJJAAAAAAAACJJA\n}\n# tile 243 (knox walls tuwall)\n{\n  AAAAAAKCJKAAAAAA\n  AAAAKKCLKJKKAAAA\n"
+    },
+    {
+      "before": "  KJJACJJAKJJACJJA\n  AAAAAAAAAAAAAAAA\n}\n# tile 243 (knox walls tdwall)\n{\n  AAAAAAKCJKAAAAAA\n  AAAAKKCLKJKKAAAA\n",
+      "after": "  KJJACJJAKJJACJJA\n  AAAAAAAAAAAAAAAA\n}\n# tile 244 (knox walls tdwall)\n{\n  AAAAAAKCJKAAAAAA\n  AAAAKKCLKJKKAAAA\n"
+    },
+    {
+      "before": "  AAJAAACKKJAAAJAA\n  ACJJAAAAAAAACJJA\n}\n# tile 244 (knox walls tlwall)\n{\n  AAAAAAKCJKAAAAAA\n  AAAAKKCLKJKKAAAA\n",
+      "after": "  AAJAAACKKJAAAJAA\n  ACJJAAAAAAAACJJA\n}\n# tile 245 (knox walls tlwall)\n{\n  AAAAAAKCJKAAAAAA\n  AAAAKKCLKJKKAAAA\n"
+    },
+    {
+      "before": "  AAJAAACKKJAAAJAA\n  ACJJAAAAAAAACJJA\n}\n# tile 245 (knox walls trwall)\n{\n  AAAAAAKCJKAAAAAA\n  AAAAKKCLKJKKAAAA\n",
+      "after": "  AAJAAACKKJAAAJAA\n  ACJJAAAAAAAACJJA\n}\n# tile 246 (knox walls trwall)\n{\n  AAAAAAKCJKAAAAAA\n  AAAAKKCLKJKKAAAA\n"
+    },
+    {
+      "before": "  AAJAAACKKJAAAJAA\n  ACJJAAAAAAAACJJA\n}\n# tile 246 (sokoban walls vertical)\n{\n  ANNBA1EEEEE1NNBA\n  ABBBA1E1EE11BBBA\n",
+      "after": "  AAJAAACKKJAAAJAA\n  ACJJAAAAAAAACJJA\n}\n# tile 247 (sokoban walls vertical)\n{\n  ANNBA1EEEEE1NNBA\n  ABBBA1E1EE11BBBA\n"
+    },
+    {
+      "before": "  A111A11EEEE1111A\n  ABEEA11EEEE1BE1A\n}\n# tile 247 (sokoban walls horizontal)\n{\n  AAANBBAAAAANBBAA\n  BBBNBBA1BBBNBBA1\n",
+      "after": "  A111A11EEEE1111A\n  ABEEA11EEEE1BE1A\n}\n# tile 248 (sokoban walls horizontal)\n{\n  AAANBBAAAAANBBAA\n  BBBNBBA1BBBNBBA1\n"
+    },
+    {
+      "before": "  1111111111111111\n  AAAAAAAAAAAAAAAA\n}\n# tile 248 (sokoban walls tlcorn)\n{\n  AAANNNNBBBBBBAAA\n  NNNNAA11EEEEB111\n",
+      "after": "  1111111111111111\n  AAAAAAAAAAAAAAAA\n}\n# tile 249 (sokoban walls tlcorn)\n{\n  AAANNNNBBBBBBAAA\n  NNNNAA11EEEEB111\n"
+    },
+    {
+      "before": "  A111A11EEEE1111A\n  ABEEA11EEEE1BE1A\n}\n# tile 249 (sokoban walls trcorn)\n{\n  AAANNNNBBBBBBAAA\n  NNNNAA11EEEEB111\n",
+      "after": "  A111A11EEEE1111A\n  ABEEA11EEEE1BE1A\n}\n# tile 250 (sokoban walls trcorn)\n{\n  AAANNNNBBBBBBAAA\n  NNNNAA11EEEEB111\n"
+    },
+    {
+      "before": "  A111A11EEEE1111A\n  ABEEA11EEEE1BE1A\n}\n# tile 250 (sokoban walls blcorn)\n{\n  AAANNNNBBBBBBAAA\n  NNNNAA11EEEEB111\n",
+      "after": "  A111A11EEEE1111A\n  ABEEA11EEEE1BE1A\n}\n# tile 251 (sokoban walls blcorn)\n{\n  AAANNNNBBBBBBAAA\n  NNNNAA11EEEEB111\n"
+    },
+    {
+      "before": "  1111111111111111\n  AAAAAAAAAAAAAAAA\n}\n# tile 251 (sokoban walls brcorn)\n{\n  AAANNNNBBBBBBAAA\n  NNNNAA11EEEEB111\n",
+      "after": "  1111111111111111\n  AAAAAAAAAAAAAAAA\n}\n# tile 252 (sokoban walls brcorn)\n{\n  AAANNNNBBBBBBAAA\n  NNNNAA11EEEEB111\n"
+    },
+    {
+      "before": "  1111111111111111\n  AAAAAAAAAAAAAAAA\n}\n# tile 252 (sokoban walls cross wall)\n{\n  AAANNNNBBBBBBAAA\n  NNNNAA11EEEEB111\n",
+      "after": "  1111111111111111\n  AAAAAAAAAAAAAAAA\n}\n# tile 253 (sokoban walls cross wall)\n{\n  AAANNNNBBBBBBAAA\n  NNNNAA11EEEEB111\n"
+    },
+    {
+      "before": "  A111A11EEEE1111A\n  ABEEA11EEEE1BE1A\n}\n# tile 253 (sokoban walls tuwall)\n{\n  AAANNNNBBBBBBAAA\n  NNNNAA11EEEEB111\n",
+      "after": "  A111A11EEEE1111A\n  ABEEA11EEEE1BE1A\n}\n# tile 254 (sokoban walls tuwall)\n{\n  AAANNNNBBBBBBAAA\n  NNNNAA11EEEEB111\n"
+    },
+    {
+      "before": "  1111111111111111\n  AAAAAAAAAAAAAAAA\n}\n# tile 254 (sokoban walls tdwall)\n{\n  AAANNNNBBBBBBAAA\n  NNNNAA11EEEEB111\n",
+      "after": "  1111111111111111\n  AAAAAAAAAAAAAAAA\n}\n# tile 255 (sokoban walls tdwall)\n{\n  AAANNNNBBBBBBAAA\n  NNNNAA11EEEEB111\n"
+    },
+    {
+      "before": "  A111A11EEEE1111A\n  ABEEA11EEEE1BE1A\n}\n# tile 255 (sokoban walls tlwall)\n{\n  AAANNNNBBBBBBAAA\n  NNNNAA11EEEEB111\n",
+      "after": "  A111A11EEEE1111A\n  ABEEA11EEEE1BE1A\n}\n# tile 256 (sokoban walls tlwall)\n{\n  AAANNNNBBBBBBAAA\n  NNNNAA11EEEEB111\n"
+    },
+    {
+      "before": "  A111A11EEEE1111A\n  ABEEA11EEEE1BE1A\n}\n# tile 256 (sokoban walls trwall)\n{\n  AAANNNNBBBBBBAAA\n  NNNNAA11EEEEB111\n",
+      "after": "  A111A11EEEE1111A\n  ABEEA11EEEE1BE1A\n}\n# tile 257 (sokoban walls trwall)\n{\n  AAANNNNBBBBBBAAA\n  NNNNAA11EEEEB111\n"
+    }
+  ]
+}

@@ -2879,7 +2879,7 @@ light_region(region *tmpregion)
     for (x = lowx; x <= hix; x++) {
         lev = &levl[x][lowy];
         for (y = lowy; y <= hiy; y++) {
-            lev->lit = IS_LAVA(lev->typ) ? 1 : litstate;
+            lev->lit = (IS_LAVA(lev->typ) || IS_FORGE(lev->typ)) ? 1 : litstate;
             lev++;
         }
     }
@@ -4182,6 +4182,14 @@ lspo_room(lua_State *L)
                 gc.coder->n_subroom++;
                 update_croom();
                 lua_getfield(L, 1, "contents");
+                /* The default Lua ordinary room is the native random-room
+                 * backend. Explicit geometry or contents denotes a scripted
+                 * area even when the author calls its room type ordinary. */
+                if (tmproom.x != -1 || tmproom.w != -1
+                    || tmproom.rlit != -1 || !tmproom.needfill
+                    || lua_type(L, -1) == LUA_TFUNCTION)
+                    forge_exclude_area(tmpcr->lx, tmpcr->ly,
+                                       tmpcr->hx, tmpcr->hy);
                 if (lua_type(L, -1) == LUA_TFUNCTION) {
                     lua_remove(L, -2);
                     l_push_mkroom_table(L, tmpcr);
@@ -5628,7 +5636,7 @@ sel_set_lit(coordxy x, coordxy y, genericptr_t arg)
 {
      int lit = *(int *) arg;
 
-     levl[x][y].lit = (IS_LAVA(levl[x][y].typ) || lit) ? 1 : 0;
+     levl[x][y].lit = (IS_LAVA(levl[x][y].typ) || IS_FORGE(levl[x][y].typ) || lit) ? 1 : 0;
 }
 
 /* Add to the room any doors within/bordering it */
@@ -6366,6 +6374,10 @@ TODO: gc.coder->croom needs to be updated
                 }
         }
 
+        /* Authored map fragments are never ordinary forge candidates. */
+        forge_exclude_area(gx.xstart, gy.ystart,
+                           gx.xstart + gx.xsize - 1,
+                           gy.ystart + gy.ysize - 1);
         /* Load the map */
         for (y = gy.ystart; y < min(ROWNO, gy.ystart + gy.ysize); y++)
             for (x = gx.xstart; x < min(COLNO, gx.xstart + gx.xsize); x++) {

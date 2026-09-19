@@ -13,8 +13,16 @@ CHANGES = json.loads(Path(__file__).with_name(
 STEP14_CHANGES = json.loads(Path(__file__).with_name(
     'step14_historical_changes.json').read_text(encoding='utf8'))
 
+STEP15_CHANGES = json.loads(Path(__file__).with_name(
+    'step15_historical_changes.json').read_text(encoding='utf8'))
+
 
 def project(path, text):
+    # Exact reviewed forge hunks; all other bytes retain historical protection.
+    for hunk in STEP15_CHANGES.get(path, []):
+        if hunk['after'] in text:
+            assert text.count(hunk['after']) == 1, (path, 'ambiguous Step 15 hunk')
+            text = text.replace(hunk['after'], hunk['before'], 1)
     # First remove exact reviewed Step 14 hunks. Earlier checkpoint inputs
     # have neither these hunks nor necessarily Step 13's surrounding context;
     # their bytes still face the unchanged historical equality assertion.

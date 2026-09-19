@@ -2212,6 +2212,8 @@ surface(coordxy x, coordxy y)
         return "soil";
     else if (levtyp == GRASS)
         return "grass";
+    else if (IS_FORGE(levtyp))
+        return "forge";
     else if (IS_ANY_ICEWALL(levtyp))
         return levtyp == CRYSTALICEWALL ? "crystal ice wall" : "ice wall";
     else if (is_ice(x, y))

@@ -4108,7 +4108,9 @@ dfeature_at(coordxy x, coordxy y, char *buf)
         /* override door description for open drawbridge */
         if (is_drawbridge_wall(x, y) >= 0)
             dfeature = "open drawbridge portcullis", cmap = -1;
-    } else if (IS_FOUNTAIN(ltyp))
+    } else if (IS_FORGE(ltyp))
+        cmap = S_forge; /* "forge" */
+    else if (IS_FOUNTAIN(ltyp))
         cmap = S_fountain; /* "fountain" */
     else if (IS_THRONE(ltyp))
         cmap = S_throne; /* "opulent throne" */

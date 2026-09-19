@@ -155,7 +155,7 @@ def main():
         assert f"$(DAT){resource}.lua" in nmake
 
     patchlevel = (REPO / "include/patchlevel.h").read_text(encoding="utf-8")
-    assert "#define EDITLEVEL 8" in patchlevel
+    assert "#define EDITLEVEL 9" in patchlevel
     print("PASS QA2 source contract: 36 normal-fill, 8 intentional-unfilled, "
           "5 explicit temples, DEF-009/010 parser representations, 26 resources")
 

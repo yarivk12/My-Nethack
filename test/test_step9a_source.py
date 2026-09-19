@@ -163,7 +163,7 @@ artifact=strip_step10b3_artifact_changes(step13_project('src/artifact.c',read('s
 for ident in ['GLOWING_DRAGON_SCALE_MAIL','GLOWING_DRAGON_SCALES']:
     artifact=re.sub(r'\s+\|\| obj->otyp == '+ident+r'\b','',artifact)
 assert artifact==old('src/artifact.c'),'artifact changes beyond Step9B worn glowing armor light'
-assert '#define EDITLEVEL 8' in read('include/patchlevel.h') # Step 10 ID epoch
+assert '#define EDITLEVEL 9' in read('include/patchlevel.h') # Step 10 ID epoch
 assert len(re.findall(r'name\s*=\s*"Sheol"',read('dat/dungeon.lua')))==2
 dungeon = read('dat/dungeon.lua')
 assert 'name="Sheol", base=30, range=170, direction="down"' in dungeon

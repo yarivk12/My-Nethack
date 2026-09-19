@@ -908,15 +908,16 @@ const char *terrain_descr[] = {
        "White-dust",
        "Soil",
        "Grass",
+       "Forge",
        /*
         */
-/*45*/ "",              /* MAX_TYPE; skipped rather than overloaded */
-/*46*/ c_Wall,          /* MATCH_WALL for special levels; shouldn't happen */
+/*46*/ "",              /* MAX_TYPE; skipped rather than overloaded */
+/*47*/ c_Wall,          /* MATCH_WALL for special levels; shouldn't happen */
        /*
         * additional terrain names that aren't simple levl[][].typ values
         */
-/*47*/ "Floor",         /* substituted for room or corridor */
-/*48*/ "Ground",        /* 'room' on Earth level */
+/*48*/ "Floor",         /* substituted for room or corridor */
+/*49*/ "Ground",        /* 'room' on Earth level */
        "Open-door",     /* open (not broken or doorless) */
        "Shut-door",     /* closed or locked (or trapped) */
        "Swamp",         /* Juiblex level */

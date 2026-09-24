@@ -75,7 +75,11 @@ are introduced. Magic Resistance and Slow Digestion require normal identificatio
 
 Quality precedes the property prefix. One known property uses its prefix. Two
 use higher-tier prefix/lower-tier suffix, with catalog order resolving equal tiers.
-Partial knowledge, minimal names and bounded formatting remain supported.
+Known Phase 1 quality and prefix tokens use canonical capitalization, such as
+`Fine`, `Exceptional`, `Smoldering` and `Herculean`; suffixes preserve their
+designed grammar, such as `of Embers`, `of Giants` and `of the Inferno`.
+Standard quality still has no item-name adjective. Partial knowledge, minimal
+names and bounded formatting remain supported.
 T1/T2/T3/T4 surcharges are 50/100/200/400 percent of base value, added together
 before applying the independent quality factor. Actual state determines shop
 value regardless of player knowledge. Native enchantment, billing and credit

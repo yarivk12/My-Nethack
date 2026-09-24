@@ -3,6 +3,7 @@
 The Step 15B/audit manifests and original baselines remain immutable.
 test_step15c_source.py rejects mutations inside and outside these hunks.
 """
+from step15d_source_projection import project as step15d_project
 import json
 from pathlib import Path
 
@@ -11,6 +12,7 @@ CHANGES = json.loads(Path(__file__).with_name(
 
 
 def project(path, text):
+    text = step15d_project(path, text)
     for hunk in CHANGES.get(path, []):
         if hunk['after'] in text:
             assert text.count(hunk['after']) == 1, (path, 'ambiguous Step 15C hunk')

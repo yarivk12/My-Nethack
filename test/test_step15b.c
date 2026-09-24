@@ -7,8 +7,18 @@
 #include <limits.h>
 
 struct forge_test_choice { const char *prompt; int id; long count; };
+struct forge_test_answer { const char *prompt; char answer; };
 static struct forge_test_choice forge_choices[160];
+static struct forge_test_answer forge_answers[40];
 static int forge_choice_count, forge_choice_next, forge_menu_ids[100], forge_menu_n;
+static int forge_answer_count, forge_answer_next;
+static char forge_answer_default;
+static char forge_yn_prompts[40][BUFSZ];
+static int forge_yn_count;
+static boolean forge_socket_shortcut_seen;
+static char forge_menu_letters[100];
+static int forge_last_recipe_ids[100], forge_last_recipe_n;
+static char forge_last_recipe_letters[100];
 static char forge_prompt[BUFSZ], forge_screen[200000];
 static winid forge_test_window(int type) { (void) type; return 1; }
 static void forge_test_destroy(winid win) { (void) win; }
@@ -21,14 +31,31 @@ static void forge_test_putstr(winid win, int attr, const char *s) {
 static void forge_test_start(winid win, unsigned long behavior) {
     (void) win; (void) behavior; forge_menu_n = 0;
 }
-static void forge_test_end(winid win, const char *s) { (void) win; Strcpy(forge_prompt, s); }
+static void forge_test_end(winid win, const char *s) {
+    int i;
+    (void) win; Strcpy(forge_prompt, s);
+    if (!strcmp(s, "Weapons") || !strcmp(s, "Armor")
+        || !strcmp(s, "Tools") || !strcmp(s, "Other")) {
+        forge_last_recipe_n = forge_menu_n;
+        for (i = 0; i < forge_menu_n; ++i) {
+            forge_last_recipe_ids[i] = forge_menu_ids[i];
+            forge_last_recipe_letters[i] = forge_menu_letters[i];
+        }
+    }
+}
 static void forge_test_add(winid win, const glyph_info *glyph, const ANY_P *id,
                            char letter, char group, int attr, int color,
                            const char *s, unsigned int flags) {
     (void) glyph; (void) letter; (void) group; (void) color; (void) flags;
     assert(forge_menu_n < SIZE(forge_menu_ids));
     forge_menu_ids[forge_menu_n++] = id->a_int;
+    forge_menu_letters[forge_menu_n - 1] = letter;
     forge_test_putstr(win, attr, s);
+    if (!strcmp(s, "Socket gemstone")) {
+        assert(letter == 's' || letter == 'y');
+        if (letter == 's') forge_socket_shortcut_seen = TRUE;
+        assert(strcmp(s, "Affix gemstone"));
+    }
     if (!strcmp(s, "Tools") || !strcmp(s, "Other")) assert(!id->a_int);
 }
 static int forge_test_select(winid win, int how, MENU_ITEM_P **picked) {
@@ -47,6 +74,19 @@ static int forge_test_select(winid win, int how, MENU_ITEM_P **picked) {
     (*picked)->count = c->count;
     return 1;
 }
+static char forge_test_yn_function(const char *query, const char *responses,
+                                  char def) {
+    struct forge_test_answer *a;
+    assert(responses && !strcmp(responses, "yn"));
+    assert(forge_yn_count < SIZE(forge_yn_prompts));
+    Strcpy(forge_yn_prompts[forge_yn_count++], query);
+    if (forge_answer_next < forge_answer_count) {
+        a = &forge_answers[forge_answer_next++];
+        assert(!strcmp(query, a->prompt));
+        return a->answer ? a->answer : def;
+    }
+    return forge_answer_default ? forge_answer_default : def;
+}
 void step15b_window_setup(void) {
     windowprocs.win_create_nhwindow = forge_test_window;
     windowprocs.win_destroy_nhwindow = forge_test_destroy;
@@ -56,9 +96,14 @@ void step15b_window_setup(void) {
     windowprocs.win_end_menu = forge_test_end;
     windowprocs.win_add_menu = forge_test_add;
     windowprocs.win_select_menu = forge_test_select;
+    windowprocs.win_yn_function = forge_test_yn_function;
 }
 static void forge_test_script(void) {
     forge_choice_count = forge_choice_next = 0;
+    forge_answer_count = forge_answer_next = 0;
+    forge_answer_default = '\0'; forge_yn_count = 0;
+    forge_socket_shortcut_seen = FALSE;
+    forge_last_recipe_n = 0;
     forge_screen[0] = '\0';
 }
 static void forge_test_choose(const char *prompt, int id, long count) {
@@ -66,6 +111,15 @@ static void forge_test_choose(const char *prompt, int id, long count) {
     assert(forge_choice_count < SIZE(forge_choices));
     c = &forge_choices[forge_choice_count++];
     c->prompt = prompt; c->id = id; c->count = count;
+}
+static void forge_test_answer(const char *prompt, char answer) {
+    struct forge_test_answer *a;
+    assert(forge_answer_count < SIZE(forge_answers));
+    a = &forge_answers[forge_answer_count++];
+    a->prompt = prompt; a->answer = answer;
+}
+static void forge_test_answer_default(char answer) {
+    forge_answer_default = answer;
 }
 
 static struct obj *forge_test_item(int, long);
@@ -83,6 +137,9 @@ forge_test_same_object(const struct obj *before, const struct obj *after)
     SAME(lknown); SAME(cursed); SAME(blessed); SAME(spe); SAME(unpaid);
     SAME(in_use); SAME(oeroded); SAME(oeroded2); SAME(oerodeproof);
     SAME(greased); SAME(opoisoned); SAME(oartifact); SAME(oextra);
+    SAME(o_socket_capacity);
+    assert(!memcmp(before->o_sockets,after->o_sockets,sizeof before->o_sockets));
+    assert(!memcmp(before->o_enh_values,after->o_enh_values,sizeof before->o_enh_values));
     SAME(o_enh_props); SAME(o_enh_known); SAME(o_enh_quality); SAME(o_enh_flags);
     SAME(obranch_props); SAME(obranch_material); SAME(obranch_size);
     SAME(tknown); SAME(cobj); SAME(age); SAME(timed); SAME(recharged);
@@ -460,7 +517,7 @@ static void
 forge_test_navigation(void)
 {
     struct obj *obj, saved;
-    int i;
+    int i, j;
     long moves=svm.moves;
     forge_test_clear();
     obj=forge_test_item(LONG_SWORD,3);saved=*obj;
@@ -480,18 +537,43 @@ forge_test_navigation(void)
         assert(svm.moves==moves);
         if(i>1) {
             assert(strstr(forge_screen,"Tools\nOther\n"));
-            assert(strstr(forge_screen,"katana - 2 long swords [Available]"));
+            assert(strstr(forge_screen,"Weapons (1)"));
+            assert(strstr(forge_screen,"katana - 2 long swords"));
+            assert(!strstr(forge_screen,"[Available]")
+                   && !strstr(forge_screen,"[Unavailable]"));
+            assert(strstr(forge_screen,"Not available:\n- two-handed sword"));
+            assert(forge_last_recipe_n > 1
+                   && forge_last_recipe_ids[0] == 1
+                   && forge_last_recipe_letters[0] == 'a');
+            for (j = 1; j < forge_last_recipe_n; ++j)
+                assert(forge_last_recipe_ids[j] == 0
+                       && forge_last_recipe_letters[j] == 0);
         }
     }
     forge_test_script();
     forge_test_choose("Use the forge",1,-1);
     forge_test_choose("Choose a category",1,-1);
-    forge_test_choose("Weapons",2,-1); /* unavailable: sword + broadsword */
+    forge_test_choose("Weapons",0,-1); /* unavailable rows are not selectable */
+    forge_test_choose("Choose a category",0,-1);
+    assert(forge_menu(NULL)==ECMD_OK);
+    assert(strstr(forge_screen,"Not available:"));
+    assert(!strstr(forge_screen,"[Available]")
+           && !strstr(forge_screen,"[Unavailable]"));
+    assert(!memcmp(&saved,obj,sizeof saved));
+    forge_test_clear();
+    forge_test_script();
+    forge_test_choose("Use the forge",1,-1);
+    forge_test_choose("Choose a category",1,-1);
     forge_test_choose("Weapons",0,-1);
     forge_test_choose("Choose a category",0,-1);
     assert(forge_menu(NULL)==ECMD_OK);
-    assert(strstr(forge_screen,"0 eligible"));
-    assert(!memcmp(&saved,obj,sizeof saved));
+    assert(strstr(forge_screen,"Weapons (0)"));
+    assert(forge_last_recipe_n > 0);
+    for (i = 0; i < forge_last_recipe_n; ++i)
+        assert(forge_last_recipe_ids[i] == 0
+               && forge_last_recipe_letters[i] == 0);
+    forge_test_clear();
+    obj=forge_test_item(LONG_SWORD,3); saved=*obj;
     forge_test_script();
     forge_test_choose("Use the forge",1,-1);
     forge_test_choose("Choose a category",1,-1);
@@ -514,6 +596,7 @@ forge_test_navigation(void)
 }
 
 #include "test_step15c.c"
+#include "test_step15d_forge.c"
 
 void
 step15b_test_main(void)
@@ -589,4 +672,6 @@ step15b_test_main(void)
     forge_test_capacity_ledger();
     forge_test_many_stacks_and_counts();
     step15c_test_main();
+    step15d_forge_tests();
+    step15d_continuation_tests();
 }

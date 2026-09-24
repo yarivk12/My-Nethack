@@ -91,7 +91,7 @@ for token in ("TORCH", "SHADOWLANDER_S_TORCH"):
 assert "ART_FIRST_KEY_OF_NEUTRALITY" in makemon
 assert "ART_NECRONOMICON" not in spell
 assert "UPGRADE_KIT" not in objects
-assert "EDITLEVEL 9" in read("include/patchlevel.h")
+assert "EDITLEVEL 10" in read("include/patchlevel.h")
 for protected in ("README.md", "dat/dungeon.lua"):
     assert "STEP 10B3-1" not in read(protected)
 print("PASS Step 10B3-1 production paths and phase boundaries")

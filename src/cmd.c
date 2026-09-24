@@ -1746,6 +1746,8 @@ struct ext_func_tab extcmdlist[] = {
               doherecmdmenu, IFBURIED | AUTOCOMPLETE | GENERALCMD, NULL },
     { '\0',    "history", "show a summary of the game's development",
               dohistory, IFBURIED | AUTOCOMPLETE | GENERALCMD, NULL },
+    { 0, "inspect", "inspect carried equipment and gemstone sockets",
+      doinspect, IFBURIED | AUTOCOMPLETE | GENERALCMD, NULL },
     { 'i',    "inventory", "show your inventory",
               ddoinv, IFBURIED | GENERALCMD, NULL },
     { 'I',    "inventtype", "show inventory of one specific item class",

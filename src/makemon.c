@@ -1472,6 +1472,7 @@ clone_mon(
     m2->mhpmax = mon->mhpmax;
     m2->mhp = mon->mhp / 2;
     mon->mhp -= m2->mhp;
+    equipment_mon_refresh(m2); /* cloned monsters do not clone equipment */
 
     /* clone doesn't have mextra so mustn't retain special monster flags */
     m2->isshk = 0;
@@ -1638,6 +1639,8 @@ newmonhp(struct monst *mon, int mndx)
         mon->mhpmax += 1;
         mon->mhp = mon->mhpmax;
     }
+    mon->equipment_hp = 0;
+    equipment_mon_refresh(mon);
 }
 
 static const struct mextra zeromextra = DUMMY;

@@ -2,11 +2,11 @@ static void
 step14_names_prices_tests(void)
 {
     const struct {uint32 bits;const char *name;} cases[]={
-        {OEP_FIRE_II,"blazing long sword"},
-        {OEP_PRIMORDIAL|OEP_FIRE_II,"primordial long sword of the Inferno"},
-        {OEP_FIRE_III|OEP_FIRE,"cataclysmic long sword of Embers"},
-        {OEP_FIRE_II|OEP_COLD,"blazing long sword of Rime"},
-        {OEP_FIRE_III|OEP_SHOCK_III,"cataclysmic long sword of Heaven's Wrath"}
+        {OEP_FIRE_II,"Blazing long sword"},
+        {OEP_PRIMORDIAL|OEP_FIRE_II,"Primordial long sword of the Inferno"},
+        {OEP_FIRE_III|OEP_FIRE,"Cataclysmic long sword of Embers"},
+        {OEP_FIRE_II|OEP_COLD,"Blazing long sword of Rime"},
+        {OEP_FIRE_III|OEP_SHOCK_III,"Cataclysmic long sword of Heaven's Wrath"}
     };
     const struct {int type;uint32 excluded;} native[]={
         {SPEED_BOOTS,OEP_SPEED},{CLOAK_OF_MAGIC_RESISTANCE,OEP_MAGIC_RES},
@@ -38,9 +38,9 @@ step14_names_prices_tests(void)
         assert(!strcmp(xname(o),cases[i].name));
     }
     enhancement_set(o,OEP_PRIMORDIAL|OEP_FIRE_II,OQ_EXCEPTIONAL,TRUE);
-    assert(!strcmp(xname(o),"exceptional primordial long sword of the Inferno"));
+    assert(!strcmp(xname(o),"Exceptional Primordial long sword of the Inferno"));
     o->o_enh_known=OEP_FIRE_II;
-    assert(!strcmp(xname(o),"exceptional blazing long sword"));
+    assert(!strcmp(xname(o),"Exceptional Blazing long sword"));
     o->o_enh_known=0;o->o_enh_flags=0;
     assert(!strcmp(xname(o),"long sword"));obfree(o,NULL);
     for(i=0;i<SIZE(native);++i) {

@@ -6,28 +6,28 @@ static const int step14_tables[5][9] = {
     {16,40,40,70,30,40,25,20,15}, {22,30,40,80,40,25,30,25,20},
     {28,20,40,90,50,10,35,30,25}
 };
-static const uint32 step14_weapon_elements=OEP_FIRE|OEP_COLD|OEP_SHOCK
+static const uint64 step14_weapon_elements=OEP_ATTRIBUTES|OEP_FIRE|OEP_COLD|OEP_SHOCK
     |OEP_FIRE_II|OEP_COLD_II|OEP_SHOCK_II
     |OEP_FIRE_III|OEP_COLD_III|OEP_SHOCK_III|OEP_PRIMORDIAL;
 
-static uint32
-step14_reference(int band, uint32 allowed, int *quality, int *attempts,
+static uint64
+step14_reference(int band, uint64 allowed, int *quality, int *attempts,
                  int *rolled_tiers)
 {
     /* Contract pools and caller-supplied eligibility, deliberately independent
      * of enhancement_catalog and all production filtering helpers. */
-    const uint32 pool[4][7] = {
+    const uint64 pool[4][9] = {
         {OEP_FIRE,OEP_COLD,OEP_SHOCK,OEP_TRUEFLIGHT,
-         OEP_SEARCHING,OEP_WARNING,OEP_STEALTH},
+         OEP_SEARCHING,OEP_WARNING,OEP_STEALTH,OEP_STR_I,OEP_DEX_I},
         {OEP_FIRE_II,OEP_COLD_II,OEP_SHOCK_II,
-         OEP_FIRE_RES,OEP_COLD_RES,OEP_SHOCK_RES,OEP_POISON_RES},
+         OEP_FIRE_RES,OEP_COLD_RES,OEP_SHOCK_RES,OEP_POISON_RES,OEP_STR_II,OEP_DEX_II},
         {OEP_FIRE_III,OEP_COLD_III,OEP_SHOCK_III,
-         OEP_SPEED,OEP_REGEN,OEP_DISPLACED,OEP_SLOW_DIGEST},
-        {OEP_PRIMORDIAL,OEP_MAGIC_RES,OEP_REFLECTION,0,0,0,0}
+         OEP_SPEED,OEP_REGEN,OEP_DISPLACED,OEP_SLOW_DIGEST,OEP_STR_III,OEP_DEX_III},
+        {OEP_PRIMORDIAL,OEP_MAGIC_RES,OEP_REFLECTION,OEP_STR_IV,OEP_DEX_IV,0,0,0,0}
     };
     const int *table=step14_tables[band];
     int presence, roll, n, slot, tier, i, count;
-    uint32 props=0, valid[7];
+    uint64 props=0, valid[9];
     *quality=0;*attempts=0;
     if(rn2(100)>=table[0])return 0;
     do {
@@ -43,12 +43,17 @@ step14_reference(int band, uint32 allowed, int *quality, int *attempts,
         rolled_tiers[tier]++;
         for(;;--tier) {
             assert(tier>=0);count=0;
-            for(i=0;i<7;++i)
+            for(i=0;i<9;++i)
                 if((allowed&pool[tier][i])&&!(props&pool[tier][i]))
                     valid[count++]=pool[tier][i];
             if(count)break;
         }
         props|=valid[rn2(count)];
+    }
+    /* Acquisition draws happen once after both ordinary identities are chosen. */
+    for (i=0;i<8;++i) if (props & (1ULL << (25+i))) {
+        int acquisition_tier=i%4;
+        (void)d(acquisition_tier<2?1:2, acquisition_tier%2?3:2);
     }
     return props;
 }
@@ -68,7 +73,7 @@ step14_generation_tests(void)
         for(b=0;b<4;++b)assert(actual->tier[b]==expect[5+b]);
     }
     for(b=0;b<5;++b)for(seed=1;seed<=10000;++seed) {
-        uint32 props;
+        uint64 props;
         init_isaac64(seed,rn2);props=step14_reference(b,step14_weapon_elements,&q,&attempts,tiers);next=rn2(1000000);
         rerolls+=attempts>1;
         enhancement_clear(o);o->spe=-3;o->cursed=1;o->oeroded=2;o->oerodeproof=1;
@@ -84,11 +89,11 @@ step14_generation_tests(void)
         const int types[]={ARROW,LEATHER_ARMOR,CLOAK_OF_MAGIC_RESISTANCE,
                            BLUE_DRAGON_SCALE_MAIL,WHITE_DRAGON_SCALE_MAIL,
                            CHROMATIC_DRAGON_SCALE_MAIL};
-        const uint32 armor=OEP_SEARCHING|OEP_WARNING|OEP_STEALTH
+        const uint64 armor=OEP_SEARCHING|OEP_WARNING|OEP_STEALTH
             |OEP_FIRE_RES|OEP_COLD_RES|OEP_SHOCK_RES|OEP_POISON_RES
             |OEP_SPEED|OEP_REGEN|OEP_DISPLACED|OEP_SLOW_DIGEST
             |OEP_MAGIC_RES|OEP_REFLECTION;
-        uint32 allowed[]={step14_weapon_elements|OEP_TRUEFLIGHT,armor,
+        uint64 allowed[]={step14_weapon_elements|OEP_TRUEFLIGHT,armor,
                          armor&~OEP_MAGIC_RES,armor&~(OEP_SHOCK_RES|OEP_SPEED),
                          armor&~(OEP_COLD_RES|OEP_SLOW_DIGEST),
                          armor&~(OEP_FIRE_RES|OEP_COLD_RES|OEP_SHOCK_RES
@@ -97,7 +102,7 @@ step14_generation_tests(void)
         for(kind=0;kind<SIZE(types);++kind) {
             struct obj *recipient=item(types[kind]);
             for(b=0;b<5;++b)for(seed=1;seed<=2000;++seed) {
-                uint32 props;
+                uint64 props;
                 init_isaac64(seed,rn2);
                 props=step14_reference(b,allowed[kind],&q,&attempts,tiers);
                 next=rn2(1000000);
@@ -135,7 +140,7 @@ step14_corpus(void)
     const int depths[]={1,30,60,100,150};
     const long samples=200000;
     int b,i,q,has,count;
-    long n,gate,quality[3],properties[3],tier[4],members[24];
+    long n,gate,quality[3],properties[3],tier[4],members[32];
     struct obj *o=item(LONG_SWORD);
     for(b=0;b<5;++b) {
         gate=0;memset(quality,0,sizeof quality);memset(properties,0,sizeof properties);
@@ -147,7 +152,7 @@ step14_corpus(void)
             q=o->o_enh_quality;has=o->o_enh_props!=0;
             if(!q&&!has)continue;
             ++gate;++quality[q];count=0;
-            for(i=0;i<24;++i)if(o->o_enh_props&enhancement_catalog[i].bit) {
+            for(i=0;i<32;++i)if(o->o_enh_props&enhancement_catalog[i].bit) {
                 ++count;++tier[enhancement_catalog[i].tier-1];++members[i];
             }
             assert(count<=2);++properties[count];

@@ -1,10 +1,275 @@
-# Phase 1 Step 15 â€” forge foundation, recipes and state inheritance
+# Phase 1 Step 15 â€” forge foundation, recipes, inheritance and gemstone affixing
 
 Step 15A implements forge terrain, natural placement, and war-hammer activation.
 Step 15B adds the locked recipe catalogue, native menus, exact ingredient
 allocation, and atomic crafting. Step 15C adds deterministic equipment-state
-inheritance. Step 15D gemstone affixing remains deferred. There are no repairs, charges,
+inheritance. Step 15D adds gemstone affixing and shared equipment effects.
+There are no repairs, charges,
 cooldowns, smithing skills, recipe learning, or persistent forge provenance.
+
+## Step 15D implementation and validation (2026-09-19)
+
+This section supersedes earlier format and deferred-affixing statements below;
+those sections retain the historical Step 15A/B/C evidence.
+
+### Implemented behavior
+
+Applying a war hammer on a forge offers **Socket gemstone** beside crafting,
+using the `s` shortcut. A completed socketing attempt can remain on the same
+target: a failed attempt may ask `Try again?`, a successful fill with an empty
+socket may ask `Socket another gem?`, and a successful full target may ask
+`Replace a gem?`. Each prompt appears only when another valid operation exists
+for a directly carried gemstone; container contents never enable continuation.
+Answering `n` exits the socketing workflow, while `y` re-enters the appropriate
+gem/socket selection without reapplying the hammer or selecting the target.
+Existing activation gates, terrain, generation, and all 12 recipes remain.
+Native menus select carried, unequipped equipment and a gemstone, then an
+occupied socket only when full. The first empty socket takes precedence.
+Artifacts, ammunition, weapon-tools, unpaid objects, the activating hammer,
+and active equipment are excluded; inactive alternate weapons are allowed.
+Inventory letters select items and IDs are revalidated at commitment.
+
+All 22 real gemstone mappings are explicit, including black opal at T2.
+T1/T2/T3/T4 chances are 70/60/50/40 percent, plus 10 for a blessed hammer or
+minus 10 for a cursed hammer. Gem BUC has no effect. Exact chances appear only
+when tier and hammer BUC are known. Unknown gems/glass remain selectable;
+hidden glass or exhausted pools consume one unit with the same generic failure
+as an ordinary failed roll, without identifying material or hammer BUC.
+Identified glass and exhausted known tiers are rejected before commitment.
+Uniform exact-tier candidate selection excludes inherent capabilities and
+exact identities across retained sockets and ordinary enhancements. Different
+tiers remain distinct; socket Trueflight is launcher-only.
+
+**Approved stack correction:** failure filling an empty socket leaves the
+entire target stack unchanged. Committed replacement first separates one
+physical weapon and destroys only its selected old socket. Every replacement
+failure leaves that socket empty, preserving the remainder. Success installs
+one known result and its acquired value. Commitment consumes one gemstone and
+one action; cancellation/rejection consumes neither. Full-pack preflight checks
+every possible magnitude and merge, considering only a known tier or all tiers
+when hidden. No affixing RNG occurs during preflight. Native `splitobj` also
+uses `rnd(2)` for object-ID allocation, separate from affixing draws; RNG-tail
+tests explicitly account for it.
+
+The approved weapon, armor and jewelry catalogues are complete. Elemental dice
+roll on hits, with separately resisted Primordial components. Numeric values
+roll once at acquisition. Eight ordinary weapon STR/DEX properties use bits
+25–32, approved names/dice, and equal catalogue participation under the existing
+tier system. Ordinary armor, generation opportunities, bands, property counts,
+and ordinary Trueflight eligibility retain their previous rules.
+
+Effective attributes use active weapons, including actual dual wielding, and
+normally worn armor/jewelry. Encoded STR is handled deliberately: 16 + 4 displays
+20. Protection lowers AC. HP/Pw maxima use reversible applied-bonus ledgers,
+never heal on equip, and clamp current values on removal. Level gain, polymorph,
+new-form maxima, cloning and splitting exclude temporary bonuses when computing
+underlying maxima. Repeated golem healing does not reapply equipment HP.
+Monsters receive native binary, AC, combat and HP effects where meaningful.
+Flight, breathing, see-invisible and telepathy changes invoke native transition
+updates. Telepathy works sighted; Very Fast matches speed boots.
+
+`doname` adds one physical `[used/actual-capacity]` marker while preserving
+ordinary names and native annotations. **`#inspect`** is a free general command
+with a native carried-inventory menu and text window. Its detail window uses
+the following presentation contract:
+
+    <full item name> [sockets] (equipped state if applicable)
+
+    Quality:
+        <known quality> - <recipient-specific impact>
+
+    Enhancements:
+        <known property> - <actual impact>
+
+    Sockets: <used>/<actual capacity>
+        Socket 1: <empty, unknown, or known property> [- <actual impact>]
+
+The quality and property impacts are concise descriptions of the shared
+mechanics, including recipient-specific quality behavior, confirmed-hit dice,
+stored static values, native worn capabilities, and all three independent
+Primordial components. Socket occupancy appears only in the single `Sockets:`
+heading. Naming uses object copies; inspection performs no identification.
+Per-socket knowledge is independent; full identification reveals all,
+attributable effects reveal the relevant source, and bones/acquisition
+forgetting preserves actual values. Source gemstone identity is never stored.
+
+### `#inspect` certainty and impact display (2026-09-20)
+
+The enhancement engine keeps actual properties and ordinary knowledge in
+separate masks. Full identification already sets ordinary knowledge to the
+complete property set allowed for that object, including known absence when the
+actual property mask is empty. The earlier defect was only in the empty-list
+wording in `doinspect()`: it treated zero visible actual properties as `none
+known` even when the knowledge mask was complete.
+
+The fix uses the shared allowed-property mask to distinguish complete knowledge
+from an unknown or partial view. An unknown plain eligible item still reports
+`none known`; a partially known item reports only known properties and their
+impacts; a fully identified plain item reports definitive `none`; and a fully
+identified enhanced item, including numeric values, reports its actual known
+properties and stored values. Unknown quality remains `unknown`, and unknown
+sockets remain `unknown` without revealing property, tier, value, gem identity,
+or impact. Known Standard quality explicitly reports `no additional quality
+bonus`. Socket knowledge remains independent, and `#inspect` continues to
+render from object copies without mutating object or knowledge state.
+
+The native Step 13 and Step 15 regressions cover Standard, Fine and Exceptional
+quality impacts for melee/direct throw weapons, launchers, fired ammunition and
+armor; runtime and static ordinary properties; binary ordinary and socket
+properties; Primordial's three formulas; one- and two-socket equipment; empty,
+unknown, partial and fully known states; the long-sword acceptance shape; naming
+capitalization; and explicit nonmutation assertions.
+
+Socket tier surcharges add to ordinary surcharges before quality, including
+jewelry and hidden shop valuation. Crafting destroys consumed socket state and
+creates full-capacity empty outputs. Ordinary STR/DEX inheritance selects the
+highest contributed stored value per selected identity, without rerolling or
+socket contributions. Output comparisons and preflight include these values.
+
+### `#overview` coverage fix and custom-feature audit
+
+The focused audit found one real omission: a known forge was not included in
+`#overview`. The native overview remembers terrain through `svl.lastseentyp`,
+recalculates feature state in `recalc_mapseen()`, filters levels through
+`interest_mapseen()`, and formats the feature sentence in `print_mapseen()`.
+Forge terrain had no case in that shared counting path, so it could be visible,
+persistent, and usable while remaining absent from the overview.
+
+The fix reuses the existing one-bit `mapseen_flags.spare1` slot as `forge`.
+`recalc_mapseen()` clears it, `count_feat_lastseentyp()` sets it for remembered
+`FORGE`, and the native interest and output paths include one singular
+`Forge`. Multiple known forges remain one presence annotation. This preserves
+the existing struct size and mapseen save/restore codec; no new field or format
+epoch is introduced. Forge removal before recalculation also clears stale
+overview state.
+
+The project-wide custom dungeon audit used native overview semantics, not a new
+custom annotation system:
+
+| Feature family | Result | Native coverage or reason |
+|---|---|---|
+| Authored and natural forge terrain | Fixed omission | Persistent furniture now follows the same remembered-terrain path as fountain, throne, sink, grave, and tree. |
+| Big Room, Oracle, Castle, Valley, Moloch's Sanctum, Fort Ludios, Sokoban, Rogue level, quest annotations, and vibrating-square state | Already covered | Existing `mapseen_flags` annotations and native overview branches print these states. |
+| Shops, temples, altars, fountains, thrones, sinks, graves, and trees | Already covered | Existing `mapseen_feat` counts and `print_mapseen()` output remain authoritative. |
+| Sheol, The Dragon Caves, Mithardir, Neutral Quest, The Lost Tomb, The Ruins of Moria, and The Lost Cities | Covered indirectly | Native dungeon headings and remembered branch or portal lines identify these dungeons; their ordinary terrain and content are not overview feature types. |
+| Giant Court, Real Zoo, Dragon Lair, Wizard Study, Storeroom, Super Honeycomb, Dragon Hall, and Library | Not an overview feature | These are custom room/content identities. Native overview does not enumerate arbitrary room themes, and no separate line is justified by existing semantics. |
+| Moria, Mithardir, Sheol, and other custom ordinary terrain, objects, traps, services, and merchants | Not an overview feature | They are level content rather than persistent overview furniture or native level annotations; branch and dungeon identity remain covered where applicable. |
+
+The native runtime regression captures the actual overview menu and covers a
+known authored forge, multiple known forges without duplicate text, and a
+cleared level without stale forge text. It also round-trips the mapseen chain
+through the native dungeon save/restore codec before reopening the overview.
+Existing natural-generation and forge-persistence tests cover the equivalent
+natural terrain and level transition paths. `test_step15_overview_source.py`
+locks the reused flag and unchanged mapseen codec boundary.
+
+Focused evidence: `PY test/run_step15.py --out
+_qa/overview-native-20260919-c` passed the overview cases, all retained Step
+15A/B/C/D native regressions, and the 1,000-level corpus. The production
+`run_step15_save.py` and `run_step15d_save.py` sessions passed transitions,
+save/restore, recovery, crafting, and affixing. The x64 Release solution build
+and ZIP/DLB/resource checks passed afterward.
+
+### Representation, ownership, and format
+
+`struct obj` has actual capacity, two inline `{ property, value, known }`
+records, eight ordinary value bytes, and 64-bit ordinary actual/known masks.
+Canonical property IDs 1–32 refer to the ordinary catalogue; further IDs cover
+socket-only entries. Bit 7 stays retired. Native x64 object size changes from
+**112 to 144 bytes**. Hero HP/form-HP/Pw and monster HP applied-bonus ledgers are
+inline in their existing serialized structures.
+
+**EDITLEVEL 9 → 10** rejects previous development saves/bones, without migration.
+Native object/hero/monster serialization carries state through save, level,
+bones and checkpoint/recovery. Restore validates metadata deterministically
+without equipment callbacks. Inert ordinary known-mask bits from the retained
+low-byte codec corpus remain round-trippable; explicit normalization masks the
+public valid range.
+
+There is no separately owned socket allocation. Zeroed constructors and
+`enhancement_created` initialize full empty capacity independently of ordinary
+generation permission. Copies/splits copy inline state; merging compares every
+field/value. Destruction needs no extra free. Same-type polymorph preserves
+metadata; true type changes clear it and initialize new capacity. Artifact
+conversion removes prior worn effects and clears capacity. Starting racial
+substitutions, bones conversions and unseen acquisition use shared lifecycle
+rules. Enchantment, BUC, erosion, coatings and names remain separate.
+
+Primary code: `include/{obj,enhance,you,monst,patchlevel}.h`, `src/enhance.c`,
+`src/apply.c`, and existing naming, command, inventory, attribute, wear/wield,
+polymorph, monster, shop, restore and bones hooks. New tests are
+`test/test_step15d*.c`, source/projection gates, and `test/run_step15d_save.py`;
+the retained Step 13/14/15 harnesses execute them.
+
+### Validation record
+
+Starting checkout: `phase1/equipment-enhancement`,
+`a4585f85f1acc56f489cf9dbc3eecc3c6a2679d5`, no tracked edits and untracked
+`.codegraph/` preserved. Before edits,
+`C:/Python311/python.exe test/run_step13.py --out _qa/step15d/baseline13`
+passed the complete native suite and generation/codec corpora.
+
+Commands below run from the repository root. `PY` is
+`C:/Python311/python.exe`; `MSBUILD` is
+`C:/Program Files (x86)/Microsoft Visual Studio/18/BuildTools/MSBuild/Current/Bin/MSBuild.exe`.
+Builds sharing generated headers must run sequentially.
+
+| Executed command | Result |
+|---|---|
+| `PY test/run_step13.py --out _qa/step15d/step13` | PASS final run: 110,000 generation traces, 1,000,000 generated objects, 27,648 low-byte and 5,345,280 finalized codec states, combat/knowledge, shop/billing, level/bones, 959 new mixed socket/value codec states, and 1,280 socket combat/resistance/RNG outcomes. |
+| `PY test/run_step15.py --out _qa/step15d/step15` | PASS final run: retained A/B/C, all 12 recipes, 480 deterministic affixing outcomes, glass/exhaustion, pack boundary, inheritance, five cancellation boundaries, recipient gates and four chance-disclosure states. The unchanged 1,000-level corpus has 116 selections/placements, zero invalid and zero duplicates; the seeded count changed with approved acquisition draws. |
+| `PY test/test_step13_source.py`; `PY test/test_step14_source.py`; `PY test/test_step15_source.py`; `PY test/test_step15b_source.py`; `PY test/test_step15c_source.py`; `PY test/test_step15d_source.py`; `PY test/test_phase1_audit_source.py` | PASS. 15D frozen projection covers 26 production files and rejects 102 mutations; retained 15C rejects 4 and audit rejects 52. Historical manifests unchanged. |
+| `MSBUILD sys/windows/vs/NetHack.sln /p:Configuration=Release /p:Platform=x64 /m /v:minimal /nologo` | PASS x64 console, GUI, recover, resources/DLB and ZIP packaging. |
+| `PY test/test_step11_resources.py _qa/step13-donors/themerms.lua binary/Release/x64 vspackage/nethack-500-win-x64.zip` | PASS pinned donors, 199 protected files, exact packaged binaries/DLB, and 186 Lua resources. |
+| `PY test/test_step9a_tiles.py`; `PY test/test_step9c_package.py binary/Release/x64/nhdat500` | PASS glyph/tile mapping and bitmap capacity; three resource manifests and packaged dungeon/quest bytes. |
+| `PY test/run_step13_save.py _qa/step15d/step13/bin _qa/step15d/enhanced-save` | PASS full game save/restore and native recovery, socketed items across eight ownership paths and container/monster backlinks. |
+| `PY test/run_step15_save.py binary/Release/x64 _qa/step15d/production-craft _qa/step15d/step13/bin` | PASS production menus, cancellation, one-turn crafting, named ingredients, two-craft chain, enhanced inheritance, level/save/recovery and diagnostic inspection of three production saves. |
+| `PY test/run_step15d_save.py binary/Release/x64 _qa/step15d/step13/bin _qa/step15d/production-affix-final` | PASS byte-identical final Release executable: activation, STR 16 +4 =20 and removal, one-weapon committed replacement failure, successful affixing, free inspection, level/save/recovery, and diagnostic actual-state verification of three production saves. |
+
+Older source gates were also run with pinned donors:
+`PY test/test_step9a_source.py _qa/step13-donors/unnethack.git binary/Release/x64/nhdat500`,
+`PY test/test_step9b_source.py _qa/step13-donors/unnethack.git binary/Release/x64/nhdat500`,
+`PY test/test_step9c_mirage_source.py _qa/step13-donors/dnethack.git`, and each
+`test/test_step10*source.py` (each invoked as `PY test/<filename>`):
+`test_step10b2_1_source.py`, `test_step10b2_2_source.py`,
+`test_step10b2_3_source.py`, `test_step10b2_4_source.py`,
+`test_step10b3_1_source.py`, `test_step10b3_2_source.py`,
+`test_step10b3_3_source.py`, `test_step10b3_4_source.py`,
+`test_step10b4_source.py`, `test_step10b5_source.py`, `test_step10b_source.py`,
+`test_step10c_b_source.py`, `test_step10c_c_source.py`,
+`test_step10c_d_source.py`, `test_step10qa2_source.py`.
+Explicit epoch assertions were updated to 10;
+protected donor, scope and projection assertions were retained. All passed after
+those explicit format expectations were updated.
+
+Final release artifacts (SHA-256):
+
+| Artifact | SHA-256 |
+|---|---|
+| `binary/Release/x64/NetHack.exe` | `667747ec10348b3e4e15e34bef3e8f51c83d5a51726b50ec6a4e1c71e162fa09` |
+| `binary/Release/x64/NetHackW.exe` | `4653c79c537c2c14c88ad0da5828bbd79a7f65eef964bcd671569d195cfe25f2` |
+| `binary/Release/x64/recover.exe` | `5cfd6fa4b58737ea079b299b4f99cf18ec032d91a4ed3d5d2aee7b3db63c5001` |
+| `binary/Release/x64/nhdat500` | `0b30de5d278930e4eb18f61c3dce0cda6b2718ecbdd495c631a3a3c0321894b0` |
+| `vspackage/nethack-500-win-x64.zip` | `2a66bd4904d2838b0fdbbf2dbcc914a90d3910cb9d70393363409d76524706d6` |
+
+The ZIP/resource check was repeated after the final Release build. Full command
+logs and isolated games are under `_qa/step15d/`; these are local ignored QA
+artifacts. No staging, commit, tag, push, branch switch, reset, clean or stash was
+performed. `git diff --check` passes; branch and HEAD remain the starting values.
+
+Initial failures were corrected: obsolete mask/size/epoch/source expectations,
+test split-linkage cleanup, a terminal transcript parser losing unchanged console
+cells (replaced by native inventory-screen parsing), and a diagnostic compilation
+racing Release regeneration of the shared Lua header (rerun sequentially).
+The untouched baseline also emits existing `mkmap.c` C4701 x/y warnings.
+No failing baseline test is claimed. GUI/manual gameplay has not been run;
+production gameplay checks above are automated Windows terminal sessions.
+
+Manual smoke path: start a fresh epoch-10 game; carry a war hammer, unequipped
+eligible equipment and gemstones; stand on a forge; apply the hammer and choose
+Socket gemstone. Use `#inspect`, fill and replace sockets, verify the destruction
+warning, equip/unequip numeric gear and check reversible stats, then save/restore.
+Native fixtures supply known states for otherwise random acquisition cases.
 
 ## Terrain and compatibility
 
@@ -92,18 +357,24 @@ Native apply hands/capacity preflight is retained. State rejections use
 `use_pole` preflight gates. Invalid entry-point terrain/type returns `ECMD_FAIL`.
 Valid activation opens the native forge menu. Opening, browsing, inspection,
 cancellation and transaction rejection return `ECMD_OK`, without a turn.
-Only successful crafting returns `ECMD_TIME`, then exits the interaction.
+Only successful crafting or socketing returns `ECMD_TIME`; socketing can repeat
+on the same target after that action without reopening the forge activation.
 This supersedes Step 15A's temporary one-turn activation message.
 
 ## Step 15B catalogue and workflow
 
-The action menu offers only **Forge an item**. Categories are always Weapons,
-Armor, Tools, Other; empty categories are nonselectable. Category derives from
-the output's native object class, with weapon ammunition under Weapons.
-Recipes are known from the beginning and list true output/ingredient names,
-complete quantities, and Available/Unavailable status. No inventory object is
-identified by reading a recipe. Unavailable recipes remain selectable for
-inspection and return to the same list.
+The action menu offers **Forge an item** and **Socket gemstone**. Categories are
+always Weapons, Armor, Tools, Other; categories with recipes show the number of
+distinct currently forgeable recipes, and recipe-less categories remain
+nonselectable. Category derives from the output's native object class, with
+weapon ammunition under Weapons. Recipes are known from the beginning and list
+true output/ingredient names and complete quantities. Currently forgeable
+recipes appear first with contiguous selection letters. Remaining recipes are
+shown afterward under `Not available:` without selection letters, availability
+tags, or selection IDs. The heading is omitted when every recipe is forgeable.
+No inventory object is identified by reading a recipe. The category count and
+lettered recipe rows use the same `forge_available()` result, and a zero-count
+category remains inspectable through its unlettered unavailable rows.
 
 The central `forge_recipes` table in `src/apply.c` has one output type and exactly
 two fixed ingredient slots, each an exact type and positive quantity. There is

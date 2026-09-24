@@ -23,7 +23,8 @@ expected = [
 assert actual == [(o, a, '1', b, '1') for o, a, b in expected]
 engine = c.split('/* Step 15B:', 1)[1].split('/* the #apply command', 1)[0]
 assert 'hold_another_object' not in engine and 'dropy(' not in engine
-assert 'splitobj(' not in engine
+crafting = engine.split('/* Affixing preflight', 1)[0]
+assert 'splitobj(' not in crafting
 assert 'ENH_CONTEXT_NONE' in engine and 'enhancement_context_set(old)' in engine
 assert 'invlet_basic' in engine and 'mergable(obj, output)' in engine
 print('PASS Step 15B locked 12 formulas/curated order and native transaction integration')

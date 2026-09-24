@@ -475,6 +475,7 @@ struct you {
     uchar uspellprot;        /* protection by SPE_PROTECTION */
     uchar usptime;           /* #moves until uspellprot-- */
     uchar uspmtime;          /* #moves between uspellprot-- */
+    int equipment_hp, equipment_mh, equipment_pw; /* applied temporary maxima */
     int uhp, uhpmax,         /* hit points, aka health */
         uhppeak;             /* highest value of uhpmax so far */
     int uen, uenmax,         /* magical energy, aka spell power */

@@ -8,11 +8,11 @@ def body(p,name):
  assert m,(p,name)
  return m[0]
 obj=read('include/obj.h');hdr=read('include/enhance.h')
-for typ,field in [('uint32','o_enh_props'),('uint32','o_enh_known'),('uint8','o_enh_quality'),('uint8','o_enh_flags')]:
+for typ,field in [('uint64','o_enh_props'),('uint64','o_enh_known'),('uint8','o_enh_quality'),('uint8','o_enh_flags')]:
  assert re.search(r'\b'+typ+r'\s+'+field+r'\s*;',obj)
  assert f'obj->{field} != otmp->{field}' in body('src/invent.c','mergable')
 assert 'unsigned long obranch_props;' in obj
-assert re.search(r'#define EDITLEVEL\s+9\b',read('include/patchlevel.h'))
+assert re.search(r'#define EDITLEVEL\s+10\b',read('include/patchlevel.h'))
 for i,name in enumerate(['FIRE','COLD','SHOCK','TRUEFLIGHT','WARNING','SEARCHING','STEALTH']):
  assert int(re.search(r'#define OEP_'+name+r'\s+(0x[0-9a-f]+)U',hdr)[1],16)==1<<i
 for name in ['enhancement_hit_bonus','enhancement_damage_bonus','enhancement_quality_bonus','enhancement_visible_props']:

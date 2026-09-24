@@ -4444,7 +4444,10 @@ mergable(
         || obj->nomerge || otmp->nomerge || !objects[obj->otyp].oc_merge)
         return FALSE;
 
-    if (obj->o_enh_props != otmp->o_enh_props
+    if (obj->o_socket_capacity != otmp->o_socket_capacity
+        || memcmp(obj->o_sockets, otmp->o_sockets, sizeof obj->o_sockets)
+        || memcmp(obj->o_enh_values, otmp->o_enh_values, sizeof obj->o_enh_values)
+        || obj->o_enh_props != otmp->o_enh_props
         || obj->o_enh_known != otmp->o_enh_known
         || obj->o_enh_quality != otmp->o_enh_quality
         || obj->o_enh_flags != otmp->o_enh_flags)

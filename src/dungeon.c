@@ -3369,6 +3369,7 @@ interest_mapseen(mapseen *mptr)
        or user annotation or known connection to another dungeon branch
        or is the furthest level reached in its branch */
     return (boolean) (OF_INTEREST(mptr->feat)
+                      || mptr->flags.forge
                       || (mptr->final_resting_place
                           && (mptr->flags.knownbones || wizard))
                       || mptr->custom || mptr->br
@@ -3439,6 +3440,9 @@ count_feat_lastseentyp(
         count = mptr->feat.ntree + 1;
         if (count <= 3)
             mptr->feat.ntree = count;
+        break;
+    case FORGE:
+        mptr->flags.forge = 1;
         break;
     case FOUNTAIN:
         count = mptr->feat.nfount + 1;
@@ -3573,6 +3577,7 @@ recalc_mapseen(void)
         mptr->flags.bigroom = 0;
     mptr->flags.roguelevel = Is_rogue_level(&u.uz);
     mptr->flags.oracle = 0; /* recalculated during room traversal below */
+    mptr->flags.forge = 0; /* recalculated from remembered terrain below */
     mptr->flags.castletune = 0;
     /* flags.castle retains previous value */
     mptr->flags.forgot = 0;
@@ -4040,7 +4045,7 @@ print_mapseen(
     if (mptr->flags.forgot)
         return;
 
-    if (OF_INTEREST(mptr->feat)) {
+    if (OF_INTEREST(mptr->feat) || mptr->flags.forge) {
         buf[0] = 0;
 
         i = 0; /* interest counter */
@@ -4076,6 +4081,7 @@ print_mapseen(
         ADDNTOBUF("sink", mptr->feat.nsink);
         ADDNTOBUF("grave", mptr->feat.ngrave);
         ADDNTOBUF("tree", mptr->feat.ntree);
+        ADDTOBUF("forge", mptr->flags.forge);
 #if 0
         ADDTOBUF("water", mptr->feat.water);
         ADDTOBUF("lava", mptr->feat.lava);

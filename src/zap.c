@@ -1957,12 +1957,17 @@ poly_obj(struct obj *obj, int id)
      * transformation.  Copy after all native type adjustments, before the
      * replacement is billed or worn; a real type change keeps the zeros
      * supplied by its non-natural constructor. */
-    if (otmp->otyp == obj->otyp && enhancement_eligible(otmp)) {
+    if (otmp->otyp == obj->otyp) {
         otmp->o_enh_props = obj->o_enh_props;
         otmp->o_enh_known = obj->o_enh_known;
         otmp->o_enh_quality = obj->o_enh_quality;
         otmp->o_enh_flags = obj->o_enh_flags;
+        memcpy(otmp->o_enh_values, obj->o_enh_values, sizeof otmp->o_enh_values);
+        otmp->o_socket_capacity = obj->o_socket_capacity;
+        memcpy(otmp->o_sockets, obj->o_sockets, sizeof otmp->o_sockets);
     }
+
+    if (otmp->otyp != obj->otyp) socket_init(otmp);
 
     /* update the weight */
     otmp->owt = weight(otmp);

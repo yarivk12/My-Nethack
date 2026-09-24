@@ -16,13 +16,16 @@ extern struct obj *step13_restore_chain(NHFILE *);
 #define SAME(a,b) assert((a)->o_enh_props == (b)->o_enh_props \
     && (a)->o_enh_known == (b)->o_enh_known \
     && (a)->o_enh_quality == (b)->o_enh_quality \
-    && (a)->o_enh_flags == (b)->o_enh_flags)
+    && (a)->o_enh_flags == (b)->o_enh_flags \
+    && (a)->o_socket_capacity == (b)->o_socket_capacity \
+    && !memcmp((a)->o_sockets,(b)->o_sockets,sizeof (a)->o_sockets) \
+    && !memcmp((a)->o_enh_values,(b)->o_enh_values,sizeof (a)->o_enh_values))
 #define ZERO(a) assert(!(a)->o_enh_props && !(a)->o_enh_known \
     && !(a)->o_enh_quality && !(a)->o_enh_flags)
 _Static_assert(sizeof(uint32) == 4 && sizeof(uint8) == 1, "fixed width");
-_Static_assert(sizeof(struct obj) == 112, "Windows x64 object size (baseline 104)");
+_Static_assert(sizeof(struct obj) == 144, "Windows x64 object size (baseline 104)");
 _Static_assert(OQ_STANDARD == 0 && OQ_FINE == 1 && OQ_EXCEPTIONAL == 2, "qualities");
-_Static_assert(OEP_ALL == 0x01ffff7fU && OEF_QUALITY_KNOWN == 1U, "masks");
+_Static_assert(OEP_ALL == 0x1ffffff7fULL && OEF_QUALITY_KNOWN == 1U, "masks");
 
 static void
 test_message(const char *s)
@@ -37,6 +40,8 @@ item(int type)
     o->quan = 1; o->spe = 0; o->cursed = o->blessed = 0;
     return o;
 }
+
+#include "test_step15d.c"
 
 static void
 matrix(void)
@@ -64,7 +69,7 @@ matrix(void)
                 assert(enhancement_set(o, bit, q, FALSE) == allowed);
             }
         }
-        o->o_enh_props = o->o_enh_known = ~0U;
+        o->o_enh_props = o->o_enh_known = ~0ULL;
         o->o_enh_quality = 255; o->o_enh_flags = 255;
         o->obranch_props = OBP_ACID; o->spe = 3;
         program_state.in_sanity_check=TRUE;
@@ -245,10 +250,10 @@ lifecycle_names(void)
     enhancement_set(o,OEP_FIRE|OEP_PRIMORDIAL,OQ_EXCEPTIONAL,FALSE);
     assert(!strcmp(base,doname(o)));
     o->o_enh_known=OEP_FIRE;
-    Strcpy(name,xname(o));assert(strstr(name,"smoldering ")&&!strstr(name,"chilled ")&&!strstr(name,"exceptional "));
+    Strcpy(name,xname(o));assert(strstr(name,"Smoldering ")&&!strstr(name,"Chilled ")&&!strstr(name,"Exceptional "));
     o->o_enh_flags=OEF_QUALITY_KNOWN;
-    assert(strstr(xname(o),"exceptional smoldering "));
-    assert(!strstr(simpleonames(o),"smoldering ")&&!strstr(ysimple_name(o),"exceptional "));
+    assert(strstr(xname(o),"Exceptional Smoldering "));
+    assert(!strstr(simpleonames(o),"Smoldering ")&&!strstr(ysimple_name(o),"Exceptional "));
     fully_identify_obj(o);assert((o->o_enh_known & o->o_enh_props)==o->o_enh_props);
     assert(!not_fully_identified(o));
     enhancement_prefix(o,FALSE,tiny,sizeof tiny);assert(tiny[3]=='\0');
@@ -277,6 +282,66 @@ lifecycle_names(void)
     place_object(o,25,10);o=poly_obj(o,DAGGER);ZERO(o);
     obj_extract_self(o);obfree(o,NULL);
     puts("PASS exact split/merge/copy, partial/full ID, minimal names, maximum name bounds, transformation");
+}
+
+static void
+impact_descriptions(void)
+{
+    struct obj *o;
+    char buf[BUFSZ];
+
+    o = item(LONG_SWORD);
+    enhancement_property_impact(o, EP_FIRE, 0, buf, sizeof buf);
+    assert(!strcmp(buf, "+1d4 fire damage on a confirmed hit"));
+    enhancement_property_impact(o, EP_PRIMORDIAL, 0, buf, sizeof buf);
+    assert(!strcmp(buf, "+5d6 fire, +5d6 cold, and +5d6 shock damage on a confirmed hit"));
+    o->o_enh_values[3] = 3;
+    enhancement_property_impact(o, EP_STR_IV, o->o_enh_values[3], buf, sizeof buf);
+    assert(!strcmp(buf, "+3 STR while wielded"));
+    enhancement_quality_impact(o, buf, sizeof buf);
+    assert(!strcmp(buf, "no additional quality bonus"));
+    enhancement_set(o, OEP_STR_IV, OQ_EXCEPTIONAL, TRUE);
+    enhancement_quality_impact(o, buf, sizeof buf);
+    assert(!strcmp(buf, "+2 to hit and +2 physical damage in melee or when directly thrown"));
+    obfree(o, NULL);
+
+    o = item(BOW);
+    enhancement_set(o, 0, OQ_EXCEPTIONAL, TRUE);
+    enhancement_quality_impact(o, buf, sizeof buf);
+    assert(!strcmp(buf, "+2 to hit when firing ammunition"));
+    obfree(o, NULL);
+
+    o = item(ARROW);
+    enhancement_set(o, 0, OQ_FINE, TRUE);
+    enhancement_quality_impact(o, buf, sizeof buf);
+    assert(!strcmp(buf, "+1 physical damage when fired"));
+    obfree(o, NULL);
+
+    o = item(LEATHER_ARMOR);
+    enhancement_set(o, 0, OQ_FINE, TRUE);
+    enhancement_quality_impact(o, buf, sizeof buf);
+    assert(!strcmp(buf, "+1 AC while worn"));
+    enhancement_property_impact(o, EP_WARNING, 0, buf, sizeof buf);
+    assert(!strcmp(buf, "grants Warning while worn"));
+    enhancement_property_impact(o, EP_FIRE_RES, 0, buf, sizeof buf);
+    assert(!strcmp(buf, "grants fire resistance while worn"));
+    enhancement_property_impact(o, EP_PROT_I, 3, buf, sizeof buf);
+    assert(!strcmp(buf, "improves AC by 3 while worn"));
+    enhancement_property_impact(o, EP_HP_I, 17, buf, sizeof buf);
+    assert(!strcmp(buf, "+17 maximum HP while worn"));
+    enhancement_property_impact(o, EP_MANA_I, 24, buf, sizeof buf);
+    assert(!strcmp(buf, "+24 maximum Pw while worn"));
+    enhancement_property_impact(o, EP_TELEPORT_CONTROL, 0, buf, sizeof buf);
+    assert(!strcmp(buf, "grants Teleport Control while worn"));
+    obfree(o, NULL);
+
+    o = item(LONG_SWORD);
+    enhancement_set(o, OEP_FIRE | OEP_STR_IV, OQ_EXCEPTIONAL, TRUE);
+    o->o_enh_values[3] = 3;
+    assert(strstr(xname(o), "Exceptional Herculean long sword of Embers"));
+    assert(!strstr(xname(o), "exceptional") && !strstr(xname(o), "herculean"));
+    obfree(o, NULL);
+    puts("PASS canonical enhancement impacts, recipient-specific quality and Phase 1 capitalization");
 }
 
 static void
@@ -395,6 +460,7 @@ chains(void)
 }
 
 #include "test_step14_persistence.c"
+#include "test_step15d_persistence.c"
 
 static void
 version_gate(void)
@@ -409,10 +475,10 @@ version_gate(void)
     f=get_freeing_nhfile();file_mode(f,READING,open("step13-version.tmp",O_RDONLY|O_BINARY));
     assert(read(f->fd,header,2)==2);assert(header[0]=='h');
     lseek(f->fd,2+header[1],SEEK_SET);Sfi_version_info(f,&v,"version_info");
-    assert((v.incarnation&255)==9);assert(check_version(&v,NULL,FALSE,0));
-    v.incarnation=(v.incarnation&~255UL)|8;
+    assert((v.incarnation&255)==10);assert(check_version(&v,NULL,FALSE,0));
+    v.incarnation=(v.incarnation&~255UL)|9;
     assert(!check_version(&v,NULL,FALSE,0));close_nhfile(f);
-    puts("PASS native critical sizes/epoch-9 header and controlled epoch-8 check_version rejection");
+    puts("PASS native critical sizes/epoch-10 header and controlled epoch-9 check_version rejection");
 }
 
 static int
@@ -492,6 +558,10 @@ step13_test_main(void)
         step14_hero_use_observation_tests();step14_observation_tests();
         puts("PASS Step 13 focused combat/knowledge fixtures");return 0;
     }
+    step15d_state_tests();
+    step15d_catalog_tests();
+    step15d_effect_tests();
+    step15d_combat_tests();
     matrix();combat();combat_paths();armor();step14_combat_tests();
     step14_hero_use_observation_tests();
     step14_names_prices_tests();step14_observation_tests();
@@ -499,7 +569,7 @@ step13_test_main(void)
     step14_audit_polymorph_context_tests();
     step14_audit_monster_transform_tests();
     step14_generation_tests();step14_corpus();step14_creation_tests();
-    lifecycle_names();artifacts_prices();billing();chains();step14_persistence_tests();version_gate();level_bones();
+    lifecycle_names();impact_descriptions();artifacts_prices();billing();chains();step14_persistence_tests();step15d_persistence_tests();version_gate();level_bones();
     puts("PASS Step 13 native runtime fixtures");return 0;
 }
 
@@ -510,6 +580,7 @@ fixture_item(const char *name)
     struct obj *o=item(DAGGER);
     enhancement_set(o,OEP_FIRE|OEP_PRIMORDIAL,OQ_EXCEPTIONAL,FALSE);
     o->o_enh_known=OEP_FIRE;o->o_enh_flags=OEF_QUALITY_KNOWN;
+    o->o_sockets[0].property=EP_STR_III;o->o_sockets[0].value=4;
     return oname(o,name,ONAME_NO_FLAGS);
 }
 
@@ -520,6 +591,8 @@ check_fixture_chain(struct obj *chain)
     struct obj *o;
     for(o=chain;o;o=o->nobj) {
         if(has_oname(o)&&!strncmp(ONAME(o),"step13-",7)) {
+            assert(o->o_socket_capacity==1&&o->o_sockets[0].property==EP_STR_III
+                   &&o->o_sockets[0].value==4&&!o->o_sockets[0].known);
             assert(o->o_enh_props==(OEP_FIRE|OEP_PRIMORDIAL));
             assert(o->o_enh_known==OEP_FIRE&&o->o_enh_quality==OQ_EXCEPTIONAL);
             assert(o->o_enh_flags==OEF_QUALITY_KNOWN);++found;
@@ -548,6 +621,8 @@ fixture_named(struct obj *chain, const char *name, int where)
     return count;
 }
 
+#include "test_step15d_game.c"
+
 void
 step13_game_fixture(boolean resuming)
 {
@@ -557,6 +632,10 @@ step13_game_fixture(boolean resuming)
     int n,local_monster=0,migrating_monster=0;
     _set_error_mode(_OUT_TO_STDERR);
     _set_abort_behavior(0,_WRITE_ABORT_MSG|_CALL_REPORTFAULT);
+    if (getenv("STEP15D_GAME_SEED") || getenv("STEP15D_GAME_CHECK")) {
+        if (!resuming || getenv("STEP15D_GAME_CHECK")) step15d_game_fixture(resuming);
+        return;
+    }
     /* Step 15C inspects unmodified production saves with this diagnostic
      * executable. This is read-only verification, not item acquisition. */
     if (getenv("STEP15C_GAME_CHECK")) {

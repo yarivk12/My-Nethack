@@ -32,17 +32,26 @@ enum enhance_use {
 #define OEP_SLOW_DIGEST 0x00400000U
 #define OEP_MAGIC_RES   0x00800000U
 #define OEP_REFLECTION  0x01000000U
-#define OEP_ALL         0x01ffff7fU
+#define OEP_STR_I       (1ULL << 25)
+#define OEP_STR_II      (1ULL << 26)
+#define OEP_STR_III     (1ULL << 27)
+#define OEP_STR_IV      (1ULL << 28)
+#define OEP_DEX_I       (1ULL << 29)
+#define OEP_DEX_II      (1ULL << 30)
+#define OEP_DEX_III     (1ULL << 31)
+#define OEP_DEX_IV      (1ULL << 32)
+#define OEP_ATTRIBUTES  (0xffULL << 25)
+#define OEP_ALL         (0x01ffff7fULL | OEP_ATTRIBUTES)
 #define OEP_ELEMENTS   0x00007f07U
 #define OEP_WORN        0x01ff8070U
 #define OEF_QUALITY_KNOWN 0x01U
 
 boolean enhancement_eligible(const struct obj *);
-boolean enhancement_property_allowed(const struct obj *, uint32);
+boolean enhancement_property_allowed(const struct obj *, uint64);
 void enhancement_normalize(struct obj *);
-boolean enhancement_set(struct obj *, uint32, enum enhancement_quality, boolean);
+boolean enhancement_set(struct obj *, uint64, enum enhancement_quality, boolean);
 void enhancement_identify(struct obj *);
-uint32 enhancement_visible_props(const struct obj *, boolean);
+uint64 enhancement_visible_props(const struct obj *, boolean);
 int enhancement_quality_bonus(const struct obj *, enum enhance_use);
 int enhancement_hit_bonus(const struct obj *, const struct obj *,
                           const struct monst *, enum enhance_use);
@@ -63,6 +72,8 @@ long enhancement_price(const struct obj *, long);
 void enhancement_rebill(struct obj *); /* existing shop codec and pricing */
 void enhancement_prefix(const struct obj *, boolean, char *, size_t);
 void enhancement_suffix(const struct obj *, boolean, char *, size_t);
+void enhancement_quality_impact(const struct obj *, char *, size_t);
+void enhancement_property_impact(const struct obj *, int, int, char *, size_t);
 boolean enhancement_confers(const struct obj *, int);
 boolean enhancement_mon_confers(const struct monst *, int);
 boolean enhancement_elemental_contact(const struct obj *, const struct obj *, enum enhance_use);
@@ -78,11 +89,47 @@ struct obj *enhancement_mkobj_at(char, coordxy, coordxy, boolean);
 struct obj *enhancement_mksobj_at(int, coordxy, coordxy, boolean, boolean);
 struct monst *enhancement_makemon(struct permonst *, coordxy, coordxy, mmflags_nht);
 struct enhancement_entry {
-    uint32 bit;
+    uint64 bit;
     int tier, native_property, element, dice, sides;
     const char *prefix, *suffix;
+    int stat; /* zero: no static value; ES_* otherwise */
 };
-extern const struct enhancement_entry enhancement_catalog[24];
+extern const struct enhancement_entry enhancement_catalog[32];
 struct enhancement_band { int gate, standard, fine, presence, two, tier[4]; };
 const struct enhancement_band *enhancement_depth_band(int);
+/* Canonical identity: ordinary entries are 1-based catalog indices. */
+enum equipment_property {
+    EP_NONE, EP_FIRE, EP_COLD, EP_SHOCK, EP_TRUEFLIGHT,
+    EP_FIRE_II, EP_COLD_II, EP_SHOCK_II,
+    EP_FIRE_III, EP_COLD_III, EP_SHOCK_III, EP_PRIMORDIAL,
+    EP_SEARCHING, EP_WARNING, EP_STEALTH,
+    EP_FIRE_RES, EP_COLD_RES, EP_SHOCK_RES, EP_POISON_RES,
+    EP_SPEED, EP_REGEN, EP_DISPLACED, EP_SLOW_DIGEST, EP_MAGIC_RES, EP_REFLECTION,
+    EP_STR_I, EP_STR_II, EP_STR_III, EP_STR_IV,
+    EP_DEX_I, EP_DEX_II, EP_DEX_III, EP_DEX_IV,
+    EP_HP_I, EP_HP_III, EP_HP_IV, EP_PROT_I, EP_PROT_III, EP_PROT_IV,
+    EP_CON_I, EP_CON_II, EP_CON_III, EP_CON_IV,
+    EP_MANA_I, EP_MANA_II, EP_MANA_III, EP_MANA_IV,
+    EP_INT_I, EP_INT_II, EP_INT_III, EP_INT_IV,
+    EP_WIS_I, EP_WIS_II, EP_WIS_III, EP_WIS_IV,
+    EP_CHA_I, EP_CHA_II, EP_CHA_III, EP_CHA_IV,
+    EP_SLEEP_RES, EP_SEE_INVIS, EP_JUMPING, EP_BREATHING, EP_TELEPATHY,
+    EP_TELEPORT_CONTROL, EP_POLYMORPH_CONTROL, EP_FLYING, EP_COUNT
+};
+enum equipment_stat { ES_NONE, ES_STR, ES_DEX, ES_CON, ES_INT, ES_WIS,
+                      ES_CHA, ES_HP, ES_MANA, ES_PROTECTION };
+const struct enhancement_entry *equipment_property(int);
+const char *equipment_property_name(int);
+int socket_capacity(const struct obj *);
+void socket_init(struct obj *);
+void socket_normalize(struct obj *);
+int socket_count(const struct obj *);
+int socket_gem_tier(int);
+int socket_candidates(const struct obj *, int, int, int *);
+void socket_label(const struct obj *, int, char *, size_t);
+int equipment_bonus(const struct obj *, int);
+int equipment_hero_bonus(int);
+void equipment_refresh(void);
+void equipment_mon_refresh(struct monst *);
+int doinspect(void);
 #endif

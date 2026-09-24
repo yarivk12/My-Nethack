@@ -187,6 +187,7 @@ restobj(NHFILE *nhfp, struct obj *otmp)
     unsigned omid = 0;
 
     Sfi_obj(nhfp, otmp, "obj");
+    socket_normalize(otmp);
     otmp->lua_ref_cnt = 0;
     /* next object pointers are invalid; otmp->cobj needs to be left
        as is--being non-null is key to restoring container contents */

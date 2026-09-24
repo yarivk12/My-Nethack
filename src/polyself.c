@@ -214,6 +214,7 @@ polyman(const char *fmt, const char *arg)
     set_uasmon();
 
     u.mh = u.mhmax = 0;
+    u.equipment_mh = 0;
     u.mtimedone = 0;
     skinback(FALSE);
     u.uundetected = 0;
@@ -384,7 +385,7 @@ newman(void)
      * and the extra got multiplied by 2 or 3.  Repeat the level
      * drain and polyself steps until out of lifesaving capability.)
      */
-    hpmax = u.uhpmax;
+    hpmax = u.uhpmax - u.equipment_hp;
     for (i = 0; i < oldlvl; i++)
         hpmax -= (int) u.uhpinc[i];
     /* hpmax * rn1(4,8) / 10; 0.95*hpmax on average */
@@ -394,12 +395,12 @@ newman(void)
     if (hpmax < u.ulevel)
         hpmax = u.ulevel; /* min of 1 HP per level */
     /* retain same proportion for current HP; u.uhp * hpmax / u.uhpmax */
-    u.uhp = rounddiv((long) u.uhp * (long) hpmax, u.uhpmax);
-    setuhpmax(hpmax, TRUE); /* might reduce u.uhp */
+    u.uhp = rounddiv((long) u.uhp * (long) (hpmax + u.equipment_hp), u.uhpmax);
+    setuhpmax(hpmax + u.equipment_hp, TRUE); /* might reduce u.uhp */
     /*
      * Do the same for spell power.
      */
-    enmax = u.uenmax;
+    enmax = u.uenmax - u.equipment_pw;
     for (i = 0; i < oldlvl; i++)
         enmax -= (int) u.ueninc[i];
     enmax = rounddiv((long) enmax * (long) rn1(4, 8), 10);
@@ -407,9 +408,9 @@ newman(void)
         enmax += newpw();
     if (enmax < u.ulevel)
         enmax = u.ulevel;
-    u.uen = rounddiv((long) u.uen * (long) enmax,
+    u.uen = rounddiv((long) u.uen * (long) (enmax + u.equipment_pw),
                      ((u.uenmax < 1) ? 1 : u.uenmax));
-    u.uenmax = enmax;
+    u.uenmax = enmax + u.equipment_pw;
     /* [should alignment record be tweaked too?] */
 
     u.uhunger = rn1(500, 500);
@@ -871,6 +872,8 @@ polymon(int mntmp)
             u.mhmax *= 3;
     }
     u.mh = u.mhmax;
+    u.equipment_mh = 0;
+    equipment_refresh();
 
     if (u.ulevel < mlvl) {
         /* Low level characters can't become high level monsters for long */

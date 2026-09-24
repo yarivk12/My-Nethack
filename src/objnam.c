@@ -1302,6 +1302,15 @@ doname_base(
     /* size_t cast: convert signed ptrdiff_t to unsigned size_t */
     bpspaceleft = (size_t) (bp_end - bp_eos);
 
+    if (socket_capacity(obj)) {
+        /* Reserve the physical marker even when a player name fills xname. */
+        if (bpspaceleft < 6) {
+            bp_end[-6] = '\0';
+            ConcUpdate(bp);
+        }
+        ConcatF2(bp, 0, " [%d/%u]", socket_count(obj), obj->o_socket_capacity);
+    }
+
     if (iflags.override_ID) {
         known = dknown = cknown = bknown = lknown = TRUE;
     } else {
@@ -1876,6 +1885,9 @@ not_fully_identified(struct obj *otmp)
         return TRUE;
     if (otmp->oartifact && undiscovered_artifact(otmp->oartifact))
         return TRUE;
+    if ((otmp->o_sockets[0].property && !otmp->o_sockets[0].known)
+        || (otmp->o_sockets[1].property && !otmp->o_sockets[1].known))
+        return FALSE;
     if (enhancement_eligible(otmp)
         && ((otmp->o_enh_props & ~otmp->o_enh_known)
             || (otmp->o_enh_quality && !(otmp->o_enh_flags & OEF_QUALITY_KNOWN))))

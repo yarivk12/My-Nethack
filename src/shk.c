@@ -2968,7 +2968,7 @@ get_cost(
                 break;
             }
             tmp = (long) objects[i].oc_cost;
-            if (obj->o_enh_props || obj->o_enh_quality)
+            if (obj->o_enh_props || obj->o_enh_quality || socket_count(obj))
                 tmp = enhancement_price(obj, tmp);
         } else if (oid_price_adjustment(obj, obj->o_id) > 0) {
             /* unid'd, arbitrarily impose surcharge: tmp *= 4/3 */
@@ -4403,7 +4403,7 @@ getprice(struct obj *obj, boolean shk_buying)
             tmp /= 2L;
         break;
     }
-    return (obj->o_enh_props || obj->o_enh_quality)
+    return (obj->o_enh_props || obj->o_enh_quality || socket_count(obj))
                ? enhancement_price(obj, tmp) : tmp;
 }
 

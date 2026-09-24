@@ -2534,6 +2534,8 @@ find_ac(void)
     if (u.mith_words & MITH_DIVIDING)
         uac -= 3;
 
+    uac -= equipment_hero_bonus(ES_PROTECTION);
+
     /* put a cap on armor class [5.0: was +127,-128, now reduced to +/- 99 */
     if (abs(uac) > AC_MAX)
         uac = sgn(uac) * AC_MAX;

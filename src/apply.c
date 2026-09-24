@@ -4406,13 +4406,14 @@ static boolean forge_fail_construction;
 struct forge_state {
     boolean present, proof;
     int quality, spe, buc, eroded, eroded2;
-    uint32 props;
+    uint64 props;
+    uint8 values[8];
 };
 
 staticfn void
 forge_gather(struct forge_state *state, struct obj *obj)
 {
-    int buc = bcsign(obj);
+    int i, buc = bcsign(obj);
 
     if (!state->present) {
         state->quality = obj->o_enh_quality;
@@ -4429,13 +4430,16 @@ forge_gather(struct forge_state *state, struct obj *obj)
         state->eroded2 = min(state->eroded2, (int) obj->oeroded2);
     }
     state->props |= obj->o_enh_props;
+    for (i = 0; i < 8; ++i)
+        if (obj->o_enh_props & enhancement_catalog[24 + i].bit)
+            state->values[i] = max(state->values[i], obj->o_enh_values[i]);
     state->proof |= obj->oerodeproof;
 }
 
 staticfn void
 forge_inherit(struct obj *obj, const struct forge_state *state)
 {
-    uint32 props = 0;
+    uint64 props = 0;
     int i, best, count, low;
 
     if (!state->present)
@@ -4455,6 +4459,11 @@ forge_inherit(struct obj *obj, const struct forge_state *state)
             if (best >= 0)
                 props |= enhancement_catalog[best].bit;
         }
+        /* Inheritance is assignment, never acquisition RNG. */
+        obj->o_enh_props = props;
+        for (i = 0; i < 8; ++i)
+            obj->o_enh_values[i] = (props & enhancement_catalog[24 + i].bit)
+                                    ? state->values[i] : 0;
         (void) enhancement_set(obj, props,
                               (enum enhancement_quality) state->quality, FALSE);
     }
@@ -4766,11 +4775,263 @@ forge_confirm(const struct forge_recipe *r, struct forge_allocation *a, int n)
     return forge_menu_pick(win, "Confirm crafting?", (long *) 0) == 1;
 }
 
+/* Affixing preflight is pure: no splitting, knowledge changes or RNG. */
+staticfn boolean
+affix_target(struct obj *obj, struct obj *hammer)
+{
+    return obj && obj != hammer && carried(obj) && !obj->unpaid
+        && obj->quan > 0 && socket_capacity(obj) && obj->o_socket_capacity
+        && obj->o_socket_capacity <= socket_capacity(obj)
+        && !(obj->owornmask & (W_WEP | W_ARMOR | W_RING | W_AMUL))
+        && !(u.twoweap && (obj->owornmask & W_SWAPWEP));
+}
+
+staticfn boolean
+affix_known_gem(struct obj *gem)
+{
+    return gem->dknown && objects[gem->otyp].oc_name_known;
+}
+
+staticfn boolean
+affix_gem(struct obj *gem, struct obj *target, int removed)
+{
+    int tier, i;
+    if (!gem || !carried(gem) || gem->unpaid || gem->quan < 1
+        || gem->oclass != GEM_CLASS
+        || !(socket_gem_tier(gem->otyp) || objects[gem->otyp].oc_material == GLASS))
+        return FALSE;
+    if (!affix_known_gem(gem)) return TRUE;
+    tier = socket_gem_tier(gem->otyp);
+    if (!tier) return FALSE;
+    if (removed >= 0) return socket_candidates(target, tier, removed, 0) > 0;
+    /* Full target: keep a tier if ANY selectable replacement can accept it. */
+    for (i = 0; i < target->o_socket_capacity; ++i)
+        if (socket_candidates(target, tier, i, 0)) return TRUE;
+    return FALSE;
+}
+
+staticfn boolean
+affix_room(struct obj *target, struct obj *gem, int slot)
+{
+    struct obj output = *target, *obj;
+    int id, v, slots = inv_cnt(FALSE) - (gem->quan == 1);
+    if (target->quan == 1 || slots < invlet_basic) return TRUE;
+    output.quan = 1;
+    /* Every possible result must be representable, including replacement
+     * failure.  Unknown material must not change this test's visibility. */
+    for (id = EP_NONE; id < EP_COUNT; ++id) {
+        const struct enhancement_entry *e = equipment_property(id);
+        int pool[EP_COUNT], n, k;
+        if (id == EP_NONE && !target->o_sockets[slot].property) continue;
+        if (id) {
+            if (affix_known_gem(gem) && e->tier != socket_gem_tier(gem->otyp))
+                continue;
+            /* Unknown gems use all tiers: capacity must not leak identity. */
+            n = socket_candidates(target, e->tier, slot, pool);
+            for (k = 0; k < n && pool[k] != id; ++k) ;
+            if (k == n) continue;
+        }
+        for (v = e && e->stat ? e->dice : 0;
+             v <= (e && e->stat ? e->dice * e->sides : 0); ++v) {
+            output.o_sockets[slot].property = (uint8) id;
+            output.o_sockets[slot].known = id != 0;
+            output.o_sockets[slot].value = (uint8) v;
+            for (obj = gi.invent; obj; obj = obj->nobj)
+                if (obj != gem && mergable(obj, &output)) break;
+            if (!obj) return FALSE;
+        }
+    }
+    return TRUE;
+}
+
+staticfn int
+affix_first_empty(const struct obj *target)
+{
+    int i;
+    for (i = 0; i < target->o_socket_capacity; ++i)
+        if (!target->o_sockets[i].property)
+            return i;
+    return -1;
+}
+
+/* Continuation uses the same per-gem and pack-capacity checks as the normal
+ * selection path. gi.invent contains only directly carried objects. */
+staticfn boolean
+affix_action_available(struct obj *target, struct obj *hammer)
+{
+    struct obj *gem;
+    int first = affix_first_empty(target), slot;
+
+    if (!affix_target(target, hammer))
+        return FALSE;
+    for (gem = gi.invent; gem; gem = gem->nobj) {
+        if (first >= 0) {
+            if (affix_gem(gem, target, first)
+                && affix_room(target, gem, first))
+                return TRUE;
+        } else {
+            for (slot = 0; slot < target->o_socket_capacity; ++slot)
+                if (affix_gem(gem, target, slot)
+                    && affix_room(target, gem, slot))
+                    return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+staticfn int
+affix_chance(struct obj *hammer, int tier)
+{
+    return 80 - 10 * tier + 10 * bcsign(hammer);
+}
+
+static unsigned affix_last_target_id;
+static boolean affix_last_success;
+
+staticfn int
+affix_commit(struct obj *hammer, unsigned target_id, unsigned gem_id, int slot)
+{
+    struct obj *target = forge_find(target_id), *gem = forge_find(gem_id), *unit;
+    int i, pool[EP_COUNT], n, tier;
+    boolean replacement, success = FALSE, split = FALSE;
+    if (!hammer || !carried(hammer) || hammer->otyp != WAR_HAMMER
+        || !IS_FORGE(levl[u.ux][u.uy].typ) || Confusion || Stunned || ACURR(A_STR) < 4
+        || !affix_target(target, hammer) || slot < 0 || slot >= target->o_socket_capacity
+        || !affix_gem(gem, target, slot)) return ECMD_OK;
+    for (i = 0; i < target->o_socket_capacity; ++i)
+        if (!target->o_sockets[i].property) break;
+    if (i < target->o_socket_capacity && slot != i) return ECMD_OK;
+    if (!affix_room(target, gem, slot)) {
+        You("have no room in your pack for the socketed item.");
+        return ECMD_OK;
+    }
+    replacement = target->o_sockets[slot].property != 0;
+    unit = target;
+    /* COMMIT: replacement always separates one physical weapon now. */
+    if (replacement) {
+        if (target->quan > 1) { unit = splitobj(target, 1L); split = TRUE; }
+        memset(&unit->o_sockets[slot], 0, sizeof unit->o_sockets[slot]);
+    }
+    tier = socket_gem_tier(gem->otyp);
+    n = tier ? socket_candidates(unit, tier, slot, pool) : 0;
+    if (n && rn2(100) < affix_chance(hammer, tier)) {
+        int id = pool[rn2(n)];
+        const struct enhancement_entry *e = equipment_property(id);
+        int value = e->stat ? d(e->dice, e->sides) : 0;
+        if (!replacement && target->quan > 1) {
+            unit = splitobj(target, 1L); split = TRUE;
+        }
+        unit->o_sockets[slot].property = (uint8) id;
+        unit->o_sockets[slot].value = (uint8) value;
+        unit->o_sockets[slot].known = 1;
+        success = TRUE;
+    }
+    /* Gem and target cannot alias. Consume before adding split output so
+     * a last gem frees its pack slot; no late input or rejection remains. */
+    useup(gem);
+    if (split) { obj_extract_self(unit); unit = addinv(unit); }
+    if (success) {
+        char label[100];
+        socket_label(unit, slot, label, sizeof label);
+        pline("The socketing succeeds: %s.", label);
+    } else pline("The socketing fails.");
+    affix_last_target_id = unit->o_id;
+    affix_last_success = success;
+    update_inventory(); encumber_msg();
+    return ECMD_TIME;
+}
+
+staticfn int
+affix_attempt(struct obj *hammer, unsigned target_id)
+{
+    struct obj *obj, *target, *gem;
+    unsigned gem_id;
+    int choice, i, slot = -1;
+    winid win;
+    char buf[BUFSZ], label[100];
+
+    target = forge_find(target_id);
+    if (!affix_target(target, hammer))
+        return ECMD_OK;
+    slot = affix_first_empty(target);
+    win = create_nhwindow(NHW_MENU); start_menu(win, MENU_BEHAVE_STANDARD);
+    for (obj = gi.invent, i = 1; obj; obj = obj->nobj, ++i)
+        if (affix_gem(obj, target, slot))
+            forge_menu_line(win, i, obj->invlet, forge_inventory_name(obj));
+    choice = forge_menu_pick(win, "Choose a gemstone", 0);
+    if (!choice) return ECMD_OK;
+    for (gem = gi.invent, i = 1; gem && i < choice; gem = gem->nobj, ++i) ;
+    if (!affix_gem(gem, target, slot)) return ECMD_OK;
+    gem_id = gem->o_id;
+    if (slot < 0) {
+        win = create_nhwindow(NHW_MENU); start_menu(win, MENU_BEHAVE_STANDARD);
+        for (i = 0; i < target->o_socket_capacity; ++i) {
+            socket_label(target, i, label, sizeof label);
+            Snprintf(buf, sizeof buf, "Socket %d: %s", i + 1, label);
+            forge_menu_line(win, i + 1, 0, buf);
+        }
+        slot = forge_menu_pick(win, "Choose a socket to replace", 0) - 1;
+        if (slot < 0) return ECMD_OK;
+    }
+    if (!affix_gem(gem, target, slot) || !affix_room(target, gem, slot)) {
+        pline("This socketing cannot be completed."); return ECMD_OK;
+    }
+    win = create_nhwindow(NHW_MENU); start_menu(win, MENU_BEHAVE_STANDARD);
+    if (affix_known_gem(gem) && hammer->bknown)
+        Snprintf(buf, sizeof buf, "Success chance: %d%%", affix_chance(hammer, socket_gem_tier(gem->otyp)));
+    else Snprintf(buf, sizeof buf, "Success chance: unknown");
+    forge_menu_line(win, 0, 0, buf);
+    if (target->o_sockets[slot].property)
+        forge_menu_line(win, 0, 0, "The old socket will be destroyed, even if socketing fails.");
+    forge_menu_line(win, 1, 'y', "Socket gemstone");
+    forge_menu_line(win, 2, 'n', "Cancel");
+    if (forge_menu_pick(win, "Confirm socketing?", 0) != 1) return ECMD_OK;
+    return affix_commit(hammer, target_id, gem_id, slot);
+}
+
+staticfn int
+affix_menu(struct obj *hammer)
+{
+    struct obj *obj, *target;
+    unsigned target_id;
+    int choice, i, result, attempt;
+    winid win;
+    const char *prompt;
+    win = create_nhwindow(NHW_MENU); start_menu(win, MENU_BEHAVE_STANDARD);
+    for (obj = gi.invent, i = 1; obj; obj = obj->nobj, ++i)
+        if (affix_target(obj, hammer))
+            forge_menu_line(win, i, obj->invlet, forge_inventory_name(obj));
+    choice = forge_menu_pick(win, "Choose equipment to socket", 0);
+    if (!choice) return ECMD_OK;
+    for (target = gi.invent, i = 1; target && i < choice; target = target->nobj, ++i) ;
+    if (!affix_target(target, hammer)) return ECMD_OK;
+    target_id = target->o_id;
+    result = ECMD_OK;
+    for (;;) {
+        attempt = affix_attempt(hammer, target_id);
+        if (attempt != ECMD_TIME)
+            return result;
+        result = attempt;
+        target_id = affix_last_target_id;
+        target = forge_find(target_id);
+        if (!target || !affix_action_available(target, hammer))
+            return result;
+        if (!affix_last_success)
+            prompt = "Try again?";
+        else
+            prompt = affix_first_empty(target) >= 0
+                         ? "Socket another gem?" : "Replace a gem?";
+        if (yn_function(prompt, "yn", 'n', TRUE) != 'y')
+            return result;
+    }
+}
+
 staticfn int
 forge_menu(struct obj *hammer)
 {
     static const char *const categories[] = { "Weapons", "Armor", "Tools", "Other" };
-    int i, category, recipe, present[4] = { 0, 0, 0, 0 }, n, result;
+    int i, category, recipe, present[4] = { 0, 0, 0, 0 }, available[4],
+        category_letter, n, result;
     struct obj *obj;
     struct forge_allocation *a;
     const struct forge_recipe *r;
@@ -4784,28 +5045,53 @@ forge_menu(struct obj *hammer)
     win = create_nhwindow(NHW_MENU);
     start_menu(win, MENU_BEHAVE_STANDARD);
     forge_menu_line(win, 1, 'f', "Forge an item");
-    if (!forge_menu_pick(win, "Use the forge", (long *) 0))
-        return ECMD_OK;
+    forge_menu_line(win, 2, 's', "Socket gemstone");
+    i = forge_menu_pick(win, "Use the forge", (long *) 0);
+    if (!i) return ECMD_OK;
+    if (i == 2) return affix_menu(hammer);
     for (;;) {
+        (void) memset(available, 0, sizeof available);
+        for (i = 0; i < SIZE(forge_recipes); ++i)
+            if (forge_available(&forge_recipes[i], hammer))
+                ++available[forge_category(forge_recipes[i].output)];
         win = create_nhwindow(NHW_MENU);
         start_menu(win, MENU_BEHAVE_STANDARD);
-        for (i = 0; i < 4; ++i)
-            forge_menu_line(win, present[i] ? i + 1 : 0, 0, categories[i]);
+        category_letter = 0;
+        for (i = 0; i < 4; ++i) {
+            if (present[i]) {
+                Sprintf(buf, "%s (%d)", categories[i], available[i]);
+                forge_menu_line(win, i + 1, (char) ('a' + category_letter++), buf);
+            } else {
+                forge_menu_line(win, 0, 0, categories[i]);
+            }
+        }
         category = forge_menu_pick(win, "Choose a category", (long *) 0) - 1;
         if (category < 0)
             return ECMD_OK;
         for (;;) {
+            int unavailable = present[category] - available[category];
+            int selectable = 0;
             win = create_nhwindow(NHW_MENU);
             start_menu(win, MENU_BEHAVE_STANDARD);
-            for (i = 0; i < SIZE(forge_recipes); ++i) {
-                r = &forge_recipes[i];
-                if (forge_category(r->output) != category)
-                    continue;
-                forge_formula(r, formula);
-                Sprintf(buf, "%s - %s [%s]", OBJ_NAME(objects[r->output]),
-                        formula, forge_available(r, hammer) ? "Available"
-                                                           : "Unavailable");
-                forge_menu_line(win, i + 1, 0, buf);
+            for (i = 0; i < SIZE(forge_recipes); ++i)
+                if (forge_category(forge_recipes[i].output) == category
+                    && forge_available(&forge_recipes[i], hammer)) {
+                    r = &forge_recipes[i];
+                    forge_formula(r, formula);
+                    Sprintf(buf, "%s - %s", OBJ_NAME(objects[r->output]), formula);
+                    forge_menu_line(win, i + 1, (char) ('a' + selectable++), buf);
+                }
+            if (unavailable) {
+                forge_menu_line(win, 0, 0, "Not available:");
+                for (i = 0; i < SIZE(forge_recipes); ++i) {
+                    r = &forge_recipes[i];
+                    if (forge_category(r->output) != category
+                        || forge_available(r, hammer))
+                        continue;
+                    forge_formula(r, formula);
+                    Sprintf(buf, "- %s - %s", OBJ_NAME(objects[r->output]), formula);
+                    forge_menu_line(win, 0, 0, buf);
+                }
             }
             recipe = forge_menu_pick(win, categories[category], (long *) 0) - 1;
             if (recipe < 0)

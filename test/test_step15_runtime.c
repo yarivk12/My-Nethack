@@ -392,6 +392,296 @@ static void authored_trap_rejection(void) {
     nhl_done(L);
     puts("PASS 12 authored trapped-square rejections: coordinate/selection/replace/map; trap and terrain metadata preserved; ordinary terrain and untrapped forge controls");
 }
+static char overview_screen[200000];
+static void overview_putstr(winid win, int attr, const char *s) {
+    (void) win; (void) attr;
+    assert(strlen(overview_screen) + strlen(s) + 2 < sizeof overview_screen);
+    strcat(overview_screen, s); strcat(overview_screen, "\n");
+}
+static void overview_start(winid win, unsigned long behavior) {
+    (void) win; (void) behavior;
+}
+static void overview_end(winid win, const char *s) {
+    (void) win; (void) s;
+}
+static void overview_add(winid win, const glyph_info *glyph, const ANY_P *id,
+                         char letter, char group, int attr, int color,
+                         const char *s, unsigned int flags) {
+    (void) glyph; (void) id; (void) letter; (void) group;
+    (void) color; (void) flags;
+    overview_putstr(win, attr, s);
+}
+static int overview_select(winid win, int how, MENU_ITEM_P **picked) {
+    (void) win; (void) how;
+    *picked = NULL;
+    return -1;
+}
+static void overview_window_setup(void) {
+    step15b_window_setup();
+    windowprocs.win_putstr = overview_putstr;
+    windowprocs.win_start_menu = overview_start;
+    windowprocs.win_end_menu = overview_end;
+    windowprocs.win_add_menu = overview_add;
+    windowprocs.win_select_menu = overview_select;
+}
+static int overview_occurrences(const char *text, const char *needle) {
+    int n = 0;
+    size_t len = strlen(needle);
+    while ((text = strstr(text, needle)) != NULL) {
+        ++n;
+        text += len;
+    }
+    return n;
+}
+static void overview_case(boolean forge1, boolean forge2) {
+    int x, y;
+    for (x = 1; x < COLNO; ++x)
+        for (y = 0; y < ROWNO; ++y) {
+            svl.lastseentyp[x][y] = ROOM;
+            if (x == 20 || x == 21)
+                levl[x][y].typ = ROOM;
+        }
+    if (forge1) {
+        levl[20][10].typ = FORGE;
+        svl.lastseentyp[20][10] = FORGE;
+    }
+    if (forge2) {
+        levl[21][10].typ = FORGE;
+        svl.lastseentyp[21][10] = FORGE;
+    }
+    overview_screen[0] = '\0';
+    show_overview(0, 0);
+}
+static void overview_save_restore(void) {
+    NHFILE *f;
+    int fd;
+
+    f = get_freeing_nhfile();
+    fd = open("step15-overview.tmp", O_CREAT | O_TRUNC | O_WRONLY | O_BINARY,
+              _S_IREAD | _S_IWRITE);
+    file_mode(f, WRITING | FREEING, fd);
+    save_dungeon(f, TRUE, FALSE);
+    close_nhfile(f);
+
+    svm.mapseenchn->flags.forge = 0;
+    f = get_freeing_nhfile();
+    fd = open("step15-overview.tmp", O_RDONLY | O_BINARY);
+    file_mode(f, READING, fd);
+    restore_dungeon(f);
+    close_nhfile(f);
+    assert(svm.mapseenchn && svm.mapseenchn->flags.forge);
+}
+static void overview_tests(void) {
+    init_mapseen(&u.uz);
+    overview_window_setup();
+    overview_case(TRUE, FALSE);
+    assert(overview_occurrences(overview_screen, "Forge") == 1);
+    overview_save_restore();
+    overview_screen[0] = '\0';
+    show_overview(0, 0);
+    assert(overview_occurrences(overview_screen, "Forge") == 1);
+    overview_case(TRUE, TRUE);
+    assert(overview_occurrences(overview_screen, "Forge") == 1);
+    overview_case(FALSE, FALSE);
+    assert(!strstr(overview_screen, "forge")
+           && !strstr(overview_screen, "Forge"));
+    step15b_window_setup();
+    puts("PASS #overview forge presence, multiple-forge deduplication and stale-clear cases");
+}
+static char inspect_screen[200000];
+static struct obj *inspect_selected;
+static winid inspect_window(int type) { (void) type; return 1; }
+static void inspect_destroy(winid win) { (void) win; }
+static void inspect_display(winid win, boolean block) { (void) win; (void) block; }
+static void inspect_putstr(winid win, int attr, const char *s) {
+    (void) win; (void) attr;
+    assert(strlen(inspect_screen) + strlen(s) + 2 < sizeof inspect_screen);
+    strcat(inspect_screen, s); strcat(inspect_screen, "\n");
+}
+static void inspect_start(winid win, unsigned long behavior) {
+    (void) win; (void) behavior;
+}
+static void inspect_end(winid win, const char *s) {
+    (void) win; (void) s;
+}
+static void inspect_add(winid win, const glyph_info *glyph, const ANY_P *id,
+                        char letter, char group, int attr, int color,
+                        const char *s, unsigned int flags) {
+    (void) win; (void) glyph; (void) letter; (void) group;
+    (void) attr; (void) color; (void) s; (void) flags;
+    inspect_selected = id->a_obj;
+}
+static int inspect_select(winid win, int how, MENU_ITEM_P **picked) {
+    (void) win;
+    assert(how == PICK_ONE && inspect_selected);
+    *picked = (menu_item *) alloc(sizeof **picked);
+    (*picked)->item.a_obj = inspect_selected;
+    (*picked)->count = 1;
+    return 1;
+}
+static void inspect_window_setup(void) {
+    step15b_window_setup();
+    windowprocs.win_create_nhwindow = inspect_window;
+    windowprocs.win_destroy_nhwindow = inspect_destroy;
+    windowprocs.win_display_nhwindow = inspect_display;
+    windowprocs.win_putstr = inspect_putstr;
+    windowprocs.win_start_menu = inspect_start;
+    windowprocs.win_end_menu = inspect_end;
+    windowprocs.win_add_menu = inspect_add;
+    windowprocs.win_select_menu = inspect_select;
+}
+static uint64 inspect_allowed(const struct obj *obj) {
+    uint64 allowed = 0;
+    int i;
+    for (i = 0; i < SIZE(enhancement_catalog); ++i)
+        if (enhancement_property_allowed(obj, enhancement_catalog[i].bit))
+            allowed |= enhancement_catalog[i].bit;
+    return allowed;
+}
+static void inspect_run(struct obj *obj) {
+    struct obj before = *obj;
+    boolean old_known = objects[obj->otyp].oc_name_known;
+
+    inspect_screen[0] = '\0'; inspect_selected = 0;
+    assert(doinspect() == ECMD_OK && inspect_selected == obj);
+    assert(obj->known == before.known && obj->dknown == before.dknown
+           && obj->bknown == before.bknown && obj->rknown == before.rknown
+           && obj->cknown == before.cknown && obj->lknown == before.lknown);
+    assert(obj->o_enh_props == before.o_enh_props
+           && obj->o_enh_known == before.o_enh_known
+           && obj->o_enh_quality == before.o_enh_quality
+           && obj->o_enh_flags == before.o_enh_flags
+           && obj->o_socket_capacity == before.o_socket_capacity);
+    assert(!memcmp(obj->o_sockets, before.o_sockets, sizeof obj->o_sockets)
+           && !memcmp(obj->o_enh_values, before.o_enh_values,
+                      sizeof obj->o_enh_values));
+    assert(objects[obj->otyp].oc_name_known == old_known);
+}
+static struct obj *inspect_item(int typ) {
+    struct obj *obj;
+    assert(!gi.invent);
+    obj = mksobj(typ, FALSE, FALSE); assert(obj);
+    obj = addinv(obj); assert(obj);
+    obj->known = obj->dknown = obj->bknown = obj->rknown = 0;
+    obj->cknown = obj->lknown = 0;
+    obj->o_enh_props = obj->o_enh_known = 0;
+    obj->o_enh_quality = OQ_STANDARD; obj->o_enh_flags = 0;
+    socket_init(obj);
+    return obj;
+}
+static void inspect_discard(struct obj *obj) {
+    assert(gi.invent == obj); freeinv(obj); obfree(obj, NULL);
+}
+static void inspect_tests(void) {
+    struct obj *obj;
+    char expected[BUFSZ];
+
+    inspect_window_setup();
+    obj = inspect_item(LOW_BOOTS);
+    inspect_run(obj);
+    assert(strstr(inspect_screen,
+                  "Quality:\n    unknown\n\nEnhancements:\n    none known\n\nSockets: 0/1\n    Socket 1: empty\n"));
+    assert(!strstr(inspect_screen, "Gemstone sockets:"));
+    fully_identify_obj(obj);
+    assert(obj->o_enh_props == 0 && obj->o_enh_known == inspect_allowed(obj)
+           && (obj->o_enh_flags & OEF_QUALITY_KNOWN));
+    inspect_run(obj);
+    assert(strstr(inspect_screen,
+                  "Quality:\n    Standard - no additional quality bonus\n\nEnhancements:\n    none\n"));
+    inspect_discard(obj);
+
+    obj = inspect_item(LOW_BOOTS);
+    assert(enhancement_set(obj, OEP_FIRE_RES, OQ_FINE, FALSE));
+    inspect_run(obj);
+    assert(strstr(inspect_screen, "Quality:\n    unknown\n\nEnhancements:\n    none known\n"));
+    obj->o_enh_known = OEP_FIRE_RES;
+    inspect_run(obj);
+    assert(strstr(inspect_screen,
+                  "Fire Resistance - grants fire resistance while worn\n")
+           && !strstr(inspect_screen, "Cold Resistance")
+           && !strstr(inspect_screen, "none known"));
+    fully_identify_obj(obj);
+    assert(obj->o_enh_known == inspect_allowed(obj));
+    inspect_run(obj);
+    assert(strstr(inspect_screen,
+                  "Quality:\n    Fine - +1 AC while worn\n")
+           && strstr(inspect_screen,
+                     "Fire Resistance - grants fire resistance while worn\n"));
+    inspect_discard(obj);
+
+    obj = inspect_item(DAGGER);
+    assert(enhancement_set(obj, OEP_STR_III, OQ_STANDARD, FALSE));
+    obj->o_enh_known = OEP_STR_III;
+    obj->o_enh_flags = OEF_QUALITY_KNOWN;
+    inspect_run(obj);
+    Sprintf(expected, "%s +%u - +%u STR while wielded\n",
+            equipment_property_name(EP_STR_III), obj->o_enh_values[2],
+            obj->o_enh_values[2]);
+    assert(strstr(inspect_screen, expected));
+    inspect_discard(obj);
+
+    obj = inspect_item(LOW_BOOTS);
+    obj->o_sockets[0].property = EP_PROT_I;
+    obj->o_sockets[0].value = 4;
+    inspect_run(obj);
+    assert(strstr(inspect_screen, "Sockets: 1/1\n    Socket 1: unknown\n"));
+    obj->o_sockets[0].known = 1;
+    inspect_run(obj);
+    assert(strstr(inspect_screen, "Socket 1: Protection I +4 - improves AC by 4 while worn\n"));
+    inspect_discard(obj);
+
+    obj = inspect_item(LOW_BOOTS);
+    obj->o_sockets[0].property = EP_WARNING;
+    obj->o_sockets[0].known = 1;
+    inspect_run(obj);
+    assert(strstr(inspect_screen,
+                  "Socket 1: Warning - grants Warning while worn\n"));
+    inspect_discard(obj);
+
+    obj = inspect_item(DAGGER);
+    obj->o_sockets[0].property = EP_PRIMORDIAL;
+    obj->o_sockets[0].known = 1;
+    inspect_run(obj);
+    assert(strstr(inspect_screen,
+                  "Socket 1: Primordial - +5d6 fire, +5d6 cold, and +5d6 shock damage on a confirmed hit\n"));
+    inspect_discard(obj);
+
+    obj = inspect_item(BOW);
+    obj->o_sockets[0].property = EP_FIRE;
+    obj->o_sockets[0].known = 1;
+    obj->o_sockets[1].property = EP_STR_I;
+    obj->o_sockets[1].value = 2;
+    obj->o_sockets[1].known = 1;
+    inspect_run(obj);
+    assert(strstr(inspect_screen, "Sockets: 2/2\n")
+           && strstr(inspect_screen,
+                     "Socket 1: Fire I - +1d4 fire damage on a confirmed hit\n")
+           && strstr(inspect_screen,
+                     "Socket 2: Strength I +2 - +2 STR while wielded\n"));
+    inspect_discard(obj);
+
+    obj = inspect_item(LONG_SWORD);
+    makeknown(obj->otyp);
+    obj->known = obj->dknown = obj->bknown = obj->rknown = 1;
+    obj->cknown = obj->lknown = 1;
+    assert(enhancement_set(obj, OEP_FIRE | OEP_STR_IV, OQ_EXCEPTIONAL, TRUE));
+    obj->o_enh_values[3] = 3;
+    obj->o_sockets[0].property = EP_PRIMORDIAL;
+    obj->o_sockets[0].known = 1;
+    inspect_run(obj);
+    assert(strstr(inspect_screen,
+                  "Exceptional Herculean long sword of Embers [1/1]")
+           && strstr(inspect_screen,
+                     "Quality:\n    Exceptional - +2 to hit and +2 physical damage in melee or when directly thrown\n")
+           && strstr(inspect_screen,
+                     "Fire I - +1d4 fire damage on a confirmed hit\n")
+           && strstr(inspect_screen, "Strength IV +3 - +3 STR while wielded\n")
+           && strstr(inspect_screen,
+                     "Socket 1: Primordial - +5d6 fire, +5d6 cold, and +5d6 shock damage on a confirmed hit\n"));
+    inspect_discard(obj);
+    step15b_window_setup();
+    puts("PASS #inspect layout, impacts, certainty, values, sockets, naming and nonmutation cases");
+}
 static void corpus(void) {
     int i, dl, selected=0, placed=0, failed=0, count, x,y, invalid=0, multiple=0;
     /* Fix the deferred Ludios junction outside the corpus depth range, so
@@ -444,7 +734,7 @@ int step15_test_main(void) {
     if (getenv("STEP15_CORPUS")) {corpus();return 0;}
     eligible_tests();candidates();reservoir_tests();scripted_room();
     free_level();u.uz.dnum=medusa_level.dnum;u.uz.dlevel=40;gi.in_mklev=TRUE;step15_generate();
-    step15b_window_setup();terrain_activation();
+    step15b_window_setup();overview_tests();inspect_tests();terrain_activation();
     step15_forge_result=-99;level_finalize_topology();assert(step15_forge_result==-99);
     puts("PASS standalone Lua topology finalization performs no forge selection");
     persistence();

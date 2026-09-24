@@ -2932,8 +2932,10 @@ split_mon(
             /* mtmp2 has been created with mhpmax = u.mhmax, mhp = u.mh / 2,
                and u.mh -= mtmp2->mhp; these reductions for both max hp
                can't make either of them exceed corresponding current hp */
-            mtmp2->mhpmax = u.mhmax / 2;
-            u.mhmax -= mtmp2->mhpmax;
+            mtmp2->mhpmax = max(1, (u.mhmax - u.equipment_mh) / 2);
+            u.mhmax = max(u.equipment_mh + 1, u.mhmax - mtmp2->mhpmax);
+            mtmp2->mhp = min(mtmp2->mhp, mtmp2->mhpmax);
+            u.mh = min(u.mh, u.mhmax);
             disp.botl = TRUE;
             You("multiply%s!", reason);
         }
@@ -2946,8 +2948,10 @@ split_mon(
             /* mtmp2 has been created with mhpmax = mon->mhpmax,
                mhp = mon->mhp / 2, and mon->mh -= mtmp2->mhp;
                dividing max by 2 can't result in it exceeding current */
-            mtmp2->mhpmax = mon->mhpmax / 2;
-            mon->mhpmax -= mtmp2->mhpmax;
+            mtmp2->mhpmax = max(1, (mon->mhpmax - mon->equipment_hp) / 2);
+            mon->mhpmax = max(mon->equipment_hp + 1, mon->mhpmax - mtmp2->mhpmax);
+            mtmp2->mhp = min(mtmp2->mhp, mtmp2->mhpmax);
+            mon->mhp = min(mon->mhp, mon->mhpmax);
             if (canspotmon(mon))
                 pline("%s multiplies%s!", Monnam(mon), reason);
         }

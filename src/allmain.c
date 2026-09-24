@@ -477,6 +477,7 @@ moveloop_core(void)
         makewish();
     }
 
+    equipment_refresh();
     find_ac();
     if (!svc.context.mv || Blind) {
         /* redo monsters if hallu or wearing a helm of telepathy */

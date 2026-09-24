@@ -2,6 +2,7 @@
 from pathlib import Path
 import re
 import subprocess
+from step15d_source_projection import project as step15d_project
 from step15c_source_projection import CHANGES, project
 
 R = Path(__file__).resolve().parents[1]
@@ -10,7 +11,7 @@ mutations = 0
 assert set(CHANGES) == {'src/apply.c'}
 for path, hunks in CHANGES.items():
     original = subprocess.check_output(['git', 'show', BASE + ':' + path], cwd=R).decode().replace('\r\n', '\n')
-    current = (R / path).read_text(encoding='utf8')
+    current = step15d_project(path, (R / path).read_text(encoding='utf8'))
     assert project(path, current) == original, (path, 'unreviewed change')
     assert project(path, original) == original, (path, 'changed baseline')
     for hunk in hunks:

@@ -2957,9 +2957,10 @@ cloneu(void)
     mon = christen_monst(mon, svp.plname);
     initedog(mon, TRUE);
     mon->m_lev = gy.youmonst.data->mlevel;
-    mon->mhpmax = u.mhmax;
+    mon->mhpmax = max(1, u.mhmax - u.equipment_mh);
     mon->mhp = u.mh / 2;
     u.mh -= mon->mhp;
+    mon->mhp = min(mon->mhp, mon->mhpmax);
     disp.botl = TRUE;
     return mon;
 }

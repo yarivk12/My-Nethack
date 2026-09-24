@@ -117,6 +117,7 @@ struct monst {
     /* mtrack[0..2] is used to keep extra data when migrating the monster */
     coord mtrack[MTSZ];   /* monster track */
     int mhp, mhpmax;
+    int equipment_hp; /* temporary worn maximum HP already applied */
     unsigned mappearance; /* for undetected mimics and the wiz */
     uchar m_ap_type;      /* what mappearance is describing, m_ap_types */
 

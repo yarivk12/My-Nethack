@@ -1135,7 +1135,7 @@ newhp(void)
     } else {
         /* after level 30, throttle hit point gains from extra experience;
            once max reaches 1200, further increments will be just 1 more */
-        char lim = 5 - u.uhpmax / 300;
+        char lim = 5 - (u.uhpmax - u.equipment_hp) / 300;
 
         lim = max(lim, 1);
         if (hp > lim)
@@ -1210,6 +1210,17 @@ acurr(int chridx)
            + !!(u.mith_words & MITH_NURTURING);
     if (chridx == A_CHA && uarmf && uarmf->otyp == STILETTOS)
         tmp += 1 + uarmf->spe;
+
+    {
+        static const int stats[A_MAX] = { ES_STR, ES_INT, ES_WIS, ES_DEX, ES_CON, ES_CHA };
+        int bonus = equipment_hero_bonus(stats[chridx]);
+        if (chridx == A_STR && bonus) {
+            /* Numeric points cross exceptional strength to the displayed scale. */
+            int plain = tmp > 118 ? tmp - 100 : tmp > 18 ? 18 : tmp;
+            plain += bonus;
+            tmp = plain > 18 ? STR19(plain) : plain;
+        } else tmp += bonus;
+    }
 
     /* for Strength:  3 <= result <= 125;
        for all others:  3 <= result <= 25 */

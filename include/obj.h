@@ -32,6 +32,10 @@ struct oextra {
                            * for glob: owt at time added to shop's bill */
 };
 
+struct item_socket {
+    uint8 property, value, known; /* zero property is empty; no owned storage */
+};
+
 struct obj {
     struct obj *nobj;
     union vptrs v;
@@ -173,8 +177,11 @@ struct obj {
     uchar obranch_size;
     uint8 o_enh_quality;    /* generic equipment quality, independent of spe */
     uint8 o_enh_flags;      /* generic quality knowledge */
-    uint32 o_enh_props;     /* active generic equipment properties */
-    uint32 o_enh_known;     /* known presence/absence of generic properties */
+    uint64 o_enh_props;     /* active generic equipment properties */
+    uint64 o_enh_known;     /* known presence/absence of generic properties */
+    uint8 o_enh_values[8];  /* acquired STR I-IV, DEX I-IV magnitudes */
+    uint8 o_socket_capacity; /* actual capacity, independent of base maximum */
+    struct item_socket o_sockets[2];
 #define OBP_ANARCHIC 0x0001UL
 #define OBP_ACID     0x0002UL
 #define OBP_SLEEP    0x0004UL

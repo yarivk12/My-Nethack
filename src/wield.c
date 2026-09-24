@@ -840,6 +840,7 @@ set_twoweap(boolean on_off)
 {
     if (on_off != u.twoweap) {
         u.twoweap = on_off;
+        equipment_refresh();
         if (flags.weaponstatus)
             disp.botl = TRUE;
     }

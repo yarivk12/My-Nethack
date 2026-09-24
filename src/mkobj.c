@@ -837,6 +837,7 @@ static const char dknowns[] = { WAND_CLASS,   RING_CLASS, POTION_CLASS,
 void
 clear_dknown(struct obj *obj)
 {
+
     /* note: this is an unobserving not an observing, so don't call
        observe_object even if dknown is being set to 1 */
     obj->dknown = strchr(dknowns, obj->oclass) ? 0 : 1;
@@ -856,6 +857,7 @@ clear_dknown(struct obj *obj)
 void
 unknow_object(struct obj *obj)
 {
+    obj->o_sockets[0].known = obj->o_sockets[1].known = 0;
     clear_dknown(obj); /* obj->dknown = 0; */
 
     obj->bknown = obj->rknown = 0;

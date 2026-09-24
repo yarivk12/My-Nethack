@@ -291,7 +291,9 @@ recalc_telepat_range(void)
     for (wp = worn; wp->w_mask; wp++) {
         struct obj *oobj = *(wp->w_obj);
 
-        if (oobj && objects[oobj->otyp].oc_oprop == TELEPAT)
+        if (oobj && (objects[oobj->otyp].oc_oprop == TELEPAT
+                     || ((wp->w_mask & (W_ARMOR | W_RING | W_AMUL))
+                         && enhancement_confers(oobj, TELEPAT))))
             nobjs++;
     }
     /* count all artifacts with SPFX_ESP as one */
@@ -304,6 +306,23 @@ recalc_telepat_range(void)
         u.unblind_telepat_range = -1;
 }
 
+/* Socket properties must perform native movement/perception transitions,
+ * without making the base type known as native ring/amulet handlers do. */
+staticfn void
+socket_worn_transition(boolean flight, boolean breathing, boolean seen,
+                       boolean tele, boolean changed_flight, boolean changed_breathing)
+{
+    if (program_state.restoring) return;
+    if (changed_flight) {
+        float_vs_flight();
+        if (flight && !Flying) spoteffects(TRUE);
+    }
+    if (changed_breathing && breathing && !Breathless && !Amphibious && Underwater)
+        (void) drown();
+    if (seen != !!See_invisible) set_mimic_blocking();
+    if (seen != !!See_invisible || tele != !!Unblind_telepat) see_monsters();
+}
+
 /* Updated to use the extrinsic and blocked fields. */
 void
 setworn(struct obj *obj, long mask)
@@ -311,6 +330,10 @@ setworn(struct obj *obj, long mask)
     const struct worn *wp;
     struct obj *oobj;
     int p;
+    boolean flight = !!Flying, breathing = !!Breathless;
+    boolean seen = !!See_invisible, tele = !!Unblind_telepat;
+    boolean changed_flight = enhancement_confers(obj, FLYING);
+    boolean changed_breathing = enhancement_confers(obj, MAGICAL_BREATHING);
 
     if ((mask & (W_ARM | I_SPECIAL)) == (W_ARM | I_SPECIAL)) {
         /* restoring saved game; no properties are conferred via skin */
@@ -323,6 +346,8 @@ setworn(struct obj *obj, long mask)
                 if (oobj && !(oobj->owornmask & wp->w_mask))
                     impossible("Setworn: mask=0x%08lx.", wp->w_mask);
                 if (oobj) {
+                    changed_flight |= enhancement_confers(oobj, FLYING);
+                    changed_breathing |= enhancement_confers(oobj, MAGICAL_BREATHING);
                     if (u.twoweap && (oobj->owornmask & (W_WEP | W_SWAPWEP)))
                         set_twoweap(FALSE); /* u.twoweap = FALSE */
                     enhancement_worn_off(oobj, &gy.youmonst);
@@ -380,6 +405,8 @@ setworn(struct obj *obj, long mask)
         disp.botl = TRUE;
     update_inventory();
     recalc_telepat_range();
+    equipment_refresh();
+    socket_worn_transition(flight, breathing, seen, tele, changed_flight, changed_breathing);
 }
 
 /* called e.g. when obj is destroyed */
@@ -390,6 +417,10 @@ setnotworn(struct obj *obj)
     const struct worn *wp;
     int p;
     long unworn = 0L;
+    boolean flight = !!Flying, breathing = !!Breathless;
+    boolean seen = !!See_invisible, tele = !!Unblind_telepat;
+    boolean changed_flight = enhancement_confers(obj, FLYING);
+    boolean changed_breathing = enhancement_confers(obj, MAGICAL_BREATHING);
 
     if (!obj)
         return;
@@ -420,6 +451,8 @@ setnotworn(struct obj *obj)
         disp.botl = TRUE;
     update_inventory();
     recalc_telepat_range();
+    equipment_refresh();
+    socket_worn_transition(flight, breathing, seen, tele, changed_flight, changed_breathing);
 }
 
 /* called when saving with FREEING flag set has just discarded inventory */
@@ -945,8 +978,8 @@ update_mon_extrinsics(
     }
 
  enhancement_properties:
-    while (enh_index < SIZE(enhancement_catalog)) {
-        int prop = enhancement_catalog[enh_index++].native_property;
+    while (enh_index < EP_COUNT - 1) {
+        int prop = equipment_property(++enh_index)->native_property;
         if (prop && enhancement_confers(obj, prop)) {
             which = prop;
             goto again;
@@ -967,6 +1000,8 @@ update_mon_extrinsics(
 
     if (!on && mon == u.usteed && obj->otyp == SADDLE)
         dismount_steed(DISMOUNT_FELL);
+
+    equipment_mon_refresh(mon);
 
     /* if couldn't see it but now can, or vice versa, update display */
     if (!silently && (unseen ^ !canseemon(mon)))
@@ -992,6 +1027,7 @@ find_mac(struct monst *mon)
             else
                 base -= ARM_BONUS(obj) + artifact_arm_bonus(obj)
                         + enhancement_quality_bonus(obj, ENHANCE_ARMOR);
+            base -= equipment_bonus(obj, ES_PROTECTION);
             /* since ARM_BONUS is positive, subtracting it increases AC */
         }
     }

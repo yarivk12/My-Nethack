@@ -71,7 +71,7 @@ newpw(void)
     } else {
         /* after level 30, throttle energy gains from extra experience;
            once max reaches 600, further increments will be just 1 more */
-        char lim = 4 - u.uenmax / 200;
+        char lim = 4 - (u.uenmax - u.equipment_pw) / 200;
 
         lim = max(lim, 1);
         if (en > lim)

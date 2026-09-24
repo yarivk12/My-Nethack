@@ -36,7 +36,7 @@ artifact_tail = artifacts[artifacts.index("/* Step 10B3-2: neutral keys"):
 assert monster_tail.count("    MON(") == 73
 assert object_tail.count("OBJECT(OBJ(") == 21
 assert artifact_tail.count('A("') == 10
-assert "#define EDITLEVEL 9" in read("include/patchlevel.h")
+assert "#define EDITLEVEL 10" in read("include/patchlevel.h")
 assert "#define MAXDUNGEON 18" in global_h
 assert "FIRST_STEP10B_OBJECT" in o_init
 assert re.search(r"svb\.bases\[MAXOCLASSES\]\s*=\s*"

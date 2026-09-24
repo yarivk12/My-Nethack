@@ -235,7 +235,7 @@ struct mapseen_flags {
                                     * annotation has been added (on
                                     * the next dungeon level; temple
                                     * entered or high altar mapped) */
-    Bitfield(spare1, 1);           /* not used */
+    Bitfield(forge, 1);             /* remembered forge terrain */
 };
 
 struct mapseen_rooms {

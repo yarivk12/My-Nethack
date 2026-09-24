@@ -70,6 +70,7 @@ resetobjs(struct obj *ochain, boolean restore)
                     || is_quest_artifact(otmp)) {
                     /* prevent duplicate--revert to ordinary obj */
                     otmp->oartifact = 0;
+                    socket_init(otmp);
                     if (has_oname(otmp))
                         free_oname(otmp);
                 } else {
@@ -102,6 +103,7 @@ resetobjs(struct obj *ochain, boolean restore)
 
             if (objects[otmp->otyp].oc_uses_known)
                 otmp->known = 0;
+            otmp->o_sockets[0].known = otmp->o_sockets[1].known = 0;
             otmp->dknown = otmp->bknown = 0;
             otmp->rknown = 0;
             otmp->lknown = 0;
@@ -169,7 +171,7 @@ resetobjs(struct obj *ochain, boolean restore)
                 otmp->nomerge = 0;
             } else if (otmp->otyp == AMULET_OF_YENDOR) {
                 /* no longer the real Amulet */
-                otmp->otyp = FAKE_AMULET_OF_YENDOR;
+                enhancement_change_type(otmp, FAKE_AMULET_OF_YENDOR);
                 curse(otmp);
             } else if (otmp->otyp == CANDELABRUM_OF_INVOCATION) {
                 if (otmp->lamplit)

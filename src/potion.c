@@ -1235,7 +1235,7 @@ peffect_levitation(struct obj *otmp)
 
             You("hit your %s on the %s.", body_part(HEAD),
                 ceiling(u.ux, u.uy));
-            losehp(Maybe_Half_Phys(dmg), "colliding with the ceiling",
+            losehp_physical(Maybe_Half_Phys(dmg), "colliding with the ceiling",
                    KILLED_BY);
             gp.potion_nothing = 0; /* not nothing after all */
         }
@@ -1664,6 +1664,12 @@ impact_arti_light(
 void
 potionhit(struct monst *mon, struct obj *obj, int how)
 {
+    potionhit_by(mon, obj, how, how <= POTHIT_HERO_THROW ? &gy.youmonst : NULL);
+}
+
+void
+potionhit_by(struct monst *mon, struct obj *obj, int how, struct monst *attacker)
+{
     const char *botlnam = bottlename();
     boolean isyou = (mon == &gy.youmonst);
     int distance, tx, ty;
@@ -1675,10 +1681,10 @@ potionhit(struct monst *mon, struct obj *obj, int how)
         distance = 0;
         pline_The("%s crashes on your %s and breaks into shards.", botlnam,
                   body_part(HEAD));
-        losehp(Maybe_Half_Phys(rnd(2)),
+        losehp_damage(Maybe_Half_Phys(rnd(2)),
                (how == POTHIT_OTHER_THROW) ? "propelled potion" /* scatter */
                                            : "thrown potion",
-               KILLED_BY_AN);
+               KILLED_BY_AN, -1, attacker);
     } else {
         tx = mon->mx, ty = mon->my;
         /* sometimes it hits the saddle */
@@ -1713,7 +1719,7 @@ potionhit(struct monst *mon, struct obj *obj, int how)
                       buf);
         }
         if (rn2(5) && mon->mhp > 1 && !hit_saddle)
-            mon->mhp--;
+            enhancement_mon_damage(mon, attacker, 1, -1);
     }
 
     /* oil doesn't instantly evaporate; Neither does a saddle hit */
@@ -1724,7 +1730,7 @@ potionhit(struct monst *mon, struct obj *obj, int how)
         switch (obj->otyp) {
         case POT_OIL:
             if (obj->lamplit)
-                explode_oil(obj, u.ux, u.uy);
+                explode_oil_by(obj, u.ux, u.uy, attacker);
             break;
         case POT_POLYMORPH:
             You_feel("a little %s.", Hallucination ? "normal" : "strange");
@@ -1739,7 +1745,7 @@ potionhit(struct monst *mon, struct obj *obj, int how)
                       obj->blessed ? " a little"
                                    : obj->cursed ? " a lot" : "");
                 dmg = d(obj->cursed ? 2 : 1, obj->blessed ? 4 : 8);
-                losehp(Maybe_Half_Phys(dmg), "potion of acid", KILLED_BY_AN);
+                losehp_damage(Maybe_Half_Phys(dmg), "potion of acid", KILLED_BY_AN, 0, attacker);
             }
             break;
         }
@@ -1876,7 +1882,7 @@ potionhit(struct monst *mon, struct obj *obj, int how)
                           is_silent(mon->data) ? "writhes" : "shrieks");
                     if (!is_silent(mon->data))
                         wake_nearto(tx, ty, mon->data->mlevel * 10);
-                    mon->mhp -= d(2, 6);
+                    enhancement_mon_damage(mon, attacker, d(2, 6), 0);
                     /* should only be by you */
                     if (DEADMONSTER(mon))
                         killed(mon);
@@ -1897,7 +1903,7 @@ potionhit(struct monst *mon, struct obj *obj, int how)
             } else if (mon->data == &mons[PM_IRON_GOLEM]) {
                 if (canseemon(mon))
                     pline("%s rusts.", Monnam(mon));
-                mon->mhp -= d(1, 6);
+                enhancement_mon_damage(mon, attacker, d(1, 6), 0);
                 /* should only be by you */
                 if (DEADMONSTER(mon))
                     killed(mon);
@@ -1905,7 +1911,7 @@ potionhit(struct monst *mon, struct obj *obj, int how)
             break;
         case POT_OIL:
             if (obj->lamplit)
-                explode_oil(obj, tx, ty);
+                explode_oil_by(obj, tx, ty, attacker);
             break;
         case POT_ACID:
             if (!resists_acid(mon) && !resist(mon, POTION_CLASS, 0, NOTELL)) {
@@ -1913,7 +1919,8 @@ potionhit(struct monst *mon, struct obj *obj, int how)
                       is_silent(mon->data) ? "writhes" : "shrieks");
                 if (!is_silent(mon->data))
                     wake_nearto(tx, ty, mon->data->mlevel * 10);
-                mon->mhp -= d(obj->cursed ? 2 : 1, obj->blessed ? 4 : 8);
+                enhancement_mon_damage(mon, attacker,
+                    d(obj->cursed ? 2 : 1, obj->blessed ? 4 : 8), 0);
                 if (DEADMONSTER(mon)) {
                     if (your_fault)
                         killed(mon);
@@ -2047,15 +2054,9 @@ potionbreathe(struct obj *obj)
     case POT_SICKNESS:
         if (!Role_if(PM_HEALER)) {
             if (Upolyd) {
-                if (u.mh <= 5)
-                    u.mh = 1;
-                else
-                    u.mh -= 5;
+                u.mh -= enhancement_reduce(&gy.youmonst, min(5, max(0, u.mh - 1)), 0);
             } else {
-                if (u.uhp <= 5)
-                    u.uhp = 1;
-                else
-                    u.uhp -= 5;
+                u.uhp -= enhancement_reduce(&gy.youmonst, min(5, max(0, u.uhp - 1)), 0);
             }
             disp.botl = TRUE;
             exercise(A_CON, FALSE);

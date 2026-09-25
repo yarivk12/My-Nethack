@@ -834,7 +834,7 @@ hurtle_step(genericptr_t arg, coordxy x, coordxy y)
         }
         if (why) {
             dmg = rnd(2 + *range);
-            losehp(Maybe_Half_Phys(dmg), why, KILLED_BY);
+            losehp_physical(Maybe_Half_Phys(dmg), why, KILLED_BY);
             wake_nearto(x, y, 10);
             return FALSE;
         }
@@ -1352,13 +1352,13 @@ toss_up(struct obj *obj, boolean hitsroof)
                                && (!is_silver || !Hate_silver)),
                 harmless = (stone_missile(obj)
                             && passes_rocks(gy.youmonst.data)),
-                artimsg = FALSE;
+                artimsg = FALSE, fatal = FALSE;
         int dmg = dmgval(obj, &gy.youmonst);
 
         if (obj->oartifact && !harmless)
             /* need a fake die roll here; rn1(18,2) avoids 1 and 20 */
-            artimsg = artifact_hit((struct monst *) 0, &gy.youmonst, obj,
-                                   &dmg, rn1(18, 2));
+            artimsg = artifact_hit_fatal((struct monst *) 0, &gy.youmonst, obj,
+                                   &dmg, rn1(18, 2), &fatal, NULL);
 
         if (!dmg) { /* probably wasn't a weapon; base damage on weight */
             dmg = ((int) obj->owt + (WT_TO_DMG - 1)) / WT_TO_DMG;
@@ -1427,7 +1427,8 @@ toss_up(struct obj *obj, boolean hitsroof)
         hitfloor(obj, TRUE);
         gt.thrownobj = 0;
         if (!harmless)
-            losehp(dmg, "falling object", KILLED_BY_AN);
+            losehp_damage(dmg, "falling object", KILLED_BY_AN,
+                          fatal ? ENH_FATAL : ENH_PHYSICAL, NULL);
     }
     return TRUE;
 }
@@ -1778,6 +1779,7 @@ throwit(
                                   makeplural(body_part(FOOT)));
                         }
                     } else {
+                        boolean fatal = FALSE;
                         dmg += rnd(3);
                         if (tethered_weapon) {
                             Your("tethered %s returns and hits your %s!",
@@ -1791,10 +1793,10 @@ throwit(
                                 body_part(ARM));
                         }
                         if (obj->oartifact)
-                            (void) artifact_hit((struct monst *) 0,
-                                                &gy.youmonst, obj, &dmg, 0);
-                        losehp(Maybe_Half_Phys(dmg), killer_xname(obj),
-                               KILLED_BY);
+                            (void) artifact_hit_fatal((struct monst *) 0,
+                                                &gy.youmonst, obj, &dmg, 0, &fatal, NULL);
+                        losehp_damage(Maybe_Half_Phys(dmg), killer_xname(obj),
+                               KILLED_BY, fatal ? ENH_FATAL : ENH_PHYSICAL, NULL);
                     }
                     if (!tethered_weapon) {
                         if (u.uswallow) {
@@ -2577,7 +2579,7 @@ breakobj(
     case POT_WATER:      /* really, all potions */
         obj->in_use = 1; /* in case it's fatal */
         if (obj->otyp == POT_OIL && obj->lamplit) {
-            explode_oil(obj, x, y);
+            explode_oil_by(obj, x, y, hero_caused ? &gy.youmonst : NULL);
         } else if (next2u(x, y)) {
             if (!breathless(gy.youmonst.data) || haseyes(gy.youmonst.data)) {
                 /* wet towel protects both eyes and breathing */
@@ -2648,7 +2650,8 @@ breakobj(
     if (!fracture)
         delobj(obj);
     if (explosion)
-        explode(x, y, -11, d(3, 6), 0, EXPL_FIERY);
+        explode_by(x, y, -11, d(3, 6), 0, EXPL_FIERY,
+                   hero_caused ? &gy.youmonst : NULL);
     return 1;
 }
 

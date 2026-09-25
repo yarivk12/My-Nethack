@@ -1878,6 +1878,7 @@ curse(struct obj *otmp)
         return;
     if (otmp->lamplit)
         old_light = arti_light_radius(otmp);
+    if (!otmp->cursed && enhancement_curse_protected(otmp)) return;
     already_cursed = otmp->cursed;
     otmp->blessed = 0;
     otmp->cursed = 1;
@@ -2082,7 +2083,8 @@ weight(struct obj *obj)
     } else if (obj->otyp == CANDELABRUM_OF_INVOCATION && obj->spe) {
         return wt + obj->spe * (int) objects[TALLOW_CANDLE].oc_weight;
     }
-    return (wt ? wt * (int) obj->quan : ((int) obj->quan + 1) >> 1);
+    return enhancement_weight(obj,
+        wt ? wt * (int) obj->quan : ((int) obj->quan + 1) >> 1);
 }
 
 static const int treefruits[] = {

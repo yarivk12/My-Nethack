@@ -152,6 +152,7 @@ m_initthrow(struct monst *mtmp, int otyp, int oquan)
 
     otmp = mksobj(otyp, TRUE, FALSE);
     otmp->quan = (long) rn1(oquan, 3);
+    socket_normalize(otmp);
     otmp->owt = weight(otmp);
     if (otyp == ORCISH_ARROW)
         otmp->opoisoned = TRUE;
@@ -211,8 +212,10 @@ mith_fey_item(struct monst *mon, int type, int quantity)
 {
     struct obj *otmp = mksobj(type, TRUE, FALSE);
 
-    if (quantity)
+    if (quantity) {
         otmp->quan = rn1(quantity, 3);
+        socket_normalize(otmp);
+    }
     if ((otmp->oclass == WEAPON_CLASS || otmp->oclass == ARMOR_CLASS)
         && mon->data->msize != MZ_HUMAN)
         otmp->obranch_size = mon->data->msize + 1;

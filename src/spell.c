@@ -197,7 +197,7 @@ cursed_book(struct obj *bp)
             pline("As you read the book, it %s in your %s!", explodes,
                   body_part(FACE));
             dmg = 2 * rnd(10) + 5;
-            losehp(Maybe_Half_Phys(dmg), "exploding rune", KILLED_BY_AN);
+            losehp_physical(Maybe_Half_Phys(dmg), "exploding rune", KILLED_BY_AN);
         }
         return TRUE;
     default:
@@ -1464,12 +1464,12 @@ spelleffects(int spell_otyp, boolean atme, boolean force)
                             losehp(damage, buf, NO_KILLER_PREFIX);
                         }
                     } else {
-                        explode(u.dx, u.dy,
+                        explode_by(u.dx, u.dy,
                                 otyp - SPE_MAGIC_MISSILE + 10,
                                 spell_damage_bonus(u.ulevel / 2 + 1), 0,
                                 (otyp == SPE_CONE_OF_COLD)
                                    ? EXPL_FROSTY
-                                   : EXPL_FIERY);
+                                   : EXPL_FIERY, &gy.youmonst);
                     }
                     u.dx = cc.x + rnd(3) - 2;
                     u.dy = cc.y + rnd(3) - 2;
@@ -2201,6 +2201,16 @@ dospellmenu(
 
 RESTORE_WARNING_FORMAT_NONLITERAL
 
+/* Potential item contribution under the normal casting rules. Role-specific
+ * clerical exemptions and robe offsets remain in percent_success(). */
+boolean
+armor_spell_penalty(const struct obj *obj)
+{
+    return obj && obj->oclass == ARMOR_CLASS
+        && (is_shield(obj) || (is_metallic(obj)
+            && (is_suit(obj) || is_helmet(obj) || is_gloves(obj) || is_boots(obj))));
+}
+
 staticfn int
 percent_success(int spell)
 {
@@ -2221,23 +2231,24 @@ percent_success(int spell)
     statused = ACURR(gu.urole.spelstat);
 
     if (uarm && is_metallic(uarm) && !paladin_bonus)
-        splcaster += (uarmc && uarmc->otyp == ROBE) ? gu.urole.spelarmr / 2
-                                                    : gu.urole.spelarmr;
+        splcaster += enhancement_casting_penalty(uarm,
+            (uarmc && uarmc->otyp == ROBE) ? gu.urole.spelarmr / 2
+                                        : gu.urole.spelarmr);
     else if (uarmc && uarmc->otyp == ROBE)
         splcaster -= gu.urole.spelarmr;
     if (uarms)
-        splcaster += gu.urole.spelshld;
+        splcaster += enhancement_casting_penalty(uarms, gu.urole.spelshld);
 
     if (uwep && uwep->otyp == QUARTERSTAFF)
         splcaster -= 3; /* Small bonus */
 
     if (!paladin_bonus) {
         if (uarmh && is_metallic(uarmh)) /* && otyp != HELM_OF_BRILLIANCE */
-            splcaster += uarmhbon;
+            splcaster += enhancement_casting_penalty(uarmh, uarmhbon);
         if (uarmg && is_metallic(uarmg))
-            splcaster += uarmgbon;
+            splcaster += enhancement_casting_penalty(uarmg, uarmgbon);
         if (uarmf && is_metallic(uarmf))
-            splcaster += uarmfbon;
+            splcaster += enhancement_casting_penalty(uarmf, uarmfbon);
     }
 
     if (spellid(spell) == gu.urole.spelspec)
@@ -2299,11 +2310,8 @@ percent_success(int spell)
      * player's role-specific spell.
      */
     if (uarms && weight(uarms) > (int) objects[SMALL_SHIELD].oc_weight) {
-        if (spellid(spell) == gu.urole.spelspec) {
-            chance /= 2;
-        } else {
-            chance /= 4;
-        }
+        int remaining = chance / (spellid(spell) == gu.urole.spelspec ? 2 : 4);
+        chance -= enhancement_casting_penalty(uarms, chance - remaining);
     }
 
     /* Finally, chance (based on player intell/wisdom and level) is
@@ -2343,6 +2351,10 @@ percent_success(int spell)
 
     return chance;
 }
+
+#ifdef STEP13_TEST
+int step16b_spell_success(int spell) { return percent_success(spell); }
+#endif
 
 staticfn char *
 spellretention(int idx, char * outbuf)
@@ -2498,7 +2510,7 @@ mith_blessed_light(coordxy x, coordxy y)
         + dmgtype(mon->data, AD_DISN)
         + (shadelike(mon->data) || mon->data->mlet == S_WRAITH
            || mon->data->mlet == S_UMBER);
-    mon->mhp -= d(dice, 3 * multiplier);
+    enhancement_mon_damage(mon, &gy.youmonst, d(dice, 3 * multiplier), 0);
     pline("%s is seared by the Light.", Monnam(mon));
     if (DEADMONSTER(mon))
         killed(mon);
@@ -2549,7 +2561,7 @@ mith_word_effect(int word)
                     int side = rn2(2) ? 1 : -1;
 
                     pline("%s is thrown to the side.", Monnam(mon));
-                    mon->mhp -= d(dice, 3);
+                    enhancement_mon_damage(mon, &gy.youmonst, d(dice, 3), 0);
                     if (DEADMONSTER(mon))
                         killed(mon);
                     else
@@ -2581,7 +2593,7 @@ mith_word_effect(int word)
                     || mon->data == &mons[PM_STONE_GOLEM]
                     || mon->data == &mons[PM_CLAY_GOLEM]
                     || mon->data == &mons[PM_FLESH_GOLEM])) {
-                mon->mhp -= d(dice, 12);
+                enhancement_mon_damage(mon, &gy.youmonst, d(dice, 12), 0);
                 if (DEADMONSTER(mon)) {
                     killed(mon);
                     /* A life-saved victim must not be embedded in a tree. */

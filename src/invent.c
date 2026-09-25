@@ -4447,6 +4447,7 @@ mergable(
     if (obj->o_socket_capacity != otmp->o_socket_capacity
         || memcmp(obj->o_sockets, otmp->o_sockets, sizeof obj->o_sockets)
         || memcmp(obj->o_enh_values, otmp->o_enh_values, sizeof obj->o_enh_values)
+        || ((obj->o_enh_props | otmp->o_enh_props) & OEP_STONING)
         || obj->o_enh_props != otmp->o_enh_props
         || obj->o_enh_known != otmp->o_enh_known
         || obj->o_enh_quality != otmp->o_enh_quality

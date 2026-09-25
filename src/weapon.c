@@ -2154,7 +2154,8 @@ setmnotwielded(struct monst *mon, struct obj *obj)
    which is also called speculatively by weapon selection. Return extra damage;
    the normal caller retains kill credit, lifesaving and corpse handling. */
 int
-mith_weapon_effects(struct obj *obj, struct monst *target, int base_damage)
+mith_weapon_effects_components(struct obj *obj, struct monst *target, int base_damage,
+                               int *physical)
 {
     unsigned long bit, coatings;
     boolean hero = target == &gy.youmonst, resisted, major;
@@ -2182,6 +2183,7 @@ mith_weapon_effects(struct obj *obj, struct monst *target, int base_damage)
                 if (objects[gear->otyp].oc_oprop == SICK_RES)
                     sickres = TRUE;
             }
+    if (physical) *physical += extra;
     coatings = obj->obranch_props & OBP_COATINGS;
     for (bit = OBP_ACID; bit <= OBP_FILTH; bit <<= 1) {
         if (!(coatings & bit))
@@ -2262,3 +2264,10 @@ mith_weapon_effects(struct obj *obj, struct monst *target, int base_damage)
 }
 
 /*weapon.c*/
+
+/* Callers not tracking damage channels keep the original entry point. */
+int
+mith_weapon_effects(struct obj *obj, struct monst *target, int base_damage)
+{
+    return mith_weapon_effects_components(obj, target, base_damage, NULL);
+}

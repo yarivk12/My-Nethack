@@ -148,7 +148,7 @@ precheck(struct monst *mon, struct obj *obj)
                         ? "nearby" : "in the distance");
         }
         m_useup(mon, obj);
-        mon->mhp -= dam;
+        enhancement_mon_damage(mon, NULL, dam, 0);
         if (DEADMONSTER(mon)) {
             monkilled(mon, "", AD_RBRE);
             return 1;
@@ -1624,7 +1624,7 @@ mbhitm(struct monst *mtmp, struct obj *otmp)
                     tmp = (tmp + 1) / 2;
                 if (u.mith_timers[MITH_VAUL])
                     tmp = (tmp + 1) / 2;
-                losehp(tmp, "wand", KILLED_BY_AN);
+                losehp_damage(tmp, "wand", KILLED_BY_AN, 0, gb.buzzer);
                 learnit = TRUE;
             } else {
                 pline_The("wand misses you.");
@@ -1982,7 +1982,7 @@ use_offensive(struct monst *mtmp)
             if (Half_spell_damage)
                 num = (num + 1) / 2;
             else
-                losehp(num, "scroll of fire", KILLED_BY_AN);
+                losehp_damage(num, "scroll of fire", KILLED_BY_AN, 0, mtmp);
             for (mtmp2 = fmon; mtmp2; mtmp2 = mtmp2->nmon) {
                 if (DEADMONSTER(mtmp2))
                     continue;
@@ -1991,9 +1991,8 @@ use_offensive(struct monst *mtmp)
                 if (dist2(mtmp2->mx, mtmp2->my, mtmp->mx, mtmp->my) < 3) {
                     if (resists_fire(mtmp2))
                         continue;
-                    mtmp2->mhp -= num;
-                    if (resists_cold(mtmp2))
-                        mtmp2->mhp -= 3 * num;
+                    enhancement_mon_damage(mtmp2, mtmp,
+                        resists_cold(mtmp2) ? 4 * num : num, 0);
                     if (DEADMONSTER(mtmp2)) {
                         mondied(mtmp2);
                         break;
@@ -2982,7 +2981,7 @@ mon_consume_unstone(
     /* obj is now gone */
 
     if (acid && !tinned && !resists_acid(mon)) {
-        mon->mhp -= rnd(15);
+        enhancement_mon_damage(mon, NULL, rnd(15), -1);
         if (vis)
             pline_mon(mon, "%s has a very bad case of stomach acid.", Monnam(mon));
         if (DEADMONSTER(mon)) {
@@ -3204,9 +3203,9 @@ muse_unslime(
             dmg = (2 * (rn1(3, 3) + 2 * bcsign(obj)) + 1) / 3;
             m_useup(mon, obj); /* before explode() */
             /* -11 => monster's fireball */
-            explode(mon->mx, mon->my, -11, dmg, SCROLL_CLASS,
+            explode_by(mon->mx, mon->my, -11, dmg, SCROLL_CLASS,
                     /* by_you: override -11 for mon but not others */
-                    by_you ? -EXPL_FIERY : EXPL_FIERY);
+                    by_you ? -EXPL_FIERY : EXPL_FIERY, mon);
             dmg = 0; /* damage has been applied by explode() */
         }
     } else if (otyp == POT_OIL) {

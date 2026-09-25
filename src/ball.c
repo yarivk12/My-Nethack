@@ -61,7 +61,7 @@ ballfall(void)
             } else if (flags.verbose)
                 pline("%s does not protect you.", Yname2(uarmh));
         }
-        losehp(Maybe_Half_Phys(dmg), "crunched in the head by an iron ball",
+        losehp_physical(Maybe_Half_Phys(dmg), "crunched in the head by an iron ball",
                NO_KILLER_PREFIX);
     }
 }
@@ -920,7 +920,7 @@ drop_ball(coordxy x, coordxy y)
                     Your("%s %s is severely damaged.",
                          (side == LEFT_SIDE) ? "left" : "right",
                          body_part(LEG));
-                    losehp(Maybe_Half_Phys(2),
+                    losehp_physical(Maybe_Half_Phys(2),
                            "leg damage from being pulled out of a bear trap",
                            KILLED_BY);
                 }
@@ -1012,7 +1012,7 @@ drag_down(void)
     if (forward) {
         if (rn2(6)) {
             pline_The("iron ball drags you downstairs!");
-            losehp(Maybe_Half_Phys(rnd(6)),
+            losehp_physical(Maybe_Half_Phys(rnd(6)),
                    "dragged downstairs by an iron ball", NO_KILLER_PREFIX);
             litter();
         }
@@ -1020,14 +1020,14 @@ drag_down(void)
         if (rn2(2)) {
             Soundeffect(se_iron_ball_hits_you, 25);
             pline_The("iron ball smacks into you!");
-            losehp(Maybe_Half_Phys(rnd(20)), "iron ball collision",
+            losehp_physical(Maybe_Half_Phys(rnd(20)), "iron ball collision",
                    KILLED_BY_AN);
             exercise(A_STR, FALSE);
             dragchance -= 2;
         }
         if ((int) dragchance >= rnd(6)) {
             pline_The("iron ball drags you downstairs!");
-            losehp(Maybe_Half_Phys(rnd(3)),
+            losehp_physical(Maybe_Half_Phys(rnd(3)),
                    "dragged downstairs by an iron ball", NO_KILLER_PREFIX);
             exercise(A_STR, FALSE);
             litter();

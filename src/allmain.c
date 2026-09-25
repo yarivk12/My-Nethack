@@ -265,6 +265,7 @@ moveloop_core(void)
                 u_calc_moveamt(mvl_wtcap);
                 settrack();
 
+                enhancement_tick();
                 svm.moves++;
                 /*
                  * Never allow 'moves' to grow big enough to wrap.

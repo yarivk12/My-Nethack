@@ -273,7 +273,7 @@ do_pit(coordxy x, coordxy y, unsigned tu_pit)
                within a pit from jostling too */
             mselftouch(mtmp, "Falling, ", TRUE);
             if (!DEADMONSTER(mtmp)) {
-                mtmp->mhp -= rnd(m_already_trapped ? 4 : 6);
+                enhancement_mon_damage(mtmp, NULL, rnd(m_already_trapped ? 4 : 6), -1);
                 if (DEADMONSTER(mtmp)) {
                     if (!cansee(x, y)) {
                         pline("It is destroyed!");
@@ -311,7 +311,7 @@ do_pit(coordxy x, coordxy y, unsigned tu_pit)
                not in it even if there was */
             You("fall into a chasm!");
             set_utrap(rn1(6, 2), TT_PIT);
-            losehp(Maybe_Half_Phys(rnd(6)),
+            losehp_physical(Maybe_Half_Phys(rnd(6)),
                    "fell into a chasm", NO_KILLER_PREFIX);
             selftouch("Falling, you");
         } else if (u.utrap && u.utraptype == TT_PIT) {
@@ -322,7 +322,7 @@ do_pit(coordxy x, coordxy y, unsigned tu_pit)
 
             You("are jostled around violently!");
             set_utrap(rn1(6, 2), TT_PIT);
-            losehp(Maybe_Half_Phys(rnd(keepfooting ? 2 : 4)),
+            losehp_physical(Maybe_Half_Phys(rnd(keepfooting ? 2 : 4)),
                    "hurt in a chasm", NO_KILLER_PREFIX);
             if (keepfooting)
                 exercise(A_DEX, TRUE);

@@ -63,7 +63,7 @@ mb_trapped(struct monst *mtmp, boolean canseeit)
     }
     wake_nearto(mtmp->mx, mtmp->my, 7 * 7);
     mtmp->mstun = 1;
-    mtmp->mhp -= rnd(15);
+    enhancement_mon_damage(mtmp, NULL, rnd(15), -1);
     if (DEADMONSTER(mtmp)) {
         mondied(mtmp);
         if (DEADMONSTER(mtmp))
@@ -637,7 +637,7 @@ mind_blast(struct monst *mtmp)
                 dmg = (dmg + 1) / 2;
             if (u.mith_timers[MITH_VAUL])
                 dmg = (dmg + 1) / 2;
-            losehp(dmg, "psychic blast", KILLED_BY_AN);
+            losehp_damage(dmg, "psychic blast", KILLED_BY_AN, 0, mtmp);
         }
     }
     for (m2 = fmon; m2; m2 = nmon) {
@@ -655,7 +655,7 @@ mind_blast(struct monst *mtmp)
             wakeup(m2, FALSE);
             if (cansee(m2->mx, m2->my))
                 pline("It locks on to %s.", mon_nam(m2));
-            m2->mhp -= rnd(15);
+            enhancement_mon_damage(m2, mtmp, rnd(15), 0);
             if (DEADMONSTER(m2))
                 monkilled(m2, "", AD_DRIN);
         }
@@ -879,7 +879,7 @@ step10b_cthulhu_psychic(struct monst *mtmp)
             pline("It locks on to your %s!",
                   sensed ? "telepathy"
                   : Blind_telepat ? "latent telepathy" : "mind");
-            losehp(damage, "Great Cthulhu's psychic blast", KILLED_BY_AN);
+            losehp_damage(damage, "Great Cthulhu's psychic blast", KILLED_BY_AN, 0, mtmp);
             make_stunned((HStun & TIMEOUT) + (long) damage * 10L, FALSE);
             make_confused((HConfusion & TIMEOUT) + (long) min(10, damage),
                           FALSE);
@@ -896,7 +896,7 @@ step10b_cthulhu_psychic(struct monst *mtmp)
             m2->mconf = 1;
             if (cansee(m2->mx, m2->my))
                 pline("It locks on to %s.", mon_nam(m2));
-            m2->mhp -= d(5, 15);
+            enhancement_mon_damage(m2, mtmp, d(5, 15), 0);
             if (DEADMONSTER(m2))
                 monkilled(m2, "", AD_DRIN);
         }

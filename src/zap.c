@@ -531,7 +531,7 @@ bhitm(struct monst *mtmp, struct obj *otmp)
             shieldeff_mon(mtmp);
         } else if (!resist(mtmp, otmp->oclass, dmg, NOTELL)
                    && !DEADMONSTER(mtmp)) {
-            mtmp->mhp -= dmg;
+            enhancement_mon_damage(mtmp, NULL, dmg, 0);
             mtmp->mhpmax -= dmg;
             /* die if already level 0, regardless of hit points */
             if (DEADMONSTER(mtmp) || mtmp->mhpmax <= 0 || mtmp->m_lev < 1) {
@@ -1958,6 +1958,8 @@ poly_obj(struct obj *obj, int id)
      * replacement is billed or worn; a real type change keeps the zeros
      * supplied by its non-natural constructor. */
     if (otmp->otyp == obj->otyp) {
+        otmp->o_stoning_remaining = obj->o_stoning_remaining;
+        otmp->o_stoning_turn = obj->o_stoning_turn;
         otmp->o_enh_props = obj->o_enh_props;
         otmp->o_enh_known = obj->o_enh_known;
         otmp->o_enh_quality = obj->o_enh_quality;
@@ -1968,6 +1970,7 @@ poly_obj(struct obj *obj, int id)
     }
 
     if (otmp->otyp != obj->otyp) socket_init(otmp);
+    socket_normalize(otmp);
 
     /* update the weight */
     otmp->owt = weight(otmp);
@@ -2688,7 +2691,7 @@ backfire(struct obj *otmp)
     otmp->in_use = TRUE; /* in case losehp() is fatal */
     pline("%s suddenly explodes!", The(xname(otmp)));
     dmg = d(otmp->spe + 2, 6);
-    losehp(Maybe_Half_Phys(dmg), "exploding wand", KILLED_BY_AN);
+    losehp_physical(Maybe_Half_Phys(dmg), "exploding wand", KILLED_BY_AN);
     useupall(otmp);
 }
 
@@ -2739,7 +2742,7 @@ dozap(void)
 
             Sprintf(buf, "zapped %sself with %s",
                     uhim(), killer_xname(obj));
-            losehp(Maybe_Half_Phys(damage), buf, NO_KILLER_PREFIX);
+            losehp_physical(Maybe_Half_Phys(damage), buf, NO_KILLER_PREFIX);
         }
     } else {
         /*      Are we having fun yet?
@@ -2826,7 +2829,7 @@ zapyourself(struct obj *obj, boolean ordinary)
 
     case SPE_FIREBALL:
         You("explode a fireball on top of yourself!");
-        explode(u.ux, u.uy, 11, d(6, 6), WAND_CLASS, EXPL_FIERY);
+        explode_by(u.ux, u.uy, 11, d(6, 6), WAND_CLASS, EXPL_FIERY, &gy.youmonst);
         break;
     case WAN_FIRE:
     case FIRE_HORN:
@@ -3129,7 +3132,7 @@ lightdamage(
         Sprintf(buf, "%s %sself with %s", ordinary ? "zapped" : "blasted",
                 uhim(), how);
         /* might rehumanize(); could be fatal, but only for Unchanging */
-        losehp(Maybe_Half_Phys(dmg), buf, NO_KILLER_PREFIX);
+        losehp_physical(Maybe_Half_Phys(dmg), buf, NO_KILLER_PREFIX);
     }
     return dmg;
 }
@@ -3391,7 +3394,7 @@ zap_updown(struct obj *obj) /* wand or spell, nonnull */
             pline("A rock is dislodged from the %s and falls on your %s.",
                   ceiling(x, y), body_part(HEAD));
             dmg = rnd(hard_helmet(uarmh) ? 2 : 6);
-            losehp(Maybe_Half_Phys(dmg), "falling rock", KILLED_BY_AN);
+            losehp_physical(Maybe_Half_Phys(dmg), "falling rock", KILLED_BY_AN);
             if ((otmp = mksobj_at(ROCK, x, y, FALSE, FALSE)) != 0) {
                 (void) xname(otmp); /* set dknown, maybe bknown */
                 stackobj(otmp);
@@ -4506,7 +4509,8 @@ zhitm(
         tmp = 0; /* don't allow negative damage */
     debugpline3("zapped monster hp = %d (= %d - %d)", mon->mhp - tmp,
                 mon->mhp, tmp);
-    mon->mhp -= tmp;
+    if (damgtype == ZT_DEATH) mon->mhp -= tmp; /* instant death, not HP damage */
+    else enhancement_mon_damage(mon, (type < 0 || (type == 0 && gb.buzzer)) ? gb.buzzer : &gy.youmonst, tmp, 0);
     return tmp;
 }
 
@@ -4701,7 +4705,7 @@ zhitu(
             dam = (dam + 1) / 2;
         if (dam && u.mith_timers[MITH_VAUL])
             dam = (dam + 1) / 2;
-        losehp(dam, kbuf, KILLED_BY_AN);
+        losehp_damage(dam, kbuf, KILLED_BY_AN, 0, (type < 0 || (type == 0 && gb.buzzer)) ? gb.buzzer : &gy.youmonst);
     }
     return;
 }
@@ -5149,7 +5153,7 @@ dobuzz(
     }
     tmp_at(DISP_END, 0);
     if (fireball)
-        explode(sx, sy, type, d(12, 6), 0, EXPL_FIERY);
+        explode_by(sx, sy, type, d(12, 6), 0, EXPL_FIERY, type < 0 ? gb.buzzer : &gy.youmonst);
     if (shopdamage)
         pay_for_damage(damgtype == ZT_FIRE ? "burn away"
                        : damgtype == ZT_COLD ? "shatter"
@@ -6336,7 +6340,7 @@ resist(struct monst *mtmp, char oclass, int damage, int tell)
     }
 
     if (damage) {
-        mtmp->mhp -= damage;
+        enhancement_mon_damage(mtmp, gm.m_using ? gb.buzzer : &gy.youmonst, damage, 0);
         if (DEADMONSTER(mtmp)) {
             if (gm.m_using)
                 monkilled(mtmp, "", AD_RBRE);

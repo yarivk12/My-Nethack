@@ -290,7 +290,7 @@ worm_nomove(struct monst *worm)
     shrink_worm((int) worm->wormno); /* shrink */
 
     if (worm->mhp > count_wsegs(worm)) {
-        worm->mhp -= d(2, 2); /* 2..4, average 3; note: mhpmax not changed! */
+        enhancement_mon_damage(worm, &gy.youmonst, d(2, 2), -1); /* 2..4, average 3; note: mhpmax not changed! */
         if (worm->mhp < 1)
             worm->mhp = 1;
     }

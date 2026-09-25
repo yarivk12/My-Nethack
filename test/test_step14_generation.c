@@ -6,7 +6,7 @@ static const int step14_tables[5][9] = {
     {16,40,40,70,30,40,25,20,15}, {22,30,40,80,40,25,30,25,20},
     {28,20,40,90,50,10,35,30,25}
 };
-static const uint64 step14_weapon_elements=OEP_ATTRIBUTES|OEP_FIRE|OEP_COLD|OEP_SHOCK
+static const uint64 step14_weapon_elements=OEP_OFFENSIVE|OEP_ATTRIBUTES|OEP_FIRE|OEP_COLD|OEP_SHOCK
     |OEP_FIRE_II|OEP_COLD_II|OEP_SHOCK_II
     |OEP_FIRE_III|OEP_COLD_III|OEP_SHOCK_III|OEP_PRIMORDIAL;
 
@@ -16,18 +16,18 @@ step14_reference(int band, uint64 allowed, int *quality, int *attempts,
 {
     /* Contract pools and caller-supplied eligibility, deliberately independent
      * of enhancement_catalog and all production filtering helpers. */
-    const uint64 pool[4][9] = {
+    const uint64 pool[4][18] = {
         {OEP_FIRE,OEP_COLD,OEP_SHOCK,OEP_TRUEFLIGHT,
-         OEP_SEARCHING,OEP_WARNING,OEP_STEALTH,OEP_STR_I,OEP_DEX_I},
+         OEP_SEARCHING,OEP_WARNING,OEP_STEALTH,OEP_STR_I,OEP_DEX_I,OEP_VAMPIRIC_I,OEP_ACID_I,OEP_ANARCHIC_I,OEP_AXIOMATIC_I,OEP_STONING_I,OEP_LIGHTNESS_I,OEP_THORNS_I,OEP_DR_I},
         {OEP_FIRE_II,OEP_COLD_II,OEP_SHOCK_II,
-         OEP_FIRE_RES,OEP_COLD_RES,OEP_SHOCK_RES,OEP_POISON_RES,OEP_STR_II,OEP_DEX_II},
+         OEP_FIRE_RES,OEP_COLD_RES,OEP_SHOCK_RES,OEP_POISON_RES,OEP_STR_II,OEP_DEX_II,OEP_VAMPIRIC_II,OEP_ACID_II,OEP_ANARCHIC_II,OEP_AXIOMATIC_II,OEP_STONING_II,OEP_CASTING_II,OEP_LIGHTNESS_II,OEP_THORNS_II,OEP_DR_II},
         {OEP_FIRE_III,OEP_COLD_III,OEP_SHOCK_III,
-         OEP_SPEED,OEP_REGEN,OEP_DISPLACED,OEP_SLOW_DIGEST,OEP_STR_III,OEP_DEX_III},
-        {OEP_PRIMORDIAL,OEP_MAGIC_RES,OEP_REFLECTION,OEP_STR_IV,OEP_DEX_IV,0,0,0,0}
+         OEP_SPEED,OEP_REGEN,OEP_DISPLACED,OEP_SLOW_DIGEST,OEP_STR_III,OEP_DEX_III,OEP_VAMPIRIC_III,OEP_ACID_III,OEP_STONING_III,OEP_WARDING,OEP_LIGHTNESS_III,OEP_DR_III},
+        {OEP_PRIMORDIAL,OEP_MAGIC_RES,OEP_REFLECTION,OEP_STR_IV,OEP_DEX_IV,OEP_VAMPIRIC_IV,OEP_STONING_IV,OEP_CASTING_IV,OEP_DR_IV}
     };
     const int *table=step14_tables[band];
     int presence, roll, n, slot, tier, i, count;
-    uint64 props=0, valid[9];
+    uint64 props=0, valid[18];
     *quality=0;*attempts=0;
     if(rn2(100)>=table[0])return 0;
     do {
@@ -43,8 +43,15 @@ step14_reference(int band, uint64 allowed, int *quality, int *attempts,
         rolled_tiers[tier]++;
         for(;;--tier) {
             assert(tier>=0);count=0;
-            for(i=0;i<9;++i)
-                if((allowed&pool[tier][i])&&!(props&pool[tier][i]))
+            for(i=0;i<18;++i)
+                if((allowed&pool[tier][i])&&!(props&pool[tier][i])
+                   && !((props&OEP_VAMPIRIC)&&(pool[tier][i]&OEP_VAMPIRIC))
+                   && !((props&OEP_STONING)&&(pool[tier][i]&OEP_STONING))
+                   && !((props&OEP_ALIGNMENT)&&(pool[tier][i]&OEP_ALIGNMENT))
+                   && !((props&OEP_CASTING)&&(pool[tier][i]&OEP_CASTING))
+                   && !((props&OEP_LIGHTNESS)&&(pool[tier][i]&OEP_LIGHTNESS))
+                   && !((props&OEP_THORNS)&&(pool[tier][i]&OEP_THORNS))
+                   && !((props&OEP_DR)&&(pool[tier][i]&OEP_DR)))
                     valid[count++]=pool[tier][i];
             if(count)break;
         }
@@ -92,12 +99,12 @@ step14_generation_tests(void)
         const uint64 armor=OEP_SEARCHING|OEP_WARNING|OEP_STEALTH
             |OEP_FIRE_RES|OEP_COLD_RES|OEP_SHOCK_RES|OEP_POISON_RES
             |OEP_SPEED|OEP_REGEN|OEP_DISPLACED|OEP_SLOW_DIGEST
-            |OEP_MAGIC_RES|OEP_REFLECTION;
-        uint64 allowed[]={step14_weapon_elements|OEP_TRUEFLIGHT,armor,
-                         armor&~OEP_MAGIC_RES,armor&~(OEP_SHOCK_RES|OEP_SPEED),
-                         armor&~(OEP_COLD_RES|OEP_SLOW_DIGEST),
-                         armor&~(OEP_FIRE_RES|OEP_COLD_RES|OEP_SHOCK_RES
-                                 |OEP_POISON_RES|OEP_MAGIC_RES|OEP_REFLECTION)};
+            |OEP_MAGIC_RES|OEP_REFLECTION|OEP_WARDING|OEP_DR;
+        uint64 allowed[]={(step14_weapon_elements & ~(OEP_ALIGNMENT|OEP_STONING))|OEP_TRUEFLIGHT,armor|OEP_LIGHTNESS|OEP_THORNS,
+                         armor&~(uint64)(uint64)OEP_MAGIC_RES,(armor&~(uint64)(OEP_SHOCK_RES|OEP_SPEED))|OEP_THORNS,
+                         (armor&~(uint64)(OEP_COLD_RES|OEP_SLOW_DIGEST))|OEP_THORNS,
+                         (armor&~(uint64)(OEP_FIRE_RES|OEP_COLD_RES|OEP_SHOCK_RES
+                                 |OEP_POISON_RES|OEP_MAGIC_RES|OEP_REFLECTION))|OEP_THORNS};
         int kind;
         for(kind=0;kind<SIZE(types);++kind) {
             struct obj *recipient=item(types[kind]);
@@ -109,6 +116,7 @@ step14_generation_tests(void)
                 enhancement_clear(recipient);
                 init_isaac64(seed,rn2);
                 enhancement_generate(recipient,b==0?1:b==1?30:b==2?60:b==3?100:150);
+                if(recipient->o_enh_quality!=q||recipient->o_enh_props!=props) fprintf(stderr,"pool mismatch type=%d kind=%d weight=%d seed=%d actual=%llx expected=%llx\n",types[kind],kind,objects[types[kind]].oc_weight,seed,recipient->o_enh_props,props);
                 assert(recipient->o_enh_quality==q&&recipient->o_enh_props==props);
                 assert(rn2(1000000)==next);
             }
@@ -140,7 +148,7 @@ step14_corpus(void)
     const int depths[]={1,30,60,100,150};
     const long samples=200000;
     int b,i,q,has,count;
-    long n,gate,quality[3],properties[3],tier[4],members[32];
+    long n,gate,quality[3],properties[3],tier[4],members[59];
     struct obj *o=item(LONG_SWORD);
     for(b=0;b<5;++b) {
         gate=0;memset(quality,0,sizeof quality);memset(properties,0,sizeof properties);
@@ -152,7 +160,7 @@ step14_corpus(void)
             q=o->o_enh_quality;has=o->o_enh_props!=0;
             if(!q&&!has)continue;
             ++gate;++quality[q];count=0;
-            for(i=0;i<32;++i)if(o->o_enh_props&enhancement_catalog[i].bit) {
+            for(i=0;i<59;++i)if(o->o_enh_props&enhancement_catalog[i].bit) {
                 ++count;++tier[enhancement_catalog[i].tier-1];++members[i];
             }
             assert(count<=2);++properties[count];

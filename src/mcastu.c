@@ -375,11 +375,12 @@ mith_castmm(struct monst *caster, struct monst *target, struct attack *attack)
         }
         if (canseemon(caster))
             pline_mon(caster, "%s casts an elemental spell!", Monnam(caster));
-        if (damage > 0 && (target->mhp -= damage) <= 0) {
+        if (damage > 0 && enhancement_mon_damage(target, caster, damage, 0) <= 0) {
             monkilled(target, "", (int) attack->adtyp);
             if (DEADMONSTER(target))
                 result |= M_ATTK_DEF_DIED;
         }
+        if (DEADMONSTER(caster)) result |= M_ATTK_AGR_DIED;
         return result;
     }
 
@@ -617,7 +618,7 @@ mith_castmm(struct monst *caster, struct monst *target, struct attack *attack)
         break;
     }
     if (damage > 0 && !DEADMONSTER(target)) {
-        target->mhp -= damage;
+        enhancement_mon_damage(target, caster, damage, 0);
         if (target->mhp <= 0)
             monkilled(target, "", AD_SPEL);
     }
@@ -911,7 +912,8 @@ castmu(
         break;
     } /* switch */
     if (dmg)
-        mdamageu(mtmp, dmg);
+        mdamageu_damage(mtmp, dmg, 0);
+    if (DEADMONSTER(mtmp)) ret |= M_ATTK_AGR_DIED;
     return ret;
 }
 
@@ -959,7 +961,7 @@ touch_of_death(struct monst *mtmp)
         dmg = adjuhploss(dmg, olduhp); /* reduce pending damage if uhp has
                                         * already been reduced due to drop
                                         * in uhpmax */
-        losehp(dmg, kbuf, KILLED_BY);
+        losehp_damage(dmg, kbuf, KILLED_BY, 0, mtmp);
     }
     svk.killer.name[0] = '\0'; /* not killed if we get here... */
 }
@@ -1615,7 +1617,7 @@ mcast_spell(struct monst *mtmp, int dmg, int spellnum)
     }
 
     if (dmg)
-        mdamageu(mtmp, dmg);
+        mdamageu_damage(mtmp, dmg, spellnum == MCAST_GEYSER ? dmg : 0);
 }
 
 staticfn boolean

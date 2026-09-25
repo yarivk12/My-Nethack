@@ -19,7 +19,7 @@ staticfn int gulpmu(struct monst *, struct attack *);
 staticfn int explmu(struct monst *, struct attack *, boolean);
 staticfn void mayberem(struct monst *, const char *, struct obj *,
                        const char *);
-staticfn int assess_dmg(struct monst *, int);
+staticfn int assess_dmg(struct monst *, int, int);
 staticfn int passiveum(struct permonst *, struct monst *, struct attack *);
 
 #define ld() ((yyyymmdd((time_t) 0) - (getyear() * 10000L)) == 0xe5)
@@ -651,7 +651,7 @@ mattacku(struct monst *mtmp)
                 if (3 + find_mac(mtmp) <= rnd(20)) {
                     pline("%s is hit by a falling piercer (you)!",
                           Monnam(mtmp));
-                    if ((mtmp->mhp -= d(3, 6)) < 1)
+                    if (enhancement_mon_damage(mtmp, NULL, d(3, 6), -1) < 1)
                         killed(mtmp);
                 } else
                     pline("%s is almost hit by a falling piercer (you)!",
@@ -1249,8 +1249,8 @@ hitmu(struct monst *mtmp, struct attack *mattk)
 {
     struct permonst *mdat = mtmp->data;
     struct permonst *olduasmon = gy.youmonst.data;
-    int res, mortality = u.umortality;
-    struct mhitm_data mhm;
+    int res, mortality = u.umortality, enh_physical = 0, before_mitigation;
+    struct mhitm_data mhm = { 0 };
     mhm.weapon = mattk->aatyp == AT_WEAP ? mon_currwep : MON_WEP(mtmp);
     mhm.hitflags = M_ATTK_MISS;
     mhm.permdmg = 0;
@@ -1295,6 +1295,7 @@ hitmu(struct monst *mtmp, struct attack *mattk)
 
     mhitm_adtyping(mtmp, mattk, &gy.youmonst, &mhm);
 
+    if (mhm.done) return mhm.hitflags;
     (void) mhitm_knockback(mtmp, &gy.youmonst, mattk, &mhm.hitflags,
                            mhm.weapon);
 
@@ -1307,6 +1308,10 @@ hitmu(struct monst *mtmp, struct attack *mattk)
         mhm.damage = 0;
     }
 
+    if (mattk->aatyp == AT_WEAP && !mhm.alignment_added)
+        mhm.damage += enhancement_alignment_damage(mhm.weapon, NULL,
+                                                   &gy.youmonst, ENHANCE_MELEE);
+    before_mitigation = mhm.damage;
     /*  Negative armor class reduces damage done instead of fully protecting
      *  against hits.
      */
@@ -1316,7 +1321,7 @@ hitmu(struct monst *mtmp, struct attack *mattk)
             mhm.damage = 1;
     }
 
-    if (mhm.damage > 0
+    if (mhm.damage > 0 || mhm.direct_physical > 0 || mhm.direct_damage > 0
         || (mattk->aatyp == AT_WEAP
             && enhancement_elemental_contact(mhm.weapon, (struct obj *) 0, ENHANCE_MELEE))) {
         /* [Half_physical_damage isn't applied to mhm.permdmg] */
@@ -1331,11 +1336,14 @@ hitmu(struct monst *mtmp, struct attack *mattk)
             mhm.damage = mith_physical_damage(&gy.youmonst,
                               mattk->aatyp == AT_WEAP ? mhm.weapon : (struct obj *) 0,
                               mattk->aatyp, mhm.damage);
+        mhm.artifact_nonphysical = enhancement_damage_component(
+            mhm.artifact_nonphysical, before_mitigation, mhm.damage);
+        enh_physical = max(0, mhm.damage);
         mhm.damage += mith_iron_contact(mtmp, &gy.youmonst, mattk->aatyp,
                           mattk->aatyp == AT_WEAP ? mhm.weapon : (struct obj *) 0);
         if (mattk->aatyp == AT_WEAP)
-            mhm.damage += mith_weapon_effects(mhm.weapon, &gy.youmonst,
-                                              mhm.damage);
+            mhm.damage += mith_weapon_effects_components(mhm.weapon, &gy.youmonst,
+                                              mhm.damage, &enh_physical);
         if (mattk->aatyp == AT_WEAP)
             mhm.damage += enhancement_weapon_effects(mhm.weapon, (struct obj *) 0,
                                       &gy.youmonst, mhm.damage, ENHANCE_MELEE);
@@ -1376,12 +1384,26 @@ hitmu(struct monst *mtmp, struct attack *mattk)
             disp.botl = TRUE;
         }
 
-        mdamageu(mtmp, mhm.damage);
+        if (mattk->aatyp == AT_WEAP) {
+            enhancement_vampiric(mhm.weapon, NULL, mtmp, &gy.youmonst,
+                                 enhancement_reduce(&gy.youmonst, enh_physical, ENH_PHYSICAL)
+                                     + mhm.direct_physical,
+                                 enhancement_reduce(&gy.youmonst, mhm.damage,
+                                     mhm.fatal ? ENH_FATAL : enhancement_physical_type(mattk->adtyp)
+                                     ? max(0, enh_physical - mhm.artifact_nonphysical) : 0)
+                                     + mhm.direct_damage + mhm.direct_physical, ENHANCE_MELEE);
+            (void) enhancement_stoning(mhm.weapon, NULL, mtmp, &gy.youmonst,
+                                        ENHANCE_MELEE);
+        }
+        mdamageu_damage(mtmp, mhm.damage,
+            mhm.fatal ? ENH_FATAL : enhancement_physical_type(mattk->adtyp)
+            ? max(0, enh_physical - mhm.artifact_nonphysical) : 0);
         if (mattk->adtyp == AD_SLEE && mith_fey_weapon_attack(mtmp, mattk)
             && u.umortality == mortality)
             mith_coure_sleep(mtmp, &gy.youmonst);
     }
 
+    if (DEADMONSTER(mtmp)) return M_ATTK_AGR_DIED;
     if (mhm.damage && ((mattk->aatyp != AT_REACH5
                         && mattk->aatyp != AT_REACH2)
                        || monnear(mtmp, u.ux, u.uy)))
@@ -1419,7 +1441,7 @@ gulpmu(struct monst *mtmp, struct attack *mattk)
     int tim_tmp;
     struct obj *otmp2, *nextobj;
     int i;
-    boolean physical_damage = FALSE;
+    boolean physical_damage = FALSE, fatal = FALSE;
 
     if (!u.uswallow) { /* swallows you */
         int omx = mtmp->mx, omy = mtmp->my;
@@ -1565,6 +1587,7 @@ gulpmu(struct monst *mtmp, struct attack *mattk)
         } else if (u.uswldtim == 0) {
             pline("%s totally digests you!", Monnam(mtmp));
             tmp = u.uhp;
+            fatal = TRUE;
             if (Half_physical_damage)
                 tmp *= 2; /* sorry */
         } else {
@@ -1697,7 +1720,7 @@ gulpmu(struct monst *mtmp, struct attack *mattk)
     }
 
     gm.mswallower = mtmp; /* match gulpmm() */
-    mdamageu(mtmp, tmp);
+    mdamageu_damage(mtmp, tmp, fatal ? ENH_FATAL : physical_damage ? tmp : 0);
     gm.mswallower = 0;
     if (tmp)
         stop_occupation();
@@ -1893,7 +1916,7 @@ gazemu(struct monst *mtmp, struct attack *mattk)
             make_confused(HConfusion + rnd(6), FALSE);
             make_stunned((HStun & TIMEOUT) + (long) rnd(6), TRUE);
             mtmp->mspec_used = rnd(6);
-            mdamageu(mtmp, blast);
+            mdamageu_damage(mtmp, blast, 0);
             stop_occupation();
             return M_ATTK_HIT;
         }
@@ -1932,7 +1955,7 @@ gazemu(struct monst *mtmp, struct attack *mattk)
                       s_suffix(Monnam(mtmp)));
                 stop_occupation();
                 exercise(A_INT, TRUE);
-                mdamageu(mtmp, d(1, 4));
+                mdamageu_damage(mtmp, d(1, 4), 0);
             } else if (flags.verbose && !rn2(10)) {
                 pline("%s is covering its face.", Monnam(mtmp));
             }
@@ -2127,7 +2150,7 @@ gazemu(struct monst *mtmp, struct attack *mattk)
                     ignite_items(gi.invent);
                 }
                 if (dmg)
-                    mdamageu(mtmp, dmg);
+                    mdamageu_damage(mtmp, dmg, 0);
             }
         }
         break;
@@ -2158,7 +2181,7 @@ gazemu(struct monst *mtmp, struct attack *mattk)
                 if (lev > rn2(20))
                     (void) destroy_items(&gy.youmonst, AD_ELEC, orig_dmg);
                 if (dmg)
-                    mdamageu(mtmp, dmg);
+                    mdamageu_damage(mtmp, dmg, 0);
             }
         }
         break;
@@ -2226,6 +2249,14 @@ gazemu(struct monst *mtmp, struct attack *mattk)
 void
 mdamageu(struct monst *mtmp, int n)
 {
+    mdamageu_damage(mtmp, n, n);
+}
+
+void
+mdamageu_damage(struct monst *mtmp, int n, int physical)
+{
+    int before = max(0, Upolyd ? u.mh : u.uhp);
+    n = enhancement_reduce(&gy.youmonst, n, physical);
     if (n < 0) {
         impossible("mdamageu for negative damage? (%d)", n);
         n = 0;
@@ -2249,6 +2280,7 @@ mdamageu(struct monst *mtmp, int n)
         if (u.uhp < 1)
             done_in_by(mtmp, DIED);
     }
+    if (physical != ENH_FATAL) enhancement_reflect(&gy.youmonst, mtmp, min(before, n));
 }
 
 /* returns 0 if seduction impossible,
@@ -2542,7 +2574,7 @@ doseduce(struct monst *mon)
             You_feel("exhausted.");
             exercise(A_STR, FALSE);
             tmp = rn1(10, 6);
-            losehp(Maybe_Half_Phys(tmp), "exhaustion", KILLED_BY);
+            losehp_physical(Maybe_Half_Phys(tmp), "exhaustion", KILLED_BY);
             break;
         } /* case 4 */
         } /* switch */
@@ -2677,9 +2709,10 @@ mayberem(struct monst *mon,
 }
 
 staticfn int
-assess_dmg(struct monst *mtmp, int tmp)
+assess_dmg(struct monst *mtmp, int tmp, int adtyp)
 {
-    if ((mtmp->mhp -= tmp) <= 0) {
+    if (enhancement_mon_damage(mtmp, &gy.youmonst, tmp,
+            enhancement_physical_type(adtyp) ? -1 : 0) <= 0) {
         pline_mon(mtmp, "%s dies!", Monnam(mtmp));
         xkilled(mtmp, XKILL_NOMSG);
         if (!DEADMONSTER(mtmp))
@@ -2805,7 +2838,7 @@ passiveum(
             erode_armor(mtmp, ERODE_CORRODE);
         if (!rn2(6))
             acid_damage(mattk->aatyp == AT_WEAP ? mon_currwep : MON_WEP(mtmp));
-        return assess_dmg(mtmp, tmp);
+        return assess_dmg(mtmp, tmp, oldu_mattk->adtyp);
     case AD_STON: /* cockatrice */
     {
         long protector = attk_protection((int) mattk->aatyp),
@@ -2854,7 +2887,7 @@ passiveum(
                 You("explode!");
                 /* KMH, balance patch -- this is okay with unchanging */
                 rehumanize();
-                return assess_dmg(mtmp, tmp);
+                return assess_dmg(mtmp, tmp, oldu_mattk->adtyp);
             }
             break;
         case AD_PLYS: /* Floating eye */
@@ -2936,7 +2969,7 @@ passiveum(
     else
         tmp = 0;
 
-    return assess_dmg(mtmp, tmp);
+    return assess_dmg(mtmp, tmp, oldu_mattk->adtyp);
 }
 
 struct monst *

@@ -313,7 +313,7 @@ poisontell(int typ,         /* which attribute */
 }
 
 /* called when an attack or trap has poisoned hero (used to be in mon.c) */
-void
+int
 poisoned(
     const char *reason,    /* controls what messages we display */
     int typ,
@@ -321,6 +321,7 @@ poisoned(
     int fatal,             /* if fatal is 0, limit damage to adjattrib */
     boolean thrown_weapon) /* thrown weapons are less deadly */
 {
+    int direct_damage = 0;
     int i, loss, kprefix = KILLED_BY_AN;
     boolean blast = !strcmp(reason, "blast");
 
@@ -339,7 +340,7 @@ poisoned(
         if (blast)
             shieldeff(u.ux, u.uy);
         pline_The("poison doesn't seem to affect you.");
-        return;
+        return 0;
     }
 
     /* suppress killer prefix if it already has one */
@@ -363,6 +364,7 @@ poisoned(
     if (i == 0 && typ != A_CHA) {
         /* sometimes survivable instant kill */
         loss = 6 + d(4, 6); /* 6 + 4d6 => 10..34 */
+        direct_damage = loss;
         if (u.uhp <= loss) {
             u.uhp = -1;
             disp.botl = TRUE;
@@ -390,6 +392,7 @@ poisoned(
             loss = (loss + 1) / 2;
         if (u.mith_timers[MITH_VAUL])
             loss = (loss + 1) / 2;
+        direct_damage = loss;
         losehp(loss, pkiller, kprefix); /* poison damage */
     } else {
         /* attribute loss; if typ is A_STR, reduction in current and
@@ -407,6 +410,7 @@ poisoned(
         done(strstri(pkiller, "poison") ? DIED : POISONING);
     }
     encumber_msg();
+    return direct_damage;
 }
 
 void

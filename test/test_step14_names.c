@@ -89,16 +89,16 @@ step14_observation_tests(void)
     m->mintrinsics=MR_FIRE|MR_COLD|MR_ELEC;
     enhancement_observe_hit(o,NULL,m,ENHANCE_MELEE);assert(!o->o_enh_known);
     m->mintrinsics=MR_FIRE;
-    enhancement_observe_hit(o,NULL,m,ENHANCE_MELEE);assert(o->o_enh_known==OEP_PRIMORDIAL);
+    enhancement_observe_hit(o,NULL,m,ENHANCE_MELEE);assert(!o->o_enh_known);
     m->mintrinsics=0;
-    enhancement_observe_hit(o,NULL,m,ENHANCE_MELEE);assert(o->o_enh_known==(OEP_PRIMORDIAL|OEP_FIRE_II));
+    enhancement_observe_hit(o,NULL,m,ENHANCE_MELEE);assert(!o->o_enh_known);
     armor=addinv(item(LOW_BOOTS));enhancement_set(armor,OEP_FIRE_RES,OQ_STANDARD,FALSE);setworn(armor,W_ARMF);
     assert(!armor->o_enh_known);monstseesu(M_SEEN_FIRE);
     assert(armor->o_enh_known==OEP_FIRE_RES);
     m_setseenres(m,M_SEEN_FIRE);setnotworn(armor);
     assert(!m_seenres(m,M_SEEN_FIRE));
     freeinv(armor);obfree(armor,NULL);obfree(o,NULL);mongone(m);
-    puts("PASS visible elemental/Primordial observation, resisted components hidden, native resistance observation and removal knowledge");
+    puts("PASS visible elemental/Primordial tier ambiguity, resisted components hidden, native resistance observation and removal knowledge");
 }
 
 /* Exercise native callers, rather than only the shared observation helper. */

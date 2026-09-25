@@ -128,6 +128,12 @@
 #define AD_CURS 253 /* random curse (ex. gremlin) */
 
 struct mhitm_data {
+    boolean fatal; /* native instant death encoded as numerical damage */
+    int artifact_nonphysical; /* native elemental artifact component */
+    int direct_physical; /* damage inflicted early by native pudding splitting */
+    boolean alignment_added; /* physical handler already included weapon dice */
+    int direct_damage; /* immediate damage already inflicted (weapon poison) */
+    int nonphysical_damage; /* pending poison, excluded from physical mitigation */
     struct obj *weapon; /* current attack's weapon; transient, never saved */
     int damage;
     int hitflags; /* M_ATTK_DEF_DIED | M_ATTK_AGR_DIED | ... */

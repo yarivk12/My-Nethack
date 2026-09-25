@@ -1172,7 +1172,7 @@ inside_gas_cloud(genericptr_t p1, genericptr_t p2)
             }
             if (resists_poison(mtmp))
                 return FALSE;
-            mtmp->mhp -= rnd(dam) + 5;
+            enhancement_mon_damage(mtmp, NULL, rnd(dam) + 5, 0);
             if (DEADMONSTER(mtmp)) {
                 if (heros_fault(reg))
                     killed(mtmp);
@@ -1507,7 +1507,7 @@ inside_dust_cloud(genericptr_t p1, genericptr_t p2)
         } else {
             dam = rnd(dam);
         }
-        losehp(dam, "dust storm", KILLED_BY_AN);
+        losehp_physical(dam, "dust storm", KILLED_BY_AN);
         nomul(0);
         return FALSE;
     }
@@ -1532,7 +1532,7 @@ inside_dust_cloud(genericptr_t p1, genericptr_t p2)
             pline("%s struggles to breathe!", Monnam(mon));
         dam = rnd(dam);
     }
-    mon->mhp -= dam;
+    enhancement_mon_damage(mon, NULL, dam, -1);
     if (DEADMONSTER(mon))
         monkilled(mon, "dust cloud", adtyp);
     return DEADMONSTER(mon) ? TRUE : FALSE;

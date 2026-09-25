@@ -17,15 +17,17 @@ extern struct obj *step13_restore_chain(NHFILE *);
     && (a)->o_enh_known == (b)->o_enh_known \
     && (a)->o_enh_quality == (b)->o_enh_quality \
     && (a)->o_enh_flags == (b)->o_enh_flags \
+    && (a)->o_stoning_remaining == (b)->o_stoning_remaining \
+    && (a)->o_stoning_turn == (b)->o_stoning_turn \
     && (a)->o_socket_capacity == (b)->o_socket_capacity \
     && !memcmp((a)->o_sockets,(b)->o_sockets,sizeof (a)->o_sockets) \
     && !memcmp((a)->o_enh_values,(b)->o_enh_values,sizeof (a)->o_enh_values))
 #define ZERO(a) assert(!(a)->o_enh_props && !(a)->o_enh_known \
     && !(a)->o_enh_quality && !(a)->o_enh_flags)
 _Static_assert(sizeof(uint32) == 4 && sizeof(uint8) == 1, "fixed width");
-_Static_assert(sizeof(struct obj) == 144, "Windows x64 object size (baseline 104)");
+_Static_assert(sizeof(struct obj) == 152, "Windows x64 object size (baseline 104)");
 _Static_assert(OQ_STANDARD == 0 && OQ_FINE == 1 && OQ_EXCEPTIONAL == 2, "qualities");
-_Static_assert(OEP_ALL == 0x1ffffff7fULL && OEF_QUALITY_KNOWN == 1U, "masks");
+_Static_assert(OEP_ALL == 0xfffffffffffff7fULL && OEF_QUALITY_KNOWN == 1U, "masks");
 
 static void
 test_message(const char *s)
@@ -42,6 +44,8 @@ item(int type)
 }
 
 #include "test_step15d.c"
+#include "test_step16a.c"
+#include "test_step16b.c"
 
 static void
 matrix(void)
@@ -461,6 +465,7 @@ chains(void)
 
 #include "test_step14_persistence.c"
 #include "test_step15d_persistence.c"
+#include "test_step16a_persistence.c"
 
 static void
 version_gate(void)
@@ -475,10 +480,10 @@ version_gate(void)
     f=get_freeing_nhfile();file_mode(f,READING,open("step13-version.tmp",O_RDONLY|O_BINARY));
     assert(read(f->fd,header,2)==2);assert(header[0]=='h');
     lseek(f->fd,2+header[1],SEEK_SET);Sfi_version_info(f,&v,"version_info");
-    assert((v.incarnation&255)==10);assert(check_version(&v,NULL,FALSE,0));
-    v.incarnation=(v.incarnation&~255UL)|9;
+    assert((v.incarnation&255)==12);assert(check_version(&v,NULL,FALSE,0));
+    v.incarnation=(v.incarnation&~255UL)|11;
     assert(!check_version(&v,NULL,FALSE,0));close_nhfile(f);
-    puts("PASS native critical sizes/epoch-10 header and controlled epoch-9 check_version rejection");
+    puts("PASS native critical sizes/epoch-12 header and controlled epoch-11 check_version rejection");
 }
 
 static int
@@ -508,6 +513,11 @@ level_bones(void)
     unsigned long seed;
     free_level();u.uz.dnum=medusa_level.dnum;u.uz.dlevel=10;
     gi.in_mklev=TRUE;mklev();gi.in_mklev=FALSE;
+    o=item(DAGGER);assert(enhancement_set(o,OEP_STONING_III|OEP_VAMPIRIC_IV,0,FALSE));
+    o->o_stoning_remaining=17;o->o_stoning_turn=svm.moves;
+    o=oname(o,"step16a-bones",ONAME_NO_FLAGS);place_object(o,20,10);
+    o=item(PLATE_MAIL);assert(enhancement_set(o,OEP_LIGHTNESS_III|OEP_DR_IV,0,FALSE));
+    o=oname(o,"step16b-bones",ONAME_NO_FLAGS);place_object(o,20,10);
     o=fixture_item("step13-floor");place_object(o,20,10);
     o=fixture_item("step13-hero-bones");place_object(o,20,10);
     o=fixture_item("step13-buried");o->ox=20;o->oy=10;add_to_buried(o);
@@ -517,6 +527,10 @@ level_bones(void)
     savelev(f,ledger_no(&u.uz));close_nhfile(f);
     f=get_freeing_nhfile();file_mode(f,READING,open("step13-level.tmp",O_RDONLY|O_BINARY));
     getlev(f,0,ledger_no(&u.uz));close_nhfile(f);assert(level_fixture_count()==4);
+    for(o=fobj;o;o=o->nobj)if(has_oname(o)&&!strcmp(ONAME(o),"step16a-bones"))break;
+    assert(o&&o->o_stoning_remaining==17);
+    /* This floor item is frozen while the hero is on a different level. */
+    svm.moves+=1000;
     f=create_bonesfile(&u.uz,&id,why);assert(f);count=(char)(strlen(id)+1);
     f->mode=WRITING;store_version(f);
     Sfo_char(f,svn.nhuuid,"ancestor-nhuuid",sizeof svn.nhuuid);
@@ -526,6 +540,14 @@ level_bones(void)
     for(seed=1;seed<1000;++seed){init_isaac64(seed,rn2);if(!rn2(3))break;}
     assert(seed<1000);init_isaac64(seed,rn2);mklev();
     assert(level_fixture_count()==4);
+    for(o=fobj;o;o=o->nobj)if(has_oname(o)&&!strcmp(ONAME(o),"step16a-bones"))break;
+    assert(o&&o->o_stoning_remaining==17&&!o->o_enh_known);
+    enhancement_tick();assert(o->o_stoning_remaining==16);
+    for(o=fobj;o;o=o->nobj)if(has_oname(o)&&!strcmp(ONAME(o),"step16b-bones"))break;
+    assert(o && o->o_enh_props==(OEP_LIGHTNESS_III|OEP_DR_IV)
+           && !o->o_enh_known && o->owt==(unsigned)weight(o));
+    puts("PASS Step 16B real level/bones codec preserves upper bits and effective weight");
+    puts("PASS Step 16A real level/bones codec, frozen off-level cooldown and resumed active tick");
     puts("PASS actual savelev/getlev and accepted mklev/getbones with enhanced floor, hero remains, buried and monster equipment");
 }
 
@@ -554,11 +576,11 @@ step13_test_main(void)
     flush_screen(-1);
     printf("SIZE|obj=%zu|before=104|props=%zu|known=%zu|quality=%zu|flags=%zu|epoch=%d\n",sizeof(struct obj),sizeof(((struct obj*)0)->o_enh_props),sizeof(((struct obj*)0)->o_enh_known),sizeof(((struct obj*)0)->o_enh_quality),sizeof(((struct obj*)0)->o_enh_flags),EDITLEVEL);
     if(getenv("STEP13_COMBAT_ONLY")) {
-        combat();combat_paths();armor();step14_combat_tests();
+        step16b_basic(); step16b_damage(); step16b_reflection(); step16b_casting(); step16a_tests(); combat();combat_paths();armor();step14_combat_tests();
         step14_hero_use_observation_tests();step14_observation_tests();
         puts("PASS Step 13 focused combat/knowledge fixtures");return 0;
     }
-    step15d_state_tests();
+    step16b_damage(); step16b_reflection(); step16b_casting(); step16b_basic(); step16a_tests(); step15d_state_tests();
     step15d_catalog_tests();
     step15d_effect_tests();
     step15d_combat_tests();
@@ -569,7 +591,7 @@ step13_test_main(void)
     step14_audit_polymorph_context_tests();
     step14_audit_monster_transform_tests();
     step14_generation_tests();step14_corpus();step14_creation_tests();
-    lifecycle_names();impact_descriptions();artifacts_prices();billing();chains();step14_persistence_tests();step15d_persistence_tests();version_gate();level_bones();
+    lifecycle_names();impact_descriptions();artifacts_prices();billing();chains();step14_persistence_tests();step15d_persistence_tests();step16a_persistence_tests();step16b_persistence();version_gate();level_bones();
     puts("PASS Step 13 native runtime fixtures");return 0;
 }
 
@@ -667,6 +689,19 @@ step13_game_fixture(boolean resuming)
         return;
     }
     if(!resuming) {
+        struct obj *defense_bag=item(SACK);
+        int property;
+        for(property=0;property<12;++property) {
+            o=item(PLATE_MAIL);
+            assert(enhancement_set(o,1ULL<<(48+property),0,FALSE));
+            add_to_container(defense_bag,o);
+        }
+        defense_bag->owt=weight(defense_bag); /* native container insertion callers refresh caches */
+        addinv(oname(defense_bag,"step16b-checkpoint",ONAME_NO_FLAGS));
+        o=item(DAGGER);assert(enhancement_set(o,OEP_STONING_III|OEP_VAMPIRIC_IV,0,FALSE));
+        o->o_stoning_remaining=17;o->o_stoning_turn=svm.moves;
+        o->o_sockets[0].property=EP_ACID_III;
+        addinv(oname(o,"step16a-checkpoint",ONAME_NO_FLAGS));
         o = fixture_item("step13-inventory");
         if (getenv("STEP15C_GAME_SEED")) {
             o->spe = -5; o->cursed = 1;
@@ -711,7 +746,20 @@ step13_game_fixture(boolean resuming)
     assert(fixture_named(svl.level.buriedobjlist,"step13-buried",OBJ_BURIED)==1);
     assert(fixture_named(gm.migrating_objs,"step13-migrating",OBJ_MIGRATING)==1);
     assert(fixture_named(gb.billobjs,"step13-bill",OBJ_ONBILL)==1);
+    for(o=gi.invent;o;o=o->nobj)if(has_oname(o)&&!strcmp(ONAME(o),"step16a-checkpoint"))break;
+    assert(o&&o->o_stoning_remaining==17&&o->o_enh_props==(OEP_STONING_III|OEP_VAMPIRIC_IV)
+           &&o->o_sockets[0].property==EP_ACID_III&&!o->o_enh_known);
+    for(o=gi.invent;o;o=o->nobj)if(has_oname(o)&&!strcmp(ONAME(o),"step16b-checkpoint"))break;
+    assert(o && o->owt==(unsigned)weight(o));
+    {
+        uint64 restored=0;
+        for(inner=o->cobj;inner;inner=inner->nobj) {
+            restored |= inner->o_enh_props;
+            assert(!inner->o_enh_known && inner->owt==(unsigned)weight(inner));
+        }
+        assert(restored==OEP_DEFENSIVE);
+    }
     log=fopen("step13-game-results.txt","a");assert(log);
-    fprintf(log,"PASS %s all eight ownership paths, migrating monster, container/monster backlinks and named owner identities\n",resuming?"restored":"created");
+    fprintf(log,"PASS %s all eight ownership paths, migrating monster, container/monster backlinks, offensive upper bits and Stoning cooldown\n",resuming?"restored":"created");
     fclose(log);
 }

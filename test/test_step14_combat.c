@@ -191,8 +191,8 @@ step14_armor_tests(void)
 static void
 step14_combat_path_tests(void)
 {
-    const uint32 bits[] = { OEP_FIRE_II, OEP_COLD_III, OEP_PRIMORDIAL };
-    const int minimum[] = { 3, 5, 15 }, maximum[] = { 12, 30, 90 };
+    const uint64 bits[] = { OEP_FIRE_II, OEP_COLD_III, OEP_PRIMORDIAL, OEP_ACID_I, OEP_ACID_II, OEP_ACID_III };
+    const int minimum[] = { 3, 5, 15, 1, 3, 5 }, maximum[] = { 12, 30, 90, 4, 12, 30 };
     struct monst *a = makemon(&mons[PM_HUMAN], 31, 10, NO_MINVENT);
     struct monst *defender = makemon(&mons[PM_DWARF], 32, 10, NO_MINVENT);
     int path, kind, seed, pass, marker, loss[3], elemental_delta = 0;
@@ -212,8 +212,8 @@ step14_combat_path_tests(void)
                 assert(enhancement_set(bow, pass ? bits[kind] : 0, OQ_STANDARD, FALSE));
                 defender->mhp = defender->mhpmax = a->mhp = a->mhpmax = 2000;
                 u.uhp = u.uhpmax = 2000; u.uac = 10;
-                defender->mintrinsics = pass == 2 ? MR_FIRE | MR_COLD | MR_ELEC : 0;
-                HFire_resistance = HCold_resistance = HShock_resistance =
+                defender->mintrinsics = pass == 2 ? MR_FIRE | MR_COLD | MR_ELEC | MR_ACID : 0;
+                HFire_resistance = HCold_resistance = HShock_resistance = HAcid_resistance =
                     pass == 2 ? FROMOUTSIDE : 0;
                 init_isaac64(seed, rn2);
                 if (path < 3) {
@@ -234,7 +234,7 @@ step14_combat_path_tests(void)
                 if (o) obfree(o, NULL);
                 obfree(bow, NULL);
                 defender->mintrinsics = 0;
-                HFire_resistance = HCold_resistance = HShock_resistance = 0;
+                HFire_resistance = HCold_resistance = HShock_resistance = HAcid_resistance = 0;
             }
             assert(loss[0] > 0 && loss[2] == loss[0]);
             assert(loss[1] - loss[0] >= minimum[kind] * (shot ? 2 : 1));
@@ -248,7 +248,7 @@ step14_combat_path_tests(void)
         }
     HBlinded = 0; u.ualign.type = old_alignment;
     mongone(a); mongone(defender);
-    puts("PASS Step 14 T2/T3/Primordial nine combat paths, exact elemental independence from Anarchic/Concordant doubling, stacked shots and native resistance");
+    puts("PASS Step 14/16A T2/T3/Primordial/Acid I-III nine combat paths, exact elemental independence from Anarchic/Concordant doubling, stacked shots and native resistance");
 }
 
 static void
@@ -340,8 +340,7 @@ step14_hero_use_observation_tests(void)
     for(path=0;path<9;++path)for(condition=0;condition<4;++condition) {
         boolean shot=path==2||path==6||path==8;
         boolean hero_target=path==3||path==5||path==6;
-        uint32 learned=condition==0?effects
-            :condition==1?OEP_PRIMORDIAL:0;
+
         int low=condition==2?0:condition==1?10:18;
         int high=condition==2?0:condition==1?60:102;
         for(pass=0;pass<3;++pass) {
@@ -413,8 +412,8 @@ step14_hero_use_observation_tests(void)
                    && bow->o_enh_quality==bow_state.o_enh_quality
                    && bow->o_enh_flags==bow_state.o_enh_flags);
             if(path<3 && pass==1) {
-                assert(weapon->o_enh_known==learned);
-                assert(bow->o_enh_known==(shot?learned:0));
+                assert(!weapon->o_enh_known);
+                assert(!bow->o_enh_known);
             } else {
                 assert(weapon->o_enh_known==weapon_state.o_enh_known);
                 assert(bow->o_enh_known==bow_state.o_enh_known);
@@ -447,5 +446,5 @@ step14_hero_use_observation_tests(void)
     mongone(attacker);mongone(defender);
     gv.viz_array[10][31]=viz_attacker;gv.viz_array[10][32]=viz_hero;
     gv.viz_array[11][32]=viz_defender;
-    printf("PASS hero-use-only elemental observation: %d native impacts, nine visible/blind combat paths, resistance/Primordial, knowledge-independent damage/RNG, %d surviving monster projectiles\n",cases,survivors);
+    printf("PASS ambiguous elemental observations remain unidentified: %d native impacts, nine visible/blind combat paths, resistance/Primordial, knowledge-independent damage/RNG, %d surviving monster projectiles\n",cases,survivors);
 }

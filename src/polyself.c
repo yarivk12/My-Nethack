@@ -1741,7 +1741,7 @@ dogaze(void)
                         ignite_items(mtmp->minvent);
                     }
                     if (dmg)
-                        mtmp->mhp -= dmg;
+                        enhancement_mon_damage(mtmp, &gy.youmonst, dmg, 0);
                     if (DEADMONSTER(mtmp))
                         killed(mtmp);
                 }
@@ -1946,7 +1946,7 @@ domindblast(void)
                 u_sen ? "telepathy"
                 : telepathic(mtmp->data) ? "latent telepathy"
                   : "mind");
-            mtmp->mhp -= dmg;
+            enhancement_mon_damage(mtmp, &gy.youmonst, dmg, 0);
             if (DEADMONSTER(mtmp))
                 killed(mtmp);
         }

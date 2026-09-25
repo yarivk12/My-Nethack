@@ -3,13 +3,14 @@
 
 staticfn uint64 enhancement_allowed(const struct obj *);
 staticfn uint64 enhancement_active(const struct obj *);
+staticfn uint64 socket_bits(const struct obj *);
 staticfn const struct obj *enhancement_launcher(const struct obj *,
                                                const struct obj *,
                                                enum enhance_use);
 
 /* Catalog order is the canonical same-tier naming priority. Element values
  * are native resistance properties; Primordial uses all three components. */
-const struct enhancement_entry enhancement_catalog[32] = {
+const struct enhancement_entry enhancement_catalog[59] = {
     { OEP_FIRE, 1, 0, FIRE_RES, 1, 4, "Smoldering", "of Embers" },
     { OEP_COLD, 1, 0, COLD_RES, 1, 4, "Chilled", "of Rime" },
     { OEP_SHOCK, 1, 0, SHOCK_RES, 1, 4, "Sparking", "of Static" },
@@ -41,7 +42,34 @@ const struct enhancement_entry enhancement_catalog[32] = {
     { OEP_DEX_I, 1, 0, 0, 1, 2, "Nimble", "of Dexterity", ES_DEX },
     { OEP_DEX_II, 2, 0, 0, 1, 3, "Deft", "of Agility", ES_DEX },
     { OEP_DEX_III, 3, 0, 0, 2, 2, "Precise", "of Precision", ES_DEX },
-    { OEP_DEX_IV, 4, 0, 0, 2, 3, "Peerless", "of Mastery", ES_DEX }
+    { OEP_DEX_IV, 4, 0, 0, 2, 3, "Peerless", "of Mastery", ES_DEX },
+    { OEP_VAMPIRIC_I, 1, 0, 0, 0, 0, "Bloodkissed", "of the Bloodkiss" },
+    { OEP_VAMPIRIC_II, 2, 0, 0, 0, 0, "Leeching", "of the Leech" },
+    { OEP_VAMPIRIC_III, 3, 0, 0, 0, 0, "Crimson", "of the Rose" },
+    { OEP_VAMPIRIC_IV, 4, 0, 0, 0, 0, "Dread-Vampire's", "of Exsanguination" },
+    { OEP_ACID_I, 1, 0, ACID_RES, 1, 4, "Corrosive", "of Corrosion" },
+    { OEP_ACID_II, 2, 0, ACID_RES, 3, 4, "Caustic", "of Dissolution" },
+    { OEP_ACID_III, 3, 0, ACID_RES, 5, 6, "Flesh-Eating", "of the Crucible" },
+    { OEP_ANARCHIC_I, 1, 0, 0, 2, 4, "Chaotic", "of Discord" },
+    { OEP_ANARCHIC_II, 2, 0, 0, 5, 4, "Brutal", "of Anarchy" },
+    { OEP_AXIOMATIC_I, 1, 0, 0, 2, 4, "Righteous", "of Order" },
+    { OEP_AXIOMATIC_II, 2, 0, 0, 5, 4, "Immutable", "of the Arbiter" },
+    { OEP_STONING_I, 1, 0, 0, 0, 0, "Calcifying", "of Calcification" },
+    { OEP_STONING_II, 2, 0, 0, 0, 0, "Petrifying", "of Petrification" },
+    { OEP_STONING_III, 3, 0, 0, 0, 0, "Gorgon's", "of the Gorgon" },
+    { OEP_STONING_IV, 4, 0, 0, 0, 0, "Medusa's", "of Medusa" },
+    { OEP_WARDING, 3, 0, 0, 0, 0, "Sanctified", "of Warding" },
+    { OEP_CASTING_II, 2, 0, 0, 0, 0, "Mystic", "of Casting" },
+    { OEP_CASTING_IV, 4, 0, 0, 0, 0, "Sorcerous", "of the Archmage" },
+    { OEP_LIGHTNESS_I, 1, 0, 0, 0, 0, "Lightweight", "of Lightness" },
+    { OEP_LIGHTNESS_II, 2, 0, 0, 0, 0, "Feathered", "of Featherweight" },
+    { OEP_LIGHTNESS_III, 3, 0, 0, 0, 0, "Weightless", "of Weightlessness" },
+    { OEP_THORNS_I, 1, 0, 0, 0, 0, "Barbed", "of Thorns" },
+    { OEP_THORNS_II, 2, 0, 0, 0, 0, "Spiked", "of Retribution" },
+    { OEP_DR_I, 1, 0, 0, 0, 0, "Hardened", "of Resilience" },
+    { OEP_DR_II, 2, 0, 0, 0, 0, "Stalwart", "of Preservation" },
+    { OEP_DR_III, 3, 0, 0, 0, 0, "Aegis-Bound", "of Aegis" },
+    { OEP_DR_IV, 4, 0, 0, 0, 0, "Bulwarked", "of Safeguarding" }
 };
 
 /* Socket-only entries share the ordinary engine's property descriptors.
@@ -87,6 +115,7 @@ const struct enhancement_entry *
 equipment_property(int id)
 {
     if (id <= EP_NONE || id >= EP_COUNT) return 0;
+    if (id >= EP_VAMPIRIC_I) return &enhancement_catalog[32 + id - EP_VAMPIRIC_I];
     return id <= 32 ? &enhancement_catalog[id - 1] : &socket_extra[id - 33];
 }
 
@@ -102,7 +131,12 @@ equipment_property_name(int id)
         "Reflection", "Strength I", "Strength II", "Strength III", "Strength IV",
         "Dexterity I", "Dexterity II", "Dexterity III", "Dexterity IV"
     };
+    static const char *const offensive_names[] = {
+        "Vampiric I", "Vampiric II", "Vampiric III", "Vampiric IV", "Acid I", "Acid II", "Acid III", "Anarchic I", "Anarchic II", "Axiomatic I", "Axiomatic II", "Stoning I", "Stoning II", "Stoning III", "Stoning IV"
+    };
     const struct enhancement_entry *e = equipment_property(id);
+    if (id >= EP_WARDING && id < EP_COUNT) return e->prefix;
+    if (id >= EP_VAMPIRIC_I && id < EP_WARDING) return offensive_names[id - EP_VAMPIRIC_I];
     return !e ? "empty" : id <= 32 ? names[id - 1] : e->prefix;
 }
 
@@ -162,14 +196,15 @@ socket_allowed(const struct obj *obj, int id)
         return FALSE;
     if (cls == WEAPON_CLASS)
         return (id <= EP_PRIMORDIAL && (id != EP_TRUEFLIGHT || is_launcher(obj)))
-               || (id >= EP_STR_I && id <= EP_DEX_IV);
+               || (id >= EP_STR_I && id <= EP_DEX_IV)
+               || (e->bit & (OEP_ACID | OEP_ALIGNMENT));
     if (cls == ARMOR_CLASS)
         return id == EP_STEALTH || id == EP_WARNING
             || (id >= EP_FIRE_RES && id <= EP_POISON_RES)
             || id == EP_DISPLACED || id == EP_MAGIC_RES
             || (id >= EP_HP_I && id <= EP_CON_IV);
     return id == EP_STEALTH || id == EP_SEARCHING || id == EP_REGEN
-        || id == EP_SPEED || id == EP_REFLECTION || id >= EP_MANA_I;
+        || id == EP_SPEED || id == EP_REFLECTION || (id >= EP_MANA_I && id <= EP_FLYING);
 }
 
 int
@@ -183,6 +218,14 @@ socket_candidates(const struct obj *obj, int tier, int removed, int *out)
         for (i = 0; i < min(obj->o_socket_capacity, 2); ++i)
             if (i != removed && obj->o_sockets[i].property == id) break;
         if (i < min(obj->o_socket_capacity, 2)) continue;
+        if (e->bit & OEP_ALIGNMENT) {
+            if (obj->o_enh_props & OEP_ALIGNMENT) continue;
+            for (i = 0; i < min(obj->o_socket_capacity, 2); ++i) {
+                const struct enhancement_entry *other = equipment_property(obj->o_sockets[i].property);
+                if (i != removed && other && (other->bit & OEP_ALIGNMENT)) break;
+            }
+            if (i < min(obj->o_socket_capacity, 2)) continue;
+        }
         if (out) out[n] = id;
         ++n;
     }
@@ -196,12 +239,20 @@ socket_normalize(struct obj *obj)
     int i, cap = socket_capacity(obj);
     if (!enhancement_eligible(obj)) {
         obj->o_enh_props = obj->o_enh_known = 0;
+        obj->o_stoning_remaining = 0;
+        obj->o_stoning_turn = 0;
         obj->o_enh_quality = obj->o_enh_flags = 0;
     } else {
+        struct obj ordinary = *obj;
         obj->o_enh_props &= enhancement_allowed(obj);
-        if (!enhancement_property_allowed(obj, obj->o_enh_props)) obj->o_enh_props = 0;
+        memset(ordinary.o_sockets, 0, sizeof ordinary.o_sockets);
+        if (!enhancement_property_allowed(&ordinary, obj->o_enh_props)) obj->o_enh_props = 0;
         if (obj->o_enh_quality > OQ_EXCEPTIONAL) obj->o_enh_quality = OQ_STANDARD;
         obj->o_enh_flags &= OEF_QUALITY_KNOWN;
+    }
+    if (!(obj->o_enh_props & OEP_STONING)) {
+        obj->o_stoning_remaining = 0;
+        obj->o_stoning_turn = 0;
     }
     if (obj->o_socket_capacity > cap) obj->o_socket_capacity = (uint8) cap;
     for (i = 0; i < 2; ++i) {
@@ -209,6 +260,10 @@ socket_normalize(struct obj *obj)
         const struct enhancement_entry *e = equipment_property(s->property);
         if (i >= obj->o_socket_capacity || !e || !socket_allowed(obj, s->property)
             || (e->bit && (obj->o_enh_props & e->bit))
+            || ((e->bit & OEP_ALIGNMENT) && (obj->o_enh_props & OEP_ALIGNMENT))
+            || (i && equipment_property(obj->o_sockets[0].property)
+                && (e->bit & OEP_ALIGNMENT)
+                && (equipment_property(obj->o_sockets[0].property)->bit & OEP_ALIGNMENT))
             || (i && obj->o_sockets[0].property == s->property)
             || (e->stat && (s->value < e->dice || s->value > e->dice * e->sides)))
             memset(s, 0, sizeof *s);
@@ -281,7 +336,11 @@ enhancement_allowed(const struct obj *obj)
     if (!enhancement_eligible(obj))
         return 0;
     if (obj->oclass == ARMOR_CLASS) {
-        uint64 allowed = OEP_WORN;
+        uint64 allowed = OEP_WORN | OEP_WARDING | OEP_DR;
+        if (armor_spell_penalty(obj)) allowed |= OEP_CASTING;
+        if (objects[obj->otyp].oc_weight >= 100) allowed |= OEP_LIGHTNESS;
+        if (is_suit(obj) || is_shield(obj) || is_helmet(obj)
+            || is_gloves(obj) || is_boots(obj)) allowed |= OEP_THORNS;
         int i;
         for (i = 0; i < SIZE(enhancement_catalog); ++i)
             if (enhancement_catalog[i].native_property
@@ -289,7 +348,9 @@ enhancement_allowed(const struct obj *obj)
                 allowed &= ~enhancement_catalog[i].bit;
         return allowed;
     }
-    return OEP_ELEMENTS | OEP_ATTRIBUTES
+    return OEP_ELEMENTS | OEP_ATTRIBUTES | OEP_VAMPIRIC
+           | (!is_ammo(obj) ? OEP_ALIGNMENT : 0)
+           | (!is_ammo(obj) && obj->quan == 1L ? OEP_STONING : 0)
            | ((is_launcher(obj) || is_ammo(obj) || is_missile(obj)
                || is_spear(obj))
                   ? OEP_TRUEFLIGHT : 0);
@@ -299,6 +360,14 @@ boolean
 enhancement_property_allowed(const struct obj *obj, uint64 props)
 {
     uint64 rest = props & (props - 1U);
+    uint64 families[] = { OEP_VAMPIRIC, OEP_ALIGNMENT, OEP_STONING,
+                          OEP_CASTING, OEP_LIGHTNESS, OEP_THORNS, OEP_DR };
+    int i;
+    for (i = 0; i < SIZE(families); ++i) {
+        uint64 bits = props & families[i];
+        if (bits & (bits - 1ULL)) return FALSE;
+        if (bits && (socket_bits(obj) & families[i])) return FALSE;
+    }
     return enhancement_eligible(obj) && !(rest & (rest - 1U))
            && !(props & ~enhancement_allowed(obj));
 }
@@ -353,7 +422,7 @@ enhancement_elemental_contact(const struct obj *obj, const struct obj *launcher,
     return ((enhancement_active(obj) | socket_bits(obj)
              | enhancement_active(enhancement_launcher(obj, launcher, use))
              | socket_bits(enhancement_launcher(obj, launcher, use)))
-            & OEP_ELEMENTS) != 0;
+            & (OEP_ELEMENTS | OEP_STONING)) != 0;
 }
 
 /* A native observable event can identify a single attributable source.
@@ -409,6 +478,7 @@ enhancement_worn_on(struct obj *obj, struct monst *wearer)
     if (!obj || wearer != &gy.youmonst)
         return;
     mask = obj->owornmask & (W_ARMOR | W_RING | W_AMUL);
+    if (mask & W_ARMOR) obj->o_enh_known |= enhancement_active(obj) & OEP_CASTING;
     for (i = 1; i <= LAST_PROP; ++i) {
         prop = i;
         if (enhancement_confers(obj, prop)) u.uprops[prop].extrinsic |= mask;
@@ -430,6 +500,8 @@ enhancement_worn_on(struct obj *obj, struct monst *wearer)
 staticfn void
 enhancement_changed(struct obj *obj)
 {
+    obj->owt = weight(obj);
+    if (obj->where == OBJ_CONTAINED) container_weight(obj->ocontainer);
     if (obj->unpaid)
         enhancement_rebill(obj);
     if (carried(obj)) {
@@ -449,6 +521,8 @@ enhancement_clear(struct obj *obj)
     if (carried(obj))
         enhancement_worn_off(obj, &gy.youmonst);
     obj->o_enh_props = obj->o_enh_known = 0;
+    obj->o_stoning_remaining = 0;
+    obj->o_stoning_turn = 0;
     obj->o_enh_quality = obj->o_enh_flags = 0;
     memset(obj->o_enh_values, 0, sizeof obj->o_enh_values);
     enhancement_changed(obj);
@@ -462,6 +536,8 @@ enhancement_change_type(struct obj *obj, int otyp)
     if (obj->otyp == otyp) return;
     if (carried(obj)) enhancement_worn_off(obj, &gy.youmonst);
     obj->o_enh_props = obj->o_enh_known = 0;
+    obj->o_stoning_remaining = 0;
+    obj->o_stoning_turn = 0;
     obj->o_enh_quality = obj->o_enh_flags = 0;
     memset(obj->o_enh_values, 0, sizeof obj->o_enh_values);
     obj->otyp = otyp;
@@ -514,6 +590,10 @@ enhancement_set(struct obj *obj, uint64 props,
             else if (!(obj->o_enh_props & e->bit))
                 obj->o_enh_values[i] = (uint8) d(e->dice, e->sides);
         }
+    }
+    if ((obj->o_enh_props & OEP_STONING) != (props & OEP_STONING)) {
+        obj->o_stoning_remaining = 0;
+        obj->o_stoning_turn = 0;
     }
     obj->o_enh_props = props;
     obj->o_enh_known = known ? enhancement_allowed(obj) : 0;
@@ -597,6 +677,7 @@ enhancement_resisted(struct monst *target, int element)
     boolean hero = target == &gy.youmonst;
     return element == FIRE_RES ? (hero ? Fire_resistance : resists_fire(target))
         : element == COLD_RES ? (hero ? Cold_resistance : resists_cold(target))
+        : element == ACID_RES ? (hero ? Acid_resistance : resists_acid(target))
         : (hero ? Shock_resistance : resists_elec(target));
 }
 
@@ -628,44 +709,152 @@ enhancement_weapon_effects(struct obj *obj, const struct obj *launcher,
                     pline("%s %s struck by %s!",
                         target == &gy.youmonst ? "You" : Monnam(target),
                         target == &gy.youmonst ? "are" : "is",
-                        element == FIRE_RES ? "fire" : element == COLD_RES ? "frost" : "lightning");
+                        element == FIRE_RES ? "fire" : element == COLD_RES ? "frost" : element == ACID_RES ? "acid" : "lightning");
             }
         }
     }
     return extra;
 }
 
+/* Visible elements, healing and petrification do not determine exact tiers.
+ * Explicit identification remains the sole source of knowledge for these. */
 void
-enhancement_observe_hit(struct obj *obj, struct obj *launcher,
-                        struct monst *target, enum enhance_use use)
+enhancement_observe_hit(struct obj *obj UNUSED, struct obj *launcher UNUSED,
+                        struct monst *target UNUSED, enum enhance_use use UNUSED)
 {
-    int i;
-    uint64 bits = 0;
-    if (Blind || !canseemon(target))
+}
+
+/* Physical dice enter the caller's physical channel before its mitigation. */
+int
+enhancement_alignment_damage(const struct obj *obj, const struct obj *launcher,
+                             const struct monst *target, enum enhance_use use)
+{
+    const struct obj *sources[2];
+    int alignment, source, i, damage = 0;
+    if (!obj || !target || use == ENHANCE_ARMOR) return 0;
+    /* Native contact immunities apply to this physical component too. */
+    if ((shadelike(target->data) && !shade_glare((struct obj *) obj))
+        || (thick_skinned(target->data) && obj_material(obj) <= LEATHER))
+        return 0;
+    alignment = target == &gy.youmonst ? u.ualign.type
+                                     : mon_aligntyp((struct monst *) target);
+    if (alignment == A_NONE) return 0;
+    sources[0] = obj;
+    sources[1] = enhancement_launcher(obj, launcher, use);
+    for (source = 0; source < 2; ++source) {
+        uint64 bits = enhancement_active(sources[source]) | socket_bits(sources[source]);
+        for (i = 0; i < SIZE(enhancement_catalog); ++i) {
+            const struct enhancement_entry *e = &enhancement_catalog[i];
+            if (!(bits & e->bit & OEP_ALIGNMENT)) continue;
+            if (((e->bit & (OEP_ANARCHIC_I | OEP_ANARCHIC_II))
+                 && alignment != A_CHAOTIC)
+                || ((e->bit & (OEP_AXIOMATIC_I | OEP_AXIOMATIC_II))
+                    && alignment != A_LAWFUL))
+                damage += d(e->dice, e->sides);
+        }
+    }
+    return damage;
+}
+
+/* Call exactly once, with the final channels before remaining-HP clamping. */
+void
+enhancement_vampiric(const struct obj *obj, const struct obj *launcher,
+                      struct monst *attacker, const struct monst *target,
+                      int physical, int total, enum enhance_use use)
+{
+    static const int percent[] = { 0, 10, 20, 25, 30 };
+    uint64 bits;
+    int i, tier = 0, basis, healing;
+    if (!attacker || !target
+        || (attacker != &gy.youmonst && DEADMONSTER(attacker))
+        || nonliving(target->data) || use == ENHANCE_ARMOR)
         return;
-    for (i = 0; i < SIZE(enhancement_catalog); ++i) {
-        int e = enhancement_catalog[i].element;
-        if (e && (e == -1
-            ? (!enhancement_resisted(target, FIRE_RES)
-               || !enhancement_resisted(target, COLD_RES)
-               || !enhancement_resisted(target, SHOCK_RES))
-            : !enhancement_resisted(target, e)))
-            bits |= enhancement_catalog[i].bit;
-    }
-    if (obj) {
-        obj->o_enh_known |= enhancement_active(obj) & bits;
-        for (i = 0; i < min(obj->o_socket_capacity, 2); ++i) {
-            const struct enhancement_entry *e = equipment_property(obj->o_sockets[i].property);
-            if (e && (e->bit & bits)) obj->o_sockets[i].known = 1;
+    bits = enhancement_active(obj)
+           | enhancement_active(enhancement_launcher(obj, launcher, use));
+    for (i = 0; i < SIZE(enhancement_catalog); ++i)
+        if (bits & enhancement_catalog[i].bit & OEP_VAMPIRIC)
+            tier = max(tier, enhancement_catalog[i].tier);
+    if (!tier) return;
+    basis = tier < 3 ? physical : total;
+    if (basis <= 0) return;
+    healing = max(1, (int) ((long) basis * percent[tier] / 100L));
+    if (attacker == &gy.youmonst) healup(healing, 0, FALSE, FALSE);
+    else if (!DEADMONSTER(attacker)) healmon(attacker, healing, 0);
+}
+
+staticfn int
+stoning_cooldown(const struct obj *obj)
+{
+    static const int turns[] = { 75, 50, 25, 10 };
+    int i;
+    uint64 bits = enhancement_active(obj);
+    for (i = 3; i >= 0; --i)
+        if (bits & (OEP_STONING_I << i)) return turns[i];
+    return 0;
+}
+
+/* Native contact petrification, with the physical source owning recharge.
+ * The return value is death, so combat callers never kill a statue twice. */
+boolean
+enhancement_stoning(struct obj *obj, struct obj *launcher,
+                     struct monst *attacker, struct monst *target,
+                     enum enhance_use use)
+{
+    struct obj *sources[2];
+    int i, cooldown;
+    if (!target || use == ENHANCE_ARMOR) return FALSE;
+    sources[0] = obj;
+    sources[1] = (struct obj *) enhancement_launcher(obj, launcher, use);
+    for (i = 0; i < 2; ++i) {
+        struct obj *source = sources[i];
+        if (!source || source->o_stoning_remaining
+            || !(cooldown = stoning_cooldown(source))) continue;
+        if (target == &gy.youmonst) {
+            struct permonst *before = gy.youmonst.data;
+            boolean started;
+            if (!attacker || Stoned || Stone_resistance) continue;
+            started = do_stone_u(attacker);
+            if (!started && before == gy.youmonst.data) continue;
+            source->o_stoning_remaining = cooldown;
+            source->o_stoning_turn = svm.moves;
+        } else {
+            if (DEADMONSTER(target)) return TRUE;
+            if (resists_ston(target)) continue;
+            /* Native consumption of a cure is also a petrification consequence.
+             * Both cure damage and petrification can destroy thrown objects. */
+            source->o_stoning_remaining = cooldown;
+            source->o_stoning_turn = svm.moves;
+            if (munstone(target, attacker == &gy.youmonst))
+                return DEADMONSTER(target);
+            minstapetrify(target, attacker == &gy.youmonst);
+            return DEADMONSTER(target);
         }
     }
-    if (enhancement_launcher(obj, launcher, use)) {
-        launcher->o_enh_known |= enhancement_active(launcher) & bits;
-        for (i = 0; i < min(launcher->o_socket_capacity, 2); ++i) {
-            const struct enhancement_entry *e = equipment_property(launcher->o_sockets[i].property);
-            if (e && (e->bit & bits)) launcher->o_sockets[i].known = 1;
-        }
+    return FALSE;
+}
+
+staticfn void
+stoning_tick_chain(struct obj *chain)
+{
+    struct obj *obj;
+    for (obj = chain; obj; obj = obj->nobj) {
+        if (obj->o_stoning_remaining && obj->o_stoning_turn != svm.moves)
+            --obj->o_stoning_remaining;
+        if (obj->cobj) stoning_tick_chain(obj->cobj);
     }
+}
+
+/* Once per normal turn, before moves advances. No inactive or migrating
+ * chains are visited and restore never applies elapsed-time catch-up. */
+void
+enhancement_tick(void)
+{
+    struct monst *mon;
+    stoning_tick_chain(gi.invent);
+    stoning_tick_chain(fobj);
+    stoning_tick_chain(svl.level.buriedobjlist);
+    for (mon = fmon; mon; mon = mon->nmon)
+        stoning_tick_chain(mon->minvent);
 }
 
 long
@@ -766,7 +955,7 @@ staticfn const char *
 enhancement_element_name(int element)
 {
     return element == FIRE_RES ? "fire"
-        : element == COLD_RES ? "cold" : "shock";
+        : element == COLD_RES ? "cold" : element == ACID_RES ? "acid" : "shock";
 }
 
 staticfn const char *
@@ -831,6 +1020,39 @@ enhancement_property_impact(const struct obj *obj, int property, int value,
     *buf = '\0';
     if (!obj || !e) return;
     worn = enhancement_worn_recipient(obj);
+    if (e->bit & OEP_DEFENSIVE) {
+        if (e->bit == OEP_WARDING)
+            Snprintf(buf, size, "prevents curses on equipped items while worn");
+        else if (e->bit & OEP_CASTING)
+            Snprintf(buf, size, "reduces this item's casting penalties by %d%% while worn",
+                     e->tier == 2 ? 50 : 100);
+        else if (e->bit & OEP_LIGHTNESS)
+            Snprintf(buf, size, "reduces effective object weight by %d%%", e->tier * 30);
+        else if (e->bit & OEP_THORNS)
+            Snprintf(buf, size, "reflects %d%% of HP loss to adjacent attackers while worn",
+                     e->tier == 1 ? 30 : 50);
+        else
+            Snprintf(buf, size, "reduces %s current-HP damage by %d%% while worn",
+                     e->tier < 3 ? "physical" : "all", e->tier * 10);
+        return;
+    }
+    if (e->bit & OEP_STONING) {
+        if (!obj->o_stoning_remaining) Snprintf(buf, size, "Ready");
+        else Snprintf(buf, size, "%u turns remaining", obj->o_stoning_remaining);
+        return;
+    }
+    if (e->bit & OEP_VAMPIRIC) {
+        Snprintf(buf, size, "heals %d%% of direct %s damage against living targets",
+                 e->tier == 1 ? 10 : e->tier == 2 ? 20 : e->tier == 3 ? 25 : 30,
+                 e->tier < 3 ? "physical" : "total");
+        return;
+    }
+    if (e->bit & OEP_ALIGNMENT) {
+        Snprintf(buf, size, "+%dd%d physical damage against %s or Neutral targets",
+                 e->dice, e->sides,
+                 e->bit & (OEP_ANARCHIC_I | OEP_ANARCHIC_II) ? "Lawful" : "Chaotic");
+        return;
+    }
     if (e->element == -1) {
         Snprintf(buf, size,
                  "+%dd%d fire, +%dd%d cold, and +%dd%d shock damage on a confirmed hit",
@@ -891,7 +1113,7 @@ void
 enhancement_generate(struct obj *obj, int dep)
 {
     const struct enhancement_band *band = enhancement_depth_band(dep);
-    int quality, presence, roll, slots, slot, tier, i, count, candidates[32];
+    int quality, presence, roll, slots, slot, tier, i, count, candidates[SIZE(enhancement_catalog)];
     uint64 props = 0;
     if (!enhancement_eligible(obj) || rn2(100) >= band->gate)
         return;
@@ -1076,11 +1298,11 @@ doinspect(void)
     putstr(win, ATR_NONE, "Enhancements:");
     for (i = 0; i < SIZE(enhancement_catalog); ++i)
         if (enhancement_visible_props(obj, FALSE) & enhancement_catalog[i].bit) {
-            if (i >= 24) Snprintf(label, sizeof label, "%s +%u",
-                equipment_property_name(i + 1), obj->o_enh_values[i - 24]);
-            else Snprintf(label, sizeof label, "%s", equipment_property_name(i + 1));
-            enhancement_property_impact(obj, i + 1,
-                                         i >= 24 ? obj->o_enh_values[i - 24] : 0,
+            if (i >= 24 && i < 32) Snprintf(label, sizeof label, "%s +%u",
+                equipment_property_name(i < 32 ? i + 1 : EP_VAMPIRIC_I + i - 32), obj->o_enh_values[i - 24]);
+            else Snprintf(label, sizeof label, "%s", equipment_property_name(i < 32 ? i + 1 : EP_VAMPIRIC_I + i - 32));
+            enhancement_property_impact(obj, i < 32 ? i + 1 : EP_VAMPIRIC_I + i - 32,
+                                         i >= 24 && i < 32 ? obj->o_enh_values[i - 24] : 0,
                                          impact, sizeof impact);
             Snprintf(buf, sizeof buf, "    %s - %s", label, impact);
             putstr(win, ATR_NONE, buf); ++count;
@@ -1123,4 +1345,147 @@ equipment_mon_refresh(struct monst *mon)
         mon->mhp = min(mon->mhp, mon->mhpmax);
         mon->equipment_hp = hp;
     }
+}
+
+/* Defensive effects query actual equipment, independently of knowledge. */
+boolean
+enhancement_curse_protected(const struct obj *obj)
+{
+    const struct obj *armor, *chain;
+    if (!obj || !obj->owornmask) return FALSE;
+    if (carried(obj)) chain = gi.invent;
+    else if (mcarried(obj)) chain = obj->ocarry->minvent;
+    else return FALSE;
+    /* Quivered objects and an inactive alternate weapon are not equipped. */
+    if (!(obj->owornmask & ~(W_QUIVER | W_SWAPWEP))
+        && !(carried(obj) && u.twoweap && (obj->owornmask & W_SWAPWEP)))
+        return FALSE;
+    for (armor = chain; armor; armor = armor->nobj)
+        if ((armor->owornmask & W_ARMOR)
+            && (enhancement_active(armor) & OEP_WARDING)) return TRUE;
+    return FALSE;
+}
+
+int
+enhancement_casting_penalty(const struct obj *obj, int penalty)
+{
+    uint64 bits = enhancement_active(obj);
+    if (!obj || !(obj->owornmask & W_ARMOR) || penalty <= 0) return penalty;
+    return bits & OEP_CASTING_IV ? 0 : bits & OEP_CASTING_II ? penalty / 2 : penalty;
+}
+
+int
+enhancement_weight(const struct obj *obj, int normal)
+{
+    uint64 bits = enhancement_active(obj);
+    int percent = bits & OEP_LIGHTNESS_III ? 10 : bits & OEP_LIGHTNESS_II ? 40
+                  : bits & OEP_LIGHTNESS_I ? 70 : 100;
+    return (int) ((uint64) normal * percent / 100);
+}
+
+/* Preserve the native aggregate mitigation, carrying its elemental share
+ * proportionally into the new DR layer without changing the old HP total. */
+int
+enhancement_damage_component(int component, int before, int after)
+{
+    if (before <= 0 || after <= 0) return 0;
+    return (int) ((uint64) min(max(0, component), before) * after / before);
+}
+
+/* One exact rational product per channel. Seven worn armor slots keep both
+ * products and the damage multiplication safely within uint64. Mixed events
+ * round their total reduction only once. */
+int
+enhancement_reduce(const struct monst *def, int damage, int physical)
+{
+    const struct obj *obj;
+    uint64 denominator = 1, phys = 1, other = 1, pr, nr;
+    if (damage <= 0 || physical == ENH_FATAL) return damage;
+    physical = physical < 0 ? damage : min(physical, damage);
+    for (obj = def == &gy.youmonst ? gi.invent : def->minvent;
+         obj; obj = obj->nobj) {
+        uint64 bits;
+        int tier;
+        if (!(obj->owornmask & W_ARMOR)) continue;
+        bits = enhancement_active(obj);
+        tier = bits & OEP_DR_IV ? 4 : bits & OEP_DR_III ? 3
+               : bits & OEP_DR_II ? 2 : bits & OEP_DR_I ? 1 : 0;
+        if (!tier) continue;
+        denominator *= 10;
+        phys *= 10 - tier;
+        other *= tier >= 3 ? 10 - tier : 10;
+    }
+    pr = min(denominator - phys, denominator * 7 / 10);
+    nr = min(denominator - other, denominator * 7 / 10);
+    return damage - (int) (((uint64) physical * pr
+                           + (uint64) (damage - physical) * nr) / denominator);
+}
+
+boolean
+enhancement_physical_type(int type)
+{
+    /* Contact riders leave ordinary bodily damage physical. Numerical fire,
+     * cold, electricity, acid, magic, psychic and life-energy damage do not. */
+    switch (type) {
+    case AD_PHYS: case AD_DRST: case AD_DRDX: case AD_DRCO:
+    case AD_SLEE: case AD_PLYS: case AD_STUN: case AD_LEGS:
+    case AD_WERE: case AD_STCK: case AD_WRAP: case AD_TLPT:
+    case AD_SITM: case AD_SEDU: case AD_SGLD: case AD_DGST:
+        return TRUE;
+    default: return FALSE;
+    }
+}
+
+/* Recursion guard controls only thorns. DR, native mitigation and native
+ * death/lifesaving/kill-credit paths remain active for the reflected damage. */
+static boolean reflecting_damage;
+
+void
+enhancement_reflect(struct monst *def, struct monst *attacker, int loss)
+{
+    const struct obj *obj;
+    int percent = 0, reflected, dx, dy, ax, ay;
+    if (reflecting_damage || loss <= 0 || !attacker || attacker == def
+        || (attacker != &gy.youmonst && DEADMONSTER(attacker))) return;
+    dx = def == &gy.youmonst ? u.ux : def->mx;
+    dy = def == &gy.youmonst ? u.uy : def->my;
+    ax = attacker == &gy.youmonst ? u.ux : attacker->mx;
+    ay = attacker == &gy.youmonst ? u.uy : attacker->my;
+    if (!isok(dx, dy) || !isok(ax, ay) || distmin(dx, dy, ax, ay) != 1) return;
+    for (obj = def == &gy.youmonst ? gi.invent : def->minvent;
+         obj; obj = obj->nobj) {
+        uint64 bits;
+        int p;
+        if (!(obj->owornmask & W_ARMOR)) continue;
+        bits = enhancement_active(obj);
+        p = bits & OEP_THORNS_II ? 50 : bits & OEP_THORNS_I ? 30 : 0;
+        percent = def == &gy.youmonst ? percent + p : max(percent, p);
+    }
+    reflected = (int) ((uint64) loss * percent / 100);
+    if (!reflected) return;
+    reflecting_damage = TRUE;
+    if (attacker == &gy.youmonst) reflected = Maybe_Half_Phys(reflected);
+    reflected = mith_physical_damage(attacker, NULL, AT_NONE, reflected);
+    if (attacker == &gy.youmonst)
+        mdamageu_damage(def, reflected, reflected);
+    else {
+        enhancement_mon_damage(attacker, def, reflected, reflected);
+        if (DEADMONSTER(attacker)) {
+            if (def == &gy.youmonst) killed(attacker);
+            else monkilled(attacker, "", AD_PHYS);
+        }
+    }
+    reflecting_damage = FALSE;
+}
+
+int
+enhancement_mon_damage(struct monst *def, struct monst *attacker,
+                       int damage, int physical)
+{
+    int before = max(0, def->mhp);
+    damage = enhancement_reduce(def, damage, physical);
+    def->mhp -= damage;
+    if (physical != ENH_FATAL)
+        enhancement_reflect(def, attacker, min(before, max(0, damage)));
+    return def->mhp;
 }

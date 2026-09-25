@@ -961,7 +961,7 @@ recharge(struct obj *obj, int curse_bless)
                 Ring_gone(obj);
             s = rnd(3 * abs(obj->spe)); /* amount of damage */
             useup(obj), obj = 0;
-            losehp(Maybe_Half_Phys(s), "exploding ring", KILLED_BY_AN);
+            losehp_physical(Maybe_Half_Phys(s), "exploding ring", KILLED_BY_AN);
         } else {
             long mask = is_on ? (obj == uleft ? LEFT_RING : RIGHT_RING) : 0L;
 
@@ -2068,12 +2068,12 @@ seffect_fire(struct obj **sobjp)
         }
         if (u_at(cc.x, cc.y)) {
             pline_The("scroll erupts in a tower of flame!");
-            iflags.last_msg = PLNMSG_TOWER_OF_FLAME; /* for explode() */
+            iflags.last_msg = PLNMSG_TOWER_OF_FLAME; /* for explode_by(, &gy.youmonst) */
             burn_away_slime();
         }
     }
 #define ZT_SPELL_O_FIRE 11 /* explained in splatter_burning_oil(explode.c) */
-    explode(cc.x, cc.y, ZT_SPELL_O_FIRE, dam, SCROLL_CLASS, EXPL_FIERY);
+    explode_by(cc.x, cc.y, ZT_SPELL_O_FIRE, dam, SCROLL_CLASS, EXPL_FIERY, &gy.youmonst);
 #undef ZT_SPELL_O_FIRE
 }
 
@@ -2496,7 +2496,7 @@ drop_boulder_on_player(
         newsym(u.ux, u.uy);
     }
     if (dmg)
-        losehp(Maybe_Half_Phys(dmg), "scroll of earth", KILLED_BY_AN);
+        losehp_physical(Maybe_Half_Phys(dmg), "scroll of earth", KILLED_BY_AN);
 }
 
 boolean
@@ -2544,7 +2544,7 @@ drop_boulder_on_monster(coordxy x, coordxy y, boolean confused, boolean byu)
                           xname(helmet), mhim(mtmp));
             }
         }
-        mtmp->mhp -= mdmg;
+        enhancement_mon_damage(mtmp, NULL, mdmg, -1);
         if (DEADMONSTER(mtmp)) {
             if (byu) {
                 killed(mtmp);
@@ -2612,7 +2612,7 @@ wand_explode(struct obj *obj, int chg /* recharging */)
     dmg = d(n, k);
     obj->in_use = TRUE; /* in case losehp() is fatal (or --More--^C) */
     pline("%s %s explodes!", Yname2(obj), expl);
-    losehp(Maybe_Half_Phys(dmg), "exploding wand", KILLED_BY_AN);
+    losehp_physical(Maybe_Half_Phys(dmg), "exploding wand", KILLED_BY_AN);
     useup(obj);
     /* obscure side-effect */
     exercise(A_STR, FALSE);

@@ -188,6 +188,7 @@ restobj(NHFILE *nhfp, struct obj *otmp)
 
     Sfi_obj(nhfp, otmp, "obj");
     socket_normalize(otmp);
+    if (nhfp->ftype == NHF_BONESFILE) otmp->o_stoning_turn = -1L;
     otmp->lua_ref_cnt = 0;
     /* next object pointers are invalid; otmp->cobj needs to be left
        as is--being non-null is key to restoring container contents */

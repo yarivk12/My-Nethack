@@ -86,7 +86,7 @@ static void step15d_catalog_tests(void)
         SMALL_SHIELD,LEATHER_GLOVES,LOW_BOOTS,CLOAK_OF_PROTECTION,HAWAIIAN_SHIRT,
         RIN_PROTECTION,AMULET_OF_LIFE_SAVING,ARROW,DART,ROCK,PICK_AXE};
     const int caps[]={1,2,2,2,2,1,1,1,1,1,1,1,0,0,0,0};
-    const int counts[3][4]={{5,5,5,3},{5,5,4,4},{7,7,7,8}};
+    const int counts[3][4]={{8,8,6,3},{5,5,4,4},{7,7,7,8}};
     int i,j,k,pool[EP_COUNT],n;
     struct obj *o;
     for(i=0;i<4;++i)for(j=0;j<sizes[i];++j)
@@ -101,13 +101,13 @@ static void step15d_catalog_tests(void)
         for(i=1;i<=4;++i) assert(socket_candidates(o,i,-1,pool)==counts[k][i-1]);
         obfree(o,NULL);
     }
-    o=item(BOW);assert(socket_candidates(o,1,-1,pool)==6);
+    o=item(BOW);assert(socket_candidates(o,1,-1,pool)==9);
     assert(enhancement_set(o,OEP_FIRE,OQ_STANDARD,FALSE));
-    assert(socket_candidates(o,1,-1,pool)==5);
+    assert(socket_candidates(o,1,-1,pool)==8);
     o->o_sockets[0].property=EP_COLD;
-    assert(socket_candidates(o,1,-1,pool)==4);
-    assert(socket_candidates(o,1,0,pool)==5);
-    n=socket_candidates(o,3,-1,pool);assert(n==5);
+    assert(socket_candidates(o,1,-1,pool)==7);
+    assert(socket_candidates(o,1,0,pool)==8);
+    n=socket_candidates(o,3,-1,pool);assert(n==6);
     for(i=0;i<n;++i) assert(pool[i]!=EP_TRUEFLIGHT);
     o->o_sockets[1].property=EP_COLD_III;
     socket_normalize(o);assert(socket_count(o)==2);

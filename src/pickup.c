@@ -2161,7 +2161,7 @@ do_loot_cont(
         tmp = Maybe_Half_Phys(tmp);
         if (u.mith_timers[MITH_VAUL])
             tmp = (tmp + 1) / 2;
-        losehp(tmp, "carnivorous bag", KILLED_BY_AN);
+        losehp_physical(tmp, "carnivorous bag", KILLED_BY_AN);
         makeknown(BAG_OF_TRICKS);
         ga.abort_looting = TRUE;
         return ECMD_TIME;

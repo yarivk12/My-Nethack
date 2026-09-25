@@ -551,7 +551,9 @@ static void inspect_run(struct obj *obj) {
            && obj->o_enh_known == before.o_enh_known
            && obj->o_enh_quality == before.o_enh_quality
            && obj->o_enh_flags == before.o_enh_flags
-           && obj->o_socket_capacity == before.o_socket_capacity);
+           && obj->o_socket_capacity == before.o_socket_capacity
+           && obj->o_stoning_remaining == before.o_stoning_remaining
+           && obj->o_stoning_turn == before.o_stoning_turn);
     assert(!memcmp(obj->o_sockets, before.o_sockets, sizeof obj->o_sockets)
            && !memcmp(obj->o_enh_values, before.o_enh_values,
                       sizeof obj->o_enh_values));
@@ -679,6 +681,18 @@ static void inspect_tests(void) {
            && strstr(inspect_screen,
                      "Socket 1: Primordial - +5d6 fire, +5d6 cold, and +5d6 shock damage on a confirmed hit\n"));
     inspect_discard(obj);
+    obj = inspect_item(DAGGER);
+    assert(enhancement_set(obj, OEP_STONING_III | OEP_VAMPIRIC_IV, OQ_STANDARD, FALSE));
+    obj->o_stoning_remaining = 17;
+    inspect_run(obj);
+    assert(!strstr(inspect_screen,"Stoning") && !strstr(inspect_screen,"Vampiric")
+           && !strstr(inspect_screen,"remaining") && !strstr(inspect_screen,"Ready"));
+    enhancement_identify(obj);inspect_run(obj);
+    assert(strstr(inspect_screen,"Stoning III - 17 turns remaining")
+           && strstr(inspect_screen,"Vampiric IV - heals 30% of direct total"));
+    assert(obj->o_stoning_remaining==17);
+    obj->o_stoning_remaining=0;inspect_run(obj);
+    assert(strstr(inspect_screen,"Stoning III - Ready"));inspect_discard(obj);
     step15b_window_setup();
     puts("PASS #inspect layout, impacts, certainty, values, sockets, naming and nonmutation cases");
 }

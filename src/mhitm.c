@@ -833,7 +833,7 @@ gazemm(struct monst *magr, struct monst *mdef, struct attack *mattk)
         if (rn2(5)) {
             mdef->mconf = mdef->mstun = 1;
             magr->mspec_used = rnd(6);
-            mdef->mhp -= d(4, 8);
+            enhancement_mon_damage(mdef, magr, d(4, 8), 0);
             if (mdef->mhp <= 0)
                 monkilled(mdef, "", AD_SPEL);
             return M_ATTK_HIT | (DEADMONSTER(mdef) ? M_ATTK_DEF_DIED : 0);
@@ -1099,7 +1099,8 @@ mdamagem(
     int dieroll)
 {
     struct permonst *pa = magr->data, *pd = mdef->data;
-    struct mhitm_data mhm;
+    int enh_physical, before_mitigation;
+    struct mhitm_data mhm = { 0 };
     mhm.weapon = mattk->aatyp == AT_WEAP ? mwep : MON_WEP(magr);
     mhm.damage = d((int) mattk->damn, (int) mattk->damd);
     mhm.hitflags = M_ATTK_MISS;
@@ -1146,7 +1147,12 @@ mdamagem(
     if (mhm.done)
         return mhm.hitflags;
 
-    if (!mhm.damage
+    if (mattk->aatyp == AT_WEAP || (mattk->aatyp == AT_CLAW && mwep))
+        mhm.damage += enhancement_alignment_damage(mwep, NULL, mdef, ENHANCE_MELEE);
+    mhm.damage -= mhm.nonphysical_damage;
+    before_mitigation = mhm.damage;
+
+    if (!mhm.damage && !mhm.nonphysical_damage
         && !((mattk->aatyp == AT_WEAP || (mattk->aatyp == AT_CLAW && mwep))
              && enhancement_elemental_contact(mwep, (struct obj *) 0, ENHANCE_MELEE)))
         return mhm.hitflags;
@@ -1156,15 +1162,33 @@ mdamagem(
         mhm.damage = mith_physical_damage(mdef,
                            mattk->aatyp == AT_WEAP ? mwep : (struct obj *) 0,
                            mattk->aatyp, mhm.damage);
+    mhm.artifact_nonphysical = enhancement_damage_component(
+        mhm.artifact_nonphysical, before_mitigation, mhm.damage);
+    enh_physical = max(0, mhm.damage);
+    mhm.damage += mhm.nonphysical_damage;
     mhm.damage += mith_iron_contact(magr, mdef, mattk->aatyp,
                       (mattk->aatyp == AT_WEAP || mattk->aatyp == AT_CLAW)
                           ? mwep : (struct obj *) 0);
     if (mattk->aatyp == AT_WEAP || (mattk->aatyp == AT_CLAW && mwep))
-        mhm.damage += mith_weapon_effects(mwep, mdef, mhm.damage);
+        mhm.damage += mith_weapon_effects_components(mwep, mdef, mhm.damage, &enh_physical);
     if (mattk->aatyp == AT_WEAP || (mattk->aatyp == AT_CLAW && mwep))
         mhm.damage += enhancement_weapon_effects(mwep, (struct obj *) 0,
                                                 mdef, mhm.damage, ENHANCE_MELEE);
-    mdef->mhp -= mhm.damage;
+    if (mattk->aatyp == AT_WEAP || (mattk->aatyp == AT_CLAW && mwep)) {
+        enhancement_vampiric(mwep, NULL, magr, mdef,
+                              enhancement_reduce(mdef, enh_physical, ENH_PHYSICAL),
+                              enhancement_reduce(mdef, mhm.damage, mhm.fatal ? ENH_FATAL
+                                  : enhancement_physical_type(mattk->adtyp)
+                                  ? max(0, enh_physical - mhm.artifact_nonphysical) : 0),
+                              ENHANCE_MELEE);
+        if (enhancement_stoning(mwep, NULL, magr, mdef, ENHANCE_MELEE))
+            return M_ATTK_HIT | M_ATTK_DEF_DIED
+                   | (grow_up(magr, mdef) ? 0 : M_ATTK_AGR_DIED);
+    }
+    enhancement_mon_damage(mdef, magr, mhm.damage,
+        mhm.fatal ? ENH_FATAL : enhancement_physical_type(mattk->adtyp)
+            ? max(0, enh_physical - mhm.artifact_nonphysical) : 0);
+    if (DEADMONSTER(magr)) mhm.hitflags = M_ATTK_AGR_DIED;
     if (mdef->mhp < 1) {
         if (m_at(mdef->mx, mdef->my) == magr) { /* see gulpmm() */
             remove_monster(mdef->mx, mdef->my);
@@ -1259,7 +1283,7 @@ mon_poly(struct monst *magr, struct monst *mdef, int dmg)
                 pline("%s shudders!", Before);
 
             dmg += (mdef->mhpmax + 1) / 2;
-            mdef->mhp -= dmg;
+            enhancement_mon_damage(mdef, magr, dmg, 0);
             dmg = 0;
             if (DEADMONSTER(mdef)) {
                 if (magr == &gy.youmonst)
@@ -1558,7 +1582,8 @@ passivemm(
         tmp = 0;
 
  assess_dmg:
-    if ((magr->mhp -= tmp) <= 0) {
+    if (enhancement_mon_damage(magr, mdef, tmp,
+            enhancement_physical_type(mddat->mattk[i].adtyp) ? -1 : 0) <= 0) {
         monkilled(magr, "", (int) mddat->mattk[i].adtyp);
         return (mdead | mhit | M_ATTK_AGR_DIED);
     }

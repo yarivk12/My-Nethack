@@ -866,13 +866,13 @@ dosinkfall(void)
         ELevitation = HLevitation = 0L;
         You("crash to the floor!");
         dmg = rn1(8, 25 - (int) ACURR(A_CON));
-        losehp(Maybe_Half_Phys(dmg), fell_on_sink, NO_KILLER_PREFIX);
+        losehp_physical(Maybe_Half_Phys(dmg), fell_on_sink, NO_KILLER_PREFIX);
         exercise(A_DEX, FALSE);
         selftouch("Falling, you");
         for (obj = svl.level.objects[u.ux][u.uy]; obj; obj = obj->nexthere)
             if (obj->oclass == WEAPON_CLASS || is_weptool(obj)) {
                 You("fell on %s.", doname(obj));
-                losehp(Maybe_Half_Phys(rnd(3)), fell_on_sink,
+                losehp_physical(Maybe_Half_Phys(rnd(3)), fell_on_sink,
                        NO_KILLER_PREFIX);
                 exercise(A_CON, FALSE);
             }
@@ -3316,7 +3316,7 @@ pooleffects(
             Your("%s rust!", makeplural(body_part(FOOT)));
             if (u.mhmax > damage)
                 u.mhmax -= damage;
-            losehp(damage, "rusting away", KILLED_BY);
+            losehp_physical(damage, "rusting away", KILLED_BY);
         }
         if (verysmall(gy.youmonst.data))
             water_damage_chain(gi.invent, FALSE);
@@ -4331,6 +4331,21 @@ showdamage(int dmg)
 void
 losehp(int n, const char *knam, schar k_format)
 {
+    losehp_damage(n, knam, k_format, 0, NULL);
+}
+
+void
+losehp_physical(int n, const char *knam, schar k_format)
+{
+    losehp_damage(n, knam, k_format, n, NULL);
+}
+
+void
+losehp_damage(int n, const char *knam, schar k_format, int physical,
+              struct monst *attacker)
+{
+    int before = max(0, Upolyd ? u.mh : u.uhp);
+    n = enhancement_reduce(&gy.youmonst, n, physical);
 #if 0   /* code below is prepared to handle negative 'loss' so don't add this
          * until we've verified that no callers intentionally rely on that */
     if (n <= 0) {
@@ -4349,6 +4364,8 @@ losehp(int n, const char *knam, schar k_format)
             rehumanize();
         else if (n > 0 && u.mh * 10 < u.mhmax && Unchanging)
             maybe_wail();
+        if (physical != ENH_FATAL)
+            enhancement_reflect(&gy.youmonst, attacker, min(before, max(0, n)));
         return;
     }
 
@@ -4365,6 +4382,8 @@ losehp(int n, const char *knam, schar k_format)
     } else if (n > 0 && u.uhp * 10 < u.uhpmax) {
         maybe_wail();
     }
+    if (physical != ENH_FATAL)
+            enhancement_reflect(&gy.youmonst, attacker, min(before, max(0, n)));
 }
 
 int

@@ -100,7 +100,7 @@ kickdmg(struct monst *mon, boolean clumsy)
     dmg += mith_aesh_bonus();
     dmg = mith_physical_damage(mon, uarmf, AT_KICK, dmg);
     if (dmg > 0)
-        mon->mhp -= dmg;
+        enhancement_mon_damage(mon, &gy.youmonst, dmg, -1);
     if (!DEADMONSTER(mon) && martial() && !bigmonst(mon->data) && !rn2(3)
         && mon->mcanmove && mon != u.ustuck && !mon->mtrapped) {
         /* see if the monster has a place to move into */
@@ -913,7 +913,7 @@ kick_ouch(coordxy x, coordxy y, const char *kickobjnam)
     if (!rn2(3))
         set_wounded_legs(RIGHT_SIDE, 5 + rnd(5));
     dmg = rnd(ACURR(A_CON) > 15 ? 3 : 5);
-    losehp(Maybe_Half_Phys(dmg), kickstr(buf, kickobjnam), KILLED_BY);
+    losehp_physical(Maybe_Half_Phys(dmg), kickstr(buf, kickobjnam), KILLED_BY);
     if (Is_airlevel(&u.uz) || Levitation)
         hurtle(-u.dx, -u.dy, rn1(2, 4), TRUE); /* assume it's heavy */
 }

@@ -1488,13 +1488,21 @@ DISABLE_WARNING_FORMAT_NONLITERAL
  * Stormbringer it's "killed by Stormbringer" instead of "killed by an orc".
  */
 boolean
-artifact_hit(
+artifact_hit(struct monst *magr, struct monst *mdef, struct obj *otmp,
+             int *dmgptr, int dieroll)
+{
+    return artifact_hit_fatal(magr, mdef, otmp, dmgptr, dieroll, NULL, NULL);
+}
+
+boolean
+artifact_hit_fatal(
     struct monst *magr, /* attacker; might be Null if 'mdef' is youmonst */
     struct monst *mdef, /* defender */
     struct obj *otmp,   /* artifact weapon */
     int *dmgptr,        /* output */
-    int dieroll)        /* needed for Magicbane and vorpal blades */
+    int dieroll, boolean *fatal, int *nonphysical) /* native instant-death output */
 {
+    int original_damage = *dmgptr;
     boolean youattack = (magr == &gy.youmonst);
     boolean youdefend = (mdef == &gy.youmonst);
     boolean vis = (!youattack && magr && cansee(magr->mx, magr->my))
@@ -1544,6 +1552,7 @@ artifact_hit(
         }
         if (youdefend && Slimed)
             burn_away_slime();
+        if (nonphysical) *nonphysical += max(0, *dmgptr - original_damage);
         return realizes_damage;
     }
     if (attacks(AD_COLD, otmp)) {
@@ -1556,6 +1565,7 @@ artifact_hit(
             if (!youdefend)
                 *dmgptr += itemdmg; /* item destruction dmg */
         }
+        if (nonphysical) *nonphysical += max(0, *dmgptr - original_damage);
         return realizes_damage;
     }
     if (attacks(AD_ELEC, otmp)) {
@@ -1570,6 +1580,7 @@ artifact_hit(
             if (!youdefend)
                 *dmgptr += itemdmg; /* item destruction dmg */
         }
+        if (nonphysical) *nonphysical += max(0, *dmgptr - original_damage);
         return realizes_damage;
     }
     if (attacks(AD_MAGM, otmp)) {
@@ -1579,6 +1590,7 @@ artifact_hit(
                           ? ""
                           : "!  A hail of magic missiles strikes",
                       hittee, !gs.spec_dbon_applies ? '.' : '!');
+        if (nonphysical) *nonphysical += max(0, *dmgptr - original_damage);
         return realizes_damage;
     }
 
@@ -1602,6 +1614,7 @@ artifact_hit(
             if (youattack && engulfing_u(mdef)) {
                 You("slice %s wide open!", mon_nam(mdef));
                 *dmgptr = 2 * mdef->mhp + FATAL_DAMAGE_MODIFIER;
+                if (fatal) *fatal = TRUE;
                 return TRUE;
             }
             if (!youdefend) {
@@ -1619,6 +1632,7 @@ artifact_hit(
                     return TRUE;
                 }
                 *dmgptr = 2 * mdef->mhp + FATAL_DAMAGE_MODIFIER;
+                if (fatal) *fatal = TRUE;
                 pline("%s cuts %s in half!", wepdesc, mon_nam(mdef));
                 observe_object(otmp);
                 return TRUE;
@@ -1636,6 +1650,7 @@ artifact_hit(
                  * damage does not prevent death.
                  */
                 *dmgptr = 2 * (Upolyd ? u.mh : u.uhp) + FATAL_DAMAGE_MODIFIER;
+                if (fatal) *fatal = TRUE;
                 pline("%s cuts you in half!", wepdesc);
                 observe_object(otmp);
                 return TRUE;
@@ -1663,6 +1678,7 @@ artifact_hit(
                     return TRUE;
                 }
                 *dmgptr = 2 * mdef->mhp + FATAL_DAMAGE_MODIFIER;
+                if (fatal) *fatal = TRUE;
                 pline(ROLL_FROM(behead_msg), wepdesc,
                       mon_nam(mdef));
                 if (Hallucination && !flags.female)
@@ -1683,6 +1699,7 @@ artifact_hit(
                     return TRUE;
                 }
                 *dmgptr = 2 * (Upolyd ? u.mh : u.uhp) + FATAL_DAMAGE_MODIFIER;
+                if (fatal) *fatal = TRUE;
                 pline(ROLL_FROM(behead_msg), wepdesc, "you");
                 observe_object(otmp);
                 /* Should amulets fall off? */
@@ -1721,8 +1738,10 @@ artifact_hit(
             if (mdef->m_lev == 0) {
                 /* losing a level when at 0 is fatal */
                 *dmgptr = 2 * mdef->mhp + FATAL_DAMAGE_MODIFIER;
+                if (fatal) *fatal = TRUE;
             } else {
                 *dmgptr += drain;
+                if (nonphysical) *nonphysical += drain;
                 mdef->mhpmax -= drain;
                 mdef->m_lev--;
             }

@@ -958,7 +958,7 @@ check_leash(coordxy x, coordxy y)
                 ; /* still close enough */
             } else if (otmp->cursed && !breathless(mtmp->data)) {
                 if (um_dist(mtmp->mx, mtmp->my, 5)
-                    || (mtmp->mhp -= rnd(2)) <= 0) {
+                    || enhancement_mon_damage(mtmp, &gy.youmonst, rnd(2), -1) <= 0) {
                     long save_pacifism = u.uconduct.killer;
 
                     Your("leash chokes %s to death!", mon_nam(mtmp));
@@ -2114,7 +2114,7 @@ jump(int magic) /* 0=Physical, otherwise skill level */
             case TT_BEARTRAP:
                 side = rn2(3) ? LEFT_SIDE : RIGHT_SIDE;
                 You("rip yourself free of the bear trap!  Ouch!");
-                losehp(Maybe_Half_Phys(rnd(10)), "jumping out of a bear trap",
+                losehp_physical(Maybe_Half_Phys(rnd(10)), "jumping out of a bear trap",
                        KILLED_BY);
                 set_wounded_legs(side, rn1(1000, 500));
                 break;
@@ -3094,7 +3094,7 @@ use_whip(struct obj *obj)
             dam = 1;
         You("hit your %s with your bullwhip.", body_part(FOOT));
         Sprintf(buf, "killed %sself with %s bullwhip", uhim(), uhis());
-        losehp(Maybe_Half_Phys(dam), buf, NO_KILLER_PREFIX);
+        losehp_physical(Maybe_Half_Phys(dam), buf, NO_KILLER_PREFIX);
         return ECMD_TIME;
 
     } else if ((Fumbling || Glib) && !rn2(5)) {
@@ -3897,7 +3897,7 @@ use_grapple(struct obj *obj)
     default: /* Yourself (oops!) */
         if (P_SKILL(typ) <= P_BASIC) {
             You("hook yourself!");
-            losehp(Maybe_Half_Phys(rn1(10, 10)), "a grappling hook",
+            losehp_physical(Maybe_Half_Phys(rn1(10, 10)), "a grappling hook",
                    KILLED_BY);
             return ECMD_TIME;
         }
@@ -3922,7 +3922,7 @@ discard_broken_wand(void)
 staticfn void
 broken_wand_explode(struct obj *obj, int dmg, int expltype)
 {
-    explode(u.ux, u.uy, -(obj->otyp), dmg, WAND_CLASS, expltype);
+    explode_by(u.ux, u.uy, -(obj->otyp), dmg, WAND_CLASS, expltype, &gy.youmonst);
     makeknown(obj->otyp); /* explode describes the effect */
     discard_broken_wand();
 }
@@ -4062,8 +4062,8 @@ do_break_wand(struct obj *obj)
     /* [TODO?  This really ought to prevent the explosion from being
        fatal so that we never leave a bones file where none of the
        surrounding targets (or underlying objects) got affected yet.] */
-    explode(obj->ox, obj->oy, -(obj->otyp), rnd(dmg), WAND_CLASS,
-            EXPL_MAGICAL);
+    explode_by(obj->ox, obj->oy, -(obj->otyp), rnd(dmg), WAND_CLASS,
+            EXPL_MAGICAL, &gy.youmonst);
 
     /* prepare for potential feedback from polymorph... */
     zapsetup();
@@ -4157,7 +4157,7 @@ do_break_wand(struct obj *obj)
             damage = zapyourself(obj, FALSE);
             if (damage) {
                 Sprintf(buf, "killed %sself by breaking a wand", uhim());
-                losehp(Maybe_Half_Phys(damage), buf, NO_KILLER_PREFIX);
+                losehp_physical(Maybe_Half_Phys(damage), buf, NO_KILLER_PREFIX);
             }
             if (disp.botl)
                 bot(); /* blindness */
@@ -4446,13 +4446,13 @@ forge_inherit(struct obj *obj, const struct forge_state *state)
         return;
     if (enhancement_eligible(obj)) {
         /* Filter each identity before ranking, using shared legality. Catalog
-         * order breaks ties; no pairwise restrictions exist in this engine. */
+         * order breaks ties; family conflicts are filtered before ranking. */
         for (count = 0; count < 2; ++count) {
             best = -1;
             for (i = 0; i < SIZE(enhancement_catalog); ++i) {
                 const struct enhancement_entry *entry = &enhancement_catalog[i];
                 if ((state->props & entry->bit) && !(props & entry->bit)
-                    && enhancement_property_allowed(obj, entry->bit)
+                    && enhancement_property_allowed(obj, props | entry->bit)
                     && (best < 0 || entry->tier > enhancement_catalog[best].tier))
                     best = i;
             }

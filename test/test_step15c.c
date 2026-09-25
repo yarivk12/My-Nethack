@@ -402,9 +402,33 @@ forge15c_rng(void)
     printf("PASS Step 15C zero inheritance RNG/context cases=%d, construction failures=4; later natural enhancements=%d/100\n", count, natural);
 }
 
+static void forge16a_properties(void)
+{
+    struct obj *a,*b,*out;
+    struct forge_state state={0};
+    int i;
+    const uint64 left[]={OEP_VAMPIRIC_I,OEP_STONING_I,OEP_ANARCHIC_I,OEP_AXIOMATIC_II};
+    const uint64 right[]={OEP_VAMPIRIC_IV,OEP_STONING_IV,OEP_AXIOMATIC_II,OEP_ANARCHIC_II};
+    const uint64 expect[]={OEP_VAMPIRIC_IV,OEP_STONING_IV,OEP_AXIOMATIC_II,OEP_ANARCHIC_II};
+    for(i=0;i<4;++i) {
+        forge_test_clear();a=forge_test_item(LONG_SWORD,1);b=forge_test_item(BROADSWORD,1);
+        assert(enhancement_set(a,left[i],0,FALSE));assert(enhancement_set(b,right[i],0,FALSE));
+        if(i==1){a->o_stoning_remaining=63;b->o_stoning_remaining=9;}
+        out=forge15c_result(KATANA,a,b);
+        assert(out->o_enh_props==expect[i]&&!out->o_stoning_remaining&&!out->o_enh_known);
+    }
+    forge_test_clear();
+    state.present=TRUE;state.props=OEP_STONING_IV|OEP_ANARCHIC_II;
+    out=forge_output(ARROW);forge_inherit(out,&state);assert(!out->o_enh_props);obfree(out,NULL);
+    out=forge_output(DAGGER);out->quan=3;forge_inherit(out,&state);
+    assert(out->o_enh_props==OEP_ANARCHIC_II&&!out->o_stoning_remaining);obfree(out,NULL);
+    puts("PASS Step 16A forge strongest eligible family, cross-family filtering, ammo exclusion and new Stoning object Ready");
+}
+
 static void
 step15c_test_main(void)
 {
+    forge16a_properties();
     forge15c_reductions();
     forge15c_properties();
     forge15c_capabilities();

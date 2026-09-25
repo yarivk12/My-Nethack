@@ -196,15 +196,21 @@ engulfer_explosion_msg(uchar adtyp, char olet)
  *      that Half_physical_damage only affects the damage applied to the hero.
  */
 void
-explode(
+explode(coordxy x, coordxy y, int type, int dam, char olet, int expltype)
+{
+    explode_by(x, y, type, dam, olet, expltype, NULL);
+}
+
+void
+explode_by(
     coordxy x, coordxy y, /* explosion's location;
                            * adjacent spots are also affected */
     int type,     /* same as in zap.c; -(wand typ) for some WAND_CLASS */
     int dam,      /* damage amount */
     char olet,    /* object class or BURNING_OIL or MON_EXPLODE */
-    int expltype) /* explosion type: controls color of explosion glyphs */
+    int expltype, struct monst *attacker) /* actual event source, if known */
 {
-    int i, j, k, damu = dam;
+    int i, j, k, damu = dam, hero_loss = 0;
     boolean starting = 1;
     boolean visible, any_shield;
     int uhurt = 0; /* 0=unhurt, 1=items damaged, 2=you and items damaged */
@@ -526,7 +532,7 @@ explode(
                      * this is imperfect and marginal (burning items only
                      * deal 1 damage), ignore it for golemeffects(). */
                     golemeffects(mtmp, (int) adtyp, dam);
-                    mtmp->mhp -= itemdmg; /* item destruction dmg */
+                    enhancement_mon_damage(mtmp, attacker, itemdmg, 0); /* item destruction dmg */
                 } else {
                     /* Call resist with 0 and do damage manually so 1) we can
                      * get out the message before doing the damage, and 2) we
@@ -553,7 +559,8 @@ explode(
                         mdam *= 2;
                     else if (resists_fire(mtmp) && adtyp == AD_COLD)
                         mdam *= 2;
-                    mtmp->mhp -= mdam + itemdmg;
+                    enhancement_mon_damage(mtmp, attacker, mdam + itemdmg,
+                        adtyp == AD_PHYS ? mdam : 0);
                 }
                 if (DEADMONSTER(mtmp)) {
                     int xkflg = ((adtyp == AD_FIRE
@@ -630,6 +637,8 @@ explode(
                 damu *= 2;
             /* hero does not get same fire-resistant vs cold and
                cold-resistant vs fire double damage as monsters [why not?] */
+            damu = enhancement_reduce(&gy.youmonst, damu, adtyp == AD_PHYS ? damu : 0);
+            hero_loss = min(max(0, Upolyd ? u.mh : u.uhp), max(0, damu));
             if (Upolyd)
                 u.mh -= damu;
             else
@@ -680,6 +689,7 @@ explode(
                 done((adtyp == AD_FIRE) ? BURNING : DIED);
             }
         }
+        enhancement_reflect(&gy.youmonst, attacker, hero_loss);
         exercise(A_STR, FALSE);
     }
 
@@ -963,14 +973,21 @@ scatter(
  *
  * For now, just perform a "regular" explosion.
  */
-void
-splatter_burning_oil(coordxy x, coordxy y, boolean diluted_oil)
+staticfn void
+splatter_burning_oil_by(coordxy x, coordxy y, boolean diluted_oil,
+                       struct monst *attacker)
 {
     int dmg = d(diluted_oil ? 3 : 4, 4);
 
 /* ZT_SPELL(ZT_FIRE) = ZT_SPELL(AD_FIRE-1) = 10+(2-1) = 11 */
 #define ZT_SPELL_O_FIRE 11 /* value kludge, see zap.c */
-    explode(x, y, ZT_SPELL_O_FIRE, dmg, BURNING_OIL, EXPL_FIERY);
+    explode_by(x, y, ZT_SPELL_O_FIRE, dmg, BURNING_OIL, EXPL_FIERY, attacker);
+}
+
+void
+splatter_burning_oil(coordxy x, coordxy y, boolean diluted_oil)
+{
+    splatter_burning_oil_by(x, y, diluted_oil, NULL);
 }
 
 /* lit potion of oil is exploding; extinguish it as a light source before
@@ -978,13 +995,19 @@ splatter_burning_oil(coordxy x, coordxy y, boolean diluted_oil)
 void
 explode_oil(struct obj *obj, coordxy x, coordxy y)
 {
+    explode_oil_by(obj, x, y, NULL);
+}
+
+void
+explode_oil_by(struct obj *obj, coordxy x, coordxy y, struct monst *attacker)
+{
     boolean diluted_oil = obj->odiluted;
 
     if (!obj->lamplit)
         impossible("exploding unlit oil");
     end_burn(obj, TRUE);
     obj->how_lost = LOST_EXPLODING;
-    splatter_burning_oil(x, y, diluted_oil);
+    splatter_burning_oil_by(x, y, diluted_oil, attacker);
 }
 
 /* Convert a damage type into an explosion display type. */
@@ -1064,8 +1087,8 @@ mon_explodes(
             s_suffix(pmname(mon->data, Mgender(mon))));
     svk.killer.format = KILLED_BY_AN;
 
-    explode(mon->mx, mon->my, type, dmg, MON_EXPLODE,
-            adtyp_to_expltype(mattk->adtyp));
+    explode_by(mon->mx, mon->my, type, dmg, MON_EXPLODE,
+            adtyp_to_expltype(mattk->adtyp), mon);
 
     /* reset killer */
     svk.killer.name[0] = '\0';

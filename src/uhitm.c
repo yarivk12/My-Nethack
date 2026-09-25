@@ -1073,7 +1073,7 @@ hmon_hitmon_weapon_melee(
     }
 
     if (obj->oartifact
-        && artifact_hit(&gy.youmonst, mon, obj, &hmd->dmg, hmd->dieroll)) {
+        && artifact_hit_fatal(&gy.youmonst, mon, obj, &hmd->dmg, hmd->dieroll, &hmd->fatal, &hmd->artifact_nonphysical)) {
         /* artifact_hit updates 'tmp' but doesn't inflict any
            damage; however, it might cause carried items to be
            destroyed and they might do so */
@@ -1303,7 +1303,7 @@ hmon_hitmon_misc_obj(
                     place_object(obj, mon->mx, mon->my);
             } else if (obj->corpsenm == PM_PYROLISK) {
                 useup_eggs(obj);
-                explode(mon->mx, mon->my, -11, d(3, 6), 0, EXPL_FIERY);
+                explode_by(mon->mx, mon->my, -11, d(3, 6), 0, EXPL_FIERY, &gy.youmonst);
                 hmd->doreturn = TRUE;
                 hmd->retval = !DEADMONSTER(mon);
                 return;
@@ -1845,11 +1845,14 @@ hmon_hitmon(
                                   ? ENHANCE_MELEE
                                   : enh_launcher ? ENHANCE_AMMO : ENHANCE_THROWN;
     boolean maybe_knockback = FALSE;
+    int enh_physical = 0, enh_before_joust, before_mitigation;
 
     hmd.enhance_obj = enhancement_eligible(obj) ? obj : (struct obj *) 0;
     if (thrown == HMON_MELEE)
         enhancement_observe_attack(hmd.enhance_obj, (struct obj *) 0, ENHANCE_MELEE);
     hmd.dmg = 0;
+    hmd.fatal = FALSE;
+    hmd.artifact_nonphysical = 0;
     hmd.thrown = thrown;
     hmd.twohits = thrown ? 0 : gt.twohits;
     hmd.dieroll = dieroll;
@@ -1895,6 +1898,11 @@ hmon_hitmon(
     if (hmd.dmg > 0)
         hmon_hitmon_dmg_recalc(&hmd, obj);
 
+    if (!hmd.already_killed)
+        hmd.dmg += enhancement_alignment_damage(&enhancement_snapshot, enh_launcher,
+                                                mon, enh_use);
+
+    before_mitigation = hmd.dmg;
     if (hmd.use_weapon_skill && !hmd.already_killed)
         hmd.dmg = mith_physical_damage(mon, obj, AT_WEAP, hmd.dmg);
     else if (hmd.get_dmg_bonus && !hmd.already_killed)
@@ -1904,12 +1912,15 @@ hmon_hitmon(
         hmd.dmg = mith_physical_damage(mon, (struct obj *) 0, AT_WEAP,
                                         hmd.dmg);
 
+    hmd.artifact_nonphysical = enhancement_damage_component(
+        hmd.artifact_nonphysical, before_mitigation, hmd.dmg);
+    enh_physical = max(0, hmd.dmg);
     if (!hmd.already_killed)
         enhancement_observe_hit(hmd.enhance_obj, enh_launcher, mon, enh_use);
     if (hmd.ispoisoned)
         hmon_hitmon_poison(&hmd, mon, obj);
     if (hmd.use_weapon_skill && !hmd.already_killed)
-        hmd.dmg += mith_weapon_effects(obj, mon, hmd.dmg);
+        hmd.dmg += mith_weapon_effects_components(obj, mon, hmd.dmg, &enh_physical);
 
     if (!hmd.already_killed)
         hmd.dmg += enhancement_weapon_effects(hmd.enhance_obj
@@ -1922,6 +1933,7 @@ hmon_hitmon(
         /* make sure that negative damage adjustment can't result
            in inadvertently boosting the victim's hit points */
         hmd.dmg = (hmd.get_dmg_bonus && !mon_is_shade) ? 1 : 0;
+        enh_physical = hmd.dmg;
         if (mon_is_shade && !hmd.hittxt
             && thrown != HMON_THROWN && thrown != HMON_KICKED)
             /* this gives "harmlessly passes through" feedback even when
@@ -1929,6 +1941,7 @@ hmon_hitmon(
             hmd.hittxt = shade_miss(&gy.youmonst, mon, obj, FALSE, TRUE);
     }
 
+    enh_before_joust = hmd.dmg;
     if (hmd.jousting) {
         hmon_hitmon_jousting(&hmd, mon, obj);
     } else if (hmd.unarmed && hmd.dmg > 1 && !thrown && !obj && !Upolyd) {
@@ -1936,6 +1949,31 @@ hmon_hitmon(
     } else if (!hmd.unarmed && hmd.dmg > 1 && !thrown && !Upolyd
                && !u.twoweap && uwep) {
         maybe_knockback = TRUE;
+    }
+
+    enh_physical += max(0, hmd.dmg - enh_before_joust);
+    if (!hmd.already_killed) {
+        boolean projectile_in_flight = obj && obj == gt.thrownobj;
+
+        if (projectile_in_flight)
+            enhancement_snapshot = *obj;
+        enhancement_vampiric(&enhancement_snapshot, enh_launcher, &gy.youmonst,
+                              mon, enhancement_reduce(mon, enh_physical, ENH_PHYSICAL),
+                              enhancement_reduce(mon, hmd.dmg, hmd.fatal ? ENH_FATAL
+                                  : max(0, enh_physical - hmd.artifact_nonphysical)), enh_use);
+        /* A weapon broken on contact still delivered that hit. Its snapshot
+         * can activate, but there is no surviving cooldown owner to update. */
+        if (enhancement_stoning(hmd.enhance_obj && hmd.jousting >= 0
+                                   ? hmd.enhance_obj : &enhancement_snapshot,
+                               enh_launcher, &gy.youmonst, mon, enh_use))
+            return FALSE;
+        if (projectile_in_flight && !gt.thrownobj) {
+            /* A life-saved engulfer can absorb and merge the projectile
+             * during xkilled(). Finish damage and feedback using a value
+             * copy; its optional name storage may already have been freed. */
+            enhancement_snapshot.oextra = NULL;
+            obj = &enhancement_snapshot;
+        }
     }
 
     if (!hmd.already_killed) {
@@ -1949,7 +1987,8 @@ hmon_hitmon(
                so we test for 1; 0 shouldn't be able to happen here... */
             && hmd.dmg > 0 && u.uconduct.weaphit <= 1)
             first_weapon_hit(obj);
-        mon->mhp -= hmd.dmg;
+        enhancement_mon_damage(mon, &gy.youmonst, hmd.dmg, hmd.fatal ? ENH_FATAL
+            : max(0, enh_physical - hmd.artifact_nonphysical));
     }
     /* adjustments might have made tmp become less than what
        a level-draining artifact has already done to max HP */
@@ -2617,7 +2656,7 @@ mith_drain_attack(struct monst *magr, struct attack *mattk,
             poisoned(buf, A_STR, pmname(magr->data, Mgender(magr)), 30, FALSE);
         } else if (!resists_poison(mdef)) {
             if (rn2(10))
-                mdef->mhp -= rn1(10, 6);
+                enhancement_mon_damage(mdef, magr, rn1(10, 6), 0);
             else
                 mdef->mhp = 0;
             if (DEADMONSTER(mdef))
@@ -2778,7 +2817,7 @@ mhitm_ad_drli(
                 if (mdef->mhpmax > (int) mdef->m_lev)
                     mdef->mhpmax = (int) mdef->m_lev + 1;
             }
-            mdef->mhp -= mhm->damage;
+            enhancement_mon_damage(mdef, magr, mhm->damage, 0);
             /* !m_lev: level 0 monster is killed regardless of hit points
                rather than drop to level -1; note: some non-living creatures
                (golems, vortices) are subject to life-drain */
@@ -2827,9 +2866,10 @@ mhitm_ad_drli(
                 if (mdef->mhpmax > (int) mdef->m_lev)
                     mdef->mhpmax = (int) mdef->m_lev + 1;
             }
-            if (mdef->m_lev == 0) /* automatic kill if drained past level 0 */
+            if (mdef->m_lev == 0) { /* automatic kill if drained past level 0 */
                 mhm->damage = mdef->mhp;
-            else
+                mhm->fatal = TRUE;
+            } else
                 mdef->m_lev--;
 
             /* unlike hitting with Stormbringer, wounded attacker doesn't
@@ -3484,7 +3524,9 @@ mhitm_really_poison(struct monst *magr, struct attack *mattk,
             pline_The("poison doesn't seem to affect %s.",
                         mon_nam(mdef));
     } else {
-        mhm->damage += rn1(10, 6);
+        int poison_damage = rn1(10, 6);
+        mhm->damage += poison_damage;
+        mhm->nonphysical_damage += poison_damage;
         if (mhm->damage >= mdef->mhp && gv.vis && canspotmon(mdef))
             pline_The("poison was deadly...");
     }
@@ -3508,8 +3550,12 @@ mhitm_ad_drst(
                 if (!rn2(10)) {
                     Your("poison was deadly...");
                     mhm->damage = mdef->mhp;
-                } else
-                    mhm->damage += rn1(10, 6);
+                    mhm->fatal = TRUE;
+                } else {
+                    int poison = rn1(10, 6);
+                    mhm->damage += poison;
+                    mhm->nonphysical_damage += poison;
+                }
             }
         }
     } else if (mdef == &gy.youmonst) {
@@ -3731,6 +3777,7 @@ mhitm_ad_wrap(
                 if (is_pool(u.ux, u.uy) && !cant_drown(pd)) {
                     You("drown %s...", mon_nam(mdef));
                     mhm->damage = mdef->mhp;
+                    mhm->fatal = TRUE;
                 } else if (mattk->aatyp == AT_HUGS)
                     pline("%s is being crushed.", Monnam(mdef));
             } else {
@@ -4431,14 +4478,16 @@ mhitm_ad_phys(
                     }
                 }
                 mhm->damage += dmgval(otmp, mdef);
+                mhm->damage += enhancement_alignment_damage(otmp, NULL, mdef, ENHANCE_MELEE);
+                mhm->alignment_added = TRUE;
                 if ((marmg = which_armor(magr, W_ARMG)) != 0
                     && marmg->otyp == GAUNTLETS_OF_POWER)
                     mhm->damage += rn1(4, 3); /* 3..6 */
                 if (mhm->damage <= 0)
                     mhm->damage = 1;
                 if (!otmp->oartifact
-                    || !artifact_hit(magr, mdef, otmp, &mhm->damage,
-                                     gm.mhitu_dieroll)) {
+                    || !artifact_hit_fatal(magr, mdef, otmp, &mhm->damage,
+                                     gm.mhitu_dieroll, &mhm->fatal, &mhm->artifact_nonphysical)) {
                     hitmsg(magr, mattk);
                     mhm->hitflags |= M_ATTK_HIT;
                 }
@@ -4469,7 +4518,9 @@ mhitm_ad_phys(
                     if (tmp > 1)
                         exercise(A_STR, FALSE);
                     /* inflict damage now; we know it can't be fatal */
+                    tmp = enhancement_reduce(&gy.youmonst, tmp, tmp);
                     u.mh -= tmp;
+                    mhm->direct_physical += tmp;
                     disp.botl = TRUE;
                     mhm->damage = 0; /* don't inflict more damage below */
                     if (cloneu())
@@ -4488,8 +4539,15 @@ mhitm_ad_phys(
                      * strength-based. With hpdamchance = 10, HP damage occurs
                      * 1/2 of the time and it will hit Str rest of the time.
                      * (This is the same as poisoned ammo.) */
-                    poisoned(buf, A_STR, pmname(magr->data, Mgender(magr)),
+                    mhm->direct_damage += poisoned(buf, A_STR, pmname(magr->data, Mgender(magr)),
                              10, FALSE);
+                }
+                enhancement_reflect(&gy.youmonst, magr, mhm->direct_physical);
+                if (DEADMONSTER(magr)) {
+                    mhm->weapon = NULL;
+                    mhm->hitflags = M_ATTK_AGR_DIED;
+                    mhm->done = TRUE;
+                    return;
                 }
             } else if (mattk->aatyp != AT_TUCH || mhm->damage != 0
                        || magr != u.ustuck) {
@@ -4533,8 +4591,8 @@ mhitm_ad_phys(
                    now we'll know and might need to deliver skipped message
                    (note: if there's no message there'll be no auxiliary
                    damage so the message here isn't coming too late) */
-                if (!artifact_hit(magr, mdef, mwep, &mhm->damage,
-                                  mhm->dieroll)) {
+                if (!artifact_hit_fatal(magr, mdef, mwep, &mhm->damage,
+                                  mhm->dieroll, &mhm->fatal, &mhm->artifact_nonphysical)) {
                     if (gv.vis)
                         pline_mon(magr, "%s hits %s.", Monnam(magr),
                               mon_nam_too(mdef, magr));
@@ -4906,6 +4964,7 @@ mhitm_ad_dgst(
         }
         wake_nearto(magr->mx, magr->my, 2 * 2); /* Burrrrp! */
         mhm->damage = mdef->mhp;
+        mhm->fatal = TRUE;
         /* Use up amulet of life saving */
         if ((obj = mlifesaver(mdef)) != 0)
             m_useup(mdef, obj);
@@ -5387,7 +5446,7 @@ damageum(
     struct attack *mattk, /* hero's attack */
     int specialdmg) /* blessed and/or silver bonus against various things */
 {
-    struct mhitm_data mhm;
+    struct mhitm_data mhm = { 0 };
     mhm.weapon = uwep;
 
     mhm.damage = d((int) mattk->damn, (int) mattk->damd);
@@ -5414,7 +5473,9 @@ damageum(
         mhm.damage = mith_physical_damage(mdef, (struct obj *) 0,
                                           mattk->aatyp, mhm.damage);
     mdef->mstrategy &= ~STRAT_WAITFORU; /* in case player is very fast */
-    mdef->mhp -= mhm.damage;
+    enhancement_mon_damage(mdef, &gy.youmonst, mhm.damage,
+        mhm.fatal ? ENH_FATAL : enhancement_physical_type(mattk->adtyp)
+            ? mhm.damage - mhm.nonphysical_damage : 0);
     if (DEADMONSTER(mdef)) {
         /* troll killed by Trollsbane won't auto-revive; FIXME? same when
            Trollsbane is wielded as primary and two-weaponing kills with
@@ -5469,8 +5530,8 @@ explum(struct monst *mdef, struct attack *mattk)
         /* See comment in mon_explodes() and in zap.c for an explanation
            of this math.  Here, the player is causing the explosion, so it
            should be in the +20 to +29 range instead of negative. */
-        explode(u.ux, u.uy, (mattk->adtyp - 1) + 20, tmp, MON_EXPLODE,
-                adtyp_to_expltype(mattk->adtyp));
+        explode_by(u.ux, u.uy, (mattk->adtyp - 1) + 20, tmp, MON_EXPLODE,
+                adtyp_to_expltype(mattk->adtyp), &gy.youmonst);
         if (mdef && DEADMONSTER(mdef)) {
             /* Other monsters may have died too, but return this if the actual
                target died. */
@@ -5735,7 +5796,8 @@ gulpum(struct monst *mdef, struct attack *mattk)
                 break;
             }
             end_engulf();
-            mdef->mhp -= dam;
+            enhancement_mon_damage(mdef, &gy.youmonst, dam,
+                enhancement_physical_type(mattk->adtyp) ? -1 : 0);
             if (DEADMONSTER(mdef)) {
                 killed(mdef);
                 if (DEADMONSTER(mdef)) /* not lifesaved */
@@ -6352,7 +6414,7 @@ hmonas(struct monst *mon)
                             || mon->data->mlet == S_MUMMY)
                         && rn2(5) && !Sick_resistance) {
                         You_feel("%ssick.", (Sick) ? "very " : "");
-                        mdamageu(mon, rnd(8));
+                        mdamageu_damage(mon, rnd(8), 0);
                     }
                 }
             } else {
@@ -6506,7 +6568,7 @@ passive(
                     hliquid("acid"));
 
             if (!Acid_resistance) {
-                mdamageu(mon, tmp);
+                mdamageu_damage(mon, tmp, enhancement_physical_type(ptr->mattk[i].adtyp) ? tmp : 0);
                 monstunseesu(M_SEEN_ACID);
             } else {
                 monstseesu(M_SEEN_ACID);
@@ -6579,7 +6641,7 @@ passive(
             pline("A hail of magic missiles narrowly misses you!");
         } else {
             You("are hit by magic missiles appearing from thin air!");
-            mdamageu(mon, tmp);
+            mdamageu_damage(mon, tmp, enhancement_physical_type(ptr->mattk[i].adtyp) ? tmp : 0);
             monstunseesu(M_SEEN_MAGR);
         }
         break;
@@ -6669,7 +6731,7 @@ passive(
                 }
                 monstunseesu(M_SEEN_COLD);
                 You("are suddenly very cold!");
-                mdamageu(mon, tmp);
+                mdamageu_damage(mon, tmp, enhancement_physical_type(ptr->mattk[i].adtyp) ? tmp : 0);
                 /* monster gets stronger with your heat! */
                 if (mon->data == &mons[PM_ASPECT_OF_THE_SILENCE])
                     mith_cold_heal(mon, tmp);
@@ -6695,7 +6757,7 @@ passive(
                 }
                 monstunseesu(M_SEEN_FIRE);
                 You("are suddenly very hot!");
-                mdamageu(mon, tmp); /* fire damage */
+                mdamageu_damage(mon, tmp, enhancement_physical_type(ptr->mattk[i].adtyp) ? tmp : 0); /* fire damage */
             }
             break;
         case AD_ELEC:
@@ -6708,7 +6770,7 @@ passive(
             }
             monstunseesu(M_SEEN_ELEC);
             You("are jolted with electricity!");
-            mdamageu(mon, tmp);
+            mdamageu_damage(mon, tmp, enhancement_physical_type(ptr->mattk[i].adtyp) ? tmp : 0);
             break;
         default:
             break;
@@ -7030,7 +7092,7 @@ light_hits_gremlin(struct monst *mon, int dmg)
     } else if (canseemon(mon)) {
         pline_mon(mon, "%s recoils from the light!", Monnam(mon));
     }
-    mon->mhp -= dmg;
+    enhancement_mon_damage(mon, NULL, dmg, 0);
     wake_nearto(mon->mx, mon->my, 30);
     if (DEADMONSTER(mon)) {
         if (svc.context.mon_moving)

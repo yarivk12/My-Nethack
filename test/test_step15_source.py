@@ -19,5 +19,5 @@ for path in ['include/enhance.h','include/obj.h','src/enhance.c','src/makemon.c'
     assert audit_project(path, read(path))==old,path
 symbols=[int(n) for n in re.findall(r'PCHAR2?\(\s*(\d+)',read('include/defsym.h'))]
 assert symbols==list(range(len(symbols))), 'contiguous symbol ids'
-assert re.search(r'#define EDITLEVEL\s+10\b',read('include/patchlevel.h'))
-print('PASS protected enhancement/codec source identity outside exact audited corrections, contiguous symbols and epoch 10')
+assert re.search(r'#define EDITLEVEL\s+12\b',read('include/patchlevel.h'))
+print('PASS protected enhancement/codec source identity outside exact audited corrections, contiguous symbols and epoch 12')

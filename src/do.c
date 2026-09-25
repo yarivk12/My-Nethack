@@ -238,7 +238,7 @@ flooreffects(
                         /* normally we'd use ohitmon() but it can call
                            drop_throw() which calls flooreffects() */
                         damage = dmgval(obj, mtmp);
-                        mtmp->mhp -= damage;
+                        enhancement_mon_damage(mtmp, &gy.youmonst, damage, 0);
                         if (DEADMONSTER(mtmp)) {
                             if (canspotmon(mtmp))
                                 pline("%s is %s!", Monnam(mtmp),
@@ -257,7 +257,7 @@ flooreffects(
                 mtmp->mtrapped = 0;
             } else {
                 if (!Passes_walls && !throws_rocks(gy.youmonst.data)) {
-                    losehp(Maybe_Half_Phys(rnd(15)),
+                    losehp_physical(Maybe_Half_Phys(rnd(15)),
                            "squished under a boulder", NO_KILLER_PREFIX);
                     goto deletedwithboulder;
                 } else
@@ -1293,7 +1293,7 @@ dodown(void)
             if (y_n(qbuf) == 'y') {
                 if (!rn2(3)) {
                     actn = "manage to squeeze";
-                    losehp(Maybe_Half_Phys(rnd(4)),
+                    losehp_physical(Maybe_Half_Phys(rnd(4)),
                            "contusion from a small passage", KILLED_BY);
                 } else {
                     You("were unable to fit %s.", down_or_thru);
@@ -1858,7 +1858,7 @@ goto_level(
                 if (u.usteed)
                     dismount_steed(DISMOUNT_FELL);
                 else
-                    losehp(Maybe_Half_Phys(rnd(3)),
+                    losehp_physical(Maybe_Half_Phys(rnd(3)),
                            ga.at_ladder ? "falling off a ladder"
                                      : "tumbling down a flight of stairs",
                            KILLED_BY);
@@ -2062,7 +2062,7 @@ goto_level(
         int dmg = d(max(dist, 1), 6);
 
         dmg = Maybe_Half_Phys(dmg);
-        losehp(dmg, "falling down a mine shaft", KILLED_BY);
+        losehp_physical(dmg, "falling down a mine shaft", KILLED_BY);
     }
 
     (void) pickup(1);

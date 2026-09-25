@@ -540,6 +540,8 @@ struct you {
  * done.
  */
 struct _hitmon_data {
+    boolean fatal; /* transient instant-death result */
+    int artifact_nonphysical;
     struct obj *enhance_obj; /* cleared if an eligible object breaks */
     int dmg;  /* damage */
     int thrown;

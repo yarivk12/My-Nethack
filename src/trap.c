@@ -1464,7 +1464,7 @@ trapeffect_rocktrap(
             newsym(u.ux, u.uy); /* map the rock */
 
             if (!harmless) {
-                losehp(Maybe_Half_Phys(dmg), "falling rock", KILLED_BY_AN);
+                losehp_physical(Maybe_Half_Phys(dmg), "falling rock", KILLED_BY_AN);
                 exercise(A_STR, FALSE);
             }
         }
@@ -1614,7 +1614,7 @@ trapeffect_bear_trap(
                 pline("%s protects your leg.", Yname2(uarmf));
             else {
                 set_wounded_legs(rn2(2) ? RIGHT_SIDE : LEFT_SIDE, rn1(10, 10));
-                losehp(Maybe_Half_Phys(dmg), "bear trap", KILLED_BY_AN);
+                losehp_physical(Maybe_Half_Phys(dmg), "bear trap", KILLED_BY_AN);
             }
         }
         exercise(A_DEX, FALSE);
@@ -1747,7 +1747,7 @@ trapeffect_rust_trap(
             dam = Maybe_Half_Phys(dam);
             if (u.mith_timers[MITH_VAUL])
                 dam = (dam + 1) / 2;
-            losehp(dam, "rusting away", KILLED_BY);
+            losehp_physical(dam, "rusting away", KILLED_BY);
         } else if (u.umonnum == PM_GREMLIN && rn2(3)) {
             (void) split_mon(&gy.youmonst, (struct monst *) 0);
         }
@@ -1897,7 +1897,7 @@ trapeffect_fire_trap(
             int xtradmg = destroy_items(mtmp, AD_FIRE, orig_dmg);
             ignite_items(mtmp->minvent);
             if (!DEADMONSTER(mtmp)) {
-                mtmp->mhp -= xtradmg;
+                enhancement_mon_damage(mtmp, NULL, xtradmg, 0);
                 if (DEADMONSTER(mtmp)) { /* NOW it's dead */
                     monkilled(mtmp, "", AD_FIRE);
                     trapkilled = TRUE;
@@ -1949,7 +1949,7 @@ trapeffect_ice_trap(struct monst *mtmp, struct trap *trap)
             return Trap_Killed_Mon;
         if (!rn2(2)) {
             int extra = destroy_items(mtmp, AD_COLD, orig_damage);
-            mtmp->mhp -= extra;
+            enhancement_mon_damage(mtmp, NULL, extra, 0);
             if (DEADMONSTER(mtmp)) {
                 monkilled(mtmp, "", AD_COLD);
                 return Trap_Killed_Mon;
@@ -2076,14 +2076,14 @@ trapeffect_pit(
 
                     if (silver_hating)
                         pline_The("silver shards sear your flesh!");
-                    losehp(Maybe_Half_Phys(damage),
+                    losehp_physical(Maybe_Half_Phys(damage),
                            silver_hating
                            ? "fell into a pit of silver mirror-shards"
                            : "fell into a pit of mirror-shards",
                            NO_KILLER_PREFIX);
                 } else {
 
-                    losehp(Maybe_Half_Phys(
+                    losehp_physical(Maybe_Half_Phys(
                                rnd(conj_pit ? 4 : adj_pit ? 6 : 10)),
                        /* note: these don't need locomotion() handling;
                           if fatal while poly'd and Unchanging, the
@@ -2110,7 +2110,7 @@ trapeffect_pit(
                 /* plunging flyers take spike damage but not pit damage */
                 if (!conj_pit && !deliberate
                     && !(plunged && (Flying || is_clinger(gy.youmonst.data))))
-                    losehp(Maybe_Half_Phys(rnd(adj_pit ? 3 : 6)),
+                    losehp_physical(Maybe_Half_Phys(rnd(adj_pit ? 3 : 6)),
                            plunged ? "deliberately plunged into a pit"
                            : "fell into a pit",
                            NO_KILLER_PREFIX);
@@ -2610,7 +2610,7 @@ trapeffect_anti_magic(
 
             if (in_sight)
                 seetrap(trap);
-            mtmp->mhp -= dmgval2;
+            enhancement_mon_damage(mtmp, NULL, dmgval2, 0);
             if (DEADMONSTER(mtmp))
                 monkilled(mtmp,
                           in_sight
@@ -2765,7 +2765,7 @@ trapeffect_landmine(
            blow_up_landmine() will remove pit afterwards if inappropriate */
         trap->ttyp = PIT;
         trap->madeby_u = FALSE;
-        losehp(Maybe_Half_Phys(damage), "land mine", KILLED_BY_AN);
+        losehp_physical(Maybe_Half_Phys(damage), "land mine", KILLED_BY_AN);
         blow_up_landmine(trap);
         if (steed_mid && saddle && !u.usteed)
             (void) keep_saddle_with_steedcorpse(steed_mid, fobj, saddle);
@@ -4339,7 +4339,7 @@ float_down(
                         pline("Bummer!  You've crashed.");
                     else
                         You("fall over.");
-                    losehp(rnd(2), "dangerous winds", KILLED_BY);
+                    losehp_physical(rnd(2), "dangerous winds", KILLED_BY);
                     if (u.usteed)
                         dismount_steed(DISMOUNT_FELL);
                     selftouch("As you fall, you");
@@ -5437,7 +5437,7 @@ drown(void)
         i = Maybe_Half_Phys(d(2, 6));
         if (u.mhmax > i)
             u.mhmax -= i;
-        losehp(i, "rusting away", KILLED_BY);
+        losehp_physical(i, "rusting away", KILLED_BY);
     }
     if (inpool_ok)
         return FALSE;
@@ -5829,7 +5829,7 @@ try_disarm(
                 if (ttype == BEAR_TRAP) {
                     if (mtmp->mtame)
                         abuse_dog(mtmp);
-                    mtmp->mhp -= rnd(4);
+                    enhancement_mon_damage(mtmp, NULL, rnd(4), -1);
                     if (DEADMONSTER(mtmp))
                         killed(mtmp);
                 } else if (ttype == WEB) {
@@ -6740,7 +6740,7 @@ chest_trap(
                 delobj(otmp);
             }
             wake_nearby(FALSE);
-            losehp(Maybe_Half_Phys(d(6, 6)), buf, KILLED_BY_AN);
+            losehp_physical(Maybe_Half_Phys(d(6, 6)), buf, KILLED_BY_AN);
             exercise(A_STR, FALSE);
             if (costly && loss) {
                 if (insider) {
@@ -7044,7 +7044,7 @@ b_trapped(const char *item, int bodypart)
     Soundeffect(se_kaboom, 80);
     pline("KABOOM!!  %s was booby-trapped!", The(item));
     wake_nearby(FALSE);
-    losehp(Maybe_Half_Phys(dmg), "explosion", KILLED_BY_AN);
+    losehp_physical(Maybe_Half_Phys(dmg), "explosion", KILLED_BY_AN);
     exercise(A_STR, FALSE);
     if (bodypart != NO_PART)
         exercise(A_CON, FALSE);
@@ -7094,7 +7094,7 @@ thitm(
                 dam = 1;
         }
         if (!harmless) {
-            mon->mhp -= dam;
+            enhancement_mon_damage(mon, NULL, dam, -1);
             if (mon->mhp <= 0) {
                 int xx = mon->mx, yy = mon->my;
 
@@ -7350,7 +7350,7 @@ sink_into_lava(void)
            resistance if water walking boots allow survival and then
            get burned up; u.utrap time will be quite short in that case */
         if (!Fire_resistance)
-            u.uhp = (u.uhp + 2) / 3;
+            u.uhp -= enhancement_reduce(&gy.youmonst, u.uhp - (u.uhp + 2) / 3, 0);
 
         u.utrap -= (1 << 8);
         if (u.utrap < (1 << 8)) {
@@ -7584,7 +7584,7 @@ swamp_effects(void)
         You("rust!");
         if (u.mhmax > damage)
             u.mhmax -= damage;
-        losehp(damage, "rusting away", KILLED_BY);
+        losehp_physical(damage, "rusting away", KILLED_BY);
     }
     return TRUE;
 }

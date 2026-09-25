@@ -1064,7 +1064,7 @@ minliquid_core(struct monst *mtmp)
 
         if (cansee(mtmp->mx, mtmp->my))
             pline_mon(mtmp, "%s rusts.", Monnam(mtmp));
-        mtmp->mhp -= dam;
+        enhancement_mon_damage(mtmp, NULL, dam, -1);
         if (mtmp->mhpmax > dam)
             mtmp->mhpmax -= dam;
         if (DEADMONSTER(mtmp)) {
@@ -1108,7 +1108,7 @@ minliquid_core(struct monst *mtmp)
                 else
                     xkilled(mtmp, XKILL_NOMSG);
             } else {
-                mtmp->mhp -= 1;
+                enhancement_mon_damage(mtmp, NULL, 1, 0);
                 if (DEADMONSTER(mtmp)) {
                     if (cansee(mtmp->mx, mtmp->my))
                         pline_mon(mtmp, "%s surrenders to the fire.",
@@ -1183,7 +1183,7 @@ minliquid_core(struct monst *mtmp)
             && !breathless(mtmp->data)) {
             /* as mhp gets lower, the rate of further loss slows down */
             if (mtmp->mhp > 1 && rn2(mtmp->mhp) > rn2(8))
-                mtmp->mhp--;
+                enhancement_mon_damage(mtmp, NULL, 1, 0);
             monflee(mtmp, 2, FALSE, FALSE);
         }
     }
@@ -3498,10 +3498,10 @@ corpse_chance(
                     tmp = Maybe_Half_Phys(tmp);
                     if (u.mith_timers[MITH_VAUL])
                         tmp = (tmp + 1) / 2;
-                    losehp(tmp, svk.killer.name, KILLED_BY_AN);
+                    losehp_damage(tmp, svk.killer.name, KILLED_BY_AN, -1, mon);
                 } else {
                     You_hear("an explosion.");
-                    magr->mhp -= tmp;
+                    enhancement_mon_damage(magr, mon, tmp, -1);
                     if (DEADMONSTER(magr))
                         mondied(magr);
                     if (DEADMONSTER(magr)) { /* maybe lifesaved */

@@ -516,7 +516,7 @@ HACK_H	= ../src/hack.h-t
 HACKCSRC ?= allmain.c alloc.c apply.c artifact.c attrib.c ball.c bones.c \
 	   botl.c calendar.c cmd.c coloratt.c dbridge.c decl.c detect.c dig.c \
 	   display.c dlb.c do.c do_name.c do_wear.c dog.c dogmove.c dokick.c \
-	   dothrow.c drawing.c dungeon.c earlyarg.c eat.c end.c enhance.c engrave.c \
+	   dothrow.c drawing.c dungeon.c earlyarg.c eat.c end.c enhance.c utility.c engrave.c \
 	   exper.c explode.c extralev.c files.c fountain.c hack.c hacklib.c \
 	   getpos.c glyphs.c iactions.c insight.c invent.c isaac64.c light.c \
 	   lock.c mail.c makemon.c mcastu.c mdlib.c mhitm.c \
@@ -597,7 +597,7 @@ HOBJ ?= $(TARGETPFX)allmain.o $(TARGETPFX)alloc.o \
 	$(TARGETPFX)do_wear.o $(TARGETPFX)dog.o $(TARGETPFX)dogmove.o \
 	$(TARGETPFX)dokick.o $(TARGETPFX)dothrow.o $(TARGETPFX)drawing.o \
 	$(TARGETPFX)dungeon.o $(TARGETPFX)earlyarg.o $(TARGETPFX)eat.o \
-	$(TARGETPFX)end.o $(TARGETPFX)enhance.o $(TARGETPFX)engrave.o $(TARGETPFX)exper.o \
+	$(TARGETPFX)end.o $(TARGETPFX)enhance.o $(TARGETPFX)utility.o $(TARGETPFX)engrave.o $(TARGETPFX)exper.o \
 	$(TARGETPFX)explode.o $(TARGETPFX)extralev.o $(TARGETPFX)files.o \
 	$(TARGETPFX)fountain.o $(TARGETPFX)getpos.o $(TARGETPFX)glyphs.o \
 	$(TARGETPFX)hack.o $(TARGETPFX)iactions.o $(TARGETPFX)insight.o \
@@ -1181,6 +1181,7 @@ $(TARGETPFX)earlyarg.o: earlyarg.c $(HACK_H)
 $(TARGETPFX)eat.o: eat.c $(HACK_H)
 $(TARGETPFX)end.o: end.c $(HACK_H) ../include/dlb.h
 $(TARGETPFX)enhance.o: enhance.c $(HACK_H)
+$(TARGETPFX)utility.o: utility.c $(HACK_H)
 $(TARGETPFX)engrave.o: engrave.c $(HACK_H)
 $(TARGETPFX)exper.o: exper.c $(HACK_H)
 $(TARGETPFX)explode.o: explode.c $(HACK_H)

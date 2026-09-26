@@ -3,6 +3,21 @@
 #define ENHANCE_H
 
 enum enhancement_quality { OQ_STANDARD = 0, OQ_FINE = 1, OQ_EXCEPTIONAL = 2 };
+/* Persistent identity and mask coordinate are deliberately independent.
+ * Word 0 constants below are retained for combat-specific queries. */
+struct enhancement_mask { uint64 word[2]; };
+struct enhancement_mask enhancement_mask_property(int);
+struct enhancement_mask enhancement_mask_union(struct enhancement_mask, struct enhancement_mask);
+struct enhancement_mask enhancement_actual(const struct obj *);
+struct enhancement_mask enhancement_known(const struct obj *);
+boolean enhancement_mask_has(struct enhancement_mask, int);
+void enhancement_mask_add(struct enhancement_mask *, int);
+void enhancement_mask_remove(struct enhancement_mask *, int);
+int enhancement_mask_count(struct enhancement_mask);
+boolean enhancement_mask_allowed(const struct obj *, struct enhancement_mask);
+boolean enhancement_set_mask(struct obj *, struct enhancement_mask, enum enhancement_quality, boolean);
+boolean enhancement_has(const struct obj *, int);
+void enhancement_learn(struct obj *, int);
 enum enhance_use {
     ENHANCE_MELEE = 0, ENHANCE_THROWN, ENHANCE_LAUNCHER,
     ENHANCE_AMMO, ENHANCE_ARMOR
@@ -88,7 +103,8 @@ boolean enhancement_property_allowed(const struct obj *, uint64);
 void enhancement_normalize(struct obj *);
 boolean enhancement_set(struct obj *, uint64, enum enhancement_quality, boolean);
 void enhancement_identify(struct obj *);
-uint64 enhancement_visible_props(const struct obj *, boolean);
+struct enhancement_mask enhancement_visible_mask(const struct obj *, boolean);
+uint64 enhancement_visible_word0(const struct obj *, boolean); /* combat adapter */
 int enhancement_quality_bonus(const struct obj *, enum enhance_use);
 int enhancement_hit_bonus(const struct obj *, const struct obj *,
                           const struct monst *, enum enhance_use);
@@ -130,8 +146,9 @@ struct enhancement_entry {
     int tier, native_property, element, dice, sides;
     const char *prefix, *suffix;
     int stat; /* zero: no static value; ES_* otherwise */
+    uint64 bit2; /* word 1 coordinate; zero for earlier properties */
 };
-extern const struct enhancement_entry enhancement_catalog[59];
+extern const struct enhancement_entry enhancement_catalog[82];
 struct enhancement_band { int gate, standard, fine, presence, two, tier[4]; };
 const struct enhancement_band *enhancement_depth_band(int);
 /* IDs 1..32 retain their original catalog indices; Step 16A IDs follow
@@ -153,7 +170,8 @@ enum equipment_property {
     EP_CHA_I, EP_CHA_II, EP_CHA_III, EP_CHA_IV,
     EP_SLEEP_RES, EP_SEE_INVIS, EP_JUMPING, EP_BREATHING, EP_TELEPATHY,
     EP_TELEPORT_CONTROL, EP_POLYMORPH_CONTROL, EP_FLYING,
-    EP_VAMPIRIC_I, EP_VAMPIRIC_II, EP_VAMPIRIC_III, EP_VAMPIRIC_IV, EP_ACID_I, EP_ACID_II, EP_ACID_III, EP_ANARCHIC_I, EP_ANARCHIC_II, EP_AXIOMATIC_I, EP_AXIOMATIC_II, EP_STONING_I, EP_STONING_II, EP_STONING_III, EP_STONING_IV, EP_WARDING, EP_CASTING_II, EP_CASTING_IV, EP_LIGHTNESS_I, EP_LIGHTNESS_II, EP_LIGHTNESS_III, EP_THORNS_I, EP_THORNS_II, EP_DR_I, EP_DR_II, EP_DR_III, EP_DR_IV, EP_COUNT
+    EP_VAMPIRIC_I, EP_VAMPIRIC_II, EP_VAMPIRIC_III, EP_VAMPIRIC_IV, EP_ACID_I, EP_ACID_II, EP_ACID_III, EP_ANARCHIC_I, EP_ANARCHIC_II, EP_AXIOMATIC_I, EP_AXIOMATIC_II, EP_STONING_I, EP_STONING_II, EP_STONING_III, EP_STONING_IV, EP_WARDING, EP_CASTING_II, EP_CASTING_IV, EP_LIGHTNESS_I, EP_LIGHTNESS_II, EP_LIGHTNESS_III, EP_THORNS_I, EP_THORNS_II, EP_DR_I, EP_DR_II, EP_DR_III, EP_DR_IV,
+    EP_EROSION_I, EP_EROSION_II, EP_EROSION_III, EP_EROSION_IV, EP_CURSE_II, EP_CURSE_IV, EP_DISCERNMENT, EP_PURIFICATION_I, EP_PURIFICATION_II, EP_PURIFICATION_III, EP_PURIFICATION_IV, EP_EXCAVATING, EP_COMMERCE_I, EP_COMMERCE_III, EP_TREASURE_I, EP_TREASURE_II, EP_ARCANE_II, EP_ARCANE_III, EP_ARMOR_STORAGE_II, EP_ARMOR_STORAGE_III, EP_WEAPON_STORAGE_II, EP_WEAPON_STORAGE_III, EP_WATERTIGHT, EP_COUNT
 };
 enum equipment_stat { ES_NONE, ES_STR, ES_DEX, ES_CON, ES_INT, ES_WIS,
                       ES_CHA, ES_HP, ES_MANA, ES_PROTECTION };
@@ -193,5 +211,18 @@ boolean enhancement_curse_protected(const struct obj *);
 boolean armor_spell_penalty(const struct obj *);
 int enhancement_casting_penalty(const struct obj *, int);
 int enhancement_weight(const struct obj *, int);
+boolean utility_active(int);
+void utility_turn_tick(void);
+void utility_turn_cancel(void);
+void utility_forget_object(struct obj *);
+void utility_purification_restore(struct obj *);
+boolean enhancement_equipped_target(const struct obj *);
+boolean utility_erosion_protected(const struct obj *, int);
+boolean utility_curse_protected(const struct obj *);
+void utility_discernment_refresh(void);
+int utility_purification_interval(const struct obj *);
+void utility_turn_snapshot(void);
+void utility_turn_end(void);
+int utility_excavating_effort(struct obj *, int, int, int);
 int doinspect(void);
 #endif

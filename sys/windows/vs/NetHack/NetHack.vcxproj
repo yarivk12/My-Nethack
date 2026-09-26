@@ -213,6 +213,7 @@
     <ClCompile Include="$(SrcDir)version.c" />
     <ClCompile Include="$(SrcDir)vision.c" />
     <ClCompile Include="$(SrcDir)enhance.c" />
+    <ClCompile Include="$(SrcDir)utility.c" />
     <ClCompile Include="$(SrcDir)weapon.c" />
     <ClCompile Include="$(SrcDir)were.c" />
     <ClCompile Include="$(SrcDir)wield.c" />

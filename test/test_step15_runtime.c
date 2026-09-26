@@ -548,7 +548,11 @@ static void inspect_run(struct obj *obj) {
            && obj->bknown == before.bknown && obj->rknown == before.rknown
            && obj->cknown == before.cknown && obj->lknown == before.lknown);
     assert(obj->o_enh_props == before.o_enh_props
+           && obj->o_enh_props2 == before.o_enh_props2
            && obj->o_enh_known == before.o_enh_known
+           && obj->o_enh_known2 == before.o_enh_known2
+           && obj->o_purification_remaining == before.o_purification_remaining
+           && obj->o_purification_sampled == before.o_purification_sampled
            && obj->o_enh_quality == before.o_enh_quality
            && obj->o_enh_flags == before.o_enh_flags
            && obj->o_socket_capacity == before.o_socket_capacity
@@ -585,7 +589,7 @@ static void inspect_tests(void) {
                   "Quality:\n    unknown\n\nEnhancements:\n    none known\n\nSockets: 0/1\n    Socket 1: empty\n"));
     assert(!strstr(inspect_screen, "Gemstone sockets:"));
     fully_identify_obj(obj);
-    assert(obj->o_enh_props == 0 && obj->o_enh_known == inspect_allowed(obj)
+    assert(obj->o_enh_props == 0 && obj->o_enh_known == 0
            && (obj->o_enh_flags & OEF_QUALITY_KNOWN));
     inspect_run(obj);
     assert(strstr(inspect_screen,
@@ -603,7 +607,7 @@ static void inspect_tests(void) {
            && !strstr(inspect_screen, "Cold Resistance")
            && !strstr(inspect_screen, "none known"));
     fully_identify_obj(obj);
-    assert(obj->o_enh_known == inspect_allowed(obj));
+    assert(obj->o_enh_known == obj->o_enh_props);
     inspect_run(obj);
     assert(strstr(inspect_screen,
                   "Quality:\n    Fine - +1 AC while worn\n")
@@ -693,6 +697,21 @@ static void inspect_tests(void) {
     assert(obj->o_stoning_remaining==17);
     obj->o_stoning_remaining=0;inspect_run(obj);
     assert(strstr(inspect_screen,"Stoning III - Ready"));inspect_discard(obj);
+    obj = inspect_item(MAGIC_LAMP);
+    assert(enhancement_set_mask(obj, enhancement_mask_property(EP_PURIFICATION_II), 0, FALSE));
+    obj->o_purification_remaining=23;
+    inspect_run(obj);
+    assert(strstr(inspect_screen,"Quality:") && strstr(inspect_screen,"Standard"));
+    assert(!strstr(inspect_screen,"Sockets:") && !strstr(inspect_screen,"Purifying")
+           && !strstr(inspect_screen,"remaining") && !strstr(inspect_screen,"Ready"));
+    enhancement_identify(obj);inspect_run(obj);
+    assert(strstr(inspect_screen,"Purifying") && strstr(inspect_screen,"23")
+           && !strstr(inspect_screen,"Sockets:"));
+    obj->o_purification_remaining=0;inspect_run(obj);
+    assert(strstr(inspect_screen,"Ready"));inspect_discard(obj);
+    obj=inspect_item(CRYSTAL_PICK);inspect_run(obj);
+    assert(strstr(inspect_screen,"Quality:") && strstr(inspect_screen,"Standard")
+           && !strstr(inspect_screen,"Sockets:"));inspect_discard(obj);
     step15b_window_setup();
     puts("PASS #inspect layout, impacts, certainty, values, sockets, naming and nonmutation cases");
 }

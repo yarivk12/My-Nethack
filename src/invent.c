@@ -844,6 +844,9 @@ merged(struct obj **potmp, struct obj **pobj)
             otmp = *potmp = oname(otmp, ONAME(obj), ONAME_SKIP_INVUPD);
         obj_extract_self(obj);
 
+        if (otmp->where == OBJ_CONTAINED)
+            container_weight(otmp->ocontainer);
+
         if (obj->pickup_prev && otmp->where == OBJ_INVENT)
             otmp->pickup_prev = 1;
 
@@ -1141,6 +1144,7 @@ addinv_core0(
  added:
     obj->pickup_prev = 1;
     addinv_core2(obj); /* handle extrinsics conferred by carrying obj */
+    utility_discernment_refresh();
     carry_obj_effects(obj); /* carrying affects the obj */
     if (update_perm_invent)
         update_inventory();
@@ -2826,6 +2830,7 @@ update_inventory(void)
 {
     int save_suppress_price;
 
+    utility_discernment_refresh();
     if (!program_state.in_moveloop) /* not covered by suppress_map_output */
         return;
     if (suppress_map_output()) /* despite name, used for perm_invent too */
@@ -4448,8 +4453,12 @@ mergable(
         || memcmp(obj->o_sockets, otmp->o_sockets, sizeof obj->o_sockets)
         || memcmp(obj->o_enh_values, otmp->o_enh_values, sizeof obj->o_enh_values)
         || ((obj->o_enh_props | otmp->o_enh_props) & OEP_STONING)
+        || utility_purification_interval(obj)
+        || utility_purification_interval(otmp)
         || obj->o_enh_props != otmp->o_enh_props
+        || obj->o_enh_props2 != otmp->o_enh_props2
         || obj->o_enh_known != otmp->o_enh_known
+        || obj->o_enh_known2 != otmp->o_enh_known2
         || obj->o_enh_quality != otmp->o_enh_quality
         || obj->o_enh_flags != otmp->o_enh_flags)
         return FALSE;

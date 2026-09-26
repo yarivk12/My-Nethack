@@ -28,8 +28,8 @@ static void step16a_catalog(void)
         assert(enhancement_set(o,e->bit,OQ_STANDARD,FALSE));
         assert(enhancement_price(o,100)==100+(50L<<(tiers[i]-1)));
         enhancement_observe_hit(o,NULL,&gy.youmonst,ENHANCE_MELEE);
-        assert(!enhancement_visible_props(o,FALSE));
-        enhancement_identify(o);assert(enhancement_visible_props(o,FALSE)==e->bit);
+        assert(!enhancement_visible_word0(o,FALSE));
+        enhancement_identify(o);assert(enhancement_visible_word0(o,FALSE)==e->bit);
         assert(!enhancement_set(tool,e->bit,OQ_STANDARD,FALSE));
         assert(enhancement_property_allowed(arrow,e->bit)==(i<7));
         enhancement_clear(o);

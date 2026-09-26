@@ -1960,6 +1960,10 @@ poly_obj(struct obj *obj, int id)
     if (otmp->otyp == obj->otyp) {
         otmp->o_stoning_remaining = obj->o_stoning_remaining;
         otmp->o_stoning_turn = obj->o_stoning_turn;
+        otmp->o_purification_remaining = obj->o_purification_remaining;
+        otmp->o_purification_sampled = obj->o_purification_sampled;
+        otmp->o_enh_props2 = obj->o_enh_props2;
+        otmp->o_enh_known2 = obj->o_enh_known2;
         otmp->o_enh_props = obj->o_enh_props;
         otmp->o_enh_known = obj->o_enh_known;
         otmp->o_enh_quality = obj->o_enh_quality;
@@ -1971,6 +1975,7 @@ poly_obj(struct obj *obj, int id)
 
     if (otmp->otyp != obj->otyp) socket_init(otmp);
     socket_normalize(otmp);
+    utility_purification_restore(otmp);
 
     /* update the weight */
     otmp->owt = weight(otmp);
@@ -6008,6 +6013,8 @@ maybe_destroy_item(
 
     /* external worn item protects inventory? */
     if (u_carry && inventory_resistance_check(dmgtyp))
+        return 0;
+    if (dmgtyp == AD_FIRE && utility_erosion_protected(obj, ERODE_BURN))
         return 0;
 
     switch (dmgtyp) {

@@ -8,10 +8,11 @@ print('PASS Step 16B exact catalogue names')
 
 import hashlib, json
 from step16b_source_projection import CHANGES, project
+from step16c_source_projection import project as step16c_project
 hashes=json.loads((R/'test/step16b_baseline_hashes.json').read_text())
 mutations=0
 for path,hunks in CHANGES.items():
-    current=(R/path).read_text()
+    current=step16c_project(path,(R/path).read_text())
     expected=hashes[path]
     digest=lambda text: hashlib.sha256(project(path,text).encode()).hexdigest()
     assert digest(current)==expected,(path,'unreviewed production delta')
@@ -20,7 +21,7 @@ for path,hunks in CHANGES.items():
         assert digest(altered)!=expected,(path,'masked mutation')
         mutations+=1
     assert digest(current+'\n/* mutation */\n')!=expected
-assert '#define EDITLEVEL 12' in (R/'include/patchlevel.h').read_text()
+assert '#define EDITLEVEL 13' in (R/'include/patchlevel.h').read_text()
 assert 'ENH_FATAL' in (R/'src/uhitm.c').read_text()
 assert 'enhancement_weight(obj,' in (R/'src/mkobj.c').read_text()
 assert 'enhancement_curse_protected(otmp)' in (R/'src/mkobj.c').read_text()

@@ -1533,12 +1533,53 @@ sortbill_cmp(const genericptr vptr1, const genericptr vptr2)
     return (bidx1 - bidx2);
 }
 
-/* delivers the cheapest item on the list */
+/* Purchase settlement only: bills, usage fees, damages, and sale prices keep
+   their native undiscounted values.  Even an unpaid source is active here. */
+staticfn long
+commerce_payable(long amount)
+{
+    struct obj *source;
+    boolean bargain = FALSE;
+
+    for (source = gi.invent; source; source = source->nobj) {
+        if (enhancement_has(source, EP_COMMERCE_III))
+            return max(1L, amount / 2L);
+        if (enhancement_has(source, EP_COMMERCE_I))
+            bargain = TRUE;
+    }
+    /* Preserve floor(amount * 3 / 4) without multiplication overflow. */
+    return bargain ? max(1L, (amount / 4L) * 3L
+                            + (amount % 4L) * 3L / 4L) : amount;
+}
+
+/* Containers are bought by separate native dopayobj operations.  Their
+   immediate quote must sum those rounded settlements, not round the sum. */
+staticfn long
+commerce_container_payable(struct obj *obj)
+{
+    struct obj *content;
+    long amount = obj->unpaid
+                  ? commerce_payable(unpaid_cost(obj, COST_NOCONTENTS)) : 0L;
+
+    for (content = obj->cobj; content; content = content->nobj)
+        amount += commerce_container_payable(content);
+    return amount;
+}
+
+staticfn long
+commerce_bill_payable(Bill *entry)
+{
+    return entry->usedup >= KnownContainer
+           ? commerce_container_payable(entry->obj)
+           : commerce_payable(entry->cost);
+}
+
+/* delivers the cheapest immediately payable item on the list */
 staticfn long
 cheapest_item(int ibillct, Bill *ibill)
 {
     int i;
-    long gmin = ibill[0].cost;
+    long gmin = commerce_bill_payable(&ibill[0]), payable;
 
     /*
      * 5.0: old version didn't determine cheapest item correctly if it
@@ -1548,9 +1589,11 @@ cheapest_item(int ibillct, Bill *ibill)
      * ibill[] which has already split such items into separate entries.
      */
 
-    for (i = 1; i < ibillct; ++i)
-        if (ibill[i].cost < gmin)
-            gmin = ibill[i].cost;
+    for (i = 1; i < ibillct; ++i) {
+        payable = commerce_bill_payable(&ibill[i]);
+        if (payable < gmin)
+            gmin = payable;
+    }
     return gmin;
 }
 
@@ -1728,7 +1771,7 @@ menu_pick_pay_items(
         otmp->quan = ibill[i].quan; /* in case it's partly used */
         p = paydoname(otmp);
         otmp->quan = save_quan;
-        amt = ibill[i].cost;
+        amt = commerce_bill_payable(&ibill[i]);
         /* this doesn't support hallucinatory currency because shopkeeper
            isn't hallucinating; also, that would mess up the alignment */
         Snprintf(buf, sizeof buf, "%*ld Zm, %s", amt_width, amt, p);
@@ -2280,7 +2323,9 @@ dopayobj(
         /* dealing with ordinary unpaid item */
         quan = obj->quan;
     }
-    ltmp = bp->price * quan;
+    /* Currency/credit charged and debt discharged are distinct: update_bill
+       still removes the entire selected original obligation after PAY_BUY. */
+    ltmp = commerce_payable(bp->price * quan);
 
     obj->quan = quan;        /* to be used by doname() */
     iflags.suppress_price++; /* affects containers */
@@ -2350,7 +2395,7 @@ buy_container(
     struct obj *otmp, *otop,
                *container = ibill[indx].obj;
     unsigned unpaidcontainer = container->unpaid;
-    long totalcost = ibill[indx].cost;
+    long totalcost = commerce_bill_payable(&ibill[indx]);
     boolean sightunseen = ibill[indx].usedup == UndisclosedContainer
                           /* give feedback just for container+contents rather
                              than for individiual contents even when those
@@ -2968,7 +3013,8 @@ get_cost(
                 break;
             }
             tmp = (long) objects[i].oc_cost;
-            if (obj->o_enh_props || obj->o_enh_quality || socket_count(obj))
+            if (obj->o_enh_props || obj->o_enh_props2
+                || obj->o_enh_quality || socket_count(obj))
                 tmp = enhancement_price(obj, tmp);
         } else if (oid_price_adjustment(obj, obj->o_id) > 0) {
             /* unid'd, arbitrarily impose surcharge: tmp *= 4/3 */
@@ -4403,7 +4449,8 @@ getprice(struct obj *obj, boolean shk_buying)
             tmp /= 2L;
         break;
     }
-    return (obj->o_enh_props || obj->o_enh_quality || socket_count(obj))
+    return (obj->o_enh_props || obj->o_enh_props2
+            || obj->o_enh_quality || socket_count(obj))
                ? enhancement_price(obj, tmp) : tmp;
 }
 
@@ -6431,6 +6478,33 @@ use_unpaid_trapobj(struct obj *otmp, coordxy x, coordxy y)
         bill_dummy_object(otmp);
     }
 }
+
+#ifdef STEP13_TEST
+/* Exercise the production bill selection, quote, charge, and discharge
+   boundaries without a window-port menu in the native regression harness. */
+boolean
+step16c_settle_bill(struct monst *shkp, long *quote)
+{
+    Bill *ibill = NULL;
+    int count = make_itemized_bill(shkp, &ibill), buy;
+    struct bill_x *bp;
+
+    if (!count)
+        return FALSE;
+    *quote = commerce_bill_payable(&ibill[0]);
+    if (ibill[0].usedup >= KnownContainer) {
+        buy = buy_container(shkp, 0, count, ibill) == 0 ? PAY_BUY : PAY_CANT;
+    } else {
+        bp = &ESHK(shkp)->bill_p[ibill[0].bidx];
+        buy = dopayobj(shkp, bp, ibill[0].obj,
+                      ibill[0].usedup <= PartlyUsedUp ? 0 : 1, FALSE, TRUE);
+        if (buy == PAY_BUY)
+            update_bill(0, count, ibill, ESHK(shkp), bp, ibill[0].obj);
+    }
+    free((genericptr_t) ibill);
+    return buy == PAY_BUY;
+}
+#endif
 
 #undef PAY_BUY
 #undef PAY_CANT

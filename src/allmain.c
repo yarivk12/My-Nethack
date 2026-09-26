@@ -195,7 +195,7 @@ static int mvl_change = 0;
 void
 moveloop_core(void)
 {
-    boolean monscanmove = FALSE;
+    boolean monscanmove = FALSE, utility_elapsed = FALSE;
 
 #ifdef SAFERHANGUP
     if (program_state.done_hup)
@@ -267,6 +267,8 @@ moveloop_core(void)
 
                 enhancement_tick();
                 svm.moves++;
+                utility_turn_tick();
+                utility_elapsed = TRUE;
                 /*
                  * Never allow 'moves' to grow big enough to wrap.
                  * We don't care what the maximum possible 'long int'
@@ -415,6 +417,12 @@ moveloop_core(void)
                     }
                 }
             }
+            if (utility_elapsed && u.umovement < NORMAL_SPEED) {
+                /* Immobility may span several complete normal turns. */
+                utility_turn_end();
+                utility_turn_snapshot();
+                utility_elapsed = FALSE;
+            }
         } while (u.umovement < NORMAL_SPEED); /* hero can't move */
 
         /******************************************/
@@ -462,6 +470,12 @@ moveloop_core(void)
             under_ground(0);
 
         see_nearby_monsters();
+        if (utility_elapsed) {
+            /* Native effects, including expiry callbacks and terrain, have
+             * completed before Ready sources inspect the final inventory. */
+            utility_turn_end();
+            utility_turn_snapshot();
+        }
     } /* actual time passed */
 
     /****************************************/
@@ -479,6 +493,7 @@ moveloop_core(void)
     }
 
     equipment_refresh();
+    utility_discernment_refresh();
     find_ac();
     if (!svc.context.mv || Blind) {
         /* redo monsters if hallu or wearing a helm of telepathy */
@@ -510,6 +525,7 @@ moveloop_core(void)
     m_everyturn_effect(&gy.youmonst);
 
     svc.context.move = 1;
+    utility_turn_snapshot();
 
     if (gm.multi >= 0 && go.occupation) {
 #if defined(MICRO) || defined(WIN32CON)

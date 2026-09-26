@@ -2,7 +2,7 @@
 from pathlib import Path
 import argparse, os, shutil, subprocess
 R=Path(__file__).resolve().parents[1]
-p=argparse.ArgumentParser();p.add_argument('--out',type=Path,default=R/'_qa/step13-diagnostic');p.add_argument('--no-build',action='store_true');p.add_argument('--combat-only',action='store_true');a=p.parse_args()
+p=argparse.ArgumentParser();p.add_argument('--out',type=Path,default=R/'_qa/step13-diagnostic');p.add_argument('--no-build',action='store_true');p.add_argument('--combat-only',action='store_true');p.add_argument('--step16c-only',action='store_true');a=p.parse_args()
 out=a.out.resolve();out.mkdir(parents=True,exist_ok=True)
 if not a.no_build:
  locator=Path(os.environ.get('ProgramFiles(x86)','C:/Program Files (x86)'))/'Microsoft Visual Studio/Installer/vswhere.exe'
@@ -15,9 +15,10 @@ for name in ['nhdat500','symbols.template','sysconf.template','nethackrc.templat
 env={k:v for k,v in os.environ.items() if not k.startswith(('NETHACK_STEP','STEP11_','STEP13_','CUSTOMROOM','SHOPTYPE'))}
 env.update(NETHACK_STEP13_TEST='1',NETHACKOPTIONS='!news,!legacy,!tutorial,!tips')
 if a.combat_only:env['STEP13_COMBAT_ONLY']='1'
+if a.step16c_only:env['STEP16C_ONLY']='1'
 r=subprocess.run([str(out/'bin/NetHack.exe')],cwd=out/'bin',env=env,capture_output=True,timeout=600)
 text=(r.stdout+r.stderr).decode(errors='replace');(out/'runtime.log').write_text(text,encoding='utf8')
 print('\n'.join(line for line in text.splitlines() if line.startswith(('PASS','SIZE','CORPUS'))));
 if r.returncode: print(text[-3000:])
 assert r.returncode==0,r.returncode
-assert ('PASS Step 13 focused combat/knowledge fixtures' if a.combat_only else 'PASS Step 13 native runtime fixtures') in text
+assert ('PASS Step 16C focused native integration fixtures' if a.step16c_only else 'PASS Step 13 focused combat/knowledge fixtures' if a.combat_only else 'PASS Step 13 native runtime fixtures') in text

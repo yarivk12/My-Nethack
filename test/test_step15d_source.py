@@ -27,5 +27,5 @@ assert commit.index('affix_room(') < commit.index('/* COMMIT:') < commit.index('
 assert commit.index('rn2(100)') < commit.index('pool[rn2(n)]') < commit.index('d(e->dice')
 assert 'return ECMD_TIME;' in commit and commit.count('useup(gem)')==1
 assert 'doinspect, IFBURIED | AUTOCOMPLETE | GENERALCMD' in (R/'src/cmd.c').read_text()
-assert '#define EDITLEVEL 12' in (R/'include/patchlevel.h').read_text()
+assert '#define EDITLEVEL 13' in (R/'include/patchlevel.h').read_text()
 print(f'PASS Step 15D {len(CHANGES)} production files, {mutations} rejected mutations, preflight/RNG and command/version boundaries')

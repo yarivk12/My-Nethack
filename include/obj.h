@@ -178,7 +178,11 @@ struct obj {
     uint8 o_enh_quality;    /* generic equipment quality, independent of spe */
     uint8 o_enh_flags;      /* generic quality knowledge */
     uint64 o_enh_props;     /* active generic equipment properties */
-    uint64 o_enh_known;     /* known presence/absence of generic properties */
+    uint64 o_enh_known;     /* known actual properties, word 0 */
+    uint64 o_enh_props2;    /* ordinary properties, word 1 */
+    uint64 o_enh_known2;    /* known actual properties, word 1 */
+    unsigned short o_purification_remaining; /* active hero turns until Ready */
+    long o_purification_sampled; /* pending start-of-turn sample, moves + 1 */
     unsigned short o_stoning_remaining; /* active-level turns until Ready */
     long o_stoning_turn; /* activation turn, never an off-level deadline */
     uint8 o_enh_values[8];  /* acquired STR I-IV, DEX I-IV magnitudes */

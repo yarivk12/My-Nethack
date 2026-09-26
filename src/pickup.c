@@ -24,7 +24,7 @@ staticfn boolean allow_cat_no_uchain(struct obj *);
 #endif
 staticfn int autopick(struct obj *, int, menu_item **);
 staticfn int count_categories(struct obj *, int);
-staticfn int delta_cwt(struct obj *, struct obj *);
+staticfn int delta_cwt(struct obj *, struct obj *, long);
 staticfn long carry_count(struct obj *, struct obj *, long, boolean, int *,
                         int *);
 staticfn int lift_object(struct obj *, struct obj *, long *, boolean);
@@ -1545,15 +1545,24 @@ count_categories(struct obj *olist, int qflags)
  *  than trying to match the calculation used by weight() in mkobj.c.
  */
 staticfn int
-delta_cwt(struct obj *container, struct obj *obj)
+delta_cwt(struct obj *container, struct obj *obj, long original_quantity)
 {
     struct obj **prev;
+    struct obj *outer = container;
     int owt, nwt;
+    long taking = obj->quan;
 
-    if (container->otyp != BAG_OF_HOLDING)
-        return obj->owt;
-
-    owt = nwt = container->owt;
+    while (outer->where == OBJ_CONTAINED)
+        outer = outer->ocontainer;
+    obj->quan = original_quantity;
+    owt = nwt = weight(outer);
+    obj->quan = taking;
+    if (taking < original_quantity) {
+        obj->quan = original_quantity - taking;
+        nwt = weight(outer);
+        obj->quan = taking;
+        return owt - nwt;
+    }
     /* find the object so that we can remove it */
     for (prev = &container->cobj; *prev; prev = &(*prev)->nobj)
         if (*prev == obj)
@@ -1563,11 +1572,25 @@ delta_cwt(struct obj *container, struct obj *obj)
     } else {
         /* temporarily remove the object and calculate resulting weight */
         *prev = obj->nobj;
-        nwt = weight(container);
+        nwt = weight(outer);
         *prev = obj; /* put the object back; obj->nobj is still valid */
     }
     return owt - nwt;
 }
+
+#ifdef STEP13_TEST
+int
+step16c_removal_weight(struct obj *container, struct obj *obj, long count)
+{
+    long quantity = obj->quan;
+    int delta;
+
+    obj->quan = count;
+    delta = delta_cwt(container, obj, quantity);
+    obj->quan = quantity;
+    return delta;
+}
+#endif
 
 /* could we carry `obj'? if not, could we carry some of it/them? */
 staticfn long
@@ -1577,14 +1600,18 @@ carry_count(struct obj *obj,            /* object to pick up... */
             boolean telekinesis,
             int *wt_before, int *wt_after)
 {
-    boolean adjust_wt = container && carried(container),
+    boolean adjust_wt,
             is_gold = obj->oclass == COIN_CLASS;
+    struct obj *outer = container;
     int wt, iw, ow, oow;
     long qq, savequan, umoney;
     unsigned saveowt;
     const char *verb, *prefx1, *prefx2, *suffx;
     char obj_nambuf[BUFSZ], where[BUFSZ];
 
+    while (outer && outer->where == OBJ_CONTAINED)
+        outer = outer->ocontainer;
+    adjust_wt = outer && carried(outer);
     savequan = obj->quan;
     saveowt = obj->owt;
     umoney = money_cnt(gi.invent);
@@ -1596,7 +1623,7 @@ carry_count(struct obj *obj,            /* object to pick up... */
     }
     wt = iw + (int) obj->owt;
     if (adjust_wt)
-        wt -= delta_cwt(container, obj);
+        wt -= delta_cwt(container, obj, savequan);
     /* This will go with silver+copper & new gold weight */
     if (is_gold) /* merged gold might affect cumulative weight */
         wt -= (GOLD_WT(umoney) + GOLD_WT(count) - GOLD_WT(umoney + count));
@@ -1624,7 +1651,7 @@ carry_count(struct obj *obj,            /* object to pick up... */
                 obj->quan = qq;
                 obj->owt = (unsigned) GOLD_WT(qq);
                 ow = (int) GOLD_WT(umoney + qq);
-                ow -= delta_cwt(container, obj);
+                ow -= delta_cwt(container, obj, savequan);
                 if (iw + ow >= 0)
                     break;
                 oow = ow;
@@ -1649,7 +1676,7 @@ carry_count(struct obj *obj,            /* object to pick up... */
             obj->quan = qq;
             obj->owt = (unsigned) (ow = weight(obj));
             if (adjust_wt)
-                ow -= delta_cwt(container, obj);
+                ow -= delta_cwt(container, obj, savequan);
             if (iw + ow >= 0)
                 break;
             wt = iw + ow;

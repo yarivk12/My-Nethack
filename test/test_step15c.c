@@ -418,7 +418,7 @@ static void forge16a_properties(void)
         assert(out->o_enh_props==expect[i]&&!out->o_stoning_remaining&&!out->o_enh_known);
     }
     forge_test_clear();
-    state.present=TRUE;state.props=OEP_STONING_IV|OEP_ANARCHIC_II;
+    state.present=TRUE;state.props.word[0]=OEP_STONING_IV|OEP_ANARCHIC_II;
     out=forge_output(ARROW);forge_inherit(out,&state);assert(!out->o_enh_props);obfree(out,NULL);
     out=forge_output(DAGGER);out->quan=3;forge_inherit(out,&state);
     assert(out->o_enh_props==OEP_ANARCHIC_II&&!out->o_stoning_remaining);obfree(out,NULL);
@@ -426,8 +426,64 @@ static void forge16a_properties(void)
 }
 
 static void
+forge16c_properties(void)
+{
+    struct forge_state state={0};
+    struct obj *a=forge_output(MAGIC_LAMP), *b=forge_output(PICK_AXE), *out;
+    int next;
+    assert(enhancement_set_mask(a, enhancement_mask_union(
+        enhancement_mask_property(EP_PURIFICATION_I),
+        enhancement_mask_property(EP_COMMERCE_III)), 0, TRUE));
+    assert(enhancement_set_mask(b, enhancement_mask_union(
+        enhancement_mask_property(EP_PURIFICATION_IV),
+        enhancement_mask_property(EP_EXCAVATING)), 0, TRUE));
+    a->o_purification_remaining=0;b->o_purification_remaining=7;
+    forge_gather(&state,a);forge_gather(&state,b);
+    out=forge_output(OIL_LAMP);
+    init_isaac64(1616001,rn2);next=rn2(1000000);init_isaac64(1616001,rn2);
+    forge_inherit(out,&state);
+    assert(rn2(1000000)==next);
+    assert(enhancement_has(out,EP_PURIFICATION_IV)&&enhancement_has(out,EP_COMMERCE_III));
+    assert(out->o_purification_remaining==100 && !out->o_enh_known2 && !out->o_enh_quality);
+    assert(!enhancement_has(out,EP_EXCAVATING));obfree(out,NULL);
+    out=forge_output(PICK_AXE);forge_inherit(out,&state);
+    assert(enhancement_has(out,EP_PURIFICATION_IV)&&enhancement_has(out,EP_EXCAVATING));
+    assert(!enhancement_has(out,EP_COMMERCE_III)); /* Catalogue-order T3 tie. */
+    obfree(out,NULL);
+    out=forge_output(DAGGER);forge_inherit(out,&state);
+    assert(!enhancement_mask_count(enhancement_actual(out)) && !out->o_purification_remaining);
+    obfree(out,NULL);obfree(a,NULL);obfree(b,NULL);
+    /* Origin, rather than a per-tool Utility roster, controls inheritance. */
+    out=forge_output(ARROW);
+    objects[ARROW].oc_class=out->oclass=TOOL_CLASS;
+    forge_inherit(out,&state);
+    assert(enhancement_has(out,EP_PURIFICATION_IV));
+    assert(enhancement_has(out,EP_COMMERCE_III));
+    assert(!enhancement_has(out,EP_EXCAVATING));
+    objects[ARROW].oc_class=out->oclass=WEAPON_CLASS;
+    obfree(out,NULL);
+    {
+        const int denied[]={SADDLE,CHEST,LARGE_BOX,ICE_BOX,IRON_SAFE,
+            CANDELABRUM_OF_INVOCATION,BELL_OF_OPENING,BEARTRAP,LAND_MINE,
+            BAG_OF_TRICKS,CRYSTAL_BALL,MIRROR,TINNING_KIT,FIGURINE,
+            TALLOW_CANDLE,WAX_CANDLE,MAGIC_CANDLE,CAN_OF_GREASE,CRYSTAL_PICK,
+            LIVING_MASK,MASK,SYLLABLE_OF_STRENGTH__AESH,FIRST_WORD,
+            UNIVERSAL_KEY,TORCH,SHADOWLANDER_S_TORCH,DOUBLE_LIGHTSABER,
+            GENERIC_TOOL};
+        int i;
+        for(i=0;i<SIZE(denied);++i) {
+            out=forge_output(denied[i]);forge_inherit(out,&state);
+            assert(!enhancement_mask_count(enhancement_actual(out)));
+            obfree(out,NULL);
+        }
+    }
+    puts("PASS Step 16C forge Utility recipient filtering, strongest family, deterministic tie, fresh full timer and zero RNG");
+}
+
+static void
 step15c_test_main(void)
 {
+    forge16c_properties();
     forge16a_properties();
     forge15c_reductions();
     forge15c_properties();

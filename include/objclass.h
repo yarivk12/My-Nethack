@@ -45,6 +45,15 @@ enum obj_armor_types {
     ARM_SHIRT  = 6
 };
 
+/* Read-only origin metadata keyed by object type, not a gameplay permission.
+ * Missing classifications fail closed; do not infer origin from ID ranges. */
+enum object_origin {
+    OBJ_ORIGIN_UNKNOWN = 0,
+    OBJ_ORIGIN_VANILLA,
+    OBJ_ORIGIN_CUSTOM
+};
+extern enum object_origin object_origin(int);
+
 struct objclass {
     short oc_name_idx;              /* index of actual name */
     short oc_descr_idx;             /* description when name unknown */

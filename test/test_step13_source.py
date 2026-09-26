@@ -12,10 +12,10 @@ for typ,field in [('uint64','o_enh_props'),('uint64','o_enh_known'),('uint8','o_
  assert re.search(r'\b'+typ+r'\s+'+field+r'\s*;',obj)
  assert f'obj->{field} != otmp->{field}' in body('src/invent.c','mergable')
 assert 'unsigned long obranch_props;' in obj
-assert re.search(r'#define EDITLEVEL\s+12\b',read('include/patchlevel.h'))
+assert re.search(r'#define EDITLEVEL\s+13\b',read('include/patchlevel.h'))
 for i,name in enumerate(['FIRE','COLD','SHOCK','TRUEFLIGHT','WARNING','SEARCHING','STEALTH']):
  assert int(re.search(r'#define OEP_'+name+r'\s+(0x[0-9a-f]+)U',hdr)[1],16)==1<<i
-for name in ['enhancement_hit_bonus','enhancement_damage_bonus','enhancement_quality_bonus','enhancement_visible_props']:
+for name in ['enhancement_hit_bonus','enhancement_damage_bonus','enhancement_quality_bonus','enhancement_visible_word0']:
  code=body('src/enhance.c',name)
  assert not re.search(r'\b(rnd|rn2|pline|You|enhancement_set)\(',code),name
  assert not re.search(r'->o_enh_\w+\s*(?:=(?!=)|\|=|&=|\+\+)',code),name

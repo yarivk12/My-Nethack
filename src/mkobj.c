@@ -502,6 +502,8 @@ splitobj(struct obj *obj, long num)
         obj_split_timers(obj, otmp);
     if (obj_sheds_light(obj))
         obj_split_light_source(obj, otmp);
+    if (obj->where == OBJ_CONTAINED)
+        container_weight(obj->ocontainer);
     return otmp;
 }
 
@@ -1841,10 +1843,11 @@ bless(struct obj *otmp)
         old_light = arti_light_radius(otmp);
     otmp->cursed = 0;
     otmp->blessed = 1;
+    utility_discernment_refresh();
     if (carried(otmp) && confers_luck(otmp))
         set_moreluck();
     else if (otmp->otyp == BAG_OF_HOLDING)
-        otmp->owt = weight(otmp);
+        container_weight(otmp);
     else if (otmp->otyp == FIGURINE && otmp->timed)
         (void) stop_timer(FIG_TRANSFORM, obj_to_any(otmp));
     if (otmp->lamplit)
@@ -1860,10 +1863,11 @@ unbless(struct obj *otmp)
     if (otmp->lamplit)
         old_light = arti_light_radius(otmp);
     otmp->blessed = 0;
+    utility_discernment_refresh();
     if (carried(otmp) && confers_luck(otmp))
         set_moreluck();
     else if (otmp->otyp == BAG_OF_HOLDING)
-        otmp->owt = weight(otmp);
+        container_weight(otmp);
     if (otmp->lamplit)
         maybe_adjust_light(otmp, old_light);
 }
@@ -1878,10 +1882,12 @@ curse(struct obj *otmp)
         return;
     if (otmp->lamplit)
         old_light = arti_light_radius(otmp);
-    if (!otmp->cursed && enhancement_curse_protected(otmp)) return;
+    if (!otmp->cursed && (enhancement_curse_protected(otmp)
+                         || utility_curse_protected(otmp))) return;
     already_cursed = otmp->cursed;
     otmp->blessed = 0;
     otmp->cursed = 1;
+    utility_discernment_refresh();
     /* welded two-handed weapon interferes with some armor removal */
     if (otmp == uwep && bimanual(uwep))
         reset_remarm();
@@ -1893,7 +1899,7 @@ curse(struct obj *otmp)
     if (carried(otmp) && confers_luck(otmp)) {
         set_moreluck();
     } else if (otmp->otyp == BAG_OF_HOLDING) {
-        otmp->owt = weight(otmp);
+        container_weight(otmp);
     } else if (otmp->otyp == FIGURINE) {
         if (otmp->corpsenm != NON_PM && !dead_species(otmp->corpsenm, TRUE)
             && (carried(otmp) || mcarried(otmp)))
@@ -1916,10 +1922,11 @@ uncurse(struct obj *otmp)
     if (otmp->lamplit)
         old_light = arti_light_radius(otmp);
     otmp->cursed = 0;
+    utility_discernment_refresh();
     if (carried(otmp) && confers_luck(otmp))
         set_moreluck();
     else if (otmp->otyp == BAG_OF_HOLDING)
-        otmp->owt = weight(otmp);
+        container_weight(otmp);
     else if (otmp->otyp == FIGURINE && otmp->timed)
         (void) stop_timer(FIG_TRANSFORM, obj_to_any(otmp));
     if (otmp->lamplit)
@@ -1955,6 +1962,8 @@ set_bknown(
     struct obj *obj,
     unsigned int onoff) /* 1 or 0 */
 {
+    if (carried(obj) && utility_active(EP_DISCERNMENT))
+        onoff = 1;
     if (obj->bknown != onoff) {
         obj->bknown = onoff;
         if (obj->where == OBJ_INVENT && svm.moves > 1L)
@@ -1974,6 +1983,49 @@ set_bknown(
  *         unsigned short int, so weight() should probably be changed to
  *         use and return unsigned int instead of signed int.
  */
+/* Apply once to the canonical weight of a complete direct content object.
+   Nested containers have already computed their own contents' reductions. */
+staticfn int
+storage_content_weight(struct obj *container, struct obj *content, int wt)
+{
+    int low = -1, high = -1, numerator = 1, denominator = 1;
+
+    switch (content->oclass) {
+    case COIN_CLASS:
+    case GEM_CLASS:
+        low = EP_TREASURE_I;
+        high = EP_TREASURE_II;
+        break;
+    case SPBOOK_CLASS:
+    case SCROLL_CLASS:
+    case WAND_CLASS:
+    case POTION_CLASS:
+        low = EP_ARCANE_II;
+        high = EP_ARCANE_III;
+        break;
+    case ARMOR_CLASS:
+        low = EP_ARMOR_STORAGE_II;
+        high = EP_ARMOR_STORAGE_III;
+        break;
+    case WEAPON_CLASS:
+        low = EP_WEAPON_STORAGE_II;
+        high = EP_WEAPON_STORAGE_III;
+        break;
+    default:
+        return wt;
+    }
+    if (enhancement_has(container, high)) {
+        numerator = (high == EP_ARCANE_III) ? 2 : 3;
+        denominator = (high == EP_ARCANE_III) ? 5 : 10;
+    } else if (enhancement_has(container, low)) {
+        numerator = (low == EP_ARCANE_II) ? 7 : 3;
+        denominator = (low == EP_ARCANE_II) ? 10 : 5;
+    }
+    /* Quotient/remainder avoids overflowing int before division. */
+    return (wt / denominator) * numerator
+           + (wt % denominator) * numerator / denominator;
+}
+
 int
 weight(struct obj *obj)
 {
@@ -2043,7 +2095,7 @@ weight(struct obj *obj)
 
         cwt = 0; /* contents weight */
         for (contents = obj->cobj; contents; contents = contents->nobj)
-            cwt += weight(contents);
+            cwt += storage_content_weight(obj, contents, weight(contents));
         /*
          *  The weight of bags of holding is calculated as the weight
          *  of the bag plus the weight of the bag's contents modified
@@ -2794,13 +2846,16 @@ add_to_container(struct obj *container, struct obj *obj)
 
     /* merge if possible */
     for (otmp = container->cobj; otmp; otmp = otmp->nobj)
-        if (merged(&otmp, &obj))
+        if (merged(&otmp, &obj)) {
+            container_weight(container);
             return otmp;
+        }
 
     obj->where = OBJ_CONTAINED;
     obj->ocontainer = container;
     obj->nobj = container->cobj;
     container->cobj = obj;
+    container_weight(container);
     return obj;
 }
 
@@ -2924,6 +2979,7 @@ dealloc_obj(struct obj *obj)
 staticfn void
 dealloc_obj_real(struct obj *obj)
 {
+    utility_forget_object(obj);
     if (obj->oextra)
         dealloc_oextra(obj);
 

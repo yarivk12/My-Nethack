@@ -9,7 +9,9 @@ g=Game(release,output)
 try:
  g.save()
  g=Game(release,output,restore=True)
- assert 'PASS restored' in (Path(output)/'step13-game-results.txt').read_text()
+ text=(Path(output)/'step13-game-results.txt').read_text()
+ assert text.count('PASS restored all eight ownership paths')==1,text
+ assert text.count('PASS restored all 23 Utility identities')==1,text
  # Quit the host process with the ordinary checkpoint intact.
 finally:g.close()
 r=subprocess.run([str(Path('binary/Release/x64/recover.exe').resolve()),'-d',str(Path(output).resolve()),'wizard'],capture_output=True,text=True)
@@ -18,7 +20,8 @@ assert r.returncode==0,(r.returncode,r.stdout,r.stderr)
 g=Game(release,output,restore=True)
 try:
  text=(Path(output)/'step13-game-results.txt').read_text()
- assert text.count('PASS restored')==2,text
+ assert text.count('PASS restored all eight ownership paths')==2,text
+ assert text.count('PASS restored all 23 Utility identities')==2,text
  print(text)
  print('PASS enhanced full game save/restore and native recover.exe checkpoint restore')
 finally:g.close()

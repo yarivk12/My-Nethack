@@ -1890,6 +1890,7 @@ not_fully_identified(struct obj *otmp)
         return FALSE;
     if (enhancement_eligible(otmp)
         && ((otmp->o_enh_props & ~otmp->o_enh_known)
+            || (otmp->o_enh_props2 & ~otmp->o_enh_known2)
             || (otmp->o_enh_quality && !(otmp->o_enh_flags & OEF_QUALITY_KNOWN))))
         return TRUE;
     /* otmp->rknown is the only item of interest if we reach here */

@@ -642,7 +642,7 @@ step15b_test_main(void)
             j = 2;
         }
         assert(forge_available(r, NULL));
-        if (enhancement_eligible(obj))
+        if (enhancement_eligible(obj) && obj->oclass != TOOL_CLASS)
             assert(enhancement_set(obj, obj->oclass == ARMOR_CLASS ? OEP_FIRE_RES : OEP_FIRE,
                                    OQ_EXCEPTIONAL, FALSE));
         obj->spe=7;obj->cursed=1;obj->oeroded=2;obj->greased=1;

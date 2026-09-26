@@ -8,7 +8,7 @@ static void step16b_basic(void)
         const struct enhancement_entry *e=equipment_property(EP_WARDING+i);
         assert(e && e->tier==tiers[i] && e->bit==(1ULL<<(48+i)));
         assert(enhancement_set(armor,e->bit,0,FALSE));
-        assert(!enhancement_visible_props(armor,FALSE));
+        assert(!enhancement_visible_word0(armor,FALSE));
     }
     assert(!enhancement_set(armor,OEP_DR_I|OEP_DR_II,0,FALSE));
     assert(enhancement_set(armor,OEP_DR_I|OEP_WARDING,0,FALSE));

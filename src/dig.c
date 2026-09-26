@@ -310,6 +310,7 @@ dig(void)
     struct rm *lev;
     coordxy dpx = svc.context.digging.pos.x, dpy = svc.context.digging.pos.y;
     boolean ispick = uwep && is_pick(uwep);
+    int effort_before = svc.context.digging.effort, native_effort, threshold;
     const char *verb = (!uwep || is_pick(uwep)) ? "dig into" : "chop through";
     enum digcheck_result dcresult = DIGCHECK_PASSED;
 
@@ -383,6 +384,20 @@ dig(void)
         svc.context.digging.effort *= 2;
     if (uwep->otyp == CRYSTAL_PICK)
         svc.context.digging.effort *= 2;
+    /* Preserve every native modifier, including those applied to accumulated
+     * effort, then double only this turn's finalized contribution. */
+    native_effort = svc.context.digging.effort - effort_before;
+    threshold = 100;
+    if (svc.context.digging.down) {
+        struct trap *ttmp = t_at(dpx, dpy);
+        threshold = (ttmp && (ttmp->ttyp == TRAPDOOR || is_pit(ttmp->ttyp)))
+                        ? 250 : 50;
+        /* A pre-existing hole completes independently of digging effort. */
+        if (ttmp && ttmp->ttyp == HOLE)
+            threshold = -1;
+    }
+    svc.context.digging.effort = effort_before
+        + utility_excavating_effort(uwep, effort_before, native_effort, threshold);
     if (svc.context.digging.down) {
         struct trap *ttmp = t_at(dpx, dpy);
 

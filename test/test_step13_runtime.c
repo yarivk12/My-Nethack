@@ -14,7 +14,11 @@ extern void init_isaac64(unsigned long, int (*)(int));
 extern void step13_save_chain(NHFILE *, struct obj **);
 extern struct obj *step13_restore_chain(NHFILE *);
 #define SAME(a,b) assert((a)->o_enh_props == (b)->o_enh_props \
+    && (a)->o_enh_props2 == (b)->o_enh_props2 \
     && (a)->o_enh_known == (b)->o_enh_known \
+    && (a)->o_enh_known2 == (b)->o_enh_known2 \
+    && (a)->o_purification_remaining == (b)->o_purification_remaining \
+    && (a)->o_purification_sampled == (b)->o_purification_sampled \
     && (a)->o_enh_quality == (b)->o_enh_quality \
     && (a)->o_enh_flags == (b)->o_enh_flags \
     && (a)->o_stoning_remaining == (b)->o_stoning_remaining \
@@ -23,9 +27,15 @@ extern struct obj *step13_restore_chain(NHFILE *);
     && !memcmp((a)->o_sockets,(b)->o_sockets,sizeof (a)->o_sockets) \
     && !memcmp((a)->o_enh_values,(b)->o_enh_values,sizeof (a)->o_enh_values))
 #define ZERO(a) assert(!(a)->o_enh_props && !(a)->o_enh_known \
+    && !(a)->o_enh_props2 && !(a)->o_enh_known2 \
+    && !(a)->o_purification_remaining \
+    && !(a)->o_purification_sampled \
     && !(a)->o_enh_quality && !(a)->o_enh_flags)
 _Static_assert(sizeof(uint32) == 4 && sizeof(uint8) == 1, "fixed width");
-_Static_assert(sizeof(struct obj) == 152, "Windows x64 object size (baseline 104)");
+_Static_assert(sizeof(((struct obj *)0)->o_enh_props2) == 8
+               && sizeof(((struct obj *)0)->o_enh_known2) == 8,
+               "portable second actual/known property words");
+_Static_assert(sizeof(struct obj) == 176, "Windows x64 epoch-13 object size");
 _Static_assert(OQ_STANDARD == 0 && OQ_FINE == 1 && OQ_EXCEPTIONAL == 2, "qualities");
 _Static_assert(OEP_ALL == 0xfffffffffffff7fULL && OEF_QUALITY_KNOWN == 1U, "masks");
 
@@ -46,6 +56,9 @@ item(int type)
 #include "test_step15d.c"
 #include "test_step16a.c"
 #include "test_step16b.c"
+#include "test_step16c.c"
+#include "test_step16c_runtime.c"
+#include "test_step16c_shop_storage.c"
 
 static void
 matrix(void)
@@ -55,17 +68,18 @@ matrix(void)
     for (i = 1; i < NUM_OBJECTS; ++i) {
         struct obj *o = item(i);
         boolean eligible = !o->oartifact && (o->oclass == WEAPON_CLASS
-            || o->oclass == ARMOR_CLASS);
+            || o->oclass == ARMOR_CLASS || step16c_approved_tool(i));
         ZERO(o);
         assert(enhancement_eligible(o) == eligible);
         for (q = 0; q <= 2; ++q) {
-            assert(enhancement_set(o, 0, q, FALSE) == eligible);
+            assert(enhancement_set(o, 0, q, FALSE)
+                   == (eligible && (o->oclass != TOOL_CLASS || !q)));
             for (bit = 1; bit <= OEP_REFLECTION; bit <<= 1) {
                 int ci;
                 boolean allowed = FALSE;
                 for (ci=0;ci<24;++ci) if(enhancement_catalog[ci].bit==bit) {
                     int prop=enhancement_catalog[ci].native_property;
-                    allowed=eligible && (o->oclass==ARMOR_CLASS
+                    allowed=eligible && o->oclass != TOOL_CLASS && (o->oclass==ARMOR_CLASS
                       ? prop && !enhancement_native_property(o,prop)
                       : !prop && (bit!=OEP_TRUEFLIGHT || is_launcher(o) || is_ammo(o) || is_missile(o) || is_spear(o)));
                 }
@@ -83,7 +97,8 @@ matrix(void)
         if (!eligible) { ZERO(o); }
         else {
             assert(!(o->o_enh_props & ~OEP_ALL) && o->o_enh_quality == 0);
-            assert(o->o_enh_known == OEP_ALL && o->o_enh_flags == OEF_QUALITY_KNOWN);
+            assert(o->o_enh_known == o->o_enh_props
+                   && o->o_enh_flags == OEF_QUALITY_KNOWN);
         }
         obfree(o, NULL);
     }
@@ -437,6 +452,49 @@ file_mode(NHFILE *f,int mode,int fd)
 }
 
 static void
+step16c_recipient_codec(void)
+{
+    struct obj *chain=NULL,*o,*restored,*next;
+    struct enhancement_mask mask=enhancement_mask_union(
+        enhancement_mask_property(EP_COMMERCE_I),
+        enhancement_mask_property(EP_PURIFICATION_IV));
+    NHFILE *f;
+    int typ;
+    /* Inject invalid stored properties to exercise restobj's validation,
+     * including the unknown-origin generic tool and every excluded tool. */
+    for(typ=1;typ<NUM_OBJECTS;++typ) {
+        if(objects[typ].oc_class!=TOOL_CLASS && typ!=ARROW) continue;
+        o=item(typ);
+        o->o_enh_props2=o->o_enh_known2=mask.word[1];
+        o->o_purification_remaining=17;
+        o->nobj=chain;chain=o;
+        if(typ==ARROW) o->oclass=TOOL_CLASS;
+    }
+    o=item(OIL_LAMP);o->oartifact=ART_EXCALIBUR;
+    o->o_enh_props2=o->o_enh_known2=mask.word[1];
+    o->o_purification_remaining=17;o->nobj=chain;chain=o;
+    objects[ARROW].oc_class=TOOL_CLASS;
+    f=get_freeing_nhfile();file_mode(f,WRITING,open("step16c-recipient.tmp",O_CREAT|O_TRUNC|O_WRONLY|O_BINARY,_S_IREAD|_S_IWRITE));
+    step13_save_chain(f,&chain);close_nhfile(f);
+    f=get_freeing_nhfile();file_mode(f,READING,open("step16c-recipient.tmp",O_RDONLY|O_BINARY));
+    restored=step13_restore_chain(f);close_nhfile(f);
+    for(o=restored;o;o=next) {
+        boolean allowed=!o->oartifact
+            && (o->otyp==ARROW || step16c_approved_tool(o->otyp));
+        assert(o->o_enh_props2==(allowed?mask.word[1]:0));
+        assert(o->o_enh_known2==o->o_enh_props2);
+        assert(o->o_purification_remaining==(allowed?17:0));
+        next=o->nobj;o->nobj=NULL;obfree(o,NULL);
+    }
+    objects[ARROW].oc_class=WEAPON_CLASS;
+    for(o=chain;o;o=next) {
+        next=o->nobj;o->nobj=NULL;obfree(o,NULL);
+    }
+    dobjsfree();
+    puts("PASS Step 16C native restore provenance: vanilla default, exclusions, custom, unknown and artifacts");
+}
+
+static void
 chains(void)
 {
     struct obj *chain=NULL,*o,*restored,*walk,*bag;
@@ -458,7 +516,12 @@ chains(void)
     f=get_freeing_nhfile();file_mode(f,READING,open("step13-chain.tmp",O_RDONLY|O_BINARY));
     restored=step13_restore_chain(f);close_nhfile(f);
     SAME(restored->cobj->cobj,bag->cobj->cobj);
-    for(o=chain,walk=restored;o&&walk;o=o->nobj,walk=walk->nobj){SAME(o,walk);assert(o->o_id==walk->o_id);}
+    for(o=chain,walk=restored;o&&walk;o=o->nobj,walk=walk->nobj){
+        struct obj expected=*o;
+        expected.o_enh_known &= expected.o_enh_props;
+        expected.o_enh_known2 &= expected.o_enh_props2;
+        SAME(&expected,walk);assert(o->o_id==walk->o_id);
+    }
     assert(!o&&!walk);
     printf("PASS native saveobjchn/restobjchn %d active/knowledge/quality/flags combinations and nested containers\n",count);
 }
@@ -466,6 +529,31 @@ chains(void)
 #include "test_step14_persistence.c"
 #include "test_step15d_persistence.c"
 #include "test_step16a_persistence.c"
+
+static void
+step16c_pending_codec(void)
+{
+    struct obj *source=item(MAGIC_LAMP), *chain=source, *restored;
+    NHFILE *f;
+    long before=svm.moves;
+    utility_turn_cancel();
+    assert(enhancement_set_mask(source,enhancement_mask_property(EP_PURIFICATION_II),0,TRUE));
+    source->o_purification_remaining=23;
+    source->o_purification_sampled=svm.moves+1;
+    f=get_freeing_nhfile();file_mode(f,WRITING,open("step16c-pending.tmp",O_CREAT|O_TRUNC|O_WRONLY|O_BINARY,_S_IREAD|_S_IWRITE));
+    step13_save_chain(f,&chain);close_nhfile(f);
+    f=get_freeing_nhfile();file_mode(f,READING,open("step16c-pending.tmp",O_RDONLY|O_BINARY));
+    restored=step13_restore_chain(f);close_nhfile(f);
+    assert(restored && restored->o_purification_remaining==23
+           && restored->o_purification_sampled==svm.moves+1);
+    /* It was sampled before leaving hero inventory, so this one pending
+     * decrement survives serialization even though it is now inactive. */
+    ++svm.moves;utility_turn_tick();
+    assert(restored->o_purification_remaining==22 && !restored->o_purification_sampled);
+    utility_turn_tick();assert(restored->o_purification_remaining==22);
+    obfree(source,NULL);obfree(restored,NULL);svm.moves=before;
+    puts("PASS Step 16C native pending-turn codec re-registers inactive source and decrements exactly once");
+}
 
 static void
 version_gate(void)
@@ -480,10 +568,10 @@ version_gate(void)
     f=get_freeing_nhfile();file_mode(f,READING,open("step13-version.tmp",O_RDONLY|O_BINARY));
     assert(read(f->fd,header,2)==2);assert(header[0]=='h');
     lseek(f->fd,2+header[1],SEEK_SET);Sfi_version_info(f,&v,"version_info");
-    assert((v.incarnation&255)==12);assert(check_version(&v,NULL,FALSE,0));
-    v.incarnation=(v.incarnation&~255UL)|11;
+    assert((v.incarnation&255)==13);assert(check_version(&v,NULL,FALSE,0));
+    v.incarnation=(v.incarnation&~255UL)|12;
     assert(!check_version(&v,NULL,FALSE,0));close_nhfile(f);
-    puts("PASS native critical sizes/epoch-12 header and controlled epoch-11 check_version rejection");
+    puts("PASS native critical sizes/epoch-13 header and controlled epoch-12 check_version rejection");
 }
 
 static int
@@ -518,6 +606,10 @@ level_bones(void)
     o=oname(o,"step16a-bones",ONAME_NO_FLAGS);place_object(o,20,10);
     o=item(PLATE_MAIL);assert(enhancement_set(o,OEP_LIGHTNESS_III|OEP_DR_IV,0,FALSE));
     o=oname(o,"step16b-bones",ONAME_NO_FLAGS);place_object(o,20,10);
+    o=item(MAGIC_LAMP);assert(enhancement_set_mask(o,
+        step16c_pair(EP_PURIFICATION_IV,EP_COMMERCE_I),0,TRUE));
+    o->o_purification_remaining=37;
+    o=oname(o,"step16c-bones",ONAME_NO_FLAGS);place_object(o,20,10);
     o=fixture_item("step13-floor");place_object(o,20,10);
     o=fixture_item("step13-hero-bones");place_object(o,20,10);
     o=fixture_item("step13-buried");o->ox=20;o->oy=10;add_to_buried(o);
@@ -546,6 +638,11 @@ level_bones(void)
     for(o=fobj;o;o=o->nobj)if(has_oname(o)&&!strcmp(ONAME(o),"step16b-bones"))break;
     assert(o && o->o_enh_props==(OEP_LIGHTNESS_III|OEP_DR_IV)
            && !o->o_enh_known && o->owt==(unsigned)weight(o));
+    for(o=fobj;o;o=o->nobj)if(has_oname(o)&&!strcmp(ONAME(o),"step16c-bones"))break;
+    assert(o && enhancement_has(o,EP_PURIFICATION_IV) && enhancement_has(o,EP_COMMERCE_I)
+           && o->o_enh_known2==o->o_enh_props2 && o->o_purification_remaining==37
+           && !o->o_purification_sampled);
+    puts("PASS Step 16C real level/bones codec preserves Utility word, frozen timer and ordinary knowledge");
     puts("PASS Step 16B real level/bones codec preserves upper bits and effective weight");
     puts("PASS Step 16A real level/bones codec, frozen off-level cooldown and resumed active tick");
     puts("PASS actual savelev/getlev and accepted mklev/getbones with enhanced floor, hero remains, buried and monster equipment");
@@ -575,11 +672,19 @@ step13_test_main(void)
     /* Native projectile animation must not flush an uninitialized test port. */
     flush_screen(-1);
     printf("SIZE|obj=%zu|before=104|props=%zu|known=%zu|quality=%zu|flags=%zu|epoch=%d\n",sizeof(struct obj),sizeof(((struct obj*)0)->o_enh_props),sizeof(((struct obj*)0)->o_enh_known),sizeof(((struct obj*)0)->o_enh_quality),sizeof(((struct obj*)0)->o_enh_flags),EDITLEVEL);
+    if(getenv("STEP16C_ONLY")) {
+        step16c_foundations();step16c_generation_names();step16c_runtime_tests();
+        step16c_shop_storage_tests();step16c_persistence();step16c_pending_codec();
+        version_gate();level_bones();
+        puts("PASS Step 16C focused native integration fixtures");return 0;
+    }
     if(getenv("STEP13_COMBAT_ONLY")) {
+        step16c_foundations(); step16c_generation_names(); step16c_runtime_tests(); step16c_shop_storage_tests();
         step16b_basic(); step16b_damage(); step16b_reflection(); step16b_casting(); step16a_tests(); combat();combat_paths();armor();step14_combat_tests();
         step14_hero_use_observation_tests();step14_observation_tests();
         puts("PASS Step 13 focused combat/knowledge fixtures");return 0;
     }
+    step16c_foundations(); step16c_generation_names(); step16c_runtime_tests(); step16c_shop_storage_tests();
     step16b_damage(); step16b_reflection(); step16b_casting(); step16b_basic(); step16a_tests(); step15d_state_tests();
     step15d_catalog_tests();
     step15d_effect_tests();
@@ -591,7 +696,7 @@ step13_test_main(void)
     step14_audit_polymorph_context_tests();
     step14_audit_monster_transform_tests();
     step14_generation_tests();step14_corpus();step14_creation_tests();
-    lifecycle_names();impact_descriptions();artifacts_prices();billing();chains();step14_persistence_tests();step15d_persistence_tests();step16a_persistence_tests();step16b_persistence();version_gate();level_bones();
+    lifecycle_names();impact_descriptions();artifacts_prices();billing();chains();step14_persistence_tests();step15d_persistence_tests();step16a_persistence_tests();step16b_persistence();step16c_persistence();step16c_pending_codec();version_gate();level_bones();
     puts("PASS Step 13 native runtime fixtures");return 0;
 }
 
@@ -698,6 +803,18 @@ step13_game_fixture(boolean resuming)
         }
         defense_bag->owt=weight(defense_bag); /* native container insertion callers refresh caches */
         addinv(oname(defense_bag,"step16b-checkpoint",ONAME_NO_FLAGS));
+        {
+            struct obj *utility_bag=item(SACK);
+            for(property=0;property<23;++property) {
+                o=item(property<12?PICK_AXE:MAGIC_LAMP);
+                if(property>=14) {obfree(o,NULL);o=item(SACK);}
+                assert(enhancement_set_mask(o,enhancement_mask_property(94+property),0,property%2));
+                if(property>=7&&property<=10)o->o_purification_remaining=37;
+                add_to_container(utility_bag,o);
+            }
+            utility_bag->owt=weight(utility_bag);
+            addinv(oname(utility_bag,"step16c-checkpoint",ONAME_NO_FLAGS));
+        }
         o=item(DAGGER);assert(enhancement_set(o,OEP_STONING_III|OEP_VAMPIRIC_IV,0,FALSE));
         o->o_stoning_remaining=17;o->o_stoning_turn=svm.moves;
         o->o_sockets[0].property=EP_ACID_III;
@@ -760,6 +877,22 @@ step13_game_fixture(boolean resuming)
         assert(restored==OEP_DEFENSIVE);
     }
     log=fopen("step13-game-results.txt","a");assert(log);
+    for(o=gi.invent;o;o=o->nobj)if(has_oname(o)&&!strcmp(ONAME(o),"step16c-checkpoint"))break;
+    assert(o);
+    {
+        uint64 restored=0;
+        int property;
+        for(inner=o->cobj;inner;inner=inner->nobj) {
+            restored|=inner->o_enh_props2;
+            for(property=0;property<23;++property)
+                if(inner->o_enh_props2==(1ULL<<property))break;
+            assert(property<23 && inner->o_enh_known2==(property%2?inner->o_enh_props2:0));
+            assert(inner->o_purification_remaining==(property>=7&&property<=10?37:0));
+            assert(!inner->o_purification_sampled);
+        }
+        assert(restored==0x7fffffULL);
+    }
+    fprintf(log,"PASS %s all 23 Utility identities, alternating knowledge and paused Purification timers\n",resuming?"restored":"created");
     fprintf(log,"PASS %s all eight ownership paths, migrating monster, container/monster backlinks, offensive upper bits and Stoning cooldown\n",resuming?"restored":"created");
     fclose(log);
 }

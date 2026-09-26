@@ -257,6 +257,9 @@ erode_obj(
     if (!otmp)
         return ER_NOTHING;
 
+    if (utility_erosion_protected(otmp, type))
+        return ER_NOTHING;
+
     victim = carried(otmp) ? &gy.youmonst
              : mcarried(otmp) ? otmp->ocarry
                : (struct monst *) 0;
@@ -4681,6 +4684,9 @@ fire_damage(
     int in_sight = !Blind && couldsee(x, y); /* Don't care if it's lit */
     int dindx;
 
+    if (utility_erosion_protected(obj, ERODE_BURN))
+        return FALSE;
+
     /* object might light in a controlled manner */
     if (catch_lit(obj))
         return FALSE;
@@ -4795,6 +4801,8 @@ fire_damage_chain(
 boolean
 lava_damage(struct obj *obj, coordxy x, coordxy y)
 {
+    if (utility_erosion_protected(obj, ERODE_BURN))
+        return FALSE;
     int otyp = obj->otyp, ocls = obj->oclass;
 
     /* the Amulet, invocation items, and Rider corpses are never destroyed
@@ -4842,6 +4850,9 @@ acid_damage(struct obj *obj)
     boolean vismon;
 
     if (!obj)
+        return;
+
+    if (utility_erosion_protected(obj, ERODE_CORRODE))
         return;
 
     victim = carried(obj) ? &gy.youmonst : mcarried(obj) ? obj->ocarry : NULL;
@@ -5062,18 +5073,22 @@ water_damage(
         }
         return ER_GREASED;
     } else if (Is_container(obj) && obj->otyp != IRON_SAFE
-               && (!Waterproof_container(obj) || (obj->cursed && !rn2(3)))) {
+               && (!(Waterproof_container(obj)
+                     || enhancement_has(obj, EP_WATERTIGHT))
+                   || (obj->cursed && !rn2(3)))) {
         if (in_invent) {
             pline("Some %s gets into your %s!", hliquid("water"), ostr);
             gm.mentioned_water = !Hallucination;
         }
         water_damage_chain(obj->cobj, FALSE);
         return ER_DAMAGED; /* contents were damaged */
-    } else if (Waterproof_container(obj)) {
+    } else if (Waterproof_container(obj)
+               || enhancement_has(obj, EP_WATERTIGHT)) {
         if (in_invent && !Blind && !Underwater) {
             pline_The("%s cannot get into your %s.", hliquid("water"), ostr);
             gm.mentioned_water = !Hallucination;
-            makeknown(obj->otyp); /* if an oilskin sack, discover it; doesn't
+            if (Waterproof_container(obj))
+                makeknown(obj->otyp); /* if an oilskin sack, discover it; doesn't
                                    * matter for chest, large box, ice box */
         }
         /* not actually damaged, but because we /didn't/ get the "water
@@ -7186,6 +7201,7 @@ lava_effects(void)
             }
             /* set obj->in_use for items which will be destroyed below */
             if ((is_organic(obj) || obj->oclass == POTION_CLASS)
+                && !utility_erosion_protected(obj, ERODE_BURN)
                 && !obj->oerodeproof
                 && objects[obj->otyp].oc_oprop != FIRE_RES
                 && obj->otyp != SCR_FIRE && obj->otyp != SPE_FIREBALL
@@ -7200,7 +7216,8 @@ lava_effects(void)
      * (5.0: that assumption is no longer true, but having boots be the first
      * thing to come into contact with lava makes sense.)
      */
-    if (uarmf && (uarmf->in_use
+    if (uarmf && !utility_erosion_protected(uarmf, ERODE_BURN)
+        && (uarmf->in_use
                   || (is_organic(uarmf) && !uarmf->oerodeproof))) {
         obj = uarmf;
         pline("%s into flame!", Yobjnam2(obj, "burst"));

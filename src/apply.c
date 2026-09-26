@@ -4406,7 +4406,7 @@ static boolean forge_fail_construction;
 struct forge_state {
     boolean present, proof;
     int quality, spe, buc, eroded, eroded2;
-    uint64 props;
+    struct enhancement_mask props;
     uint8 values[8];
 };
 
@@ -4429,7 +4429,7 @@ forge_gather(struct forge_state *state, struct obj *obj)
         state->eroded = min(state->eroded, (int) obj->oeroded);
         state->eroded2 = min(state->eroded2, (int) obj->oeroded2);
     }
-    state->props |= obj->o_enh_props;
+    state->props = enhancement_mask_union(state->props, enhancement_actual(obj));
     for (i = 0; i < 8; ++i)
         if (obj->o_enh_props & enhancement_catalog[24 + i].bit)
             state->values[i] = max(state->values[i], obj->o_enh_values[i]);
@@ -4439,7 +4439,7 @@ forge_gather(struct forge_state *state, struct obj *obj)
 staticfn void
 forge_inherit(struct obj *obj, const struct forge_state *state)
 {
-    uint64 props = 0;
+    struct enhancement_mask props = {{ 0, 0 }};
     int i, best, count, low;
 
     if (!state->present)
@@ -4451,21 +4451,22 @@ forge_inherit(struct obj *obj, const struct forge_state *state)
             best = -1;
             for (i = 0; i < SIZE(enhancement_catalog); ++i) {
                 const struct enhancement_entry *entry = &enhancement_catalog[i];
-                if ((state->props & entry->bit) && !(props & entry->bit)
-                    && enhancement_property_allowed(obj, props | entry->bit)
+                int id = i < 32 ? i + 1 : EP_VAMPIRIC_I + i - 32;
+                if (enhancement_mask_has(state->props, id) && !enhancement_mask_has(props, id)
+                    && enhancement_mask_allowed(obj, enhancement_mask_union(props, enhancement_mask_property(id)))
                     && (best < 0 || entry->tier > enhancement_catalog[best].tier))
                     best = i;
             }
             if (best >= 0)
-                props |= enhancement_catalog[best].bit;
+                enhancement_mask_add(&props, best < 32 ? best + 1 : EP_VAMPIRIC_I + best - 32);
         }
         /* Inheritance is assignment, never acquisition RNG. */
-        obj->o_enh_props = props;
+        obj->o_enh_props = props.word[0];
         for (i = 0; i < 8; ++i)
-            obj->o_enh_values[i] = (props & enhancement_catalog[24 + i].bit)
+            obj->o_enh_values[i] = (props.word[0] & enhancement_catalog[24 + i].bit)
                                     ? state->values[i] : 0;
-        (void) enhancement_set(obj, props,
-                              (enum enhancement_quality) state->quality, FALSE);
+        (void) enhancement_set_mask(obj, props,
+            obj->oclass == TOOL_CLASS ? OQ_STANDARD : (enum enhancement_quality) state->quality, FALSE);
     }
     /* Native spe meanings: obj.h, charge_ok and readobjnam. Do not overwrite
      * gender, fruit/tin/box flags, lamp contents, or other overloaded values.

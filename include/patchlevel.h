@@ -18,7 +18,7 @@
  * and save files.
  */
 /* Step 11 adds explicit saved room identity; require a new game. */
-#define EDITLEVEL 12
+#define EDITLEVEL 13
 
 /*
  * Development status possibilities.

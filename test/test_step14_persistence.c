@@ -1,5 +1,5 @@
-/* Every legal active mask x every class-relevant knowledge subset x quality
- * x flag. Native struct codecs store knowledge verbatim, including absence.
+/* Every legal active mask x every class-relevant knowledge input x quality
+ * x flag. Step 16C clamps impossible knowledge to actual state on restore.
  * Batches bound memory without reducing the exhaustive cross product. */
 static void
 step14_roundtrip_batch(struct obj **chain)
@@ -11,7 +11,11 @@ step14_roundtrip_batch(struct obj **chain)
     f=get_freeing_nhfile();file_mode(f,READING,open("step14-chain.tmp",O_RDONLY|O_BINARY));
     restored=step13_restore_chain(f);close_nhfile(f);
     for(a=*chain,b=restored;a&&b;a=nexta,b=nextb) {
-        SAME(a,b);assert(a->o_id==b->o_id);
+        struct obj expected=*a;
+        expected.o_enh_known &= expected.o_enh_props;
+        expected.o_enh_known2 &= expected.o_enh_props2;
+        SAME(&expected,b);assert(a->o_id==b->o_id);
+        assert(a->spe==b->spe && a->age==b->age);
         nexta=a->nobj;nextb=b->nobj;a->nobj=b->nobj=NULL;
         obfree(a,NULL);obfree(b,NULL);
     }

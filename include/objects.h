@@ -1109,6 +1109,8 @@ OBJECT(OBJ("Nurturing Word","verdant glyph"),
        BITS(0,0,0,0,1,0,1,1,0,0,0,P_NONE,METAL),
        0,TOOL_CLASS,0,0,3,3000,0,0,0,0,6,CLR_GREEN,NURTURING_WORD),
 
+TOOL("Essence", NoDes, 1, 1, 0, 0, 0, 1, 0, MINERAL, CLR_WHITE, GENERIC_ESSENCE),
+
 #undef TOOL
 #undef WEPTOOL
 

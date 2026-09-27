@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include "phase1_fixture.h"
 extern void init_isaac64(unsigned long, int (*)(int));
 extern void step15_generate(void);
 extern void step15b_test_main(void);
@@ -569,6 +570,7 @@ static struct obj *inspect_item(int typ) {
     obj = mksobj(typ, FALSE, FALSE); assert(obj);
     obj = addinv(obj); assert(obj);
     obj->known = obj->dknown = obj->bknown = obj->rknown = 0;
+    obj->dknown = 1; makeknown(typ);
     obj->cknown = obj->lknown = 0;
     obj->o_enh_props = obj->o_enh_known = 0;
     obj->o_enh_quality = OQ_STANDARD; obj->o_enh_flags = 0;
@@ -586,7 +588,9 @@ static void inspect_tests(void) {
     obj = inspect_item(LOW_BOOTS);
     inspect_run(obj);
     assert(strstr(inspect_screen,
-                  "Quality:\n    unknown\n\nEnhancements:\n    none known\n\nSockets: 0/1\n    Socket 1: empty\n"));
+                  "Quality:\n    unknown\n\nEnhancements:\n    none known\n"));
+    assert(strstr(inspect_screen,"Remaining affix state is not fully identified."));
+    assert(!strstr(inspect_screen,"Unused capacity:"));
     assert(!strstr(inspect_screen, "Gemstone sockets:"));
     fully_identify_obj(obj);
     assert(obj->o_enh_props == 0 && obj->o_enh_known == 0
@@ -630,7 +634,7 @@ static void inspect_tests(void) {
     obj->o_sockets[0].property = EP_PROT_I;
     obj->o_sockets[0].value = 4;
     inspect_run(obj);
-    assert(strstr(inspect_screen, "Sockets: 1/1\n    Socket 1: unknown\n"));
+    assert(strstr(inspect_screen, "Sockets: capacity 1\n    Socket 1: unknown\n"));
     obj->o_sockets[0].known = 1;
     inspect_run(obj);
     assert(strstr(inspect_screen, "Socket 1: Protection I +4 - improves AC by 4 while worn\n"));
@@ -659,7 +663,7 @@ static void inspect_tests(void) {
     obj->o_sockets[1].value = 2;
     obj->o_sockets[1].known = 1;
     inspect_run(obj);
-    assert(strstr(inspect_screen, "Sockets: 2/2\n")
+    assert(strstr(inspect_screen, "Sockets: capacity 2\n")
            && strstr(inspect_screen,
                      "Socket 1: Fire I - +1d4 fire damage on a confirmed hit\n")
            && strstr(inspect_screen,

@@ -1161,7 +1161,7 @@ populate_maze(void)
 
     for (i = rn1(8, 11); i; i--) {
         mazexy(&mm);
-        (void) enhancement_mkobj_at(rn2(2) ? GEM_CLASS : RANDOM_CLASS, mm.x, mm.y, TRUE);
+        (void) ordinary_loot_at(rn2(2) ? GEM_CLASS : RANDOM_CLASS, mm.x, mm.y, TRUE);
     }
     for (i = rn1(10, 2); i; i--) {
         mazexy(&mm);

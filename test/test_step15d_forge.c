@@ -18,7 +18,7 @@ static void step15d_forge_tests(void)
         for(mode=0;mode<2;++mode)for(seed=1;seed<=20;++seed) {
             hammer=forge_test_item(WAR_HAMMER,1);
             hammer->blessed=buc>0;hammer->cursed=buc<0;hammer->bknown=0;
-            target=forge_test_item(DAGGER,3);
+            target=forge_test_item(DAGGER,1);
             gem=forge_test_item(gems[tier-1],2);gem->bknown=0;
             gem->blessed=seed%2;gem->cursed=!(seed%2);
             if(mode) {target->o_sockets[0].property=EP_FIRE;target->o_sockets[0].known=0;}
@@ -26,7 +26,6 @@ static void step15d_forge_tests(void)
             assert(affix_chance(hammer,tier)==80-10*tier+10*buc);
             n=socket_candidates(target,tier,0,pool);
             init_isaac64(seed,rn2);
-            if(mode)(void)rnd(2); /* native splitobj object-ID allocation */
             success=rn2(100)<80-10*tier+10*buc;
             id=value=0;
             if(success) {
@@ -34,42 +33,32 @@ static void step15d_forge_tests(void)
                 id=pool[rn2(n)];e=equipment_property(id);
                 if(e->stat)value=d(e->dice,e->sides);
             }
-            if(success&&!mode)(void)rnd(2);
             next=rn2(1000000);init_isaac64(seed,rn2);
             assert(affix_commit(hammer,tid,gid,0)==ECMD_TIME);
             assert(rn2(1000000)==next);
             assert(forge_find(gid)->quan==1&&!forge_find(gid)->bknown);
             forge_test_same_object(&hs,hammer);
             target=forge_find(tid);
-            if(!success&&!mode) forge_test_same_object(&saved,target);
-            else {
-                assert(target->quan==2);
-                assert(!memcmp(target->o_sockets,saved.o_sockets,sizeof saved.o_sockets));
-                for(o=gi.invent;o;o=o->nobj)if(o!=target&&o->otyp==DAGGER)break;
-                assert(o&&o->quan==1&&o->o_sockets[0].property==id);
-                assert(o->o_sockets[0].value==value&&o->o_sockets[0].known==success);
-            }
+            assert(target->quan==1 && target->o_sockets[0].property==id);
+            assert(target->o_sockets[0].value==value && target->o_sockets[0].known==success);
+            if (!success && !mode) forge_test_same_object(&saved,target);
             ++cases;forge_test_clear();
         }
     printf("PASS Step 15D %d tier/hammer/BUC/stack outcomes with exact success-selection-value RNG tails\n",cases);
 
     for(mode=0;mode<2;++mode) {
-        hammer=forge_test_item(WAR_HAMMER,1);target=forge_test_item(DAGGER,3);
+        hammer=forge_test_item(WAR_HAMMER,1);target=forge_test_item(DAGGER,1);
         gem=forge_test_item(WORTHLESS_RED_GLASS,2);
         objects[gem->otyp].oc_name_known=0;
         if(mode)target->o_sockets[0].property=EP_STR_IV,target->o_sockets[0].value=6;
         saved=*target;tid=target->o_id;gid=gem->o_id;
-        init_isaac64(715,rn2);if(mode)(void)rnd(2);
+        init_isaac64(715,rn2);
         next=rn2(1000000);init_isaac64(715,rn2);
         assert(affix_commit(hammer,tid,gid,0)==ECMD_TIME);
         assert(rn2(1000000)==next&&!objects[gem->otyp].oc_name_known);
         assert(gem->quan==1);
-        if(!mode)forge_test_same_object(&saved,target);
-        else {
-            assert(target->quan==2&&target->o_sockets[0].value==6);
-            for(o=gi.invent;o;o=o->nobj)if(o!=target&&o->otyp==DAGGER)break;
-            assert(o&&!socket_count(o)&&o->quan==1);
-        }
+        assert(target->quan==1 && !socket_count(target));
+        if (!mode) forge_test_same_object(&saved,target);
         objects[gem->otyp].oc_name_known=1;
         saved=*target;
         assert(affix_commit(hammer,tid,gid,0)==ECMD_OK);
@@ -96,25 +85,18 @@ static void step15d_forge_tests(void)
     forge_test_clear();
     puts("PASS Step 15D glass and exhausted-tier rejection/commitment, no RNG, hidden identity and replacement destruction");
 
-    /* All possible known-tier outputs fit by merging at a full pack. */
-    hammer=forge_test_item(WAR_HAMMER,1);target=forge_test_item(DAGGER,3);
+    /* Socketing one item is in-place even when inventory is full. Stacks
+     * must fail without payment, RNG, mutation or attempted splitting. */
+    hammer=forge_test_item(WAR_HAMMER,1);target=forge_test_item(DAGGER,1);
     gem=forge_test_item(DIAMOND,2);makeknown(DIAMOND);
-    n=socket_candidates(target,4,0,pool);assert(n==3);
-    for(id=0;id<n;++id) {
-        const struct enhancement_entry *e=equipment_property(pool[id]);
-        for(value=e->stat?e->dice:0;value<=(e->stat?e->dice*e->sides:0);++value) {
-            o=forge_output(DAGGER);o->o_sockets[0].property=(uint8)pool[id];
-            o->o_sockets[0].value=(uint8)value;o->o_sockets[0].known=1;addinv(o);
-        }
-    }
     while(inv_cnt(FALSE)<invlet_basic) {o=forge_output(ROCK);o->nomerge=1;addinv(o);}
     assert(affix_room(target,gem,0));
-    objects[DIAMOND].oc_name_known=0;assert(!affix_room(target,gem,0));
-    gem->quan=1;assert(affix_room(target,gem,0));
-    gem->quan=2;saved=*target;tid=target->o_id;gid=gem->o_id;
-    assert(affix_commit(hammer,tid,gid,0)==ECMD_OK);forge_test_same_object(&saved,target);
+    target->quan=3;saved=*target;tid=target->o_id;gid=gem->o_id;
+    init_isaac64(715,rn2);next=rn2(1000000);init_isaac64(715,rn2);
+    assert(affix_commit(hammer,tid,gid,0)==ECMD_OK && rn2(1000000)==next);
+    forge_test_same_object(&saved,target);assert(gem->quan==2);
     forge_test_clear();
-    puts("PASS Step 15D pack boundary: all known-tier merge outputs, unknown-tier non-disclosure, freed gemstone slot and rejection nonmutation");
+    puts("PASS Step 17 socket target stack rejection, full-pack in-place capacity and nonmutation");
 
     /* Highest stored value per identity, with no inheritance RNG or sockets. */
     {
@@ -138,7 +120,7 @@ static void step15d_forge_tests(void)
 
     /* Each cancellable menu boundary is production forge_interact dispatch. */
     for(mode=0;mode<5;++mode) {
-        hammer=forge_test_item(WAR_HAMMER,1);target=forge_test_item(DAGGER,3);
+        hammer=forge_test_item(WAR_HAMMER,1);target=forge_test_item(DAGGER,1);
         gem=forge_test_item(JET,2);target->o_sockets[0].property=EP_STR_I;
         target->o_sockets[0].value=2;saved=*target;hs=*hammer;
         forge_test_script();
@@ -165,7 +147,7 @@ static void step15d_forge_tests(void)
     forge_test_clear();
     puts("PASS Step 15D production menu navigation, five zero-turn cancellation boundaries, knowledge-safe replacement/chance and commit");
 
-    hammer=forge_test_item(WAR_HAMMER,1);target=forge_test_item(DAGGER,3);
+    hammer=forge_test_item(WAR_HAMMER,1);target=forge_test_item(DAGGER,1);
     gem=forge_test_item(JET,2);makeknown(JET);
     assert(!affix_target(hammer,hammer)&&affix_target(target,hammer));
     target->unpaid=1;assert(!affix_target(target,hammer));target->unpaid=0;

@@ -1,0 +1,1358 @@
+{
+  "baseline": "9a89a7e341eb5caa3552b85c5de15b8dbafe8f05",
+  "files": {
+    "include/context.h": {
+      "baseline_sha256": "b451479fca43b5f21c967aaca684d18eae8afb19f66d9e253a1458a5305b1d1a",
+      "hunks": [
+        {
+          "before": "/* patchlevel.h if needed. */\n\n#ifndef CONTEXT_H\n#define CONTEXT_H\n\n#define CONTEXTVERBSZ 30\n\nenum nh_tips {\n",
+          "after": "/* patchlevel.h if needed. */\n\n#ifndef CONTEXT_H\n#define CONTEXT_H\n#include \"affix.h\"\n\n#define CONTEXTVERBSZ 30\n\nenum nh_tips {\n"
+        },
+        {
+          "before": "    long total_photographed;    /* count of critters photographed (tourists) */\n};\n\nstruct context_info {\n    unsigned ident;         /* social security number for each monster */\n    unsigned no_of_wizards; /* 0, 1 or 2 (wizard and his shadow) */\n    unsigned run;           /* 0: h (etc), 1: H (etc), 2: fh (etc),\n                             * 3: FH, 4: ff+, 5: ff-, 6: FF+, 7: FF-,\n",
+          "after": "    long total_photographed;    /* count of critters photographed (tourists) */\n};\n\nstruct context_info {\n    uint64 affix_essence[EP_COUNT]; /* this run only, native context codec */\n    unsigned ident;         /* social security number for each monster */\n    unsigned no_of_wizards; /* 0, 1 or 2 (wizard and his shadow) */\n    unsigned run;           /* 0: h (etc), 1: H (etc), 2: fh (etc),\n                             * 3: FH, 4: ff+, 5: ff-, 6: FF+, 7: FF-,\n"
+        }
+      ]
+    },
+    "include/enhance.h": {
+      "baseline_sha256": "0e05120a7d04f78fd94aa9c5555a68229cbb5ab9dc13b3e66922392e8d2986ac",
+      "hunks": [
+        {
+          "before": "void enhancement_mask_remove(struct enhancement_mask *, int);\nint enhancement_mask_count(struct enhancement_mask);\nboolean enhancement_mask_allowed(const struct obj *, struct enhancement_mask);\nboolean enhancement_set_mask(struct obj *, struct enhancement_mask, enum enhancement_quality, boolean);\nboolean enhancement_has(const struct obj *, int);\nvoid enhancement_learn(struct obj *, int);\nenum enhance_use {\n    ENHANCE_MELEE = 0, ENHANCE_THROWN, ENHANCE_LAUNCHER,\n",
+          "after": "void enhancement_mask_remove(struct enhancement_mask *, int);\nint enhancement_mask_count(struct enhancement_mask);\nboolean enhancement_mask_allowed(const struct obj *, struct enhancement_mask);\nboolean enhancement_set_mask(struct obj *, struct enhancement_mask, enum enhancement_quality, boolean);\nvoid essence_normalize(struct obj *);\nlong essence_wish_quantity(long);\nboolean essence_loot_context(void);\nstruct obj *essence_random(void);\nstruct obj *ordinary_loot_at(char, coordxy, coordxy, boolean);\nint enhancement_capacity(const struct obj *);\nint enhancement_slot_count(const struct obj *);\nint enhancement_first_unused(const struct obj *);\nboolean enhancement_slots_valid(const struct obj *);\nboolean enhancement_slot_set(struct obj *, int, int, boolean, int);\nvoid enhancement_slot_history(struct obj *, int);\nint enhancement_forge_candidates(const struct obj *, int, int, boolean, int *);\nboolean enhancement_forge_known(const struct obj *);\nvoid enhancement_finalize_stack(struct obj *);\nboolean enhancement_has(const struct obj *, int);\nvoid enhancement_learn(struct obj *, int);\nenum enhance_use {\n    ENHANCE_MELEE = 0, ENHANCE_THROWN, ENHANCE_LAUNCHER,\n"
+        },
+        {
+          "before": "#define OEP_ALL         (0x01ffff7fULL | OEP_ATTRIBUTES | OEP_OFFENSIVE | OEP_DEFENSIVE)\n#define OEP_ELEMENTS   (0x00007f07ULL | OEP_ACID)\n#define OEP_WORN        0x01ff8070U\n#define OEF_QUALITY_KNOWN 0x01U\n\nboolean enhancement_eligible(const struct obj *);\nboolean enhancement_property_allowed(const struct obj *, uint64);\nvoid enhancement_normalize(struct obj *);\n",
+          "after": "#define OEP_ALL         (0x01ffff7fULL | OEP_ATTRIBUTES | OEP_OFFENSIVE | OEP_DEFENSIVE)\n#define OEP_ELEMENTS   (0x00007f07ULL | OEP_ACID)\n#define OEP_WORN        0x01ff8070U\n#define OEF_QUALITY_KNOWN 0x01U\n#define OEF_AFFIXES_KNOWN 0x02U /* includes knowledge of absence */\n\nboolean enhancement_eligible(const struct obj *);\nboolean enhancement_property_allowed(const struct obj *, uint64);\nvoid enhancement_normalize(struct obj *);\n"
+        },
+        {
+          "before": "struct enhancement_band { int gate, standard, fine, presence, two, tier[4]; };\nconst struct enhancement_band *enhancement_depth_band(int);\n/* IDs 1..32 retain their original catalog indices; Step 16A IDs follow\n * the existing socket-only IDs, preserving all earlier persisted identities. */\nenum equipment_property {\n    EP_NONE, EP_FIRE, EP_COLD, EP_SHOCK, EP_TRUEFLIGHT,\n    EP_FIRE_II, EP_COLD_II, EP_SHOCK_II,\n    EP_FIRE_III, EP_COLD_III, EP_SHOCK_III, EP_PRIMORDIAL,\n    EP_SEARCHING, EP_WARNING, EP_STEALTH,\n    EP_FIRE_RES, EP_COLD_RES, EP_SHOCK_RES, EP_POISON_RES,\n    EP_SPEED, EP_REGEN, EP_DISPLACED, EP_SLOW_DIGEST, EP_MAGIC_RES, EP_REFLECTION,\n    EP_STR_I, EP_STR_II, EP_STR_III, EP_STR_IV,\n    EP_DEX_I, EP_DEX_II, EP_DEX_III, EP_DEX_IV,\n    EP_HP_I, EP_HP_III, EP_HP_IV, EP_PROT_I, EP_PROT_III, EP_PROT_IV,\n    EP_CON_I, EP_CON_II, EP_CON_III, EP_CON_IV,\n    EP_MANA_I, EP_MANA_II, EP_MANA_III, EP_MANA_IV,\n    EP_INT_I, EP_INT_II, EP_INT_III, EP_INT_IV,\n    EP_WIS_I, EP_WIS_II, EP_WIS_III, EP_WIS_IV,\n    EP_CHA_I, EP_CHA_II, EP_CHA_III, EP_CHA_IV,\n    EP_SLEEP_RES, EP_SEE_INVIS, EP_JUMPING, EP_BREATHING, EP_TELEPATHY,\n    EP_TELEPORT_CONTROL, EP_POLYMORPH_CONTROL, EP_FLYING,\n    EP_VAMPIRIC_I, EP_VAMPIRIC_II, EP_VAMPIRIC_III, EP_VAMPIRIC_IV, EP_ACID_I, EP_ACID_II, EP_ACID_III, EP_ANARCHIC_I, EP_ANARCHIC_II, EP_AXIOMATIC_I, EP_AXIOMATIC_II, EP_STONING_I, EP_STONING_II, EP_STONING_III, EP_STONING_IV, EP_WARDING, EP_CASTING_II, EP_CASTING_IV, EP_LIGHTNESS_I, EP_LIGHTNESS_II, EP_LIGHTNESS_III, EP_THORNS_I, EP_THORNS_II, EP_DR_I, EP_DR_II, EP_DR_III, EP_DR_IV,\n    EP_EROSION_I, EP_EROSION_II, EP_EROSION_III, EP_EROSION_IV, EP_CURSE_II, EP_CURSE_IV, EP_DISCERNMENT, EP_PURIFICATION_I, EP_PURIFICATION_II, EP_PURIFICATION_III, EP_PURIFICATION_IV, EP_EXCAVATING, EP_COMMERCE_I, EP_COMMERCE_III, EP_TREASURE_I, EP_TREASURE_II, EP_ARCANE_II, EP_ARCANE_III, EP_ARMOR_STORAGE_II, EP_ARMOR_STORAGE_III, EP_WEAPON_STORAGE_II, EP_WEAPON_STORAGE_III, EP_WATERTIGHT, EP_COUNT\n};\nenum equipment_stat { ES_NONE, ES_STR, ES_DEX, ES_CON, ES_INT, ES_WIS,\n                      ES_CHA, ES_HP, ES_MANA, ES_PROTECTION };\nconst struct enhancement_entry *equipment_property(int);\nconst char *equipment_property_name(int);\n",
+          "after": "struct enhancement_band { int gate, standard, fine, presence, two, tier[4]; };\nconst struct enhancement_band *enhancement_depth_band(int);\n/* IDs 1..32 retain their original catalog indices; Step 16A IDs follow\n * the existing socket-only IDs, preserving all earlier persisted identities. */\n/* Persistent IDs are declared in affix.h. */\nenum equipment_stat { ES_NONE, ES_STR, ES_DEX, ES_CON, ES_INT, ES_WIS,\n                      ES_CHA, ES_HP, ES_MANA, ES_PROTECTION };\nconst struct enhancement_entry *equipment_property(int);\nconst char *equipment_property_name(int);\n"
+        }
+      ]
+    },
+    "include/obj.h": {
+      "baseline_sha256": "1a733ce78ddcac01f6b098e6065b5e6271ce524dec9001182313996d224c3a26",
+      "hunks": [
+        {
+          "before": "/* NetHack may be freely redistributed.  See license for details. */\n\n#ifndef OBJ_H\n#define OBJ_H\n\n/* #define obj obj_nh */ /* uncomment for SCO UNIX, which has a conflicting\n                          * typedef for \"obj\" in <sys/types.h> */\n\n",
+          "after": "/* NetHack may be freely redistributed.  See license for details. */\n\n#ifndef OBJ_H\n#define OBJ_H\n#include \"affix.h\"\n\n/* #define obj obj_nh */ /* uncomment for SCO UNIX, which has a conflicting\n                          * typedef for \"obj\" in <sys/types.h> */\n\n"
+        },
+        {
+          "before": "       native object behavior; size is donor size + 1, zero means native. */\n    unsigned long obranch_props;\n    uchar obranch_material;\n    uchar obranch_size;\n    uint8 o_enh_quality;    /* generic equipment quality, independent of spe */\n    uint8 o_enh_flags;      /* generic quality knowledge */\n    uint64 o_enh_props;     /* active generic equipment properties */\n    uint64 o_enh_known;     /* known actual properties, word 0 */\n",
+          "after": "       native object behavior; size is donor size + 1, zero means native. */\n    unsigned long obranch_props;\n    uchar obranch_material;\n    uchar obranch_size;\n    struct affix_slot o_affixes[ENHANCEMENT_MAX_SLOTS];\n    uint8 o_enh_quality;    /* generic equipment quality, independent of spe */\n    uint8 o_enh_flags;      /* generic quality knowledge */\n    uint64 o_enh_props;     /* active generic equipment properties */\n    uint64 o_enh_known;     /* known actual properties, word 0 */\n"
+        }
+      ]
+    },
+    "include/objects.h": {
+      "baseline_sha256": "31ce6dbf3d58a1d3edee75dda8f880f6c6a5acc0a9225b998b0aa6b7327f8431",
+      "hunks": [
+        {
+          "before": "OBJECT(OBJ(\"Nurturing Word\",\"verdant glyph\"),\n       BITS(0,0,0,0,1,0,1,1,0,0,0,P_NONE,METAL),\n       0,TOOL_CLASS,0,0,3,3000,0,0,0,0,6,CLR_GREEN,NURTURING_WORD),\n\n#undef TOOL\n#undef WEPTOOL\n\n/* Comestibles ... */\n",
+          "after": "OBJECT(OBJ(\"Nurturing Word\",\"verdant glyph\"),\n       BITS(0,0,0,0,1,0,1,1,0,0,0,P_NONE,METAL),\n       0,TOOL_CLASS,0,0,3,3000,0,0,0,0,6,CLR_GREEN,NURTURING_WORD),\n\nTOOL(\"Essence\", NoDes, 1, 1, 0, 0, 0, 1, 0, MINERAL, CLR_WHITE, GENERIC_ESSENCE),\n\n#undef TOOL\n#undef WEPTOOL\n\n/* Comestibles ... */\n"
+        }
+      ]
+    },
+    "include/patchlevel.h": {
+      "baseline_sha256": "aba972fc95313df97a8dffde5c78154c51064606c1a0586a2a2b438e37a35a04",
+      "hunks": [
+        {
+          "before": " * Incrementing EDITLEVEL can be used to force invalidation of old bones\n * and save files.\n */\n/* Step 11 adds explicit saved room identity; require a new game. */\n#define EDITLEVEL 13\n\n/*\n * Development status possibilities.\n */\n",
+          "after": " * Incrementing EDITLEVEL can be used to force invalidation of old bones\n * and save files.\n */\n/* Step 11 adds explicit saved room identity; require a new game. */\n#define EDITLEVEL 14\n\n/*\n * Development status possibilities.\n */\n"
+        }
+      ]
+    },
+    "src/apply.c": {
+      "baseline_sha256": "4ae81a82796da1a87f0b064d567970b1b777557108dbf46ff3deb8c3b06ad9e8",
+      "hunks": [
+        {
+          "before": "    boolean present, proof;\n    int quality, spe, buc, eroded, eroded2;\n    struct enhancement_mask props;\n    uint8 values[8];\n};\n\nstaticfn void\nforge_gather(struct forge_state *state, struct obj *obj)\n",
+          "after": "    boolean present, proof;\n    int quality, spe, buc, eroded, eroded2;\n    struct enhancement_mask props;\n    uint8 values[8];\n    uint8 order[EP_COUNT];\n    int order_count;\n};\n\nstaticfn void\nforge_gather(struct forge_state *state, struct obj *obj)\n"
+        },
+        {
+          "before": "        state->buc = max(state->buc, buc);\n        state->eroded = min(state->eroded, (int) obj->oeroded);\n        state->eroded2 = min(state->eroded2, (int) obj->oeroded2);\n    }\n    state->props = enhancement_mask_union(state->props, enhancement_actual(obj));\n    for (i = 0; i < 8; ++i)\n        if (obj->o_enh_props & enhancement_catalog[24 + i].bit)\n            state->values[i] = max(state->values[i], obj->o_enh_values[i]);\n    state->proof |= obj->oerodeproof;\n",
+          "after": "        state->buc = max(state->buc, buc);\n        state->eroded = min(state->eroded, (int) obj->oeroded);\n        state->eroded2 = min(state->eroded2, (int) obj->oeroded2);\n    }\n    for (i = 0; i < ENHANCEMENT_MAX_SLOTS; ++i) {\n        int id = obj->o_affixes[i].property;\n        if (id && !enhancement_mask_has(state->props, id)) {\n            state->order[state->order_count++] = (uint8) id;\n            enhancement_mask_add(&state->props, id);\n        }\n    }\n    for (i = 0; i < 8; ++i)\n        if (obj->o_enh_props & enhancement_catalog[24 + i].bit)\n            state->values[i] = max(state->values[i], obj->o_enh_values[i]);\n    state->proof |= obj->oerodeproof;\n"
+        },
+        {
+          "before": "        return;\n    if (enhancement_eligible(obj)) {\n        /* Filter each identity before ranking, using shared legality. Catalog\n         * order breaks ties; family conflicts are filtered before ranking. */\n        for (count = 0; count < 2; ++count) {\n            best = -1;\n            for (i = 0; i < SIZE(enhancement_catalog); ++i) {\n                const struct enhancement_entry *entry = &enhancement_catalog[i];\n                int id = i < 32 ? i + 1 : EP_VAMPIRIC_I + i - 32;\n",
+          "after": "        return;\n    if (enhancement_eligible(obj)) {\n        /* Filter each identity before ranking, using shared legality. Catalog\n         * order breaks ties; family conflicts are filtered before ranking. */\n        for (count = 0; count < enhancement_capacity(obj); ++count) {\n            best = -1;\n            for (i = 0; i < SIZE(enhancement_catalog); ++i) {\n                const struct enhancement_entry *entry = &enhancement_catalog[i];\n                int id = i < 32 ? i + 1 : EP_VAMPIRIC_I + i - 32;\n"
+        },
+        {
+          "before": "            if (best >= 0)\n                enhancement_mask_add(&props, best < 32 ? best + 1 : EP_VAMPIRIC_I + best - 32);\n        }\n        /* Inheritance is assignment, never acquisition RNG. */\n        obj->o_enh_props = props.word[0];\n        for (i = 0; i < 8; ++i)\n            obj->o_enh_values[i] = (props.word[0] & enhancement_catalog[24 + i].bit)\n                                    ? state->values[i] : 0;\n        (void) enhancement_set_mask(obj, props,\n            obj->oclass == TOOL_CLASS ? OQ_STANDARD : (enum enhancement_quality) state->quality, FALSE);\n    }\n    /* Native spe meanings: obj.h, charge_ok and readobjnam. Do not overwrite\n     * gender, fruit/tin/box flags, lamp contents, or other overloaded values.\n",
+          "after": "            if (best >= 0)\n                enhancement_mask_add(&props, best < 32 ? best + 1 : EP_VAMPIRIC_I + best - 32);\n        }\n        /* Inheritance is assignment, never acquisition RNG. */\n        for (i = 0; i < state->order_count; ++i) {\n            int id = state->order[i];\n            if (enhancement_mask_has(props, id)\n                && !enhancement_slot_set(obj, enhancement_first_unused(obj),\n                     id, FALSE, id >= EP_STR_I && id <= EP_DEX_IV\n                                    ? state->values[id - EP_STR_I] : -1))\n                panic(\"forge inheritance lost a legal property\");\n        }\n        (void) enhancement_set_mask(obj, enhancement_actual(obj),\n            obj->oclass == TOOL_CLASS ? OQ_STANDARD : (enum enhancement_quality) state->quality, FALSE);\n    }\n    /* Native spe meanings: obj.h, charge_ok and readobjnam. Do not overwrite\n     * gender, fruit/tin/box flags, lamp contents, or other overloaded values.\n"
+        },
+        {
+          "before": "staticfn boolean\naffix_target(struct obj *obj, struct obj *hammer)\n{\n    return obj && obj != hammer && carried(obj) && !obj->unpaid\n        && obj->quan > 0 && socket_capacity(obj) && obj->o_socket_capacity\n        && obj->o_socket_capacity <= socket_capacity(obj)\n        && !(obj->owornmask & (W_WEP | W_ARMOR | W_RING | W_AMUL))\n        && !(u.twoweap && (obj->owornmask & W_SWAPWEP));\n}\n",
+          "after": "staticfn boolean\naffix_target(struct obj *obj, struct obj *hammer)\n{\n    return obj && obj != hammer && carried(obj) && !obj->unpaid\n        && obj->quan == 1 && socket_capacity(obj) && obj->o_socket_capacity\n        && enhancement_slots_valid(obj) && !obj->in_use && !obj->oartifact\n        && obj->o_socket_capacity <= socket_capacity(obj)\n        && !(obj->owornmask & (W_WEP | W_ARMOR | W_RING | W_AMUL))\n        && !(u.twoweap && (obj->owornmask & W_SWAPWEP));\n}\n"
+        },
+        {
+          "before": "staticfn boolean\naffix_gem(struct obj *gem, struct obj *target, int removed)\n{\n    int tier, i;\n    if (!gem || !carried(gem) || gem->unpaid || gem->quan < 1\n        || gem->oclass != GEM_CLASS\n        || !(socket_gem_tier(gem->otyp) || objects[gem->otyp].oc_material == GLASS))\n        return FALSE;\n    if (!affix_known_gem(gem)) return TRUE;\n",
+          "after": "staticfn boolean\naffix_gem(struct obj *gem, struct obj *target, int removed)\n{\n    int tier, i;\n    if (!gem || !carried(gem) || gem->unpaid || gem->oartifact || gem->quan < 1\n        || gem->oclass != GEM_CLASS\n        || !(socket_gem_tier(gem->otyp) || objects[gem->otyp].oc_material == GLASS))\n        return FALSE;\n    if (!affix_known_gem(gem)) return TRUE;\n"
+        },
+        {
+          "before": "            return result;\n    }\n}\n\nstaticfn int\nforge_menu(struct obj *hammer)\n{\n    static const char *const categories[] = { \"Weapons\", \"Armor\", \"Tools\", \"Other\" };\n",
+          "after": "            return result;\n    }\n}\n\n/* Step 17: pure planning followed by a single irreversible commit boundary. */\nenum forge_affix_operation { FA_ADD, FA_REROLL, FA_EXTRACT, FA_IMPRINT, FA_SALVAGE };\nstruct forge_affix_plan {\n    unsigned oid;\n    int operation, slot, tier, property, count, pool[EP_COUNT];\n    long gold, essence;\n};\nstatic const char *const forge_tiers[] = { \"\", \"I\", \"II\", \"III\", \"IV\" };\n\nstaticfn boolean\nforge_affix_target(struct obj *obj, struct obj *hammer, boolean salvage)\n{\n    /* Knowledge first, including known absence. Do not filter menus by hidden\n     * eligibility or expose a different rejection for a hidden property. */\n    if (!obj || !carried(obj))\n        return FALSE;\n    if (!salvage && !enhancement_forge_known(obj)) return FALSE;\n    if (obj == hammer || obj->quan < 1 || obj->owornmask || obj->in_use\n        || obj->lamplit || obj->oartifact || obj->unpaid\n        || (obj->otyp == LEASH && obj->leashmon)\n        || !enhancement_eligible(obj) || !enhancement_slots_valid(obj)) return FALSE;\n    if (!salvage && obj->quan != 1L) return FALSE;\n    if (salvage && Is_container(obj) && (!obj->cknown || Has_contents(obj))) return FALSE;\n    return TRUE;\n}\n\nstaticfn void\nforge_affix_cost(int operation, int tier, boolean open, int history, long *gold, long *essence)\n{\n    static const int new_gold[] = {0,300,500,1000,2500};\n    static const int new_essence[] = {0,1,3,6,12};\n    static const int base_gold[] = {0,100,200,400,800};\n    static const int refill[] = {0,1,3,5,8};\n    static const int base_essence[] = {0,2,4,7,10};\n    *gold = *essence = 0;\n    if (tier < 1 || tier > 4) return;\n    if (operation == FA_ADD && !open) {\n        *gold = new_gold[tier]; *essence = new_essence[tier]; return;\n    }\n    *gold = base_gold[tier];\n    *essence = operation == FA_ADD ? refill[tier] : base_essence[tier];\n    if (operation == FA_ADD || operation == FA_REROLL) {\n        *gold = *gold * (2 + history) / 2;\n        *essence = (*essence * (4 + history) + 3) / 4;\n    }\n}\n\nstaticfn long\nforge_essence_count(void)\n{\n    struct obj *obj;\n    long count = 0;\n    for (obj = gi.invent; obj; obj = obj->nobj)\n        if (obj->otyp == GENERIC_ESSENCE && !obj->unpaid && obj->quan > 0)\n            count = nowrap_add(count, obj->quan);\n    return count;\n}\n\n/* Gold uses the same eligible-material scope and native consumption as the\n * existing recipes. Essence has its explicitly restricted inventory scope. */\nstaticfn void\nforge_spend(int typ, long amount, struct obj *hammer)\n{\n    struct obj *obj, *next;\n    for (obj = gi.invent; obj && amount; obj = next) {\n        long used;\n        next = obj->nobj;\n        if (obj->otyp != typ || obj->unpaid\n            || (typ == GOLD_PIECE && forge_reason(obj, hammer) != FORGE_USABLE)) continue;\n        used = min(amount, obj->quan);\n        amount -= used;\n        if (used == obj->quan) useupall(obj);\n        else { obj->quan -= used; obj->owt = weight(obj); }\n    }\n    if (amount) panic(\"Forge payment preflight mismatch\");\n}\n\nstaticfn boolean\nforge_affix_plan(struct obj *hammer, struct obj *obj, int op, int slot,\n                 int tier, int property, struct forge_affix_plan *plan)\n{\n    const struct affix_slot *s;\n    int i;\n    memset(plan, 0, sizeof *plan);\n    if (!forge_affix_target(obj, hammer, FALSE) || slot < 0\n        || slot >= enhancement_capacity(obj) || op < FA_ADD || op > FA_IMPRINT) return FALSE;\n    s = &obj->o_affixes[slot];\n    if (s->tier) tier = s->tier;\n    if ((op == FA_ADD && s->property)\n        || ((op == FA_REROLL || op == FA_EXTRACT) && !s->property)\n        || (op == FA_IMPRINT && (!s->tier || s->property))) return FALSE;\n    plan->count = enhancement_forge_candidates(obj, slot, tier, op == FA_REROLL, plan->pool);\n    if (!plan->count) return FALSE;\n    if (op == FA_EXTRACT) property = s->property;\n    if (op == FA_IMPRINT || op == FA_EXTRACT) {\n        for (i = 0; i < plan->count && plan->pool[i] != property; ++i) ;\n        if (i == plan->count) return FALSE;\n        if (op == FA_IMPRINT && !svc.context.affix_essence[property]) return FALSE;\n        if (op == FA_EXTRACT && svc.context.affix_essence[property] == ~(uint64) 0) return FALSE;\n    }\n    plan->oid = obj->o_id; plan->operation = op; plan->slot = slot;\n    plan->tier = tier; plan->property = property;\n    forge_affix_cost(op, tier, s->tier != 0, s->history, &plan->gold, &plan->essence);\n    return TRUE;\n}\n\nstaticfn void\nforge_property_line(winid win, int choice, int id, const struct obj *target)\n{\n    char buf[BUFSZ], impact[BUFSZ];\n    struct obj description = cg.zeroobj;\n    const struct enhancement_entry *e = equipment_property(id);\n    description.otyp = DAGGER; description.oclass = WEAPON_CLASS;\n    enhancement_property_impact(target ? target : &description, id, -1, impact, sizeof impact);\n    if (!target && id == EP_TRUEFLIGHT)\n        Strcpy(impact, \"+2 to hit when throwing the item or firing its ammunition\");\n    Snprintf(buf, sizeof buf, \"%s %s: %s\", e->prefix, forge_tiers[e->tier], impact);\n    forge_menu_line(win, choice, 0, buf);\n}\n\nstaticfn int\nforge_affix_commit(struct obj *hammer, const struct forge_affix_plan *requested)\n{\n    struct forge_affix_plan plan;\n    struct obj *obj = forge_find(requested->oid);\n    int op = requested->operation, slot = requested->slot, id, first, second, chosen;\n    winid win;\n    if (!hammer || !carried(hammer) || hammer->otyp != WAR_HAMMER\n        || !IS_FORGE(levl[u.ux][u.uy].typ) || Confusion || Stunned || ACURR(A_STR) < 4\n        || !forge_affix_plan(hammer, obj, op, slot, requested->tier, requested->property, &plan)\n        || forge_quantity(GOLD_PIECE, hammer, 0) < plan.gold\n        || forge_essence_count() < plan.essence) return ECMD_OK;\n    /* COMMIT. All remaining choices are mandatory results or paid Keep. */\n    forge_spend(GOLD_PIECE, plan.gold, hammer);\n    forge_spend(GENERIC_ESSENCE, plan.essence, hammer);\n    id = plan.property;\n    if (op == FA_REROLL) {\n        enhancement_slot_history(obj, slot);\n        first = plan.count == 1 ? 0 : rn2(plan.count);\n        second = -1;\n        if (plan.count > 1) {\n            second = rn2(plan.count - 1);\n            if (second >= first) ++second;\n        }\n        win = create_nhwindow(NHW_MENU); start_menu(win, MENU_BEHAVE_STANDARD);\n        forge_property_line(win, 1, plan.pool[first], obj);\n        if (second >= 0) forge_property_line(win, 2, plan.pool[second], obj);\n        forge_menu_line(win, 3, 'k', \"Keep Existing\");\n        forge_property_line(win, 0, obj->o_affixes[slot].property, obj);\n        chosen = forge_menu_pick(win, \"Choose your affix (ESC keeps existing)\", 0);\n        if (chosen != 1 && !(chosen == 2 && second >= 0)) goto finished;\n        id = plan.pool[chosen == 1 ? first : second];\n    } else if (op == FA_ADD) {\n        id = plan.pool[plan.count == 1 ? 0 : rn2(plan.count)];\n    } else if (op == FA_EXTRACT) {\n        if (!enhancement_slot_set(obj, slot, 0, TRUE, -1)) panic(\"Forge extraction mismatch\");\n        enhancement_slot_history(obj, slot);\n        ++svc.context.affix_essence[id];\n        pline(\"Extracted %s %s Essence.\", equipment_property(id)->prefix, forge_tiers[plan.tier]);\n        goto finished;\n    }\n    if (!enhancement_slot_set(obj, slot, id, TRUE, -1)) panic(\"Forge affix preflight mismatch\");\n    if (op == FA_IMPRINT) --svc.context.affix_essence[id];\n    pline(\"Slot %d: %s %s.\", slot + 1, equipment_property(id)->prefix, forge_tiers[plan.tier]);\n finished:\n    update_inventory(); encumber_msg();\n    return ECMD_TIME;\n}\n\nstaticfn void\nforge_ledger(void)\n{\n    int tier, id, ids[EP_COUNT], n, i, j;\n    boolean any = FALSE;\n    winid win = create_nhwindow(NHW_MENU);\n    char buf[BUFSZ];\n    start_menu(win, MENU_BEHAVE_STANDARD);\n    for (tier = 1; tier <= 4; ++tier) {\n        n = 0;\n        for (id = 1; id < EP_COUNT; ++id)\n            if (svc.context.affix_essence[id] && equipment_property(id)->tier == tier) {\n                for (j = n; j && strcmpi(equipment_property(ids[j-1])->prefix,\n                                         equipment_property(id)->prefix) > 0; --j)\n                    ids[j] = ids[j-1];\n                ids[j] = id; ++n;\n            }\n        if (!n) continue;\n        any = TRUE;\n        Snprintf(buf, sizeof buf, \"Tier %s\", forge_tiers[tier]);\n        forge_menu_line(win, 0, 0, buf);\n        for (i = 0; i < n; ++i) {\n            id = ids[i];\n            Snprintf(buf, sizeof buf, \"%s %s Essence x%llu\", equipment_property(id)->prefix,\n                     forge_tiers[tier], (unsigned long long) svc.context.affix_essence[id]);\n            forge_menu_line(win, 0, 0, buf);\n            forge_property_line(win, 0, id, (const struct obj *) 0);\n        }\n    }\n    if (!any) forge_menu_line(win, 0, 0, \"No stored Affix Essence.\");\n    (void) forge_menu_pick(win, \"Stored Affix Essence\", 0);\n}\n\nstaticfn struct obj *\nforge_select_affix_target(void)\n{\n    struct obj *obj;\n    winid win = create_nhwindow(NHW_MENU);\n    int i, choice;\n    start_menu(win, MENU_BEHAVE_STANDARD);\n    /* No hidden-state filtering, even for unavailable targets. */\n    for (obj = gi.invent, i = 1; obj; obj = obj->nobj, ++i)\n        forge_menu_line(win, i, obj->invlet, forge_inventory_name(obj));\n    choice = forge_menu_pick(win, \"Choose an item\", 0);\n    if (!choice) return 0;\n    for (obj = gi.invent, i = 1; obj && i < choice; obj = obj->nobj, ++i) ;\n    return obj;\n}\n\nstaticfn int\nforge_affix_attempt(struct obj *hammer, int op)\n{\n    struct obj *obj = forge_select_affix_target();\n    struct forge_affix_plan plan;\n    int i, slot, tier = 0, property = 0, pool[EP_COUNT], n, unused;\n    winid win;\n    char buf[BUFSZ];\n    if (!obj) return ECMD_OK;\n    if (!forge_affix_target(obj, hammer, FALSE)) {\n        pline(\"This item is not ready for affix crafting. Identify it fully and put it aside first.\");\n        return ECMD_OK;\n    }\n    win = create_nhwindow(NHW_MENU); start_menu(win, MENU_BEHAVE_STANDARD);\n    unused = enhancement_first_unused(obj);\n    for (i = 0; i < enhancement_capacity(obj); ++i) {\n        const struct affix_slot *s = &obj->o_affixes[i];\n        if (!s->tier || ((op == FA_ADD || op == FA_IMPRINT) ? s->property != 0 : !s->property)) continue;\n        Snprintf(buf, sizeof buf, \"Slot %d: %s, Tier %s, Rerolls: %u%s\", i + 1,\n                 s->property ? equipment_property(s->property)->prefix : \"Open Affix Slot\",\n                 forge_tiers[s->tier], s->history, s->history == 10 ? \" (maximum)\" : \"\");\n        forge_menu_line(win, i + 1, 0, buf);\n    }\n    if (op == FA_ADD && unused >= 0) forge_menu_line(win, unused + 1, 'n', \"Create New Affix Slot\");\n    slot = forge_menu_pick(win, \"Choose an Affix Slot\", 0) - 1;\n    if (slot < 0 || slot >= enhancement_capacity(obj)) return ECMD_OK;\n    tier = obj->o_affixes[slot].tier;\n    if (!tier && op == FA_ADD) {\n        win = create_nhwindow(NHW_MENU); start_menu(win, MENU_BEHAVE_STANDARD);\n        for (i = 1; i <= 4; ++i)\n            if (enhancement_forge_candidates(obj, slot, i, FALSE, 0)) {\n                Snprintf(buf, sizeof buf, \"Tier %s\", forge_tiers[i]);\n                forge_menu_line(win, i, 0, buf);\n            }\n        tier = forge_menu_pick(win, \"Choose a tier\", 0);\n        if (!tier) return ECMD_OK;\n    }\n    if (op == FA_IMPRINT) {\n        n = enhancement_forge_candidates(obj, slot, tier, FALSE, pool);\n        win = create_nhwindow(NHW_MENU); start_menu(win, MENU_BEHAVE_STANDARD);\n        for (i = 0; i < n; ++i)\n            if (svc.context.affix_essence[pool[i]]) forge_property_line(win, pool[i], pool[i], obj);\n        property = forge_menu_pick(win, \"Choose stored Affix Essence\", 0);\n        if (!property) return ECMD_OK;\n    }\n    if (!forge_affix_plan(hammer, obj, op, slot, tier, property, &plan)) {\n        pline(\"No legal affix is available for this operation.\"); return ECMD_OK;\n    }\n    if (forge_quantity(GOLD_PIECE, hammer, 0) < plan.gold || forge_essence_count() < plan.essence) {\n        pline(\"This requires %ld gold and %ld Essence.\", plan.gold, plan.essence); return ECMD_OK;\n    }\n    win = create_nhwindow(NHW_MENU); start_menu(win, MENU_BEHAVE_STANDARD);\n    forge_menu_line(win, 0, 0, forge_inventory_name(obj));\n    Snprintf(buf, sizeof buf, \"Slot %d, Tier %s: %ld gold and %ld Essence%s\", slot + 1,\n             forge_tiers[tier], plan.gold, plan.essence, op == FA_IMPRINT ? \" and 1 exact Affix Essence\" : \"\");\n    forge_menu_line(win, 0, 0, buf);\n    if (op == FA_ADD) forge_menu_line(win, 0, 0, \"The exact property is random; the result must be kept.\");\n    if (op == FA_REROLL) forge_menu_line(win, 0, 0, \"Payment and history are committed before candidates are revealed.\");\n    forge_menu_line(win, 1, 'y', \"Confirm\"); forge_menu_line(win, 2, 'n', \"Cancel\");\n    if (forge_menu_pick(win, \"Confirm affix crafting?\", 0) != 1) return ECMD_OK;\n    return forge_affix_commit(hammer, &plan);\n}\n\nstaticfn int\nforge_affix_menu(struct obj *hammer)\n{\n    static const char *const names[] = { \"Add Random Affix\", \"Reroll Affix\", \"Extract Affix\",\n        \"Imprint Affix\", \"View Stored Affix Essence\", \"Back\" };\n    int i, choice, result;\n    winid win;\n    for (;;) {\n        win = create_nhwindow(NHW_MENU); start_menu(win, MENU_BEHAVE_STANDARD);\n        for (i = 0; i < SIZE(names); ++i) forge_menu_line(win, i + 1, 0, names[i]);\n        choice = forge_menu_pick(win, \"Affix Crafting\", 0);\n        if (!choice || choice == 6) return ECMD_OK;\n        if (choice == 5) { forge_ledger(); continue; }\n        result = forge_affix_attempt(hammer, choice - 1);\n        if (result == ECMD_TIME) return result;\n    }\n}\n\nstaticfn long\nforge_salvage_yield(const struct obj *obj)\n{\n    static const int contribution[] = { 0, 1, 2, 3, 5 };\n    long result = obj->o_enh_quality;\n    int i;\n    for (i = 0; i < enhancement_capacity(obj); ++i)\n        result += contribution[obj->o_affixes[i].tier];\n    return result;\n}\n\nstaticfn boolean\nforge_salvage_known(const struct obj *obj)\n{\n    int i;\n    if (!enhancement_forge_known(obj) || !(obj->o_enh_flags & OEF_QUALITY_KNOWN)) return FALSE;\n    /* Exact base identity makes the available socket positions public.\n     * Empty positions and occupied unknown positions use the same flag gate. */\n    for (i = 0; i < obj->o_socket_capacity; ++i)\n        if (!obj->o_sockets[i].known) return FALSE;\n    return TRUE;\n}\n\nstaticfn int\nforge_salvage_commit(struct obj *hammer, unsigned oid)\n{\n    struct obj *obj = forge_find(oid), *reward;\n    long units, per, amount = 0, i;\n    if (!hammer || !carried(hammer) || hammer->otyp != WAR_HAMMER\n        || !IS_FORGE(levl[u.ux][u.uy].typ) || Confusion || Stunned || ACURR(A_STR) < 4\n        || !forge_affix_target(obj, hammer, TRUE)) return ECMD_OK;\n    units = obj->quan; per = forge_salvage_yield(obj);\n    if (units > LONG_MAX / (per ? per : 20L)) return ECMD_OK;\n    useupall(obj); /* COMMIT and destruction precede any fallback RNG. */\n    if (per) amount = per * units;\n    else for (i = 0; i < units; ++i) amount += d(2, 10);\n    reward = mksobj(per ? GENERIC_ESSENCE : GOLD_PIECE, FALSE, FALSE);\n    reward->quan = amount; reward->owt = weight(reward);\n    reward = addinv(reward); /* the destroyed target freed its inventory slot */\n    pline(\"Salvage recovered %ld %s.\", amount, per ? \"Essence\" : \"gold\");\n    update_inventory(); encumber_msg();\n    return ECMD_TIME;\n}\n\nstaticfn int\nforge_salvage(struct obj *hammer)\n{\n    struct obj *obj = forge_select_affix_target();\n    long per;\n    int i;\n    char buf[BUFSZ];\n    winid win;\n    if (!obj) return ECMD_OK;\n    if (!forge_affix_target(obj, hammer, TRUE)) {\n        pline(\"This item is not ready for Salvage. Put it aside; inspect and empty any container first.\");\n        return ECMD_OK;\n    }\n    win = create_nhwindow(NHW_MENU); start_menu(win, MENU_BEHAVE_STANDARD);\n    forge_menu_line(win, 0, 0, forge_inventory_name(obj));\n    if (forge_salvage_known(obj)) {\n        per = forge_salvage_yield(obj);\n        Snprintf(buf, sizeof buf, \"Quality: +%u Essence per item\", obj->o_enh_quality);\n        forge_menu_line(win, 0, 0, buf);\n        for (i = 0; i < enhancement_capacity(obj); ++i)\n            if (obj->o_affixes[i].tier) {\n                int tier = obj->o_affixes[i].tier;\n                Snprintf(buf, sizeof buf, \"Slot %d: %sTier %s +%d Essence\", i+1,\n                         obj->o_affixes[i].property ? \"\" : \"Open \", forge_tiers[tier], tier == 4 ? 5 : tier);\n                forge_menu_line(win, 0, 0, buf);\n            }\n        if (per) Snprintf(buf, sizeof buf, \"Total: %ld x %ld Essence\", obj->quan, per);\n        else if (obj->quan == 1) Strcpy(buf, \"2d10 gold\");\n        else Snprintf(buf, sizeof buf, \"%ld x 2d10 gold\", obj->quan);\n        forge_menu_line(win, 0, 0, buf);\n    } else {\n        forge_menu_line(win, 0, 0, \"Some properties relevant to Salvage are unidentified.\");\n        forge_menu_line(win, 0, 0, \"The exact Salvage return cannot be determined before destruction.\");\n    }\n    for (i = 0; i < obj->o_socket_capacity; ++i)\n        if (obj->o_sockets[i].property && obj->o_sockets[i].known) {\n            forge_menu_line(win, 0, 0, \"Socketed gems will be destroyed and contribute no Essence.\"); break;\n        }\n    forge_menu_line(win, 0, 0, \"Salvaging will permanently destroy this item (the entire selected stack).\");\n    forge_menu_line(win, 1, 'y', \"Salvage item\"); forge_menu_line(win, 2, 'n', \"Cancel\");\n    if (forge_menu_pick(win, \"Confirm Salvage?\", 0) != 1) return ECMD_OK;\n    return forge_salvage_commit(hammer, obj->o_id);\n}\n\nstaticfn int\nforge_menu(struct obj *hammer)\n{\n    static const char *const categories[] = { \"Weapons\", \"Armor\", \"Tools\", \"Other\" };\n"
+        },
+        {
+          "before": "    if (!forge_catalog_valid(forge_recipes, SIZE(forge_recipes)))\n        panic(\"Invalid static forge catalogue\");\n    for (i = 0; i < SIZE(forge_recipes); ++i)\n        present[forge_category(forge_recipes[i].output)]++;\n    win = create_nhwindow(NHW_MENU);\n    start_menu(win, MENU_BEHAVE_STANDARD);\n    forge_menu_line(win, 1, 'f', \"Forge an item\");\n    forge_menu_line(win, 2, 's', \"Socket gemstone\");\n    i = forge_menu_pick(win, \"Use the forge\", (long *) 0);\n    if (!i) return ECMD_OK;\n    if (i == 2) return affix_menu(hammer);\n    for (;;) {\n        (void) memset(available, 0, sizeof available);\n        for (i = 0; i < SIZE(forge_recipes); ++i)\n            if (forge_available(&forge_recipes[i], hammer))\n",
+          "after": "    if (!forge_catalog_valid(forge_recipes, SIZE(forge_recipes)))\n        panic(\"Invalid static forge catalogue\");\n    for (i = 0; i < SIZE(forge_recipes); ++i)\n        present[forge_category(forge_recipes[i].output)]++;\n top:\n    win = create_nhwindow(NHW_MENU);\n    start_menu(win, MENU_BEHAVE_STANDARD);\n    forge_menu_line(win, 1, 'f', \"Forge an item\");\n    forge_menu_line(win, 2, 's', \"Socket gemstone\");\n    forge_menu_line(win, 3, 'a', \"Affix Crafting\");\n    forge_menu_line(win, 4, 'v', \"Salvage item\");\n    forge_menu_line(win, 5, 'l', \"Leave Forge\");\n    i = forge_menu_pick(win, \"Use the forge\", (long *) 0);\n    if (!i || i == 5) return ECMD_OK;\n    if (i == 2) return affix_menu(hammer);\n    if (i == 3 || i == 4) {\n        result = i == 3 ? forge_affix_menu(hammer) : forge_salvage(hammer);\n        if (result == ECMD_TIME) return result;\n        goto top;\n    }\n    for (;;) {\n        (void) memset(available, 0, sizeof available);\n        for (i = 0; i < SIZE(forge_recipes); ++i)\n            if (forge_available(&forge_recipes[i], hammer))\n"
+        },
+        {
+          "before": "    }\n}\n\n#ifdef STEP15_TEST\n#include \"../test/test_step15b.c\"\n#endif\n\n/* One entry point for forge operations. Rejections use the no-time ECMD_OK\n * convention of do_break_wand strength and use_pole state gates. Step 15B\n",
+          "after": "    }\n}\n\n#ifdef STEP15_TEST\n#include \"../test/phase1_fixture.h\"\n#include \"../test/test_step15b.c\"\n#undef enhancement_set\n#undef enhancement_set_mask\n#endif\n#ifdef STEP13_TEST\n#include \"../test/test_step17_forge.c\"\n#endif\n\n/* One entry point for forge operations. Rejections use the no-time ECMD_OK\n * convention of do_break_wand strength and use_pole state gates. Step 15B\n"
+        }
+      ]
+    },
+    "src/enhance.c": {
+      "baseline_sha256": "3e2d7ae4ae86feeab1ecbaa1ccd8c0fd02fa696de29f910d607b05190ecf9882",
+      "hunks": [
+        {
+          "before": "int\nsocket_candidates(const struct obj *obj, int tier, int removed, int *out)\n{\n    int id, i, n = 0;\n    for (id = 1; id < EP_COUNT; ++id) {\n        const struct enhancement_entry *e = equipment_property(id);\n        if (e->tier != tier || !socket_allowed(obj, id)\n            || (e->bit && (obj->o_enh_props & e->bit))) continue;\n",
+          "after": "int\nsocket_candidates(const struct obj *obj, int tier, int removed, int *out)\n{\n    int id, i, n = 0;\n    if (obj->quan != 1L) return 0;\n    for (id = 1; id < EP_COUNT; ++id) {\n        const struct enhancement_entry *e = equipment_property(id);\n        if (e->tier != tier || !socket_allowed(obj, id)\n            || (e->bit && (obj->o_enh_props & e->bit))) continue;\n"
+        },
+        {
+          "before": "void\nsocket_normalize(struct obj *obj)\n{\n    int i, cap = socket_capacity(obj);\n    {\n        struct enhancement_mask old = enhancement_actual(obj), kept = {{ 0, 0 }};\n        struct obj ordinary = *obj;\n        int id;\n        memset(ordinary.o_sockets, 0, sizeof ordinary.o_sockets);\n        for (id = 1; id < EP_COUNT; ++id)\n            if (enhancement_mask_has(old, id)) {\n                struct enhancement_mask candidate = kept;\n                enhancement_mask_add(&candidate, id);\n                if (enhancement_mask_allowed(&ordinary, candidate)) kept = candidate;\n            }\n        obj->o_enh_props = kept.word[0]; obj->o_enh_props2 = kept.word[1];\n        if (!enhancement_eligible(obj)) obj->o_enh_quality = obj->o_enh_flags = 0;\n        if (obj->oclass == TOOL_CLASS || obj->o_enh_quality > OQ_EXCEPTIONAL)\n            obj->o_enh_quality = OQ_STANDARD;\n        obj->o_enh_flags &= OEF_QUALITY_KNOWN;\n        if (!utility_purification_interval(obj)) {\n            obj->o_purification_remaining = 0;\n            obj->o_purification_sampled = 0;\n        }\n    }\n    if (!(obj->o_enh_props & OEP_STONING)) {\n        obj->o_stoning_remaining = 0;\n        obj->o_stoning_turn = 0;\n",
+          "after": "void\nsocket_normalize(struct obj *obj)\n{\n    int i, cap = socket_capacity(obj);\n    if (!enhancement_slots_valid(obj)) {\n        impossible(\"Corrupt Phase 1 affix slots\");\n        return;\n    }\n    if (!(obj->o_enh_props & OEP_STONING)) {\n        obj->o_stoning_remaining = 0;\n        obj->o_stoning_turn = 0;\n"
+        },
+        {
+          "before": "    if (obj->o_socket_capacity > cap) obj->o_socket_capacity = (uint8) cap;\n    for (i = 0; i < 2; ++i) {\n        struct item_socket *s = &obj->o_sockets[i];\n        const struct enhancement_entry *e = equipment_property(s->property);\n        if (i >= obj->o_socket_capacity || !e || !socket_allowed(obj, s->property)\n            || (e->bit && (obj->o_enh_props & e->bit))\n            || ((e->bit & OEP_ALIGNMENT) && (obj->o_enh_props & OEP_ALIGNMENT))\n            || (i && equipment_property(obj->o_sockets[0].property)\n",
+          "after": "    if (obj->o_socket_capacity > cap) obj->o_socket_capacity = (uint8) cap;\n    for (i = 0; i < 2; ++i) {\n        struct item_socket *s = &obj->o_sockets[i];\n        const struct enhancement_entry *e = equipment_property(s->property);\n        if (i < obj->o_socket_capacity && !s->property) {\n            s->value = 0; s->known = !!s->known; continue;\n        }\n        if (i >= obj->o_socket_capacity || !e || !socket_allowed(obj, s->property)\n            || (e->bit && (obj->o_enh_props & e->bit))\n            || ((e->bit & OEP_ALIGNMENT) && (obj->o_enh_props & OEP_ALIGNMENT))\n            || (i && equipment_property(obj->o_sockets[0].property)\n"
+        },
+        {
+          "before": "            memset(s, 0, sizeof *s);\n        else {\n            s->known = !!s->known;\n            if (!e->stat) s->value = 0;\n        }\n    }\n    for (i = 0; i < 8; ++i) {\n        const struct enhancement_entry *e = &enhancement_catalog[24 + i];\n        if (!(obj->o_enh_props & e->bit)) obj->o_enh_values[i] = 0;\n        else if (obj->o_enh_values[i] < e->dice\n                 || obj->o_enh_values[i] > e->dice * e->sides) {\n            obj->o_enh_props &= ~e->bit;\n            obj->o_enh_values[i] = 0;\n        }\n    }\n    obj->o_enh_known &= obj->o_enh_props;\n    obj->o_enh_known2 &= obj->o_enh_props2;\n",
+          "after": "            memset(s, 0, sizeof *s);\n        else {\n            s->known = !!s->known;\n            if (!e->stat) s->value = 0;\n        }\n    }\n    obj->o_enh_known &= obj->o_enh_props;\n    obj->o_enh_known2 &= obj->o_enh_props2;\n"
+        },
+        {
+          "before": "\nboolean\nenhancement_eligible(const struct obj *obj)\n{\n    return obj && !obj->oartifact\n           && (obj->oclass == WEAPON_CLASS || obj->oclass == ARMOR_CLASS || utility_recipient(obj));\n}\n\nstaticfn uint64\n",
+          "after": "\nboolean\nenhancement_eligible(const struct obj *obj)\n{\n    return obj && !obj->oartifact && !is_ammo(obj)\n           && !objects[obj->otyp].oc_unique\n           && (obj->oclass == WEAPON_CLASS || obj->oclass == ARMOR_CLASS || utility_recipient(obj));\n}\n\nstaticfn uint64\n"
+        },
+        {
+          "before": "\nstaticfn boolean\nenhancement_word0_allowed(const struct obj *obj, uint64 props)\n{\n    uint64 rest = props & (props - 1U);\n    uint64 families[] = { OEP_VAMPIRIC, OEP_ALIGNMENT, OEP_STONING,\n                          OEP_CASTING, OEP_LIGHTNESS, OEP_THORNS, OEP_DR };\n    int i;\n    for (i = 0; i < SIZE(families); ++i) {\n        uint64 bits = props & families[i];\n        if (bits & (bits - 1ULL)) return FALSE;\n        if (bits && (socket_bits(obj) & families[i])) return FALSE;\n    }\n    return enhancement_eligible(obj) && !(rest & (rest - 1U))\n           && !(props & ~enhancement_allowed(obj));\n}\n\n\n",
+          "after": "\nstaticfn boolean\nenhancement_word0_allowed(const struct obj *obj, uint64 props)\n{\n    uint64 families[] = { OEP_VAMPIRIC, OEP_ALIGNMENT, OEP_STONING,\n                          OEP_CASTING, OEP_LIGHTNESS, OEP_THORNS, OEP_DR };\n    int i;\n    for (i = 0; i < SIZE(families); ++i) {\n        uint64 bits = props & families[i];\n        if (bits & (bits - 1ULL)) return FALSE;\n        if (bits && (socket_bits(obj) & families[i])) return FALSE;\n    }\n    return !(props & socket_bits(obj)) && enhancement_eligible(obj)\n           && !(props & ~enhancement_allowed(obj));\n}\n\n\n"
+        },
+        {
+          "before": "        EP_ARCANE_II, EP_ARMOR_STORAGE_II, EP_WEAPON_STORAGE_II, EP_WATERTIGHT,\n        EP_COUNT };\n    uint64 covered = 0;\n    int i, id, n;\n    if (enhancement_mask_count(m) > 2 || !enhancement_word0_allowed(obj, m.word[0]))\n        return FALSE;\n    if (!m.word[1]) return TRUE;\n    for (i = 0; i < SIZE(starts) - 1; ++i) {\n        n = 0;\n",
+          "after": "        EP_ARCANE_II, EP_ARMOR_STORAGE_II, EP_WEAPON_STORAGE_II, EP_WATERTIGHT,\n        EP_COUNT };\n    uint64 covered = 0;\n    int i, id, n;\n    if ((obj->quan != 1L && enhancement_mask_count(m))\n        || enhancement_mask_count(m) > enhancement_capacity(obj) || !enhancement_word0_allowed(obj, m.word[0]))\n        return FALSE;\n    if (!m.word[1]) return TRUE;\n    for (i = 0; i < SIZE(starts) - 1; ++i) {\n        n = 0;\n"
+        },
+        {
+          "before": "    if (!obj)\n        return;\n    if (carried(obj))\n        enhancement_worn_off(obj, &gy.youmonst);\n    obj->o_enh_props = obj->o_enh_known = 0;\n    obj->o_enh_props2 = obj->o_enh_known2 = 0;\n    obj->o_purification_remaining = 0;\n    obj->o_purification_sampled = 0;\n",
+          "after": "    if (!obj)\n        return;\n    if (carried(obj))\n        enhancement_worn_off(obj, &gy.youmonst);\n    memset(obj->o_affixes, 0, sizeof obj->o_affixes);\n    obj->o_enh_props = obj->o_enh_known = 0;\n    obj->o_enh_props2 = obj->o_enh_known2 = 0;\n    obj->o_purification_remaining = 0;\n    obj->o_purification_sampled = 0;\n"
+        },
+        {
+          "before": "        enhancement_normalize(obj);\n        return;\n    }\n    if (carried(obj)) enhancement_worn_off(obj, &gy.youmonst);\n    obj->o_enh_props = obj->o_enh_known = 0;\n    obj->o_enh_props2 = obj->o_enh_known2 = 0;\n    obj->o_purification_remaining = 0;\n    obj->o_purification_sampled = 0;\n",
+          "after": "        enhancement_normalize(obj);\n        return;\n    }\n    if (carried(obj)) enhancement_worn_off(obj, &gy.youmonst);\n    memset(obj->o_affixes, 0, sizeof obj->o_affixes);\n    obj->o_enh_props = obj->o_enh_known = 0;\n    obj->o_enh_props2 = obj->o_enh_known2 = 0;\n    obj->o_purification_remaining = 0;\n    obj->o_purification_sampled = 0;\n"
+        },
+        {
+          "before": "    obj->o_enh_known2 &= obj->o_enh_props2;\n    enhancement_changed(obj);\n}\n\nboolean\nenhancement_set_mask(struct obj *obj, struct enhancement_mask mask,\n                     enum enhancement_quality quality, boolean known)\n{\n    uint64 props = mask.word[0];\n    int old_purification = utility_purification_interval(obj), new_purification;\n    if (!enhancement_mask_allowed(obj, mask)\n",
+          "after": "    obj->o_enh_known2 &= obj->o_enh_props2;\n    enhancement_changed(obj);\n}\n\nstaticfn boolean\nenhancement_apply_mask(struct obj *obj, struct enhancement_mask mask,\n                     enum enhancement_quality quality, boolean known,\n                     const uint8 *values)\n{\n    uint64 props = mask.word[0];\n    int old_purification = utility_purification_interval(obj), new_purification;\n    if (!enhancement_mask_allowed(obj, mask)\n"
+        },
+        {
+          "before": "            const struct enhancement_entry *e = &enhancement_catalog[24 + i];\n            if (!(props & e->bit))\n                obj->o_enh_values[i] = 0;\n            else if (!(obj->o_enh_props & e->bit))\n                obj->o_enh_values[i] = (uint8) d(e->dice, e->sides);\n        }\n    }\n    if ((obj->o_enh_props & OEP_STONING) != (props & OEP_STONING)) {\n        obj->o_stoning_remaining = 0;\n",
+          "after": "            const struct enhancement_entry *e = &enhancement_catalog[24 + i];\n            if (!(props & e->bit))\n                obj->o_enh_values[i] = 0;\n            else if (!(obj->o_enh_props & e->bit))\n                obj->o_enh_values[i] = values ? values[i] : (uint8) d(e->dice, e->sides);\n        }\n    }\n    if ((obj->o_enh_props & OEP_STONING) != (props & OEP_STONING)) {\n        obj->o_stoning_remaining = 0;\n"
+        },
+        {
+          "before": "        obj->o_purification_remaining = (unsigned short) new_purification;\n        obj->o_purification_sampled = 0;\n    }\n    obj->o_enh_quality = (uint8) quality;\n    obj->o_enh_flags = known ? OEF_QUALITY_KNOWN : 0;\n    enhancement_changed(obj);\n    return TRUE;\n}\n\n/* Word-0 compatibility entry point; replacement clears any former word 1. */\nboolean\nenhancement_set(struct obj *obj, uint64 props,\n                enum enhancement_quality quality, boolean known)\n{\n",
+          "after": "        obj->o_purification_remaining = (unsigned short) new_purification;\n        obj->o_purification_sampled = 0;\n    }\n    obj->o_enh_quality = (uint8) quality;\n    obj->o_enh_flags = known ? OEF_QUALITY_KNOWN | OEF_AFFIXES_KNOWN : 0;\n    enhancement_changed(obj);\n    return TRUE;\n}\n\nint\nenhancement_capacity(const struct obj *obj)\n{\n    return enhancement_eligible(obj) ? ENHANCEMENT_MAX_SLOTS : 0;\n}\n\nint\nenhancement_slot_count(const struct obj *obj)\n{\n    int i, n = 0;\n    if (obj)\n        for (i = 0; i < ENHANCEMENT_MAX_SLOTS; ++i)\n            n += obj->o_affixes[i].tier != 0;\n    return n;\n}\n\nint\nenhancement_first_unused(const struct obj *obj)\n{\n    int i;\n    for (i = 0; i < enhancement_capacity(obj); ++i)\n        if (!obj->o_affixes[i].tier) return i;\n    return -1;\n}\n\n/* Pure validation, including derived state. Never repair corrupt identities. */\nboolean\nenhancement_slots_valid(const struct obj *obj)\n{\n    struct enhancement_mask mask = {{0, 0}};\n    int i, count = 0;\n    if (!obj || obj->o_socket_capacity > SIZE(obj->o_sockets)\n        || obj->o_enh_quality > OQ_EXCEPTIONAL\n        || (obj->o_enh_flags & ~(OEF_QUALITY_KNOWN | OEF_AFFIXES_KNOWN))\n        || (obj->oclass == TOOL_CLASS && obj->o_enh_quality)) return FALSE;\n    for (i = 0; i < ENHANCEMENT_MAX_SLOTS; ++i) {\n        const struct affix_slot *s = &obj->o_affixes[i];\n        const struct enhancement_entry *e = equipment_property(s->property);\n        if (!s->tier) {\n            if (s->property || s->history) return FALSE;\n            continue;\n        }\n        ++count;\n        if (s->tier > 4 || s->history > 10) return FALSE;\n        if (s->property) {\n            if (!e || !(e->bit || e->bit2) || e->tier != s->tier\n                || enhancement_mask_has(mask, s->property)) return FALSE;\n            enhancement_mask_add(&mask, s->property);\n        }\n    }\n    if (count > enhancement_capacity(obj)\n        || (obj->quan != 1L && (count || socket_count(obj)))\n        || (is_ammo(obj) && (count || socket_count(obj)))\n        || mask.word[0] != obj->o_enh_props || mask.word[1] != obj->o_enh_props2\n        || (obj->o_enh_known & ~mask.word[0]) || (obj->o_enh_known2 & ~mask.word[1]))\n        return FALSE;\n    if (count && !enhancement_mask_allowed(obj, mask)) return FALSE;\n    for (i = 0; i < 8; ++i) {\n        const struct enhancement_entry *e = &enhancement_catalog[24 + i];\n        int v = obj->o_enh_values[i];\n        if (mask.word[0] & e->bit) {\n            if (v < e->dice || v > e->dice * e->sides) return FALSE;\n        } else if (v) return FALSE;\n    }\n    if (!(mask.word[0] & OEP_STONING)\n        && (obj->o_stoning_remaining || obj->o_stoning_turn)) return FALSE;\n    if (!utility_purification_interval(obj)\n        && (obj->o_purification_remaining || obj->o_purification_sampled)) return FALSE;\n    return TRUE;\n}\n\n/* Legacy whole-mask acquisition accepts additions to unused capacity and\n * removal to Open. Refilling/replacing needs an explicit slot selection. */\nboolean\nenhancement_set_mask(struct obj *obj, struct enhancement_mask mask,\n                     enum enhancement_quality quality, boolean known)\n{\n    struct affix_slot slots[ENHANCEMENT_MAX_SLOTS];\n    struct enhancement_mask present = {{0, 0}};\n    int i, id;\n    if (!enhancement_slots_valid(obj) || !enhancement_mask_allowed(obj, mask)\n        || quality < OQ_STANDARD || quality > OQ_EXCEPTIONAL\n        || (obj->oclass == TOOL_CLASS && quality != OQ_STANDARD)) return FALSE;\n    memcpy(slots, obj->o_affixes, sizeof slots);\n    for (i = 0; i < enhancement_capacity(obj); ++i) {\n        if (!enhancement_mask_has(mask, slots[i].property)) slots[i].property = 0;\n        if (slots[i].property) enhancement_mask_add(&present, slots[i].property);\n    }\n    for (id = 1; id < EP_COUNT; ++id)\n        if (enhancement_mask_has(mask, id) && !enhancement_mask_has(present, id)) {\n            for (i = 0; i < enhancement_capacity(obj) && slots[i].tier; ++i) ;\n            if (i == enhancement_capacity(obj)) return FALSE;\n            slots[i].tier = (uint8) equipment_property(id)->tier;\n            slots[i].property = (uint8) id;\n        }\n    memcpy(obj->o_affixes, slots, sizeof slots);\n    return enhancement_apply_mask(obj, mask, quality, known, (const uint8 *) 0);\n}\n\nboolean\nenhancement_slot_set(struct obj *obj, int slot, int id, boolean known, int value)\n{\n    struct enhancement_mask mask = {{0, 0}};\n    const struct enhancement_entry *e = equipment_property(id);\n    struct affix_slot *s;\n    uint8 values[8], flags;\n    int i;\n    if (!enhancement_slots_valid(obj) || obj->quan != 1L || slot < 0\n        || slot >= enhancement_capacity(obj)) return FALSE;\n    s = &obj->o_affixes[slot];\n    if (!id) {\n        if (!s->tier || !s->property) return FALSE;\n    } else if (!e || !(e->bit || e->bit2)\n               || (s->tier && s->tier != e->tier)\n               || (!s->tier && slot != enhancement_first_unused(obj))) return FALSE;\n    for (i = 0; i < enhancement_capacity(obj); ++i)\n        if (i != slot && obj->o_affixes[i].property) {\n            if (obj->o_affixes[i].property == id) return FALSE;\n            enhancement_mask_add(&mask, obj->o_affixes[i].property);\n        }\n    if (id) enhancement_mask_add(&mask, id);\n    if (!enhancement_mask_allowed(obj, mask)) return FALSE;\n    if (value >= 0 && e && e->stat\n        && (value < e->dice || value > e->dice * e->sides)) return FALSE;\n    memcpy(values, obj->o_enh_values, sizeof values);\n    if (id >= EP_STR_I && id <= EP_DEX_IV && value >= 0)\n        values[id - EP_STR_I] = (uint8) value;\n    flags = obj->o_enh_flags;\n    s->property = (uint8) id;\n    if (!s->tier) s->tier = (uint8) e->tier;\n    if (!enhancement_apply_mask(obj, mask, (enum enhancement_quality) obj->o_enh_quality,\n                                FALSE, value >= 0 ? values : (const uint8 *) 0))\n        panic(\"Validated affix assignment failed\");\n    obj->o_enh_flags = flags;\n    if (known && id) enhancement_learn(obj, id);\n    return TRUE;\n}\n\nvoid\nenhancement_slot_history(struct obj *obj, int slot)\n{\n    if (slot >= 0 && slot < enhancement_capacity(obj) && obj->o_affixes[slot].tier\n        && obj->o_affixes[slot].history < 10) ++obj->o_affixes[slot].history;\n}\n\nint\nenhancement_forge_candidates(const struct obj *obj, int slot, int tier,\n                              boolean exclude_current, int *out)\n{\n    struct enhancement_mask retained = {{0, 0}};\n    int i, id, n = 0, current;\n    if (!enhancement_slots_valid(obj) || obj->quan != 1L || tier < 1 || tier > 4\n        || slot < 0 || slot >= enhancement_capacity(obj)) return 0;\n    if (obj->o_affixes[slot].tier && obj->o_affixes[slot].tier != tier) return 0;\n    if (!obj->o_affixes[slot].tier && slot != enhancement_first_unused(obj)) return 0;\n    current = obj->o_affixes[slot].property;\n    for (i = 0; i < enhancement_capacity(obj); ++i) {\n        if (!obj->o_affixes[slot].tier && obj->o_affixes[i].tier == tier\n            && !obj->o_affixes[i].property) return 0;\n        if (i != slot && obj->o_affixes[i].property)\n            enhancement_mask_add(&retained, obj->o_affixes[i].property);\n    }\n    for (id = 1; id < EP_COUNT; ++id) {\n        const struct enhancement_entry *e = equipment_property(id);\n        if (e->tier != tier || !(e->bit || e->bit2)\n            || (exclude_current && id == current) || enhancement_mask_has(retained, id)) continue;\n        if (!enhancement_mask_allowed(obj, enhancement_mask_union(retained,\n                                                  enhancement_mask_property(id)))) continue;\n        if (out) out[n] = id;\n        ++n;\n    }\n    return n;\n}\n\nboolean\nenhancement_forge_known(const struct obj *obj)\n{\n    int i;\n    if (!obj || obj->o_socket_capacity > SIZE(obj->o_sockets)) return FALSE;\n    for (i = 0; i < obj->o_socket_capacity; ++i)\n        if (!obj->o_sockets[i].known) return FALSE;\n    return obj->dknown && obj->known && objects[obj->otyp].oc_name_known\n        && (obj->o_enh_flags & OEF_AFFIXES_KNOWN)\n        && obj->o_enh_known == obj->o_enh_props && obj->o_enh_known2 == obj->o_enh_props2;\n}\n\n/* Called only by constructors after their final quantity is established. */\nvoid\nenhancement_finalize_stack(struct obj *obj)\n{\n    if (obj->quan != 1L || is_ammo(obj)) {\n        enhancement_clear(obj);\n        socket_init(obj);\n    }\n}\n\n/* Word-0 compatibility entry point. */\nboolean\nenhancement_set(struct obj *obj, uint64 props,\n                enum enhancement_quality quality, boolean known)\n{\n"
+        },
+        {
+          "before": "enhancement_identify(struct obj *obj)\n{\n    int i;\n    for (i = 0; i < min(obj->o_socket_capacity, 2); ++i)\n        if (obj->o_sockets[i].property) obj->o_sockets[i].known = 1;\n    if (enhancement_eligible(obj)) {\n        obj->o_enh_known = obj->o_enh_props;\n        obj->o_enh_known2 = obj->o_enh_props2;\n        obj->o_enh_flags |= OEF_QUALITY_KNOWN;\n    }\n}\n\nstruct enhancement_mask\n",
+          "after": "enhancement_identify(struct obj *obj)\n{\n    int i;\n    for (i = 0; i < min(obj->o_socket_capacity, 2); ++i)\n        obj->o_sockets[i].known = 1;\n    if (enhancement_eligible(obj)) {\n        obj->o_enh_known = obj->o_enh_props;\n        obj->o_enh_known2 = obj->o_enh_props2;\n        obj->o_enh_flags |= OEF_QUALITY_KNOWN | OEF_AFFIXES_KNOWN;\n    }\n}\n\nstruct enhancement_mask\n"
+        },
+        {
+          "before": "staticfn boolean\nenhancement_knowledge_complete(const struct obj *obj)\n{\n    return enhancement_eligible(obj)\n           && (obj->o_enh_flags & OEF_QUALITY_KNOWN)\n           && obj->o_enh_known == obj->o_enh_props\n           && obj->o_enh_known2 == obj->o_enh_props2;\n}\n\n",
+          "after": "staticfn boolean\nenhancement_knowledge_complete(const struct obj *obj)\n{\n    return enhancement_eligible(obj)\n           && (obj->o_enh_flags & OEF_AFFIXES_KNOWN)\n           && obj->o_enh_known == obj->o_enh_props\n           && obj->o_enh_known2 == obj->o_enh_props2;\n}\n\n"
+        },
+        {
+          "before": "    boolean worn;\n    if (!size) return;\n    *buf = '\\0';\n    if (!obj || !e) return;\n    if (property >= EP_EROSION_I) {\n        if (property <= EP_EROSION_IV)\n            Snprintf(buf, size, \"protects direct inventory from %s while directly carried\",\n                     e->tier == 1 ? \"rust\" : e->tier == 2 ? \"rust and rot\"\n",
+          "after": "    boolean worn;\n    if (!size) return;\n    *buf = '\\0';\n    if (!obj || !e) return;\n    if (value < 0 && e->stat) {\n        Snprintf(buf, size, \"rolls %dd%d %s when acquired\", e->dice, e->sides,\n                 enhancement_stat_name(e->stat));\n        return;\n    }\n    if (property >= EP_EROSION_I) {\n        if (property <= EP_EROSION_IV)\n            Snprintf(buf, size, \"protects direct inventory from %s while directly carried\",\n                     e->tier == 1 ? \"rust\" : e->tier == 2 ? \"rust and rot\"\n"
+        },
+        {
+          "before": "                     property == EP_CURSE_IV ? \"carried items, including nested contents\" : \"direct inventory\");\n        else if (property == EP_DISCERNMENT)\n            Snprintf(buf, size, \"reveals direct inventory beatitude while directly carried\");\n        else if (property <= EP_PURIFICATION_IV) {\n            if (!obj->o_purification_remaining) Snprintf(buf, size, \"Ready\");\n            else Snprintf(buf, size, \"%u turns remaining\", obj->o_purification_remaining);\n        } else if (property == EP_EXCAVATING)\n            Snprintf(buf, size, \"doubles digging effort when using this pick-axe\");\n        else if (property <= EP_COMMERCE_III)\n",
+          "after": "                     property == EP_CURSE_IV ? \"carried items, including nested contents\" : \"direct inventory\");\n        else if (property == EP_DISCERNMENT)\n            Snprintf(buf, size, \"reveals direct inventory beatitude while directly carried\");\n        else if (property <= EP_PURIFICATION_IV) {\n            if (value < 0) Snprintf(buf, size, \"periodically removes a curse from eligible carried items\");\n            else if (!obj->o_purification_remaining) Snprintf(buf, size, \"Ready\");\n            else Snprintf(buf, size, \"%u turns remaining\", obj->o_purification_remaining);\n        } else if (property == EP_EXCAVATING)\n            Snprintf(buf, size, \"doubles digging effort when using this pick-axe\");\n        else if (property <= EP_COMMERCE_III)\n"
+        },
+        {
+          "before": "                     e->tier < 3 ? \"physical\" : \"all\", e->tier * 10);\n        return;\n    }\n    if (e->bit & OEP_STONING) {\n        if (!obj->o_stoning_remaining) Snprintf(buf, size, \"Ready\");\n        else Snprintf(buf, size, \"%u turns remaining\", obj->o_stoning_remaining);\n        return;\n    }\n    if (e->bit & OEP_VAMPIRIC) {\n",
+          "after": "                     e->tier < 3 ? \"physical\" : \"all\", e->tier * 10);\n        return;\n    }\n    if (e->bit & OEP_STONING) {\n        if (value < 0) Snprintf(buf, size, \"petrifies eligible targets when ready\");\n        else if (!obj->o_stoning_remaining) Snprintf(buf, size, \"Ready\");\n        else Snprintf(buf, size, \"%u turns remaining\", obj->o_stoning_remaining);\n        return;\n    }\n    if (e->bit & OEP_VAMPIRIC) {\n"
+        },
+        {
+          "before": "enhancement_generate(struct obj *obj, int dep)\n{\n    const struct enhancement_band *band = enhancement_depth_band(dep);\n    int quality, presence, roll, slots, slot, tier, i, count, candidates[SIZE(enhancement_catalog)];\n    struct enhancement_mask props = {{ 0, 0 }};\n    if (!enhancement_eligible(obj) || rn2(100) >= band->gate)\n        return;\n    do {\n        roll = rn2(100);\n        quality = roll < band->standard ? OQ_STANDARD\n            : roll < band->standard + band->fine ? OQ_FINE : OQ_EXCEPTIONAL;\n        presence = rn2(100) < band->presence;\n        if (obj->oclass == TOOL_CLASS) quality = OQ_STANDARD;\n    } while (quality == OQ_STANDARD && !presence);\n    slots = presence ? (rn2(100) < band->two ? 2 : 1) : 0;\n    for (slot = 0; slot < slots; ++slot) {\n        roll = rn2(100);\n        for (tier = 1; tier < 4 && roll >= band->tier[tier - 1]; ++tier)\n            roll -= band->tier[tier - 1];\n",
+          "after": "enhancement_generate(struct obj *obj, int dep)\n{\n    const struct enhancement_band *band = enhancement_depth_band(dep);\n    int quality, presence, roll, slots, slot, tier, i, count, candidates[SIZE(enhancement_catalog)];\n    int acquired[ENHANCEMENT_MAX_SLOTS], n_acquired = 0;\n    struct enhancement_mask props = {{ 0, 0 }};\n    if (!enhancement_eligible(obj) || obj->quan != 1L || rn2(100) >= band->gate)\n        return;\n    do {\n        roll = rn2(100);\n        quality = roll < band->standard ? OQ_STANDARD\n            : roll < band->standard + band->fine ? OQ_FINE : OQ_EXCEPTIONAL;\n        presence = rn2(100) < band->presence;\n        if (obj->oclass == TOOL_CLASS) quality = OQ_STANDARD;\n    } while (quality == OQ_STANDARD && !presence);\n    slots = presence ? (rn2(100) < band->two ? enhancement_capacity(obj) : 1) : 0;\n    for (slot = 0; slot < slots; ++slot) {\n        roll = rn2(100);\n        for (tier = 1; tier < 4 && roll >= band->tier[tier - 1]; ++tier)\n            roll -= band->tier[tier - 1];\n"
+        },
+        {
+          "before": "                         enhancement_mask_property(i < 32 ? i + 1 : EP_VAMPIRIC_I + i - 32))))\n                    candidates[count++] = i;\n            if (count) {\n                i = candidates[rn2(count)];\n                enhancement_mask_add(&props, i < 32 ? i + 1 : EP_VAMPIRIC_I + i - 32);\n                break;\n            }\n        }\n        /* A restricted recipient may have fewer legal families than slots. */\n    }\n    (void) enhancement_set_mask(obj, props, (enum enhancement_quality) quality, FALSE);\n}\n\n/* Synchronous creation scope, default-deny. Only original constructors call\n * enhancement_created, never movement, restore, split, or ownership code. */\nstatic enum enhancement_context creation_context = ENH_CONTEXT_NONE;\n\nenum enhancement_context\nenhancement_context_set(enum enhancement_context context)\n{\n",
+          "after": "                         enhancement_mask_property(i < 32 ? i + 1 : EP_VAMPIRIC_I + i - 32))))\n                    candidates[count++] = i;\n            if (count) {\n                i = candidates[rn2(count)];\n                acquired[n_acquired++] = i < 32 ? i + 1 : EP_VAMPIRIC_I + i - 32;\n                enhancement_mask_add(&props, i < 32 ? i + 1 : EP_VAMPIRIC_I + i - 32);\n                break;\n            }\n        }\n        /* A restricted recipient may have fewer legal families than slots. */\n    }\n    for (i = 0; i < n_acquired; ++i)\n        (void) enhancement_slot_set(obj, enhancement_first_unused(obj), acquired[i], FALSE, -1);\n    obj->o_enh_quality = (uint8) quality;\n    enhancement_changed(obj);\n}\n\n/* Synchronous creation scope, default-deny. Only original constructors call\n * enhancement_created, never movement, restore, split, or ownership code. */\nstatic enum enhancement_context creation_context = ENH_CONTEXT_NONE;\nstatic boolean ordinary_loot_context;\n\nvoid\nessence_normalize(struct obj *obj)\n{\n    if (!obj || obj->otyp != GENERIC_ESSENCE) return;\n    obj->blessed = obj->cursed = 0;\n    obj->known = obj->dknown = obj->bknown = 1;\n    objects[GENERIC_ESSENCE].oc_name_known = 1;\n}\n\nlong\nessence_wish_quantity(long requested)\n{\n    if (requested < 1) return 1;\n    if (requested <= 5) return requested;\n    if (requested >= 10) return 1;\n    return rn2(100) < 20 * (10 - requested) ? requested : 1;\n}\n\nboolean\nessence_loot_context(void)\n{\n    return ordinary_loot_context;\n}\n\nstruct obj *\nessence_random(void)\n{\n    struct obj *obj = mksobj(GENERIC_ESSENCE, FALSE, FALSE);\n    obj->quan = rnd(2);\n    obj->owt = weight(obj);\n    return obj;\n}\n\nstruct obj *\nordinary_loot_at(char cls, coordxy x, coordxy y, boolean artif)\n{\n    boolean previous = ordinary_loot_context;\n    struct obj *obj;\n    if (cls != RANDOM_CLASS) return enhancement_mkobj_at(cls, x, y, artif);\n    ordinary_loot_context = TRUE;\n    if (!rn2(100)) {\n        obj = essence_random();\n        place_object(obj, x, y);\n    } else obj = enhancement_mkobj_at(cls, x, y, artif);\n    ordinary_loot_context = previous;\n    return obj;\n}\n\nenum enhancement_context\nenhancement_context_set(enum enhancement_context context)\n{\n"
+        },
+        {
+          "before": "        ++gd.distantname; Snprintf(buf, sizeof buf, \"%s\", doname(&copy)); --gd.distantname;\n        putstr(win, ATR_NONE, buf);\n    }\n    putstr(win, ATR_NONE, \"\");\n    if (obj->oclass == TOOL_CLASS) {\n        putstr(win, ATR_NONE, \"Quality: Standard\");\n    } else {\n        putstr(win, ATR_NONE, \"Quality:\");\n",
+          "after": "        ++gd.distantname; Snprintf(buf, sizeof buf, \"%s\", doname(&copy)); --gd.distantname;\n        putstr(win, ATR_NONE, buf);\n    }\n    putstr(win, ATR_NONE, \"\");\n    if (obj->otyp == GENERIC_ESSENCE) {\n        putstr(win, ATR_NONE, \"Essence: a neutral, stackable Forge crafting material.\");\n        putstr(win, ATR_NONE, \"Weight: 1 per unit. Obtained primarily through Salvage.\");\n        putstr(win, ATR_NONE, \"Carry it directly in inventory to pay Forge costs.\");\n        display_nhwindow(win, TRUE); destroy_nhwindow(win);\n        return ECMD_OK;\n    }\n    if (obj->oclass == TOOL_CLASS) {\n        putstr(win, ATR_NONE, \"Quality: Standard\");\n    } else {\n        putstr(win, ATR_NONE, \"Quality:\");\n"
+        },
+        {
+          "before": "    if (!count)\n        putstr(win, ATR_NONE,\n               enhancement_knowledge_complete(obj) ? \"    none\" : \"    none known\");\n    putstr(win, ATR_NONE, \"\");\n    if (socket_capacity(obj)) {\n        Snprintf(buf, sizeof buf, \"Sockets: %d/%u\", socket_count(obj), obj->o_socket_capacity);\n        putstr(win, ATR_NONE, buf);\n        for (i = 0; i < min(obj->o_socket_capacity, 2); ++i) {\n            const struct item_socket *socket = &obj->o_sockets[i];\n            const struct enhancement_entry *entry = equipment_property(socket->property);\n            socket_label(obj, i, label, sizeof label);\n            if (entry && socket->known) {\n                enhancement_property_impact(obj, socket->property, socket->value,\n                                             impact, sizeof impact);\n                Snprintf(buf, sizeof buf, \"    Socket %d: %s - %s\", i + 1,\n",
+          "after": "    if (!count)\n        putstr(win, ATR_NONE,\n               enhancement_knowledge_complete(obj) ? \"    none\" : \"    none known\");\n    putstr(win, ATR_NONE, \"\");\n    putstr(win, ATR_NONE, \"Affix Slots:\");\n    for (i = 0; i < enhancement_capacity(obj); ++i) {\n        const struct affix_slot *s = &obj->o_affixes[i];\n        static const char *const roman[] = { \"\", \"I\", \"II\", \"III\", \"IV\" };\n        if (s->tier && (!s->property\n                        || enhancement_mask_has(enhancement_known(obj), s->property))) {\n            Snprintf(buf, sizeof buf, \"    Slot %d: %s, Tier %s; Rerolls: %u%s\",\n                     i + 1, s->property ? equipment_property_name(s->property)\n                                       : \"Open Affix Slot\", roman[s->tier],\n                     s->history, s->history == 10 ? \" (maximum)\" : \"\");\n            putstr(win, ATR_NONE, buf);\n        }\n    }\n    if (enhancement_forge_known(obj)) {\n        Snprintf(buf, sizeof buf, \"    Unused capacity: %d\",\n                 enhancement_capacity(obj) - enhancement_slot_count(obj));\n        putstr(win, ATR_NONE, buf);\n    } else {\n        putstr(win, ATR_NONE, \"    Remaining affix state is not fully identified.\");\n    }\n    putstr(win, ATR_NONE, \"\");\n    if (obj->dknown && objects[obj->otyp].oc_name_known && socket_capacity(obj)) {\n        /* Unknown empty and occupied positions have identical presentation. */\n        Snprintf(buf, sizeof buf, \"Sockets: capacity %u\", obj->o_socket_capacity);\n        putstr(win, ATR_NONE, buf);\n        for (i = 0; i < min(obj->o_socket_capacity, 2); ++i) {\n            const struct item_socket *socket = &obj->o_sockets[i];\n            const struct enhancement_entry *entry = equipment_property(socket->property);\n            if (socket->known) socket_label(obj, i, label, sizeof label);\n            else Strcpy(label, \"unknown\");\n            if (entry && socket->known) {\n                enhancement_property_impact(obj, socket->property, socket->value,\n                                             impact, sizeof impact);\n                Snprintf(buf, sizeof buf, \"    Socket %d: %s - %s\", i + 1,\n"
+        }
+      ]
+    },
+    "src/invent.c": {
+      "baseline_sha256": "62a428ff4ac712ed9e95fef901fdc33b0399deb073b79f6170849f769ddda11f",
+      "hunks": [
+        {
+          "before": "    if (obj == otmp || obj->otyp != otmp->otyp\n        || obj->nomerge || otmp->nomerge || !objects[obj->otyp].oc_merge)\n        return FALSE;\n\n    if (obj->o_socket_capacity != otmp->o_socket_capacity\n        || memcmp(obj->o_sockets, otmp->o_sockets, sizeof obj->o_sockets)\n        || memcmp(obj->o_enh_values, otmp->o_enh_values, sizeof obj->o_enh_values)\n        || ((obj->o_enh_props | otmp->o_enh_props) & OEP_STONING)\n",
+          "after": "    if (obj == otmp || obj->otyp != otmp->otyp\n        || obj->nomerge || otmp->nomerge || !objects[obj->otyp].oc_merge)\n        return FALSE;\n\n    if (enhancement_slot_count(obj) || enhancement_slot_count(otmp)\n        || socket_count(obj) || socket_count(otmp))\n        return FALSE;\n\n    if (obj->o_socket_capacity != otmp->o_socket_capacity\n        || memcmp(obj->o_sockets, otmp->o_sockets, sizeof obj->o_sockets)\n        || memcmp(obj->o_enh_values, otmp->o_enh_values, sizeof obj->o_enh_values)\n        || ((obj->o_enh_props | otmp->o_enh_props) & OEP_STONING)\n"
+        },
+        {
+          "before": "    /* coins of the same kind will always merge */\n    if (obj->oclass == COIN_CLASS)\n        return TRUE;\n\n    if (obj->cursed != otmp->cursed || obj->blessed != otmp->blessed)\n        return FALSE;\n\n    if (obj->how_lost == LOST_EXPLODING\n",
+          "after": "    /* coins of the same kind will always merge */\n    if (obj->oclass == COIN_CLASS)\n        return TRUE;\n\n    if (obj->otyp == GENERIC_ESSENCE) { essence_normalize(obj); essence_normalize(otmp); }\n    if (obj->cursed != otmp->cursed || obj->blessed != otmp->blessed)\n        return FALSE;\n\n    if (obj->how_lost == LOST_EXPLODING\n"
+        }
+      ]
+    },
+    "src/makemon.c": {
+      "baseline_sha256": "1eb144d133b25005e76dfacc9d12b29a7f5dcc2b0f5ba14185d46a490e06afd8",
+      "hunks": [
+        {
+          "before": "    struct obj *otmp;\n\n    otmp = mksobj(otyp, TRUE, FALSE);\n    otmp->quan = (long) rn1(oquan, 3);\n    socket_normalize(otmp);\n    otmp->owt = weight(otmp);\n    if (otyp == ORCISH_ARROW)\n        otmp->opoisoned = TRUE;\n    (void) mpickobj(mtmp, otmp);\n",
+          "after": "    struct obj *otmp;\n\n    otmp = mksobj(otyp, TRUE, FALSE);\n    otmp->quan = (long) rn1(oquan, 3);\n    enhancement_finalize_stack(otmp);\n    otmp->owt = weight(otmp);\n    if (otyp == ORCISH_ARROW)\n        otmp->opoisoned = TRUE;\n    (void) mpickobj(mtmp, otmp);\n"
+        },
+        {
+          "before": "    struct obj *otmp = mksobj(type, TRUE, FALSE);\n\n    if (quantity) {\n        otmp->quan = rn1(quantity, 3);\n        socket_normalize(otmp);\n    }\n    if ((otmp->oclass == WEAPON_CLASS || otmp->oclass == ARMOR_CLASS)\n        && mon->data->msize != MZ_HUMAN)\n        otmp->obranch_size = mon->data->msize + 1;\n",
+          "after": "    struct obj *otmp = mksobj(type, TRUE, FALSE);\n\n    if (quantity) {\n        otmp->quan = rn1(quantity, 3);\n        enhancement_finalize_stack(otmp);\n    }\n    if ((otmp->oclass == WEAPON_CLASS || otmp->oclass == ARMOR_CLASS)\n        && mon->data->msize != MZ_HUMAN)\n        otmp->obranch_size = mon->data->msize + 1;\n"
+        }
+      ]
+    },
+    "src/mklev.c": {
+      "baseline_sha256": "1ac9354b9b051490631508b6fb780c22173418cf53f228a727c4c04548ad6edf",
+      "hunks": [
+        {
+          "before": "                if (!svl.level.flags.noteleport)\n                    (void) mksobj_at(SCR_TELEPORTATION, xx, yy + dy, TRUE,\n                                     FALSE);\n                if (!rn2(3))\n                    (void) enhancement_mkobj_at(RANDOM_CLASS, xx, yy + dy, TRUE);\n            }\n        }\n        if (In_mithardir_catacombs(&u.uz)) {\n            if (!rn2(2))\n",
+          "after": "                if (!svl.level.flags.noteleport)\n                    (void) mksobj_at(SCR_TELEPORTATION, xx, yy + dy, TRUE,\n                                     FALSE);\n                if (!rn2(3))\n                    (void) ordinary_loot_at(RANDOM_CLASS, xx, yy + dy, TRUE);\n            }\n        }\n        if (In_mithardir_catacombs(&u.uz)) {\n            if (!rn2(2))\n"
+        },
+        {
+          "before": "    }\n\n skip_nonrogue:\n    if (!rn2(3) && somexyspace(croom, &pos)) {\n        (void) enhancement_mkobj_at(RANDOM_CLASS, pos.x, pos.y, TRUE);\n        trycnt = 0;\n        while (!rn2(5)) {\n            if (++trycnt > 100) {\n                impossible(\"trycnt overflow4\");\n                break;\n            }\n            if (somexyspace(croom, &pos)) {\n                (void) enhancement_mkobj_at(RANDOM_CLASS, pos.x, pos.y, TRUE);\n            }\n        }\n    }\n}\n",
+          "after": "    }\n\n skip_nonrogue:\n    if (!rn2(3) && somexyspace(croom, &pos)) {\n        (void) ordinary_loot_at(RANDOM_CLASS, pos.x, pos.y, TRUE);\n        trycnt = 0;\n        while (!rn2(5)) {\n            if (++trycnt > 100) {\n                impossible(\"trycnt overflow4\");\n                break;\n            }\n            if (somexyspace(croom, &pos)) {\n                (void) ordinary_loot_at(RANDOM_CLASS, pos.x, pos.y, TRUE);\n            }\n        }\n    }\n}\n"
+        }
+      ]
+    },
+    "src/mkmaze.c": {
+      "baseline_sha256": "860366f8c2233f29c0e408945a9b037916b0fb9fff16b768f9a630820970f3e9",
+      "hunks": [
+        {
+          "before": "    coord mm;\n\n    for (i = rn1(8, 11); i; i--) {\n        mazexy(&mm);\n        (void) enhancement_mkobj_at(rn2(2) ? GEM_CLASS : RANDOM_CLASS, mm.x, mm.y, TRUE);\n    }\n    for (i = rn1(10, 2); i; i--) {\n        mazexy(&mm);\n        (void) mksobj_at(BOULDER, mm.x, mm.y, TRUE, FALSE);\n",
+          "after": "    coord mm;\n\n    for (i = rn1(8, 11); i; i--) {\n        mazexy(&mm);\n        (void) ordinary_loot_at(rn2(2) ? GEM_CLASS : RANDOM_CLASS, mm.x, mm.y, TRUE);\n    }\n    for (i = rn1(10, 2); i; i--) {\n        mazexy(&mm);\n        (void) mksobj_at(BOULDER, mm.x, mm.y, TRUE, FALSE);\n"
+        }
+      ]
+    },
+    "src/mkobj.c": {
+      "baseline_sha256": "a6d4cc46045b849d62a680b376781c02e938d55a6d431af4e0186e56ec87c4f0",
+      "hunks": [
+        {
+          "before": "        } else {\n            int tprob;\n            const struct icp *iprobs = boxiprobs;\n\n            for (tprob = rnd(100); (tprob -= iprobs->iprob) > 0; iprobs++)\n                ;\n            if (!(otmp = mkobj(iprobs->iclass, FALSE)))\n                continue;\n\n            /* handle a couple of special cases */\n            if (otmp->oclass == COIN_CLASS) {\n                /* 2.5 x level's usual amount; weight adjusted below */\n",
+          "after": "        } else {\n            int tprob;\n            const struct icp *iprobs = boxiprobs;\n\n            if (essence_loot_context() && !rn2(100)) {\n                otmp = essence_random();\n            } else {\n                for (tprob = rnd(100); (tprob -= iprobs->iprob) > 0; iprobs++) ;\n                if (!(otmp = mkobj(iprobs->iclass, FALSE))) continue;\n            }\n\n            /* handle a couple of special cases */\n            if (otmp->oclass == COIN_CLASS) {\n                /* 2.5 x level's usual amount; weight adjusted below */\n"
+        },
+        {
+          "before": "splitobj(struct obj *obj, long num)\n{\n    struct obj *otmp;\n\n    /* can't split containers */\n    if (obj->cobj || num <= 0L || obj->quan <= num)\n        panic(\"splitobj [cobj=%s num=%ld quan=%ld]\",\n              obj->cobj ? \"non-empty container\" : \"(null)\", num, obj->quan);\n",
+          "after": "splitobj(struct obj *obj, long num)\n{\n    struct obj *otmp;\n\n    if (enhancement_slot_count(obj) || socket_count(obj))\n        panic(\"splitobj: corrupt enhanced stack\");\n    /* can't split containers */\n    if (obj->cobj || num <= 0L || obj->quan <= num)\n        panic(\"splitobj [cobj=%s num=%ld quan=%ld]\",\n              obj->cobj ? \"non-empty container\" : \"(null)\", num, obj->quan);\n"
+        },
+        {
+          "before": "   picks up or uses it); moved from invent.c to here for access to dknowns */\nvoid\nunknow_object(struct obj *obj)\n{\n    obj->o_sockets[0].known = obj->o_sockets[1].known = 0;\n    clear_dknown(obj); /* obj->dknown = 0; */\n\n    obj->bknown = obj->rknown = 0;\n",
+          "after": "   picks up or uses it); moved from invent.c to here for access to dknowns */\nvoid\nunknow_object(struct obj *obj)\n{\n    if (obj->otyp == GENERIC_ESSENCE) { essence_normalize(obj); return; }\n    obj->o_enh_flags &= ~OEF_AFFIXES_KNOWN;\n    obj->o_sockets[0].known = obj->o_sockets[1].known = 0;\n    clear_dknown(obj); /* obj->dknown = 0; */\n\n    obj->bknown = obj->rknown = 0;\n"
+        },
+        {
+          "before": "        otmp = mk_artifact(otmp, (aligntyp) A_NONE, 99, FALSE);\n    }\n    otmp->owt = weight(otmp);\n    enhancement_created(otmp);\n    return otmp;\n}\n\n/* potential mimic shapes that should be undone by stone-to-flesh;\n",
+          "after": "        otmp = mk_artifact(otmp, (aligntyp) A_NONE, 99, FALSE);\n    }\n    otmp->owt = weight(otmp);\n    enhancement_created(otmp);\n    essence_normalize(otmp);\n    return otmp;\n}\n\n/* potential mimic shapes that should be undone by stone-to-flesh;\n"
+        },
+        {
+          "before": "bless(struct obj *otmp)\n{\n    int old_light = 0;\n\n    if (otmp->oclass == COIN_CLASS)\n        return;\n    if (otmp->lamplit)\n        old_light = arti_light_radius(otmp);\n",
+          "after": "bless(struct obj *otmp)\n{\n    int old_light = 0;\n\n    if (otmp->otyp == GENERIC_ESSENCE) { essence_normalize(otmp); return; }\n    if (otmp->oclass == COIN_CLASS)\n        return;\n    if (otmp->lamplit)\n        old_light = arti_light_radius(otmp);\n"
+        },
+        {
+          "before": "unbless(struct obj *otmp)\n{\n    int old_light = 0;\n\n    if (otmp->lamplit)\n        old_light = arti_light_radius(otmp);\n    otmp->blessed = 0;\n    utility_discernment_refresh();\n",
+          "after": "unbless(struct obj *otmp)\n{\n    int old_light = 0;\n\n    if (otmp->otyp == GENERIC_ESSENCE) { essence_normalize(otmp); return; }\n    if (otmp->lamplit)\n        old_light = arti_light_radius(otmp);\n    otmp->blessed = 0;\n    utility_discernment_refresh();\n"
+        },
+        {
+          "before": "{\n    unsigned already_cursed;\n    int old_light = 0;\n\n    if (otmp->oclass == COIN_CLASS)\n        return;\n    if (otmp->lamplit)\n        old_light = arti_light_radius(otmp);\n",
+          "after": "{\n    unsigned already_cursed;\n    int old_light = 0;\n\n    if (otmp->otyp == GENERIC_ESSENCE) { essence_normalize(otmp); return; }\n    if (otmp->oclass == COIN_CLASS)\n        return;\n    if (otmp->lamplit)\n        old_light = arti_light_radius(otmp);\n"
+        },
+        {
+          "before": "    int old_light = 0;\n\n    if (otmp->lamplit)\n        old_light = arti_light_radius(otmp);\n    otmp->cursed = 0;\n    utility_discernment_refresh();\n    if (carried(otmp) && confers_luck(otmp))\n        set_moreluck();\n",
+          "after": "    int old_light = 0;\n\n    if (otmp->lamplit)\n        old_light = arti_light_radius(otmp);\n    if (otmp->otyp == GENERIC_ESSENCE) { essence_normalize(otmp); return; }\n    otmp->cursed = 0;\n    utility_discernment_refresh();\n    if (carried(otmp) && confers_luck(otmp))\n        set_moreluck();\n"
+        },
+        {
+          "before": "int\nweight(struct obj *obj)\n{\n    int wt = (int) objects[obj->otyp].oc_weight; /* weight of 1 'otyp' */\n\n    if (obj->obranch_material) {\n        /* Pinned donor densities in local material order (SHELL appended). */\n        static const int density[] = {\n",
+          "after": "int\nweight(struct obj *obj)\n{\n    int wt = (int) objects[obj->otyp].oc_weight; /* weight of 1 'otyp' */\n    if (obj->otyp == GENERIC_ESSENCE) {\n        essence_normalize(obj);\n        return (int) min(obj->quan, LARGEST_INT);\n    }\n\n    if (obj->obranch_material) {\n        /* Pinned donor densities in local material order (SHELL appended). */\n        static const int density[] = {\n"
+        }
+      ]
+    },
+    "src/mplayer.c": {
+      "baseline_sha256": "7e5b07bea0289f966589f57fd417508f650d4be070a653ddc9f0061c0c1a49a1",
+      "hunks": [
+        {
+          "before": "            /* usually increase stack size if stackable weapon */\n            if (objects[otmp->otyp].oc_merge && !otmp->oartifact\n                && monmightthrowwep(otmp))\n                otmp->quan += (long) rn2(is_spear(otmp) ? 4 : 8);\n            otmp->owt = weight(otmp);\n            /* mplayers knew better than to overenchant Magicbane */\n            if (is_art(otmp, ART_MAGICBANE))\n                otmp->spe = rnd(4);\n",
+          "after": "            /* usually increase stack size if stackable weapon */\n            if (objects[otmp->otyp].oc_merge && !otmp->oartifact\n                && monmightthrowwep(otmp))\n                otmp->quan += (long) rn2(is_spear(otmp) ? 4 : 8);\n            enhancement_finalize_stack(otmp);\n            otmp->owt = weight(otmp);\n            /* mplayers knew better than to overenchant Magicbane */\n            if (is_art(otmp, ART_MAGICBANE))\n                otmp->spe = rnd(4);\n"
+        }
+      ]
+    },
+    "src/objects.c": {
+      "baseline_sha256": "81cf6e70d2b77497a315bf626ae66df49cdf8f048feed473d86930b6b70d3638",
+      "hunks": [
+        {
+          "before": "    case ARCHAIC_HELM: case ARCHAIC_PLATE_MAIL: case HIGH_ELVEN_PLATE:\n    case BUCKLER: case ARCHAIC_GAUNTLETS: case HIGH_ELVEN_GAUNTLETS:\n    case ARCHAIC_BOOTS: case GENTLEMAN_S_SUIT: case GENTLEWOMAN_S_DRESS:\n    case JACKET: case STILETTOS: case VICTORIAN_UNDERWEAR: case BLACK_DRESS:\n    case IRON_SAFE: case MAGIC_CANDLE: case CRYSTAL_PICK: case LIVING_MASK:\n    case MASK: case SYLLABLE_OF_STRENGTH__AESH: case SYLLABLE_OF_POWER__KRAU:\n    case SYLLABLE_OF_LIFE__HOON: case SYLLABLE_OF_GRACE__UUR:\n    case SYLLABLE_OF_THOUGHT__NAEN: case SYLLABLE_OF_SPIRIT__VAUL:\n",
+          "after": "    case ARCHAIC_HELM: case ARCHAIC_PLATE_MAIL: case HIGH_ELVEN_PLATE:\n    case BUCKLER: case ARCHAIC_GAUNTLETS: case HIGH_ELVEN_GAUNTLETS:\n    case ARCHAIC_BOOTS: case GENTLEMAN_S_SUIT: case GENTLEWOMAN_S_DRESS:\n    case JACKET: case STILETTOS: case VICTORIAN_UNDERWEAR: case BLACK_DRESS:\n    case GENERIC_ESSENCE:\n    case IRON_SAFE: case MAGIC_CANDLE: case CRYSTAL_PICK: case LIVING_MASK:\n    case MASK: case SYLLABLE_OF_STRENGTH__AESH: case SYLLABLE_OF_POWER__KRAU:\n    case SYLLABLE_OF_LIFE__HOON: case SYLLABLE_OF_GRACE__UUR:\n    case SYLLABLE_OF_THOUGHT__NAEN: case SYLLABLE_OF_SPIRIT__VAUL:\n"
+        }
+      ]
+    },
+    "src/objnam.c": {
+      "baseline_sha256": "f7e88ca1cfc2155f1804f195dfdfd79105d3d1b8af51bd1cbcfabeddbdd033b9",
+      "hunks": [
+        {
+          "before": "        if (bpspaceleft < 6) {\n            bp_end[-6] = '\\0';\n            ConcUpdate(bp);\n        }\n        ConcatF2(bp, 0, \" [%d/%u]\", socket_count(obj), obj->o_socket_capacity);\n    }\n\n    if (iflags.override_ID) {\n        known = dknown = cknown = bknown = lknown = TRUE;\n",
+          "after": "        if (bpspaceleft < 6) {\n            bp_end[-6] = '\\0';\n            ConcUpdate(bp);\n        }\n        int slot, known = 0;\n        for (slot = 0; slot < min(obj->o_socket_capacity, 2); ++slot)\n            known += !!obj->o_sockets[slot].known;\n        if (known == obj->o_socket_capacity)\n            ConcatF2(bp, 0, \" [%d/%u]\", socket_count(obj), obj->o_socket_capacity);\n        else\n            ConcatF1(bp, 0, \" [?/%u]\", obj->o_socket_capacity);\n    }\n\n    if (iflags.override_ID) {\n        known = dknown = cknown = bknown = lknown = TRUE;\n"
+        },
+        {
+          "before": "        || (!otmp->lknown && Is_box(otmp)))\n        return TRUE;\n    if (otmp->oartifact && undiscovered_artifact(otmp->oartifact))\n        return TRUE;\n    if ((otmp->o_sockets[0].property && !otmp->o_sockets[0].known)\n        || (otmp->o_sockets[1].property && !otmp->o_sockets[1].known))\n        return FALSE;\n    if (enhancement_eligible(otmp)\n        && ((otmp->o_enh_props & ~otmp->o_enh_known)\n            || (otmp->o_enh_props2 & ~otmp->o_enh_known2)\n            || (otmp->o_enh_quality && !(otmp->o_enh_flags & OEF_QUALITY_KNOWN))))\n        return TRUE;\n    /* otmp->rknown is the only item of interest if we reach here */\n",
+          "after": "        || (!otmp->lknown && Is_box(otmp)))\n        return TRUE;\n    if (otmp->oartifact && undiscovered_artifact(otmp->oartifact))\n        return TRUE;\n    if ((otmp->o_socket_capacity > 0 && !otmp->o_sockets[0].known)\n        || (otmp->o_socket_capacity > 1 && !otmp->o_sockets[1].known))\n        return TRUE;\n    if (enhancement_eligible(otmp)\n        && (!(otmp->o_enh_flags & OEF_AFFIXES_KNOWN)\n            || (otmp->o_enh_props & ~otmp->o_enh_known)\n            || (otmp->o_enh_props2 & ~otmp->o_enh_known2)\n            || (otmp->o_enh_quality && !(otmp->o_enh_flags & OEF_QUALITY_KNOWN))))\n        return TRUE;\n    /* otmp->rknown is the only item of interest if we reach here */\n"
+        },
+        {
+          "before": "    /* makesingular() leaves these plural due to how they're used */\n    \"boots\",   \"shoes\",     \"gloves\",    \"lenses\",   \"scales\",\n    \"eyes\",    \"gauntlets\", \"iron bars\",\n    /* both singular and plural are spelled the same */\n    \"bison\",   \"deer\",      \"elk\",       \"fish\",      \"fowl\",\n    \"tuna\",    \"yaki\",      \"-hai\",      \"krill\",     \"manes\",\n    \"moose\",   \"ninja\",     \"sheep\",     \"ronin\",     \"roshi\",\n    \"shito\",   \"tengu\",     \"ki-rin\",    \"Nazgul\",    \"gunyoki\",\n    \"piranha\", \"samurai\",   \"shuriken\",  \"haggis\",    \"Bordeaux\",\n",
+          "after": "    /* makesingular() leaves these plural due to how they're used */\n    \"boots\",   \"shoes\",     \"gloves\",    \"lenses\",   \"scales\",\n    \"eyes\",    \"gauntlets\", \"iron bars\",\n    /* both singular and plural are spelled the same */\n    \"Essence\", \"bison\",   \"deer\",      \"elk\",       \"fish\",      \"fowl\",\n    \"tuna\",    \"yaki\",      \"-hai\",      \"krill\",     \"manes\",\n    \"moose\",   \"ninja\",     \"sheep\",     \"ronin\",     \"roshi\",\n    \"shito\",   \"tengu\",     \"ki-rin\",    \"Nazgul\",    \"gunyoki\",\n    \"piranha\", \"samurai\",   \"shuriken\",  \"haggis\",    \"Bordeaux\",\n"
+        },
+        {
+          "before": "            d.otmp->owt *= (unsigned) d.cnt;\n        }\n        /* note: the owt assignment below will not change glob's weight */\n        d.cnt = 0;\n    } else if (d.cnt > 0) {\n        if (objects[d.typ].oc_merge\n            && (wizard /* quantity isn't restricted when debugging */\n                /* note: in normal play, explicitly asking for 1 might\n",
+          "after": "            d.otmp->owt *= (unsigned) d.cnt;\n        }\n        /* note: the owt assignment below will not change glob's weight */\n        d.cnt = 0;\n    } else if (d.typ == GENERIC_ESSENCE) {\n        d.otmp->quan = essence_wish_quantity(d.cnt);\n    } else if (d.cnt > 0) {\n        if (objects[d.typ].oc_merge\n            && (wizard /* quantity isn't restricted when debugging */\n                /* note: in normal play, explicitly asking for 1 might\n"
+        },
+        {
+          "before": "            d.otmp->oeaten = nut;\n            consume_oeaten(d.otmp, 1);\n        }\n    }\n    d.otmp->owt = weight(d.otmp);\n    if (d.very && d.otmp->otyp == HEAVY_IRON_BALL)\n        d.otmp->owt += WT_IRON_BALL_INCR;\n\n",
+          "after": "            d.otmp->oeaten = nut;\n            consume_oeaten(d.otmp, 1);\n        }\n    }\n    essence_normalize(d.otmp);\n    d.otmp->owt = weight(d.otmp);\n    if (d.very && d.otmp->otyp == HEAVY_IRON_BALL)\n        d.otmp->owt += WT_IRON_BALL_INCR;\n\n"
+        }
+      ]
+    },
+    "src/restore.c": {
+      "baseline_sha256": "9da48ac11673f90affb54c216f7ddd8c08dd20bd23694ef5d818b43b1031d64b",
+      "hunks": [
+        {
+          "before": "    int buflen = 0;\n    unsigned omid = 0;\n\n    Sfi_obj(nhfp, otmp, \"obj\");\n    socket_normalize(otmp);\n    if (nhfp->ftype == NHF_BONESFILE)\n        otmp->o_purification_sampled = 0L;\n    else\n        utility_purification_restore(otmp);\n    if (nhfp->ftype == NHF_BONESFILE) otmp->o_stoning_turn = -1L;\n    otmp->lua_ref_cnt = 0;\n    /* next object pointers are invalid; otmp->cobj needs to be left\n       as is--being non-null is key to restoring container contents */\n    otmp->nobj = otmp->nexthere = (struct obj *) 0;\n",
+          "after": "    int buflen = 0;\n    unsigned omid = 0;\n\n    Sfi_obj(nhfp, otmp, \"obj\");\n    if (!enhancement_slots_valid(otmp))\n        panic(\"Corrupt Phase 1 affix state in saved object\");\n    essence_normalize(otmp);\n    socket_normalize(otmp);\n    if (nhfp->ftype == NHF_BONESFILE)\n        otmp->o_purification_sampled = 0L;\n    else\n        utility_purification_restore(otmp);\n    if (nhfp->ftype == NHF_BONESFILE && (otmp->o_enh_props & OEP_STONING))\n        otmp->o_stoning_turn = -1L;\n    otmp->lua_ref_cnt = 0;\n    /* next object pointers are invalid; otmp->cobj needs to be left\n       as is--being non-null is key to restoring container contents */\n    otmp->nobj = otmp->nexthere = (struct obj *) 0;\n"
+        },
+        {
+          "before": "    }\n#endif  /* SFCTOOL */\n    newgamecontext = svc.context; /* copy statically init'd context */\n    Sfi_context_info(nhfp, &svc.context, \"gamestate-context\");\n    relative_time_to_moves(&svc.context.seer_turn);\n    relative_time_to_moves(&svc.context.digging.lastdigtime);\n    svc.context.warntype.species = (ismnum(svc.context.warntype.speciesidx))\n                                  ? &mons[svc.context.warntype.speciesidx]\n",
+          "after": "    }\n#endif  /* SFCTOOL */\n    newgamecontext = svc.context; /* copy statically init'd context */\n    Sfi_context_info(nhfp, &svc.context, \"gamestate-context\");\n    {\n        int id;\n        for (id = 0; id < EP_COUNT; ++id) {\n            const struct enhancement_entry *entry = equipment_property(id);\n            if (svc.context.affix_essence[id]\n                && (!entry || !(entry->bit || entry->bit2)))\n                panic(\"Corrupt Affix Essence ledger\");\n        }\n    }\n    relative_time_to_moves(&svc.context.seer_turn);\n    relative_time_to_moves(&svc.context.digging.lastdigtime);\n    svc.context.warntype.species = (ismnum(svc.context.warntype.speciesidx))\n                                  ? &mons[svc.context.warntype.speciesidx]\n"
+        }
+      ]
+    },
+    "src/shk.c": {
+      "baseline_sha256": "d23067724fca5305cdd2e4fe1dc10b52e416f2ae50d41aba35a1f052b21b5023",
+      "hunks": [
+        {
+          "before": "         /* used to perform a single calculation even when multiple\n            adjustments (unID'd, dunce/tourist, charisma) are made */\n        multiplier = 1L, divisor = 1L;\n\n    if (!tmp)\n        tmp = 5L;\n    /* shopkeeper may notice if the player isn't very knowledgeable -\n       especially when gem prices are concerned */\n",
+          "after": "         /* used to perform a single calculation even when multiple\n            adjustments (unID'd, dunce/tourist, charisma) are made */\n        multiplier = 1L, divisor = 1L;\n\n    if (obj->otyp == GENERIC_ESSENCE) return 0L;\n    if (!tmp)\n        tmp = 5L;\n    /* shopkeeper may notice if the player isn't very knowledgeable -\n       especially when gem prices are concerned */\n"
+        },
+        {
+          "before": "    boolean reset_nocharge)\n{\n    struct monst *shkp = *shkpp;\n\n    /* if caller hasn't supplied a shopkeeper, look one up now */\n    if (!shkp) {\n        if (!roomno)\n            return FALSE;\n",
+          "after": "    boolean reset_nocharge)\n{\n    struct monst *shkp = *shkpp;\n\n    if (obj->otyp == GENERIC_ESSENCE) return FALSE;\n    /* if caller hasn't supplied a shopkeeper, look one up now */\n    if (!shkp) {\n        if (!roomno)\n            return FALSE;\n"
+        }
+      ]
+    },
+    "src/shknam.c": {
+      "baseline_sha256": "246f3395d28e871a06a656f7ae352f95eb9da0c0fa524c98dc07d25e69a4f961",
+      "hunks": [
+        {
+          "before": "{\n    int i, shp_indx = ESHK(shkp)->shoptype - SHOPBASE;\n    const struct shclass *shp = &shtypes[shp_indx];\n\n    if (shp->symb == RANDOM_CLASS)\n        return TRUE;\n    for (i = 0; i < SIZE(shtypes[0].iprobs) && shp->iprobs[i].iprob; i++) {\n        /* pseudo-class needs special handling */\n",
+          "after": "{\n    int i, shp_indx = ESHK(shkp)->shoptype - SHOPBASE;\n    const struct shclass *shp = &shtypes[shp_indx];\n\n    if (obj->otyp == GENERIC_ESSENCE) return FALSE;\n    if (shp->symb == RANDOM_CLASS)\n        return TRUE;\n    for (i = 0; i < SIZE(shtypes[0].iprobs) && shp->iprobs[i].iprob; i++) {\n        /* pseudo-class needs special handling */\n"
+        }
+      ]
+    },
+    "src/sp_lev.c": {
+      "baseline_sha256": "98896616701e61b8b1603fa25d833c5e24c035243aa1a976f4bd3b2c79eb4200",
+      "hunks": [
+        {
+          "before": "    otmp->greased = o->greased ? 1 : 0;\n\n    if (o->quan > 0 && objects[otmp->otyp].oc_merge) {\n        otmp->quan = o->quan;\n        otmp->owt = weight(otmp);\n    }\n    if (otmp->obranch_material || otmp->obranch_size)\n        otmp->owt = weight(otmp);\n",
+          "after": "    otmp->greased = o->greased ? 1 : 0;\n\n    if (o->quan > 0 && objects[otmp->otyp].oc_merge) {\n        otmp->quan = o->quan;\n        enhancement_finalize_stack(otmp);\n        otmp->owt = weight(otmp);\n    }\n    if (otmp->obranch_material || otmp->obranch_size)\n        otmp->owt = weight(otmp);\n"
+        }
+      ]
+    },
+    "src/u_init.c": {
+      "baseline_sha256": "53bcc5e0e48b255aa7bdb0c11061a2f5a76de215aa455164cfead4adc4357144",
+      "hunks": [
+        {
+          "before": "        if (trop->trbless != UNDEF_BLESS)\n            obj->blessed = trop->trbless;\n\n    }\n    /* defined after setting otyp+quan + blessedness */\n    obj->owt = weight(obj);\n    return stop;\n}\n",
+          "after": "        if (trop->trbless != UNDEF_BLESS)\n            obj->blessed = trop->trbless;\n\n    }\n    /* Starting equipment is explicitly identified, including known absence. */\n    enhancement_finalize_stack(obj);\n    enhancement_identify(obj);\n    /* defined after setting otyp+quan + blessedness */\n    obj->owt = weight(obj);\n    return stop;\n}\n"
+        }
+      ]
+    },
+    "src/zap.c": {
+      "baseline_sha256": "ae8be740626b7b917ecf438cceb2221bd9922e66c0f8a47abc521cdab4f7bdad",
+      "hunks": [
+        {
+          "before": "        otmp->o_stoning_remaining = obj->o_stoning_remaining;\n        otmp->o_stoning_turn = obj->o_stoning_turn;\n        otmp->o_purification_remaining = obj->o_purification_remaining;\n        otmp->o_purification_sampled = obj->o_purification_sampled;\n        otmp->o_enh_props2 = obj->o_enh_props2;\n        otmp->o_enh_known2 = obj->o_enh_known2;\n        otmp->o_enh_props = obj->o_enh_props;\n        otmp->o_enh_known = obj->o_enh_known;\n",
+          "after": "        otmp->o_stoning_remaining = obj->o_stoning_remaining;\n        otmp->o_stoning_turn = obj->o_stoning_turn;\n        otmp->o_purification_remaining = obj->o_purification_remaining;\n        otmp->o_purification_sampled = obj->o_purification_sampled;\n        memcpy(otmp->o_affixes, obj->o_affixes, sizeof otmp->o_affixes);\n        otmp->o_enh_props2 = obj->o_enh_props2;\n        otmp->o_enh_known2 = obj->o_enh_known2;\n        otmp->o_enh_props = obj->o_enh_props;\n        otmp->o_enh_known = obj->o_enh_known;\n"
+        }
+      ]
+    },
+    "win/share/objects.txt": {
+      "baseline_sha256": "db1447b53ab0660992d809e7c262be592ed75d8b838a15109f9a41f760280347",
+      "hunks": [
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 309 (tripe ration)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 309 (Essence)\n{\n  ................\n  ................\n  .......P........\n  ......PPP.......\n  .....PPPPP......\n  ....PPPPPPP.....\n  ...PPPPPPPPP....\n  ....PPPPPPP.....\n  .....PPPPP......\n  ......PPP.......\n  .......P........\n  ......AAA.......\n  ................\n  ................\n  ................\n  ................\n}\n# tile 310 (tripe ration)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ......AAAAA.....\n  ................\n  ................\n}\n# tile 310 (corpse)\n{\n  ................\n  .....D.DPLN.....\n  ...NO.DDLNOA....\n",
+          "after": "  ......AAAAA.....\n  ................\n  ................\n}\n# tile 311 (corpse)\n{\n  ................\n  .....D.DPLN.....\n  ...NO.DDLNOA....\n"
+        },
+        {
+          "before": "  ....AA.....AA...\n  ................\n  ................\n}\n# tile 311 (egg)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....AA.....AA...\n  ................\n  ................\n}\n# tile 312 (egg)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 312 (meatball)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 313 (meatball)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 313 (meat stick)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 314 (meat stick)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 314 (enormous meatball)\n{\n  ................\n  ................\n  .....KDKK.......\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 315 (enormous meatball)\n{\n  ................\n  ................\n  .....KDKK.......\n"
+        },
+        {
+          "before": "  KKKKKKKKKJJJAJA.\n  ................\n  ................\n}\n# tile 315 (meat ring)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  KKKKKKKKKJJJAJA.\n  ................\n  ................\n}\n# tile 316 (meat ring)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .....OOOOOAA....\n  ......AAAAA.....\n  ................\n}\n# tile 316 (glob of gray ooze)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .....OOOOOAA....\n  ......AAAAA.....\n  ................\n}\n# tile 317 (glob of gray ooze)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ..PPPPA.P.PPA...\n  ...AAA.AAAAA....\n  ................\n}\n# tile 317 (glob of brown pudding)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ..PPPPA.P.PPA...\n  ...AAA.AAAAA....\n  ................\n}\n# tile 318 (glob of brown pudding)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ..JJJJA.J.JJA...\n  ...AAA.AAAAA....\n  ................\n}\n# tile 318 (glob of green slime)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ..JJJJA.J.JJA...\n  ...AAA.AAAAA....\n  ................\n}\n# tile 319 (glob of green slime)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ..FFFFA.F.FFA...\n  ...AAA.AAAAA....\n  ................\n}\n# tile 319 (glob of black pudding)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ..FFFFA.F.FFA...\n  ...AAA.AAAAA....\n  ................\n}\n# tile 320 (glob of black pudding)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ..AAAAA.A.AAA...\n  ...AAA.AAAAA....\n  ................\n}\n# tile 320 (kelp frond)\n{\n  ....FA..........\n  ....FFA.........\n  .....FFA........\n",
+          "after": "  ..AAAAA.A.AAA...\n  ...AAA.AAAAA....\n  ................\n}\n# tile 321 (kelp frond)\n{\n  ....FA..........\n  ....FFA.........\n  .....FFA........\n"
+        },
+        {
+          "before": "  .....FFFA.......\n  .....FFFFA......\n  ......FFFFA.....\n}\n# tile 321 (eucalyptus leaf)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .....FFFA.......\n  .....FFFFA......\n  ......FFFFA.....\n}\n# tile 322 (eucalyptus leaf)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ...OA...........\n  ................\n  ................\n}\n# tile 322 (apple)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ...OA...........\n  ................\n  ................\n}\n# tile 323 (apple)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 323 (orange)\n{\n  ................\n  ................\n  ....FFF.........\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 324 (orange)\n{\n  ................\n  ................\n  ....FFF.........\n"
+        },
+        {
+          "before": "  .......AAAA.....\n  ................\n  ................\n}\n# tile 324 (pear)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .......AAAA.....\n  ................\n  ................\n}\n# tile 325 (pear)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .....AAAAA......\n  ................\n  ................\n}\n# tile 325 (melon)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .....AAAAA......\n  ................\n  ................\n}\n# tile 326 (melon)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .....FFFAAA.....\n  ......AAA.......\n  ................\n}\n# tile 326 (banana)\n{\n  ................\n  ................\n  ............J...\n",
+          "after": "  .....FFFAAA.....\n  ......AAA.......\n  ................\n}\n# tile 327 (banana)\n{\n  ................\n  ................\n  ............J...\n"
+        },
+        {
+          "before": "  ....HHHHJAAA....\n  .....AAAAA......\n  ................\n}\n# tile 327 (carrot)\n{\n  ................\n  ..........F..F..\n  ..........GFGAA.\n",
+          "after": "  ....HHHHJAAA....\n  .....AAAAA......\n  ................\n}\n# tile 328 (carrot)\n{\n  ................\n  ..........F..F..\n  ..........GFGAA.\n"
+        },
+        {
+          "before": "  ..CAA...........\n  ...A............\n  ................\n}\n# tile 328 (sprig of wolfsbane)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ..CAA...........\n  ...A............\n  ................\n}\n# tile 329 (sprig of wolfsbane)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 329 (clove of garlic)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 330 (clove of garlic)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 330 (slime mold)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 331 (slime mold)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .....AAAAA......\n  ................\n  ................\n}\n# tile 331 (lump of royal jelly)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .....AAAAA......\n  ................\n  ................\n}\n# tile 332 (lump of royal jelly)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ......AAAAA.....\n  ................\n  ................\n}\n# tile 332 (cream pie)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ......AAAAA.....\n  ................\n  ................\n}\n# tile 333 (cream pie)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 333 (candy bar)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 334 (candy bar)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ...IAA..........\n  ....A...........\n  ................\n}\n# tile 334 (fortune cookie)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ...IAA..........\n  ....A...........\n  ................\n}\n# tile 335 (fortune cookie)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .....AAAA.......\n  ................\n  ................\n}\n# tile 335 (pancake)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .....AAAA.......\n  ................\n  ................\n}\n# tile 336 (pancake)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .....AAAAAAA....\n  ................\n  ................\n}\n# tile 336 (lembas wafer)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .....AAAAAAA....\n  ................\n  ................\n}\n# tile 337 (lembas wafer)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .........A......\n  ................\n  ................\n}\n# tile 337 (cram ration)\n{\n  ................\n  ...JKA..........\n  ...PBA..........\n",
+          "after": "  .........A......\n  ................\n  ................\n}\n# tile 338 (cram ration)\n{\n  ................\n  ...JKA..........\n  ...PBA..........\n"
+        },
+        {
+          "before": "  ....KKKKKKKA....\n  .....AAAAAA.....\n  ................\n}\n# tile 338 (food ration)\n{\n  ...JJA..........\n  ...BPA..........\n  ...BPA..........\n",
+          "after": "  ....KKKKKKKA....\n  .....AAAAAA.....\n  ................\n}\n# tile 339 (food ration)\n{\n  ...JJA..........\n  ...BPA..........\n  ...BPA..........\n"
+        },
+        {
+          "before": "  ....KLOLLLLOKAA.\n  ....KKKKKKKKKA..\n  .....AAAAAAAA...\n}\n# tile 339 (K-ration)\n{\n  ................\n  ................\n  ...JJA..........\n",
+          "after": "  ....KLOLLLLOKAA.\n  ....KKKKKKKKKA..\n  .....AAAAAAAA...\n}\n# tile 340 (K-ration)\n{\n  ................\n  ................\n  ...JJA..........\n"
+        },
+        {
+          "before": "  ....KLLLLLLOKAA.\n  ....KKKKKKKKKA..\n  .....AAAAAAAA...\n}\n# tile 340 (C-ration)\n{\n  ................\n  ................\n  ...JJA..........\n",
+          "after": "  ....KLLLLLLOKAA.\n  ....KKKKKKKKKA..\n  .....AAAAAAAA...\n}\n# tile 341 (C-ration)\n{\n  ................\n  ................\n  ...JJA..........\n"
+        },
+        {
+          "before": "  ....KLOLLLLOKAA.\n  ....KKKKKKKKKA..\n  .....AAAAAAAA...\n}\n# tile 341 (tin)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....KLOLLLLOKAA.\n  ....KKKKKKKKKA..\n  .....AAAAAAAA...\n}\n# tile 342 (tin)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ......AAA.......\n  ................\n  ................\n}\n# tile 342 (ruby / gain ability)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ......AAA.......\n  ................\n  ................\n}\n# tile 343 (ruby / gain ability)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 343 (pink / restore ability)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 344 (pink / restore ability)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 344 (orange / confusion)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 345 (orange / confusion)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 345 (yellow / blindness)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 346 (yellow / blindness)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 346 (emerald / paralysis)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 347 (emerald / paralysis)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 347 (dark green / speed)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 348 (dark green / speed)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 348 (cyan / levitation)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 349 (cyan / levitation)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 349 (sky blue / hallucination)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 350 (sky blue / hallucination)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 350 (brilliant blue / invisibility)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 351 (brilliant blue / invisibility)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 351 (magenta / see invisible)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 352 (magenta / see invisible)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 352 (purple-red / healing)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 353 (purple-red / healing)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 353 (puce / extra healing)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 354 (puce / extra healing)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 354 (milky / gain level)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 355 (milky / gain level)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 355 (swirly / enlightenment)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 356 (swirly / enlightenment)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 356 (bubbly / monster detection)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 357 (bubbly / monster detection)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 357 (smoky / object detection)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 358 (smoky / object detection)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 358 (cloudy / gain energy)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 359 (cloudy / gain energy)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 359 (effervescent / sleeping)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 360 (effervescent / sleeping)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 360 (black / full healing)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 361 (black / full healing)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 361 (golden / polymorph)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 362 (golden / polymorph)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 362 (brown / booze)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 363 (brown / booze)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 363 (fizzy / sickness)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 364 (fizzy / sickness)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 364 (dark / fruit juice)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 365 (dark / fruit juice)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 365 (white / acid)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 366 (white / acid)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 366 (murky / oil)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 367 (murky / oil)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 367 (clear / water)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 368 (clear / water)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 368 (ZELGO MER / enchant armor)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 369 (ZELGO MER / enchant armor)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 369 (JUYED AWK YACC / destroy armor)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 370 (JUYED AWK YACC / destroy armor)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 370 (NR 9 / confuse monster)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 371 (NR 9 / confuse monster)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 371 (XIXAXA XOXAXA XUXAXA / scare monster)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 372 (XIXAXA XOXAXA XUXAXA / scare monster)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 372 (PRATYAVAYAH / remove curse)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 373 (PRATYAVAYAH / remove curse)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 373 (DAIYEN FOOELS / enchant weapon)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 374 (DAIYEN FOOELS / enchant weapon)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 374 (LEP GEX VEN ZEA / create monster)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 375 (LEP GEX VEN ZEA / create monster)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 375 (PRIRUTSENIE / taming)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 376 (PRIRUTSENIE / taming)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 376 (ELBIB YLOH / genocide)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 377 (ELBIB YLOH / genocide)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 377 (VERR YED HORRE / light)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 378 (VERR YED HORRE / light)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 378 (VENZAR BORGAVVE / teleportation)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 379 (VENZAR BORGAVVE / teleportation)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 379 (THARR / gold detection)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 380 (THARR / gold detection)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 380 (YUM YUM / food detection)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 381 (YUM YUM / food detection)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 381 (KERNOD WEL / identify)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 382 (KERNOD WEL / identify)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 382 (ELAM EBOW / magic mapping)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 383 (ELAM EBOW / magic mapping)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 383 (DUAM XNAHT / amnesia)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 384 (DUAM XNAHT / amnesia)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 384 (ANDOVA BEGARIN / fire)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 385 (ANDOVA BEGARIN / fire)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 385 (KIRJE / earth)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 386 (KIRJE / earth)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 386 (VE FORBRYDERNE / punishment)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 387 (VE FORBRYDERNE / punishment)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 387 (HACKEM MUCHE / charging)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 388 (HACKEM MUCHE / charging)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 388 (VELOX NEB / stinking cloud)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 389 (VELOX NEB / stinking cloud)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 389 (FOOBIE BLETCH)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 390 (FOOBIE BLETCH)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 390 (TEMOV)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 391 (TEMOV)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 391 (GARVEN DEH)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 392 (GARVEN DEH)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 392 (READ ME)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 393 (READ ME)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 393 (ETAOIN SHRDLU)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 394 (ETAOIN SHRDLU)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 394 (LOREM IPSUM)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 395 (LOREM IPSUM)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 395 (FNORD)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 396 (FNORD)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 396 (KO BATE)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 397 (KO BATE)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 397 (ABRA KA DABRA)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 398 (ABRA KA DABRA)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 398 (ASHPD SODALG)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 399 (ASHPD SODALG)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 399 (ZLORFIK)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 400 (ZLORFIK)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 400 (GNIK SISI VLE)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 401 (GNIK SISI VLE)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 401 (HAPAX LEGOMENON)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 402 (HAPAX LEGOMENON)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 402 (EIRIS SAZUN IDISI)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 403 (EIRIS SAZUN IDISI)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 403 (PHOL ENDE WODAN)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 404 (PHOL ENDE WODAN)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 404 (GHOTI)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 405 (GHOTI)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 405 (MAPIRO MAHAMA DIROMAT)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 406 (MAPIRO MAHAMA DIROMAT)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 406 (VAS CORP BET MANI)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 407 (VAS CORP BET MANI)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 407 (XOR OTA)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 408 (XOR OTA)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 408 (STRC PRST SKRZ KRK)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 409 (STRC PRST SKRZ KRK)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 409 (stamped / mail)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 410 (stamped / mail)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ...AAAAAAAAAAA..\n  ................\n  ................\n}\n# tile 410 (unlabeled / blank paper)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n",
+          "after": "  ...AAAAAAAAAAA..\n  ................\n  ................\n}\n# tile 411 (unlabeled / blank paper)\n{\n  ................\n  ................\n  ....POOOOOPKA...\n"
+        },
+        {
+          "before": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 411 (parchment / dig)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .....AAAAAAAA...\n  ................\n  ................\n}\n# tile 412 (parchment / dig)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....JJJOOOJA....\n  .......JJJAA....\n  ................\n}\n# tile 412 (vellum / magic missile)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....JJJOOOJA....\n  .......JJJAA....\n  ................\n}\n# tile 413 (vellum / magic missile)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....JJJOOOJA....\n  .......JJJAA....\n  ................\n}\n# tile 413 (ragged / fireball)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....JJJOOOJA....\n  .......JJJAA....\n  ................\n}\n# tile 414 (ragged / fireball)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....JOOOOOJA....\n  ......OOJJAA....\n  ................\n}\n# tile 414 (dog eared / cone of cold)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....JOOOOOJA....\n  ......OOJJAA....\n  ................\n}\n# tile 415 (dog eared / cone of cold)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....JJJOOOJA....\n  .......JJJAA....\n  ................\n}\n# tile 415 (mottled / sleep)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....JJJOOOJA....\n  .......JJJAA....\n  ................\n}\n# tile 416 (mottled / sleep)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....JJJOLLJA....\n  .......JJJAA....\n  ................\n}\n# tile 416 (stained / finger of death)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....JJJOLLJA....\n  .......JJJAA....\n  ................\n}\n# tile 417 (stained / finger of death)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....JJJOOOJA....\n  .......JJJAA....\n  ................\n}\n# tile 417 (cloth / light)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....JJJOOOJA....\n  .......JJJAA....\n  ................\n}\n# tile 418 (cloth / light)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....PPPOOOPA....\n  .......PPPAA....\n  ................\n}\n# tile 418 (leathery / detect monsters)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....PPPOOOPA....\n  .......PPPAA....\n  ................\n}\n# tile 419 (leathery / detect monsters)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....JJJOOOJA....\n  .......JJJAA....\n  ................\n}\n# tile 419 (white / healing)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....JJJOOOJA....\n  .......JJJAA....\n  ................\n}\n# tile 420 (white / healing)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....PNNOOONA....\n  .......PNNAA....\n  ................\n}\n# tile 420 (pink / knock)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....PNNOOONA....\n  .......PNNAA....\n  ................\n}\n# tile 421 (pink / knock)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....IIIOOOIA....\n  .......IIIAA....\n  ................\n}\n# tile 421 (red / force bolt)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....IIIOOOIA....\n  .......IIIAA....\n  ................\n}\n# tile 422 (red / force bolt)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....DDDOOODA....\n  .......DDDAA....\n  ................\n}\n# tile 422 (orange / confuse monster)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....DDDOOODA....\n  .......DDDAA....\n  ................\n}\n# tile 423 (orange / confuse monster)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....CCCOOOCA....\n  .......CCCAA....\n  ................\n}\n# tile 423 (yellow / cure blindness)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....CCCOOOCA....\n  .......CCCAA....\n  ................\n}\n# tile 424 (yellow / cure blindness)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....HHHOOOHA....\n  .......HHHAA....\n  ................\n}\n# tile 424 (velvet / drain life)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....HHHOOOHA....\n  .......HHHAA....\n  ................\n}\n# tile 425 (velvet / drain life)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....EEEOOOEA....\n  .......EEEAA....\n  ................\n}\n# tile 425 (light green / slow monster)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....EEEOOOEA....\n  .......EEEAA....\n  ................\n}\n# tile 426 (light green / slow monster)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....GGGOOOGA....\n  .......GGGAA....\n  ................\n}\n# tile 426 (dark green / wizard lock)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....GGGOOOGA....\n  .......GGGAA....\n  ................\n}\n# tile 427 (dark green / wizard lock)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....FFFOOOFA....\n  .......FFFAA....\n  ................\n}\n# tile 427 (turquoise / create monster)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....FFFOOOFA....\n  .......FFFAA....\n  ................\n}\n# tile 428 (turquoise / create monster)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....FBBOOOBA....\n  .......FBBAA....\n  ................\n}\n# tile 428 (cyan / detect food)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....FBBOOOBA....\n  .......FBBAA....\n  ................\n}\n# tile 429 (cyan / detect food)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....BBBOOOBA....\n  .......BBBAA....\n  ................\n}\n# tile 429 (light blue / cause fear)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....BBBOOOBA....\n  .......BBBAA....\n  ................\n}\n# tile 430 (light blue / cause fear)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....BBBOOOBA....\n  .......BBBAA....\n  ................\n}\n# tile 430 (dark blue / clairvoyance)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....BBBOOOBA....\n  .......BBBAA....\n  ................\n}\n# tile 431 (dark blue / clairvoyance)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....EEEOOOEA....\n  .......EEEAA....\n  ................\n}\n# tile 431 (indigo / cure sickness)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....EEEOOOEA....\n  .......EEEAA....\n  ................\n}\n# tile 432 (indigo / cure sickness)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....EEEOOOEA....\n  .......EEEAA....\n  ................\n}\n# tile 432 (magenta / charm monster)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....EEEOOOEA....\n  .......EEEAA....\n  ................\n}\n# tile 433 (magenta / charm monster)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....IIIOOOIA....\n  .......IIIAA....\n  ................\n}\n# tile 433 (purple / haste self)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....IIIOOOIA....\n  .......IIIAA....\n  ................\n}\n# tile 434 (purple / haste self)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....IIIOOOIA....\n  .......IIIAA....\n  ................\n}\n# tile 434 (violet / detect unseen)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....IIIOOOIA....\n  .......IIIAA....\n  ................\n}\n# tile 435 (violet / detect unseen)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....IIIOOOIA....\n  .......IIIAA....\n  ................\n}\n# tile 435 (tan / levitation)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....IIIOOOIA....\n  .......IIIAA....\n  ................\n}\n# tile 436 (tan / levitation)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....KKKOOOKA....\n  .......KKKAA....\n  ................\n}\n# tile 436 (plaid / extra healing)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....KKKOOOKA....\n  .......KKKAA....\n  ................\n}\n# tile 437 (plaid / extra healing)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....EFDOOOFA....\n  .......EFDAA....\n  ................\n}\n# tile 437 (light brown / restore ability)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....EFDOOOFA....\n  .......EFDAA....\n  ................\n}\n# tile 438 (light brown / restore ability)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....JJJOOOJA....\n  .......JJJAA....\n  ................\n}\n# tile 438 (dark brown / invisibility)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....JJJOOOJA....\n  .......JJJAA....\n  ................\n}\n# tile 439 (dark brown / invisibility)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....JJJOOOJA....\n  .......JJJAA....\n  ................\n}\n# tile 439 (gray / detect treasure)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....JJJOOOJA....\n  .......JJJAA....\n  ................\n}\n# tile 440 (gray / detect treasure)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....PPPOOOPA....\n  .......PPPAA....\n  ................\n}\n# tile 440 (wrinkled / remove curse)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....PPPOOOPA....\n  .......PPPAA....\n  ................\n}\n# tile 441 (wrinkled / remove curse)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....JKLOOOKA....\n  ......JJKKAA....\n  ................\n}\n# tile 441 (dusty / magic mapping)\n{\n  ................\n  ................\n  ..K.......KA....\n",
+          "after": "  ....JKLOOOKA....\n  ......JJKKAA....\n  ................\n}\n# tile 442 (dusty / magic mapping)\n{\n  ................\n  ................\n  ..K.......KA....\n"
+        },
+        {
+          "before": "  ....JJJOOOJA....\n  .KAKA..JJJAA....\n  ................\n}\n# tile 442 (bronze / identify)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....JJJOOOJA....\n  .KAKA..JJJAA....\n  ................\n}\n# tile 443 (bronze / identify)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....CCCOOOCA....\n  .......CCCAA....\n  ................\n}\n# tile 443 (copper / turn undead)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....CCCOOOCA....\n  .......CCCAA....\n  ................\n}\n# tile 444 (copper / turn undead)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....JCJOOOJA....\n  .......JCJAA....\n  ................\n}\n# tile 444 (silver / polymorph)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....JCJOOOJA....\n  .......JCJAA....\n  ................\n}\n# tile 445 (silver / polymorph)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....PPPOOOPA....\n  .......PPPAA....\n  ................\n}\n# tile 445 (gold / teleport away)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....PPPOOOPA....\n  .......PPPAA....\n  ................\n}\n# tile 446 (gold / teleport away)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....HHHOOOHA....\n  .......HHHAA....\n  ................\n}\n# tile 446 (glittering / create familiar)\n{\n  ................\n  ................\n  ......N.........\n",
+          "after": "  ....HHHOOOHA....\n  .......HHHAA....\n  ................\n}\n# tile 447 (glittering / create familiar)\n{\n  ................\n  ................\n  ......N.........\n"
+        },
+        {
+          "before": "  ...N.PPOOOPA....\n  .......PPPAN....\n  .......N........\n}\n# tile 447 (shining / cancellation)\n{\n  ....N...........\n  .......N........\n  ..N.............\n",
+          "after": "  ...N.PPOOOPA....\n  .......PPPAN....\n  .......N........\n}\n# tile 448 (shining / cancellation)\n{\n  ....N...........\n  .......N........\n  ..N.............\n"
+        },
+        {
+          "before": "  ....PPPOOOPA....\n  .......PPPAA....\n  ................\n}\n# tile 448 (dull / protection)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....PPPOOOPA....\n  .......PPPAA....\n  ................\n}\n# tile 449 (dull / protection)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....JJJPPPJA....\n  .......JJJAA....\n  ................\n}\n# tile 449 (thin / jumping)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....JJJPPPJA....\n  .......JJJAA....\n  ................\n}\n# tile 450 (thin / jumping)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....JJJOCOJA....\n  .......JJJAA....\n  ................\n}\n# tile 450 (thick / stone to flesh)\n{\n  ................\n  ................\n  ....JKKJ........\n",
+          "after": "  ....JJJOCOJA....\n  .......JJJAA....\n  ................\n}\n# tile 451 (thick / stone to flesh)\n{\n  ................\n  ................\n  ....JKKJ........\n"
+        },
+        {
+          "before": "  ....JJJLLLJA....\n  .......JJJAA....\n  ................\n}\n# tile 451 (checkered / chain lightning)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....JJJLLLJA....\n  .......JJJAA....\n  ................\n}\n# tile 452 (checkered / chain lightning)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....PAAOOOA.....\n  .......AAA......\n  ................\n}\n# tile 452 (plain / blank paper)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....PAAOOOA.....\n  .......AAA......\n  ................\n}\n# tile 453 (plain / blank paper)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....JJJOOOJA....\n  .......JJJAA....\n  ................\n}\n# tile 453 (paperback / novel)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....JJJOOOJA....\n  .......JJJAA....\n  ................\n}\n# tile 454 (paperback / novel)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....EEEOOOEA....\n  .......EEEAA....\n  ................\n}\n# tile 454 (papyrus / Book of the Dead)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....EEEOOOEA....\n  .......EEEAA....\n  ................\n}\n# tile 455 (papyrus / Book of the Dead)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ....AAAOOOA.....\n  .......AAA......\n  ................\n}\n# tile 455 (glass / light)\n{\n  ................\n  ................\n  ............N...\n",
+          "after": "  ....AAAOOOA.....\n  .......AAA......\n  ................\n}\n# tile 456 (glass / light)\n{\n  ................\n  ................\n  ............N...\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 456 (balsa / secret door detection)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 457 (balsa / secret door detection)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 457 (crystal / enlightenment)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 458 (crystal / enlightenment)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 458 (maple / create monster)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 459 (maple / create monster)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 459 (pine / wishing)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 460 (pine / wishing)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 460 (redwood / stasis)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 461 (redwood / stasis)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 461 (oak / nothing)\n{\n  ................\n  ................\n  ...........N....\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 462 (oak / nothing)\n{\n  ................\n  ................\n  ...........N....\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 462 (ebony / striking)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 463 (ebony / striking)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 463 (marble / make invisible)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 464 (marble / make invisible)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 464 (tin / slow monster)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 465 (tin / slow monster)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 465 (brass / speed monster)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 466 (brass / speed monster)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 466 (copper / undead turning)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 467 (copper / undead turning)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 467 (silver / polymorph)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 468 (silver / polymorph)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 468 (platinum / cancellation)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 469 (platinum / cancellation)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 469 (iridium / teleportation)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 470 (iridium / teleportation)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 470 (zinc / opening)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 471 (zinc / opening)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 471 (aluminum / locking)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 472 (aluminum / locking)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 472 (uranium / probing)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 473 (uranium / probing)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 473 (iron / digging)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 474 (iron / digging)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 474 (steel / magic missile)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 475 (steel / magic missile)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 475 (hexagonal / fire)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 476 (hexagonal / fire)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 476 (short / cold)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 477 (short / cold)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 477 (runed / sleep)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 478 (runed / sleep)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 478 (long / death)\n{\n  ................\n  .............NO.\n  ............NN..\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 479 (long / death)\n{\n  ................\n  .............NO.\n  ............NN..\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 479 (curved / lightning)\n{\n  ................\n  .......NO.......\n  .......NOA......\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 480 (curved / lightning)\n{\n  ................\n  .......NO.......\n  .......NOA......\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 480 (forked)\n{\n  ................\n  ................\n  .........N......\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 481 (forked)\n{\n  ................\n  ................\n  .........N......\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 481 (spiked)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 482 (spiked)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 482 (jeweled)\n{\n  ................\n  ................\n  ..........NNB...\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 483 (jeweled)\n{\n  ................\n  ................\n  ..........NNB...\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 483 (gold piece)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 484 (gold piece)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ......HA........\n  .........HA.....\n  ...........HA...\n}\n# tile 484 (white / dilithium crystal)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ......HA........\n  .........HA.....\n  ...........HA...\n}\n# tile 485 (white / dilithium crystal)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .......OAA......\n  ................\n  ................\n}\n# tile 485 (white / diamond)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .......OAA......\n  ................\n  ................\n}\n# tile 486 (white / diamond)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .......OAA......\n  ................\n  ................\n}\n# tile 486 (red / ruby)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .......OAA......\n  ................\n  ................\n}\n# tile 487 (red / ruby)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .......DAA......\n  ................\n  ................\n}\n# tile 487 (orange / jacinth)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .......DAA......\n  ................\n  ................\n}\n# tile 488 (orange / jacinth)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .......CAA......\n  ................\n  ................\n}\n# tile 488 (blue / sapphire)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .......CAA......\n  ................\n  ................\n}\n# tile 489 (blue / sapphire)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .......BAA......\n  ................\n  ................\n}\n# tile 489 (black / black opal)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .......BAA......\n  ................\n  ................\n}\n# tile 490 (black / black opal)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 490 (green / emerald)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 491 (green / emerald)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .......FAA......\n  ................\n  ................\n}\n# tile 491 (green / turquoise)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .......FAA......\n  ................\n  ................\n}\n# tile 492 (green / turquoise)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .......FAA......\n  ................\n  ................\n}\n# tile 492 (yellow / citrine)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .......FAA......\n  ................\n  ................\n}\n# tile 493 (yellow / citrine)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .......HAA......\n  ................\n  ................\n}\n# tile 493 (green / aquamarine)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .......HAA......\n  ................\n  ................\n}\n# tile 494 (green / aquamarine)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .......FAA......\n  ................\n  ................\n}\n# tile 494 (yellowish brown / amber)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .......FAA......\n  ................\n  ................\n}\n# tile 495 (yellowish brown / amber)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .......KAA......\n  ................\n  ................\n}\n# tile 495 (yellowish brown / topaz)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .......KAA......\n  ................\n  ................\n}\n# tile 496 (yellowish brown / topaz)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .......KAA......\n  ................\n  ................\n}\n# tile 496 (black / jet)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .......KAA......\n  ................\n  ................\n}\n# tile 497 (black / jet)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 497 (white / opal)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 498 (white / opal)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .......OAA......\n  ................\n  ................\n}\n# tile 498 (yellow / chrysoberyl)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .......OAA......\n  ................\n  ................\n}\n# tile 499 (yellow / chrysoberyl)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .......HAA......\n  ................\n  ................\n}\n# tile 499 (red / garnet)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .......HAA......\n  ................\n  ................\n}\n# tile 500 (red / garnet)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .......DAA......\n  ................\n  ................\n}\n# tile 500 (violet / amethyst)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .......DAA......\n  ................\n  ................\n}\n# tile 501 (violet / amethyst)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .......IAA......\n  ................\n  ................\n}\n# tile 501 (red / jasper)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .......IAA......\n  ................\n  ................\n}\n# tile 502 (red / jasper)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .......DAA......\n  ................\n  ................\n}\n# tile 502 (violet / fluorite)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .......DAA......\n  ................\n  ................\n}\n# tile 503 (violet / fluorite)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .......IAA......\n  ................\n  ................\n}\n# tile 503 (black / obsidian)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .......IAA......\n  ................\n  ................\n}\n# tile 504 (black / obsidian)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 504 (orange / agate)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 505 (orange / agate)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .......CAA......\n  ................\n  ................\n}\n# tile 505 (green / jade)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .......CAA......\n  ................\n  ................\n}\n# tile 506 (green / jade)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .......FAA......\n  ................\n  ................\n}\n# tile 506 (white / worthless piece of white glass)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .......FAA......\n  ................\n  ................\n}\n# tile 507 (white / worthless piece of white glass)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .......OAA......\n  ................\n  ................\n}\n# tile 507 (blue / worthless piece of blue glass)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .......OAA......\n  ................\n  ................\n}\n# tile 508 (blue / worthless piece of blue glass)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .......BAA......\n  ................\n  ................\n}\n# tile 508 (red / worthless piece of red glass)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .......BAA......\n  ................\n  ................\n}\n# tile 509 (red / worthless piece of red glass)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .......DAA......\n  ................\n  ................\n}\n# tile 509 (yellowish brown / worthless piece of yellowish brown glass)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .......DAA......\n  ................\n  ................\n}\n# tile 510 (yellowish brown / worthless piece of yellowish brown glass)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .......KAA......\n  ................\n  ................\n}\n# tile 510 (orange / worthless piece of orange glass)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .......KAA......\n  ................\n  ................\n}\n# tile 511 (orange / worthless piece of orange glass)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .......CAA......\n  ................\n  ................\n}\n# tile 511 (yellow / worthless piece of yellow glass)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .......CAA......\n  ................\n  ................\n}\n# tile 512 (yellow / worthless piece of yellow glass)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .......HAA......\n  ................\n  ................\n}\n# tile 512 (black / worthless piece of black glass)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .......HAA......\n  ................\n  ................\n}\n# tile 513 (black / worthless piece of black glass)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 513 (green / worthless piece of green glass)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 514 (green / worthless piece of green glass)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .......FAA......\n  ................\n  ................\n}\n# tile 514 (violet / worthless piece of violet glass)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .......FAA......\n  ................\n  ................\n}\n# tile 515 (violet / worthless piece of violet glass)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  .......IAA......\n  ................\n  ................\n}\n# tile 515 (gray / luckstone)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .......IAA......\n  ................\n  ................\n}\n# tile 516 (gray / luckstone)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 516 (gray / loadstone)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 517 (gray / loadstone)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 517 (gray / touchstone)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 518 (gray / touchstone)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 518 (gray / flint)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 519 (gray / flint)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 519 (silvery metal / small piece of unrefined mithril)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 520 (silvery metal / small piece of unrefined mithril)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 520 (rock)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 521 (rock)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 521 (boulder)\n{\n  ................\n  ................\n  ......KKKJ......\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 522 (boulder)\n{\n  ................\n  ................\n  ......KKKJ......\n"
+        },
+        {
+          "before": "  ......JJJJAAA...\n  ................\n  ................\n}\n# tile 522 (statue)\n{\n  ................\n  ........JJ......\n  .......KCJJ.....\n",
+          "after": "  ......JJJJAAA...\n  ................\n  ................\n}\n# tile 523 (statue)\n{\n  ................\n  ........JJ......\n  .......KCJJ.....\n"
+        },
+        {
+          "before": "  ....JJKKKJJJAA..\n  .....JJJJJJAA...\n  ................\n}\n# tile 523 (heavy iron ball)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ....JJKKKJJJAA..\n  .....JJJJJJAA...\n  ................\n}\n# tile 524 (heavy iron ball)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 524 (iron chain)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 525 (iron chain)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ..........P.APAP\n  ...........PP.PA\n  ............AA..\n}\n# tile 525 (splash of venom / splash of blinding venom)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ..........P.APAP\n  ...........PP.PA\n  ............AA..\n}\n# tile 526 (splash of venom / splash of blinding venom)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 526 (splash of venom / splash of acid venom)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 527 (splash of venom / splash of acid venom)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 527 (splash of ice / freezing ice)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 528 (splash of ice / freezing ice)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 528 (sickle)\n{\n  ................\n  .....OPA........\n  ....OPPPA.......\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 529 (sickle)\n{\n  ................\n  .....OPA........\n  ....OPPPA.......\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 529 (scythe)\n{\n  .............NA.\n  ............POPA\n  ...........PNOPA\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 530 (scythe)\n{\n  .............NA.\n  ............POPA\n  ...........PNOPA\n"
+        },
+        {
+          "before": "  JJAA............\n  JAA.............\n  ................\n}\n# tile 530 (polished short sword / mirrorblade)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  JJAA............\n  JAA.............\n  ................\n}\n# tile 531 (polished short sword / mirrorblade)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ...........AA...\n  ................\n  ................\n}\n# tile 531 (short mace / kamerel vajra)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ...........AA...\n  ................\n  ................\n}\n# tile 532 (short mace / kamerel vajra)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ..KJA...........\n  ...A............\n  ................\n}\n# tile 532 (viperwhip)\n{\n  ................\n  ................\n  .......KKKKKK...\n",
+          "after": "  ..KJA...........\n  ...A............\n  ................\n}\n# tile 533 (viperwhip)\n{\n  ................\n  ................\n  .......KKKKKK...\n"
+        },
+        {
+          "before": "  .....AKKKA......\n  ......AAA.......\n  ................\n}\n# tile 533 (double-bladed saber / rakuyo)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  .....AKKKA......\n  ......AAA.......\n  ................\n}\n# tile 534 (double-bladed saber / rakuyo)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 534 (monk's staff / khakkhara)\n{\n  ................\n  .............JK.\n  ............JCJA\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 535 (monk's staff / khakkhara)\n{\n  ................\n  .............JK.\n  ............JCJA\n"
+        },
+        {
+          "before": "  ..KJAA..........\n  .JJAA...........\n  ..A.............\n}\n# tile 535 (round shield / roundshield)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ..KJAA..........\n  .JJAA...........\n  ..A.............\n}\n# tile 536 (round shield / roundshield)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 536 (wide-brimmed conical hat / witch hat)\n{\n  ................\n  .......E........\n  .......E........\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 537 (wide-brimmed conical hat / witch hat)\n{\n  ................\n  .......E........\n  .......E........\n"
+        },
+        {
+          "before": "  ...EE..A.AEE....\n  ....EEEEEEE.....\n  ................\n}\n# tile 537 (white faceless robe)\n{\n  ................\n  ......CCC.......\n  .....CAAAKA.....\n",
+          "after": "  ...EE..A.AEE....\n  ....EEEEEEE.....\n  ................\n}\n# tile 538 (white faceless robe)\n{\n  ................\n  ......CCC.......\n  .....CAAAKA.....\n"
+        },
+        {
+          "before": "  ...CCCCCCCAKA...\n  ...ACCCCCCAAA...\n  ....AAAAAAAA....\n}\n# tile 538 (black faceless robe)\n{\n  ................\n  ......CCC.......\n  .....CAAAKA.....\n",
+          "after": "  ...CCCCCCCAKA...\n  ...ACCCCCCAAA...\n  ....AAAAAAAA....\n}\n# tile 539 (black faceless robe)\n{\n  ................\n  ......CCC.......\n  .....CAAAKA.....\n"
+        },
+        {
+          "before": "  ...CCCCCCCAKA...\n  ...ACCCCCCAAA...\n  ....AAAAAAAA....\n}\n# tile 539 (smoky violet faceless robe)\n{\n  ................\n  ......CCC.......\n  .....CAAAKA.....\n",
+          "after": "  ...CCCCCCCAKA...\n  ...ACCCCCCAAA...\n  ....AAAAAAAA....\n}\n# tile 540 (smoky violet faceless robe)\n{\n  ................\n  ......CCC.......\n  .....CAAAKA.....\n"
+        },
+        {
+          "before": "  ...CCCCCCCAKA...\n  ...ACCCCCCAAA...\n  ....AAAAAAAA....\n}\n# tile 540 (key / universal key)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ...CCCCCCCAKA...\n  ...ACCCCCCAAA...\n  ....AAAAAAAA....\n}\n# tile 541 (key / universal key)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 541 (torch)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 542 (torch)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ............A...\n  ................\n  ................\n}\n# tile 542 (black torch / shadowlander's torch)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ............A...\n  ................\n  ................\n}\n# tile 543 (black torch / shadowlander's torch)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ............A...\n  ................\n  ................\n}\n# tile 543 (long grip / double lightsaber)\n{\n  ................\n  .............JK.\n  ............JCJA\n",
+          "after": "  ............A...\n  ................\n  ................\n}\n# tile 544 (long grip / double lightsaber)\n{\n  ................\n  .............JK.\n  ............JCJA\n"
+        },
+        {
+          "before": "  ..KJAA..........\n  .JJAA...........\n  ..A.............\n}\n# tile 544 (eyeball)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ..KJAA..........\n  .JJAA...........\n  ..A.............\n}\n# tile 545 (eyeball)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 545 (sparkling / amnesia)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 546 (sparkling / amnesia)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 546 (golden / space mead)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 547 (golden / space mead)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 547 (ragged leather / secrets)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 548 (ragged leather / secrets)\n{\n  ................\n  ................\n  ................\n"
+        },
+        {
+          "before": "  ................\n  ................\n  ................\n}\n# tile 548 (lifeless doll)\n{\n  ................\n  ................\n  ................\n",
+          "after": "  ................\n  ................\n  ................\n}\n# tile 549 (lifeless doll)\n{\n  ................\n  ................\n  ................\n"
+        }
+      ]
+    }
+  },
+  "added": {
+    "include/affix.h": "c80f927ba2d428a5ce4e89fe0b09c504ff8da6c678db941b0971916938a2286c"
+  }
+}

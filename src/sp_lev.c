@@ -2309,6 +2309,7 @@ create_object(object *o, struct mkroom *croom)
 
     if (o->quan > 0 && objects[otmp->otyp].oc_merge) {
         otmp->quan = o->quan;
+        enhancement_finalize_stack(otmp);
         otmp->owt = weight(otmp);
     }
     if (otmp->obranch_material || otmp->obranch_size)

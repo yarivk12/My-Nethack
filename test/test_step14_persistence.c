@@ -52,9 +52,9 @@ step14_persistence_tests(void)
             known=0;props=masks[i];
             for(j=0;j<n;++j)if(ki&(1<<j))known|=bits[j];
             for(q=0;q<3;++q)for(flags=0;flags<2;++flags) {
-                o=item(kind?LEATHER_ARMOR:ARROW);
-                o->o_enh_props=props;o->o_enh_quality=(uint8)q;
-                o->o_enh_known=known;o->o_enh_flags=flags;
+                o=item(kind?LEATHER_ARMOR:SPEAR);
+                assert(enhancement_set(o,props,q,FALSE));
+                o->o_enh_known=known & props;o->o_enh_flags=flags;
                 o->nobj=chain;chain=o;++batch;++total;
                 if(batch==8192){step14_roundtrip_batch(&chain);batch=0;}
             }

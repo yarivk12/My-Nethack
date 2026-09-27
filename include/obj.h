@@ -5,6 +5,7 @@
 
 #ifndef OBJ_H
 #define OBJ_H
+#include "affix.h"
 
 /* #define obj obj_nh */ /* uncomment for SCO UNIX, which has a conflicting
                           * typedef for "obj" in <sys/types.h> */
@@ -175,6 +176,7 @@ struct obj {
     unsigned long obranch_props;
     uchar obranch_material;
     uchar obranch_size;
+    struct affix_slot o_affixes[ENHANCEMENT_MAX_SLOTS];
     uint8 o_enh_quality;    /* generic equipment quality, independent of spe */
     uint8 o_enh_flags;      /* generic quality knowledge */
     uint64 o_enh_props;     /* active generic equipment properties */

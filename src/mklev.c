@@ -1126,7 +1126,7 @@ makeniche(int trap_type)
                     (void) mksobj_at(SCR_TELEPORTATION, xx, yy + dy, TRUE,
                                      FALSE);
                 if (!rn2(3))
-                    (void) enhancement_mkobj_at(RANDOM_CLASS, xx, yy + dy, TRUE);
+                    (void) ordinary_loot_at(RANDOM_CLASS, xx, yy + dy, TRUE);
             }
         }
         if (In_mithardir_catacombs(&u.uz)) {
@@ -1502,7 +1502,7 @@ fill_ordinary_room(
 
  skip_nonrogue:
     if (!rn2(3) && somexyspace(croom, &pos)) {
-        (void) enhancement_mkobj_at(RANDOM_CLASS, pos.x, pos.y, TRUE);
+        (void) ordinary_loot_at(RANDOM_CLASS, pos.x, pos.y, TRUE);
         trycnt = 0;
         while (!rn2(5)) {
             if (++trycnt > 100) {
@@ -1510,7 +1510,7 @@ fill_ordinary_room(
                 break;
             }
             if (somexyspace(croom, &pos)) {
-                (void) enhancement_mkobj_at(RANDOM_CLASS, pos.x, pos.y, TRUE);
+                (void) ordinary_loot_at(RANDOM_CLASS, pos.x, pos.y, TRUE);
             }
         }
     }

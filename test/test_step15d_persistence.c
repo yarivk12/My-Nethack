@@ -28,7 +28,7 @@ static void step15d_persistence_tests(void)
     for(i=0;i<4;++i)for(j=0;j<4;++j)for(a=1;a<=6;++a)for(b=1;b<=6;++b) {
         const struct enhancement_entry *ea=&enhancement_catalog[24+i],*eb=&enhancement_catalog[28+j];
         if(a<ea->dice||a>ea->dice*ea->sides||b<eb->dice||b>eb->dice*eb->sides)continue;
-        o=item(BOW);o->o_enh_props=ea->bit|eb->bit;
+        o=item(BOW);assert(enhancement_set(o,ea->bit|eb->bit,0,FALSE));
         o->o_enh_values[i]=(uint8)a;o->o_enh_values[4+j]=(uint8)b;
         o->o_enh_known=eb->bit;o->o_sockets[0].property=EP_FIRE_III;
         o->o_sockets[0].known=1;o->o_sockets[1].property=EP_COLD;
@@ -38,7 +38,8 @@ static void step15d_persistence_tests(void)
     o=item(BOW);o->o_enh_props=OEP_STR_IV;o->o_enh_values[3]=255;
     o->o_socket_capacity=255;o->o_sockets[0].property=255;
     o->o_sockets[1].property=EP_STR_I;o->o_sockets[1].value=255;
-    socket_normalize(o);
+    assert(!enhancement_slots_valid(o));
+    enhancement_clear(o);socket_init(o);
     assert(o->o_socket_capacity==2&&!socket_count(o)&&!o->o_enh_props&&!o->o_enh_values[3]);
     o->o_sockets[0].property=EP_FIRE;o->o_sockets[0].known=1;
     unknow_object(o);assert(!o->o_sockets[0].known&&o->o_sockets[0].property==EP_FIRE);

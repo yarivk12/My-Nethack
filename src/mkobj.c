@@ -354,10 +354,12 @@ mkbox_cnts(struct obj *box)
             int tprob;
             const struct icp *iprobs = boxiprobs;
 
-            for (tprob = rnd(100); (tprob -= iprobs->iprob) > 0; iprobs++)
-                ;
-            if (!(otmp = mkobj(iprobs->iclass, FALSE)))
-                continue;
+            if (essence_loot_context() && !rn2(100)) {
+                otmp = essence_random();
+            } else {
+                for (tprob = rnd(100); (tprob -= iprobs->iprob) > 0; iprobs++) ;
+                if (!(otmp = mkobj(iprobs->iclass, FALSE))) continue;
+            }
 
             /* handle a couple of special cases */
             if (otmp->oclass == COIN_CLASS) {
@@ -461,6 +463,8 @@ splitobj(struct obj *obj, long num)
 {
     struct obj *otmp;
 
+    if (enhancement_slot_count(obj) || socket_count(obj))
+        panic("splitobj: corrupt enhanced stack");
     /* can't split containers */
     if (obj->cobj || num <= 0L || obj->quan <= num)
         panic("splitobj [cobj=%s num=%ld quan=%ld]",
@@ -859,6 +863,8 @@ clear_dknown(struct obj *obj)
 void
 unknow_object(struct obj *obj)
 {
+    if (obj->otyp == GENERIC_ESSENCE) { essence_normalize(obj); return; }
+    obj->o_enh_flags &= ~OEF_AFFIXES_KNOWN;
     obj->o_sockets[0].known = obj->o_sockets[1].known = 0;
     clear_dknown(obj); /* obj->dknown = 0; */
 
@@ -1331,6 +1337,7 @@ mksobj(int otyp, boolean init, boolean artif)
     }
     otmp->owt = weight(otmp);
     enhancement_created(otmp);
+    essence_normalize(otmp);
     return otmp;
 }
 
@@ -1837,6 +1844,7 @@ bless(struct obj *otmp)
 {
     int old_light = 0;
 
+    if (otmp->otyp == GENERIC_ESSENCE) { essence_normalize(otmp); return; }
     if (otmp->oclass == COIN_CLASS)
         return;
     if (otmp->lamplit)
@@ -1860,6 +1868,7 @@ unbless(struct obj *otmp)
 {
     int old_light = 0;
 
+    if (otmp->otyp == GENERIC_ESSENCE) { essence_normalize(otmp); return; }
     if (otmp->lamplit)
         old_light = arti_light_radius(otmp);
     otmp->blessed = 0;
@@ -1878,6 +1887,7 @@ curse(struct obj *otmp)
     unsigned already_cursed;
     int old_light = 0;
 
+    if (otmp->otyp == GENERIC_ESSENCE) { essence_normalize(otmp); return; }
     if (otmp->oclass == COIN_CLASS)
         return;
     if (otmp->lamplit)
@@ -1921,6 +1931,7 @@ uncurse(struct obj *otmp)
 
     if (otmp->lamplit)
         old_light = arti_light_radius(otmp);
+    if (otmp->otyp == GENERIC_ESSENCE) { essence_normalize(otmp); return; }
     otmp->cursed = 0;
     utility_discernment_refresh();
     if (carried(otmp) && confers_luck(otmp))
@@ -2030,6 +2041,10 @@ int
 weight(struct obj *obj)
 {
     int wt = (int) objects[obj->otyp].oc_weight; /* weight of 1 'otyp' */
+    if (obj->otyp == GENERIC_ESSENCE) {
+        essence_normalize(obj);
+        return (int) min(obj->quan, LARGEST_INT);
+    }
 
     if (obj->obranch_material) {
         /* Pinned donor densities in local material order (SHELL appended). */

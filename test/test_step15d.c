@@ -12,11 +12,10 @@ static void step15d_state_tests(void)
     assert(o->o_enh_values[7] >= 2 && o->o_enh_values[7] <= 6);
     o->o_sockets[0].property = EP_FIRE;
     o->o_sockets[0].known = 1;
-    o->quan = 3;
-    copy = splitobj(o, 1L);
+    copy = newobj(); *copy = *o; copy->oextra = NULL;
     assert(copy->o_socket_capacity == 1 && socket_count(copy) == 1);
     assert(!memcmp(o->o_enh_values, copy->o_enh_values, 8));
-    assert(mergable(o, copy));
+    assert(!mergable(o, copy));
     copy->o_sockets[0].known = 0;
     assert(!mergable(o, copy));
     o->nobj = copy->nobj = NULL; obfree(copy, NULL);
@@ -61,10 +60,10 @@ static void step15d_combat_tests(void)
             ++cases;
         }
     mon.mintrinsics=0;
-    assert(enhancement_set(arrow,OEP_FIRE,OQ_STANDARD,FALSE));
+    assert(!enhancement_set(arrow,OEP_FIRE,OQ_STANDARD,FALSE));
     bow->o_sockets[0].property=EP_COLD_III;
     bow->o_sockets[1].property=EP_TRUEFLIGHT;
-    init_isaac64(121,rn2);want=d(1,4)+d(5,6);next=rn2(100000);
+    init_isaac64(121,rn2);want=d(5,6);next=rn2(100000);
     init_isaac64(121,rn2);
     assert(enhancement_weapon_effects(arrow,bow,&mon,10,ENHANCE_AMMO)==want);
     assert(rn2(100000)==next);

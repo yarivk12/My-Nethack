@@ -643,7 +643,7 @@ step15b_test_main(void)
         }
         assert(forge_available(r, NULL));
         if (enhancement_eligible(obj) && obj->oclass != TOOL_CLASS)
-            assert(enhancement_set(obj, obj->oclass == ARMOR_CLASS ? OEP_FIRE_RES : OEP_FIRE,
+            assert(enhancement_set(obj, 0,
                                    OQ_EXCEPTIONAL, FALSE));
         obj->spe=7;obj->cursed=1;obj->oeroded=2;obj->greased=1;
         obj->obranch_material=GOLD;obj=oname(obj,"ingredient",ONAME_NO_FLAGS);
@@ -654,8 +654,7 @@ step15b_test_main(void)
         assert(other && other->quan == 1 && other->dknown);
         assert(other->spe == 7 && !other->blessed && (int) other->cursed == (j == 1));
         assert(other->o_enh_quality == (i == 4 ? OQ_STANDARD : OQ_EXCEPTIONAL));
-        assert(other->o_enh_props == (i == 4 || i == 11 ? 0
-                                     : i >= 8 ? OEP_FIRE_RES : OEP_FIRE));
+        assert(!other->o_enh_props && !enhancement_slot_count(other));
         assert(!other->bknown && !other->rknown && !other->o_enh_known);
         assert(!other->oextra && !other->obranch_material
                && (int) other->oeroded == (j == 1 ? 2 : 0) && !other->greased);

@@ -187,12 +187,16 @@ restobj(NHFILE *nhfp, struct obj *otmp)
     unsigned omid = 0;
 
     Sfi_obj(nhfp, otmp, "obj");
+    if (!enhancement_slots_valid(otmp))
+        panic("Corrupt Phase 1 affix state in saved object");
+    essence_normalize(otmp);
     socket_normalize(otmp);
     if (nhfp->ftype == NHF_BONESFILE)
         otmp->o_purification_sampled = 0L;
     else
         utility_purification_restore(otmp);
-    if (nhfp->ftype == NHF_BONESFILE) otmp->o_stoning_turn = -1L;
+    if (nhfp->ftype == NHF_BONESFILE && (otmp->o_enh_props & OEP_STONING))
+        otmp->o_stoning_turn = -1L;
     otmp->lua_ref_cnt = 0;
     /* next object pointers are invalid; otmp->cobj needs to be left
        as is--being non-null is key to restoring container contents */
@@ -570,6 +574,15 @@ restgamestate(NHFILE *nhfp)
 #endif  /* SFCTOOL */
     newgamecontext = svc.context; /* copy statically init'd context */
     Sfi_context_info(nhfp, &svc.context, "gamestate-context");
+    {
+        int id;
+        for (id = 0; id < EP_COUNT; ++id) {
+            const struct enhancement_entry *entry = equipment_property(id);
+            if (svc.context.affix_essence[id]
+                && (!entry || !(entry->bit || entry->bit2)))
+                panic("Corrupt Affix Essence ledger");
+        }
+    }
     relative_time_to_moves(&svc.context.seer_turn);
     relative_time_to_moves(&svc.context.digging.lastdigtime);
     svc.context.warntype.species = (ismnum(svc.context.warntype.speciesidx))

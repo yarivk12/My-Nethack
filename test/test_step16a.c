@@ -31,7 +31,7 @@ static void step16a_catalog(void)
         assert(!enhancement_visible_word0(o,FALSE));
         enhancement_identify(o);assert(enhancement_visible_word0(o,FALSE)==e->bit);
         assert(!enhancement_set(tool,e->bit,OQ_STANDARD,FALSE));
-        assert(enhancement_property_allowed(arrow,e->bit)==(i<7));
+        assert(!enhancement_property_allowed(arrow,e->bit));
         enhancement_clear(o);
         n=socket_candidates(o,tiers[i],-1,pool);seen=0;
         for(j=0;j<n;++j)seen+=pool[j]==EP_VAMPIRIC_I+i;
@@ -125,7 +125,7 @@ static void step16a_components(void)
     m.data=&mons[PM_HUMAN_ZOMBIE];
     enhancement_vampiric(o,NULL,&a,&m,1000,1000,ENHANCE_MELEE);assert(a.mhp==100);
     m.data=&mons[PM_HUMAN];m.mhp=5;
-    assert(enhancement_set(arrow,OEP_VAMPIRIC_I,0,FALSE));
+    assert(!enhancement_set(arrow,OEP_VAMPIRIC_I,0,FALSE));
     assert(enhancement_set(bow,OEP_VAMPIRIC_IV,0,FALSE));
     enhancement_vampiric(arrow,bow,&a,&m,20,40,ENHANCE_AMMO);assert(a.mhp==112);
     u.uhp=hp;u.uhpmax=maxhp;HBlinded=0;

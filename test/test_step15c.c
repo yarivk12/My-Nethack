@@ -90,7 +90,7 @@ forge15c_properties(void)
         { SPEAR, OEP_TRUEFLIGHT, OEP_FIRE, OEP_TRUEFLIGHT | OEP_FIRE },
         { DAGGER, OEP_TRUEFLIGHT, OEP_FIRE, OEP_FIRE },
         { BOW, OEP_TRUEFLIGHT, OEP_FIRE, OEP_TRUEFLIGHT | OEP_FIRE },
-        { ARROW, OEP_TRUEFLIGHT, OEP_COLD, OEP_TRUEFLIGHT | OEP_COLD },
+        { ARROW, OEP_TRUEFLIGHT, OEP_COLD, 0 },
         { PLATE_MAIL, OEP_MAGIC_RES, OEP_REFLECTION, OEP_MAGIC_RES | OEP_REFLECTION },
         { PLATE_MAIL, OEP_WARNING, OEP_SEARCHING | OEP_STEALTH, OEP_SEARCHING | OEP_WARNING },
         { BLUE_DRAGON_SCALE_MAIL, OEP_SPEED | OEP_SHOCK_RES,
@@ -114,7 +114,7 @@ forge15c_properties(void)
             assert(enhancement_set(b, cases[i].b, OQ_EXCEPTIONAL, FALSE));
             out = forge15c_result(cases[i].target, swap ? b : a, swap ? a : b);
             assert(out->o_enh_props == cases[i].expected);
-            assert(out->o_enh_quality == (i >= 19 ? OQ_STANDARD : OQ_EXCEPTIONAL));
+            assert(out->o_enh_quality == (i >= 19 || cases[i].target == ARROW ? OQ_STANDARD : OQ_EXCEPTIONAL));
             assert(!out->o_enh_known && !out->o_enh_flags);
         }
     forge_test_clear();
@@ -202,10 +202,6 @@ forge15c_arrangements(void)
         { 0, 1, 2 }, { 0, 2, 1 }, { 1, 0, 2 },
         { 1, 2, 0 }, { 2, 0, 1 }, { 2, 1, 0 }
     };
-    static const uint32 props[3] = {
-        OEP_FIRE_III | OEP_COLD_III, OEP_PRIMORDIAL | OEP_FIRE,
-        OEP_SHOCK_III | OEP_SHOCK_II
-    };
     static const int spe[3] = { 17, -2, 7 }, e1[3] = { 2, 1, 3 }, e2[3] = { 1, 3, 0 };
     struct forge_recipe r = { KATANA, { { LONG_SWORD, 3 }, { LONG_SWORD, 3 } } };
     struct forge_allocation a[8], temp;
@@ -221,7 +217,7 @@ forge15c_arrangements(void)
                     for (i = 0; i < n; ++i) {
                         k = permutations[perm][i / (split ? 2 : 1)];
                         obj = forge_test_item(LONG_SWORD, split ? 2 : 3);
-                        assert(enhancement_set(obj, props[k], k, FALSE));
+                        assert(enhancement_set(obj, 0, k, FALSE));
                         obj->spe = spe[k]; obj->blessed = k == 2; obj->cursed = k == 1;
                         obj->oeroded = e1[k]; obj->oeroded2 = e2[k]; obj->oerodeproof = k == 1;
                         obj->greased = obj->opoisoned = 1;
@@ -259,7 +255,7 @@ forge15c_arrangements(void)
                     for (out = gi.invent; out && out->otyp != KATANA; out = out->nobj) ;
                     assert(out && out->spe == 17 && out->blessed && !out->cursed);
                     assert(out->o_enh_quality == OQ_EXCEPTIONAL);
-                    assert(out->o_enh_props == (OEP_PRIMORDIAL | OEP_FIRE_III));
+                    assert(!out->o_enh_props && !enhancement_slot_count(out));
                     assert(out->oeroded == 1 && !out->oeroded2 && out->oerodeproof);
                     assert(out->dknown && objects[KATANA].oc_name_known);
                     assert(!out->known && !out->bknown && !out->rknown
@@ -310,7 +306,7 @@ forge15c_capacity(void)
                  * output cannot. mode 1: inherited output can merge with the
                  * surviving first stack, but old plain output could not. */
                 if (mode != 0 || shared)
-                    assert(enhancement_set(first, OEP_FIRE, OQ_FINE, FALSE));
+                    assert(enhancement_set(first, 0, OQ_FINE, FALSE));
                 if (mode != 0 || shared) first->spe = 17;
                 a[0].oid = first->o_id; a[0].quantity[0] = 1;
                 if (shared) {
@@ -319,15 +315,15 @@ forge15c_capacity(void)
                 } else {
                     second = forge_test_item(STILETTO, 2);
                     second->spe = 17;
-                    assert(enhancement_set(second, OEP_FIRE, OQ_FINE, FALSE));
+                    assert(enhancement_set(second, 0, OQ_FINE, FALSE));
                     a[1].oid = second->o_id; a[1].quantity[1] = 1; n = 2;
                 }
-                if (mode == 2) first->o_enh_known = OEP_FIRE;
+                if (mode == 2) first->o_enh_flags = OEF_QUALITY_KNOWN;
                 target = first->o_id;
                 if (mode == 3) {
                     first->nomerge = 1;
                     obj = forge_test_item(DAGGER, 1);
-                    assert(enhancement_set(obj, OEP_FIRE, OQ_FINE, FALSE));
+                    assert(enhancement_set(obj, 0, OQ_FINE, FALSE));
                     obj->spe = 17; target = obj->o_id;
                 }
                 forge_test_item(WAR_HAMMER, 1);
@@ -347,7 +343,7 @@ forge15c_capacity(void)
                     count = 0;
                     for (obj = gi.invent; obj; obj = obj->nobj)
                         if (obj->otyp == DAGGER && obj->o_enh_known == 0
-                            && obj->o_enh_props == OEP_FIRE && obj->spe == 17)
+                            && obj->o_enh_props == 0 && obj->o_enh_quality == OQ_FINE && obj->spe == 17)
                             count += (int) obj->quan;
                     assert(count >= 1);
                 }
@@ -421,7 +417,7 @@ static void forge16a_properties(void)
     state.present=TRUE;state.props.word[0]=OEP_STONING_IV|OEP_ANARCHIC_II;
     out=forge_output(ARROW);forge_inherit(out,&state);assert(!out->o_enh_props);obfree(out,NULL);
     out=forge_output(DAGGER);out->quan=3;forge_inherit(out,&state);
-    assert(out->o_enh_props==OEP_ANARCHIC_II&&!out->o_stoning_remaining);obfree(out,NULL);
+    assert(!out->o_enh_props&&!out->o_stoning_remaining&&!enhancement_slot_count(out));obfree(out,NULL);
     puts("PASS Step 16A forge strongest eligible family, cross-family filtering, ammo exclusion and new Stoning object Ready");
 }
 

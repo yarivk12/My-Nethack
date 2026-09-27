@@ -93,14 +93,14 @@ step14_generation_tests(void)
     {
         /* Native and secondary powers: full T4 exhaustion on chromatic armor,
          * one-member T4 pools, and the ranged-only Trueflight pool. */
-        const int types[]={ARROW,LEATHER_ARMOR,CLOAK_OF_MAGIC_RESISTANCE,
+        const int types[]={SPEAR,LEATHER_ARMOR,CLOAK_OF_MAGIC_RESISTANCE,
                            BLUE_DRAGON_SCALE_MAIL,WHITE_DRAGON_SCALE_MAIL,
                            CHROMATIC_DRAGON_SCALE_MAIL};
         const uint64 armor=OEP_SEARCHING|OEP_WARNING|OEP_STEALTH
             |OEP_FIRE_RES|OEP_COLD_RES|OEP_SHOCK_RES|OEP_POISON_RES
             |OEP_SPEED|OEP_REGEN|OEP_DISPLACED|OEP_SLOW_DIGEST
             |OEP_MAGIC_RES|OEP_REFLECTION|OEP_WARDING|OEP_DR;
-        uint64 allowed[]={(step14_weapon_elements & ~(OEP_ALIGNMENT|OEP_STONING))|OEP_TRUEFLIGHT,armor|OEP_LIGHTNESS|OEP_THORNS,
+        uint64 allowed[]={step14_weapon_elements|OEP_TRUEFLIGHT,armor|OEP_LIGHTNESS|OEP_THORNS,
                          armor&~(uint64)(uint64)OEP_MAGIC_RES,(armor&~(uint64)(OEP_SHOCK_RES|OEP_SPEED))|OEP_THORNS,
                          (armor&~(uint64)(OEP_COLD_RES|OEP_SLOW_DIGEST))|OEP_THORNS,
                          (armor&~(uint64)(OEP_FIRE_RES|OEP_COLD_RES|OEP_SHOCK_RES
@@ -155,7 +155,7 @@ step14_corpus(void)
         memset(tier,0,sizeof tier);memset(members,0,sizeof members);
         init_isaac64(140000+b,rn2);
         for(n=0;n<samples;++n) {
-            o->o_enh_props=o->o_enh_known=0;o->o_enh_quality=o->o_enh_flags=0;
+            enhancement_clear(o);
             enhancement_generate(o,depths[b]);
             q=o->o_enh_quality;has=o->o_enh_props!=0;
             if(!q&&!has)continue;

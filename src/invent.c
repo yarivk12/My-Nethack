@@ -4449,6 +4449,10 @@ mergable(
         || obj->nomerge || otmp->nomerge || !objects[obj->otyp].oc_merge)
         return FALSE;
 
+    if (enhancement_slot_count(obj) || enhancement_slot_count(otmp)
+        || socket_count(obj) || socket_count(otmp))
+        return FALSE;
+
     if (obj->o_socket_capacity != otmp->o_socket_capacity
         || memcmp(obj->o_sockets, otmp->o_sockets, sizeof obj->o_sockets)
         || memcmp(obj->o_enh_values, otmp->o_enh_values, sizeof obj->o_enh_values)
@@ -4467,6 +4471,7 @@ mergable(
     if (obj->oclass == COIN_CLASS)
         return TRUE;
 
+    if (obj->otyp == GENERIC_ESSENCE) { essence_normalize(obj); essence_normalize(otmp); }
     if (obj->cursed != otmp->cursed || obj->blessed != otmp->blessed)
         return FALSE;
 

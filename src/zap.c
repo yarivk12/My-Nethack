@@ -1962,6 +1962,7 @@ poly_obj(struct obj *obj, int id)
         otmp->o_stoning_turn = obj->o_stoning_turn;
         otmp->o_purification_remaining = obj->o_purification_remaining;
         otmp->o_purification_sampled = obj->o_purification_sampled;
+        memcpy(otmp->o_affixes, obj->o_affixes, sizeof otmp->o_affixes);
         otmp->o_enh_props2 = obj->o_enh_props2;
         otmp->o_enh_known2 = obj->o_enh_known2;
         otmp->o_enh_props = obj->o_enh_props;

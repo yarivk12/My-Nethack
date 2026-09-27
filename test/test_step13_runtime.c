@@ -14,6 +14,7 @@ extern void init_isaac64(unsigned long, int (*)(int));
 extern void step13_save_chain(NHFILE *, struct obj **);
 extern struct obj *step13_restore_chain(NHFILE *);
 #define SAME(a,b) assert((a)->o_enh_props == (b)->o_enh_props \
+    && !memcmp((a)->o_affixes,(b)->o_affixes,sizeof (a)->o_affixes) \
     && (a)->o_enh_props2 == (b)->o_enh_props2 \
     && (a)->o_enh_known == (b)->o_enh_known \
     && (a)->o_enh_known2 == (b)->o_enh_known2 \
@@ -35,7 +36,7 @@ _Static_assert(sizeof(uint32) == 4 && sizeof(uint8) == 1, "fixed width");
 _Static_assert(sizeof(((struct obj *)0)->o_enh_props2) == 8
                && sizeof(((struct obj *)0)->o_enh_known2) == 8,
                "portable second actual/known property words");
-_Static_assert(sizeof(struct obj) == 176, "Windows x64 epoch-13 object size");
+_Static_assert(sizeof(struct obj) == 184, "Windows x64 epoch-14 object size");
 _Static_assert(OQ_STANDARD == 0 && OQ_FINE == 1 && OQ_EXCEPTIONAL == 2, "qualities");
 _Static_assert(OEP_ALL == 0xfffffffffffff7fULL && OEF_QUALITY_KNOWN == 1U, "masks");
 
@@ -53,6 +54,8 @@ item(int type)
     return o;
 }
 
+#include "phase1_fixture.h"
+#include "phase1_fixture.h"
 #include "test_step15d.c"
 #include "test_step16a.c"
 #include "test_step16b.c"
@@ -67,7 +70,7 @@ matrix(void)
     uint32 bit;
     for (i = 1; i < NUM_OBJECTS; ++i) {
         struct obj *o = item(i);
-        boolean eligible = !o->oartifact && (o->oclass == WEAPON_CLASS
+        boolean eligible = !o->oartifact && !is_ammo(o) && (o->oclass == WEAPON_CLASS
             || o->oclass == ARMOR_CLASS || step16c_approved_tool(i));
         ZERO(o);
         assert(enhancement_eligible(o) == eligible);
@@ -90,16 +93,11 @@ matrix(void)
         o->o_enh_props = o->o_enh_known = ~0ULL;
         o->o_enh_quality = 255; o->o_enh_flags = 255;
         o->obranch_props = OBP_ACID; o->spe = 3;
-        program_state.in_sanity_check=TRUE;
-        enhancement_normalize(o);
-        program_state.in_sanity_check=FALSE;
+        assert(!enhancement_slots_valid(o));
+        enhancement_clear(o);
         assert(o->spe == 3 && o->obranch_props == OBP_ACID);
         if (!eligible) { ZERO(o); }
-        else {
-            assert(!(o->o_enh_props & ~OEP_ALL) && o->o_enh_quality == 0);
-            assert(o->o_enh_known == o->o_enh_props
-                   && o->o_enh_flags == OEF_QUALITY_KNOWN);
-        }
+        else { assert(enhancement_slots_valid(o)); ZERO(o); }
         obfree(o, NULL);
     }
     puts("PASS every object-table recipient, all properties/qualities, defaults and normalization");
@@ -108,7 +106,7 @@ matrix(void)
 static void
 combat(void)
 {
-    struct obj *o = item(ARROW), *bow = item(BOW), saved;
+    struct obj *o = item(SPEAR), *bow = item(BOW), *arrow = item(ARROW), saved;
     struct monst m = {0};
     int use, q, seed, want, next, value, bit, prop;
     m.data = &mons[PM_HUMAN]; m.mhp = m.mhpmax = 1000;
@@ -116,8 +114,8 @@ combat(void)
     for (q = 0; q <= 2; ++q) {
         assert(enhancement_set(o, OEP_TRUEFLIGHT, q, FALSE));
         assert(enhancement_set(bow, OEP_TRUEFLIGHT, 2-q, FALSE));
-        assert(enhancement_hit_bonus(o,bow,&m,ENHANCE_AMMO) == 4-q);
-        assert(enhancement_damage_bonus(o,bow,&m,ENHANCE_AMMO) == q);
+        assert(enhancement_hit_bonus(arrow,bow,&m,ENHANCE_AMMO) == 4-q);
+        assert(enhancement_damage_bonus(arrow,bow,&m,ENHANCE_AMMO) == 0);
         assert(enhancement_hit_bonus(o,bow,&m,ENHANCE_THROWN) == q+2);
         assert(enhancement_hit_bonus(o,bow,&m,ENHANCE_MELEE) == q);
         assert(enhancement_damage_bonus(o,bow,&m,ENHANCE_THROWN) == q);
@@ -129,12 +127,12 @@ combat(void)
         saved = *o;
         for (use = ENHANCE_MELEE; use <= ENHANCE_AMMO; ++use)
             for (seed = 1; seed <= 20; ++seed) {
-                init_isaac64(seed, rn2); want = d(1,4); if(use==ENHANCE_AMMO) want += d(1,4); next = rn2(100000);
+                init_isaac64(seed, rn2); want = d(1,4); next = rn2(100000);
                 init_isaac64(seed, rn2);
-                value = enhancement_weapon_effects(o,bow,&m,10,use);
+                value = enhancement_weapon_effects(use==ENHANCE_AMMO?arrow:o,bow,&m,10,use);
                 assert(value == want && rn2(100000) == next); SAME(o,&saved);
                 init_isaac64(seed,rn2);
-                assert(enhancement_weapon_effects(o,bow,&gy.youmonst,10,use)==want);
+                assert(enhancement_weapon_effects(use==ENHANCE_AMMO?arrow:o,bow,&gy.youmonst,10,use)==want);
                 assert(rn2(100000)==next);
                 m.mintrinsics = res_to_mr(prop); u.uprops[prop].intrinsic = FROMOUTSIDE;
                 init_isaac64(seed,rn2); next=rn2(100000);init_isaac64(seed,rn2);
@@ -162,10 +160,10 @@ combat(void)
     assert(!o->o_enh_known);gt.thrownobj=NULL;
     assert(enhancement_weapon_effects(o,bow,&m,0,ENHANCE_AMMO)>0);
     bow->oartifact=ART_EXCALIBUR; /* query guard independent of normalization */
-    assert(enhancement_hit_bonus(o,bow,&m,ENHANCE_AMMO)==0);
+    assert(enhancement_hit_bonus(arrow,bow,&m,ENHANCE_AMMO)==0);
     assert(enhancement_damage_bonus(o,bow,&m,ENHANCE_AMMO)==2);
     bow->oartifact=0;
-    obfree(o,NULL);obfree(bow,NULL);HBlinded=0;
+    obfree(o,NULL);obfree(bow,NULL);obfree(arrow,NULL);HBlinded=0;
     puts("PASS pure queries, native dmgval RNG, independent component dice, resistance, shot source stacking and monster knowledge");
 }
 
@@ -261,10 +259,10 @@ armor(void)
 static void
 lifecycle_names(void)
 {
-    struct obj *o=item(ARROW),*b,*copy,saved;
+    struct obj *o=item(SPEAR),*b,*copy,saved;
     char base[BUFSZ],name[BUFSZ],tiny[4], custom[PL_PSIZ];
     int field;
-    o->quan=20;o->known=o->dknown=o->bknown=o->rknown=1;
+    o->known=o->dknown=o->bknown=o->rknown=1;
     makeknown(o->otyp);Strcpy(base,doname(o));
     enhancement_set(o,OEP_FIRE|OEP_PRIMORDIAL,OQ_EXCEPTIONAL,FALSE);
     assert(!strcmp(base,doname(o)));
@@ -282,9 +280,8 @@ lifecycle_names(void)
     memset(custom,'x',sizeof custom-1);custom[sizeof custom-1]='\0';
     o=oname(o,custom,ONAME_NO_FLAGS);
     assert(strlen(doname(o))<BUFSZ);assert(strlen(xname(o))<BUFSZ);
-    saved=*o;b=splitobj(o,7);SAME(o,b);SAME(o,&saved);
-    assert(o->o_id!=b->o_id&&o->quan==13&&b->quan==7&&b->spe==9&&b->obranch_props==saved.obranch_props);
-    assert(mergable(o,b));
+    saved=*o;b=newobj();*b=*o;b->oextra=NULL;SAME(o,b);SAME(o,&saved);
+    assert(!mergable(o,b));
     for(field=0;field<4;++field) {
         saved=*b;
         if(field==0)b->o_enh_props^=OEP_FIRE;
@@ -330,10 +327,10 @@ impact_descriptions(void)
     assert(!strcmp(buf, "+2 to hit when firing ammunition"));
     obfree(o, NULL);
 
-    o = item(ARROW);
+    o = item(SPEAR);
     enhancement_set(o, 0, OQ_FINE, TRUE);
     enhancement_quality_impact(o, buf, sizeof buf);
-    assert(!strcmp(buf, "+1 physical damage when fired"));
+    assert(!strcmp(buf, "+1 to hit and +1 physical damage in melee or when directly thrown"));
     obfree(o, NULL);
 
     o = item(LEATHER_ARMOR);
@@ -370,7 +367,7 @@ artifacts_prices(void)
     int q,bits;
     for(q=0;q<=2;++q) for(bits=0;bits<256;++bits) {
         long pct=100; int ci;
-        struct obj *a=item(ARROW);
+        struct obj *a=item(SPEAR);
         if(enhancement_set(a,bits,q,FALSE)) {
             for(ci=0;ci<24;++ci)if(bits&enhancement_catalog[ci].bit)pct+=50L<<(enhancement_catalog[ci].tier-1);
             pct=pct*(100+10*q)/100;
@@ -404,7 +401,7 @@ static void
 billing(void)
 {
     struct monst a={0},b={0},*old=fmon;
-    struct obj *o=item(ARROW),*part;
+    struct obj *o=item(SPEAR),*part;
     long original,enhanced;
     a.data=b.data=&mons[PM_SHOPKEEPER];a.mhp=b.mhp=100;
     a.mpeaceful=b.mpeaceful=1;a.isshk=b.isshk=1;
@@ -417,16 +414,17 @@ billing(void)
     ESHK(&a)->bill_p=ESHK(&a)->bill;ESHK(&b)->bill_p=ESHK(&b)->bill;
     ESHK(&a)->billct=ESHK(&b)->billct=1;
     ESHK(&a)->bill[0].bo_id=o->o_id+999;
-    ESHK(&b)->bill[0].bo_id=o->o_id;ESHK(&b)->bill[0].bquan=10;
-    o->quan=10;o->unpaid=1;
+    ESHK(&b)->bill[0].bo_id=o->o_id;ESHK(&b)->bill[0].bquan=1;
+    o->quan=1;o->unpaid=1;
     enhancement_rebill(o);original=ESHK(&b)->bill[0].price;
     enhancement_set(o,OEP_FIRE|OEP_TRUEFLIGHT,OQ_EXCEPTIONAL,FALSE);
     enhanced=ESHK(&b)->bill[0].price;assert(enhanced>original);
     enhancement_set(o,0,OQ_STANDARD,FALSE);assert(ESHK(&b)->bill[0].price==original);
     enhancement_set(o,OEP_FIRE|OEP_TRUEFLIGHT,OQ_EXCEPTIONAL,FALSE);
     /* Keep native bill split/price behavior; nextoid can select a safe ID. */
+    enhancement_clear(o);o->quan=10;ESHK(&b)->bill[0].bquan=10;
     part=splitobj(o,3);assert(part->unpaid);SAME(o,part);assert(same_price(o,part));
-    assert(mergable(o,part));enhancement_set(part,OEP_COLD,OQ_FINE,FALSE);assert(!mergable(o,part));
+    assert(mergable(o,part));enhancement_set(part,0,OQ_FINE,FALSE);assert(!mergable(o,part));
     {
         struct obj snapshot=*part;
         long debt=ESHK(&b)->debit, price=ESHK(&b)->bill[1].price*part->quan;
@@ -460,19 +458,28 @@ step16c_recipient_codec(void)
         enhancement_mask_property(EP_PURIFICATION_IV));
     NHFILE *f;
     int typ;
-    /* Inject invalid stored properties to exercise restobj's validation,
-     * including the unknown-origin generic tool and every excluded tool. */
+    /* Corrupt identities must be rejected, not silently repaired. The native
+     * codec then round-trips every legal recipient and each empty exclusion. */
+    objects[ARROW].oc_class=TOOL_CLASS;
     for(typ=1;typ<NUM_OBJECTS;++typ) {
         if(objects[typ].oc_class!=TOOL_CLASS && typ!=ARROW) continue;
         o=item(typ);
         o->o_enh_props2=o->o_enh_known2=mask.word[1];
         o->o_purification_remaining=17;
+        assert(!enhancement_slots_valid(o));
+        enhancement_clear(o);
+        if(typ==ARROW || step16c_approved_tool(typ)) {
+            assert(enhancement_set_mask(o,mask,0,TRUE));
+            o->o_purification_remaining=17;
+        }
         o->nobj=chain;chain=o;
         if(typ==ARROW) o->oclass=TOOL_CLASS;
     }
     o=item(OIL_LAMP);o->oartifact=ART_EXCALIBUR;
     o->o_enh_props2=o->o_enh_known2=mask.word[1];
-    o->o_purification_remaining=17;o->nobj=chain;chain=o;
+    o->o_purification_remaining=17;
+    assert(!enhancement_slots_valid(o));enhancement_clear(o);
+    o->nobj=chain;chain=o;
     objects[ARROW].oc_class=TOOL_CLASS;
     f=get_freeing_nhfile();file_mode(f,WRITING,open("step16c-recipient.tmp",O_CREAT|O_TRUNC|O_WRONLY|O_BINARY,_S_IREAD|_S_IWRITE));
     step13_save_chain(f,&chain);close_nhfile(f);
@@ -503,9 +510,9 @@ chains(void)
     for(type=0;type<2;++type)
     for(props=0;props<256;++props) for(known=0;known<256;++known)
         for(q=0;q<3;++q)for(flags=0;flags<2;++flags) {
-            o=item(type?LEATHER_ARMOR:ARROW);
+            o=item(type?LEATHER_ARMOR:SPEAR);
             if(!enhancement_property_allowed(o,props)){obfree(o,NULL);continue;}
-            enhancement_set(o,props,q,FALSE);o->o_enh_known=known;o->o_enh_flags=flags;
+            enhancement_set(o,props,q,FALSE);o->o_enh_known=known & props;o->o_enh_flags=flags;
             o->nobj=chain;chain=o;++count;
         }
     bag=item(SACK);bag->cobj=item(SACK);bag->cobj->cobj=item(DAGGER);
@@ -568,10 +575,10 @@ version_gate(void)
     f=get_freeing_nhfile();file_mode(f,READING,open("step13-version.tmp",O_RDONLY|O_BINARY));
     assert(read(f->fd,header,2)==2);assert(header[0]=='h');
     lseek(f->fd,2+header[1],SEEK_SET);Sfi_version_info(f,&v,"version_info");
-    assert((v.incarnation&255)==13);assert(check_version(&v,NULL,FALSE,0));
-    v.incarnation=(v.incarnation&~255UL)|12;
+    assert((v.incarnation&255)==14);assert(check_version(&v,NULL,FALSE,0));
+    v.incarnation=(v.incarnation&~255UL)|13;
     assert(!check_version(&v,NULL,FALSE,0));close_nhfile(f);
-    puts("PASS native critical sizes/epoch-13 header and controlled epoch-12 check_version rejection");
+    puts("PASS native critical sizes/epoch-14 header and controlled epoch-13 check_version rejection");
 }
 
 static int
@@ -601,6 +608,12 @@ level_bones(void)
     unsigned long seed;
     free_level();u.uz.dnum=medusa_level.dnum;u.uz.dlevel=10;
     gi.in_mklev=TRUE;mklev();gi.in_mklev=FALSE;
+    o=item(DAGGER);assert(enhancement_slot_set(o,0,EP_STR_IV,TRUE,6));
+    assert(enhancement_slot_set(o,1,EP_FIRE,TRUE,-1));
+    assert(enhancement_slot_set(o,1,0,TRUE,-1));
+    o->o_affixes[0].history=o->o_affixes[1].history=10;
+    o=oname(o,"step17-bones",ONAME_NO_FLAGS);place_object(o,20,10);
+    svc.context.affix_essence[EP_FIRE]=19;
     o=item(DAGGER);assert(enhancement_set(o,OEP_STONING_III|OEP_VAMPIRIC_IV,0,FALSE));
     o->o_stoning_remaining=17;o->o_stoning_turn=svm.moves;
     o=oname(o,"step16a-bones",ONAME_NO_FLAGS);place_object(o,20,10);
@@ -619,6 +632,10 @@ level_bones(void)
     savelev(f,ledger_no(&u.uz));close_nhfile(f);
     f=get_freeing_nhfile();file_mode(f,READING,open("step13-level.tmp",O_RDONLY|O_BINARY));
     getlev(f,0,ledger_no(&u.uz));close_nhfile(f);assert(level_fixture_count()==4);
+    for(o=fobj;o;o=o->nobj)if(has_oname(o)&&!strcmp(ONAME(o),"step17-bones"))break;
+    assert(o && enhancement_slots_valid(o) && o->o_affixes[1].tier==1
+           && !o->o_affixes[1].property && o->o_affixes[1].history==10);
+    assert(svc.context.affix_essence[EP_FIRE]==19);
     for(o=fobj;o;o=o->nobj)if(has_oname(o)&&!strcmp(ONAME(o),"step16a-bones"))break;
     assert(o&&o->o_stoning_remaining==17);
     /* This floor item is frozen while the hero is on a different level. */
@@ -629,9 +646,17 @@ level_bones(void)
     Sfo_char(f,&count,"bones_count",1);Sfo_char(f,id,"bonesid",count);
     savefruitchn(f);savelev(f,ledger_no(&u.uz));close_nhfile(f);commit_bonesfile(&u.uz);
     free_level();wizard=FALSE;flags.bones=TRUE;
+    svc.context.affix_essence[EP_FIRE]=0;
     for(seed=1;seed<1000;++seed){init_isaac64(seed,rn2);if(!rn2(3))break;}
     assert(seed<1000);init_isaac64(seed,rn2);mklev();
     assert(level_fixture_count()==4);
+    for(o=fobj;o;o=o->nobj)if(has_oname(o)&&!strcmp(ONAME(o),"step17-bones"))break;
+    assert(o && enhancement_slots_valid(o) && o->o_affixes[0].property==EP_STR_IV
+           && o->o_enh_values[3]==6 && o->o_affixes[0].history==10
+           && o->o_affixes[1].tier==1 && !o->o_affixes[1].property
+           && o->o_affixes[1].history==10);
+    assert(!svc.context.affix_essence[EP_FIRE]);
+    puts("PASS Step 17 real level/bones mixed slots and history; ledger stays in the current game");
     for(o=fobj;o;o=o->nobj)if(has_oname(o)&&!strcmp(ONAME(o),"step16a-bones"))break;
     assert(o&&o->o_stoning_remaining==17&&!o->o_enh_known);
     enhancement_tick();assert(o->o_stoning_remaining==16);
@@ -647,6 +672,12 @@ level_bones(void)
     puts("PASS Step 16A real level/bones codec, frozen off-level cooldown and resumed active tick");
     puts("PASS actual savelev/getlev and accepted mklev/getbones with enhanced floor, hero remains, buried and monster equipment");
 }
+
+#undef enhancement_set
+#undef enhancement_set_mask
+#undef enhancement_set
+#undef enhancement_set_mask
+#include "test_step17.c"
 
 int
 step13_test_main(void)
@@ -672,6 +703,11 @@ step13_test_main(void)
     /* Native projectile animation must not flush an uninitialized test port. */
     flush_screen(-1);
     printf("SIZE|obj=%zu|before=104|props=%zu|known=%zu|quality=%zu|flags=%zu|epoch=%d\n",sizeof(struct obj),sizeof(((struct obj*)0)->o_enh_props),sizeof(((struct obj*)0)->o_enh_known),sizeof(((struct obj*)0)->o_enh_quality),sizeof(((struct obj*)0)->o_enh_flags),EDITLEVEL);
+    if(getenv("STEP17_ONLY")) {
+        step17_tests();
+        version_gate();
+        puts("PASS Step 17 native integration fixtures"); return 0;
+    }
     if(getenv("STEP16C_ONLY")) {
         step16c_foundations();step16c_generation_names();step16c_runtime_tests();
         step16c_shop_storage_tests();step16c_persistence();step16c_pending_codec();
@@ -794,6 +830,22 @@ step13_game_fixture(boolean resuming)
         return;
     }
     if(!resuming) {
+        struct obj *slots_bag=item(SACK);
+        assert(!svc.context.affix_essence[EP_FIRE]);
+        o=item(DAGGER);
+        assert(enhancement_slot_set(o,0,EP_STR_IV,FALSE,5));
+        assert(enhancement_slot_set(o,1,EP_FIRE,TRUE,-1));
+        assert(enhancement_slot_set(o,1,0,TRUE,-1));
+        o->o_affixes[0].history=10;
+        o->o_affixes[1].history=10;
+        o->o_sockets[0].property=EP_COLD;o->o_sockets[0].known=1;
+        add_to_container(slots_bag,o);
+        o=item(GENERIC_ESSENCE);o->quan=37;o->owt=weight(o);
+        add_to_container(slots_bag,o);
+        slots_bag->owt=weight(slots_bag);
+        addinv(oname(slots_bag,"step17-checkpoint",ONAME_NO_FLAGS));
+        svc.context.affix_essence[EP_FIRE]=17;
+        svc.context.affix_essence[EP_PURIFICATION_IV]=((uint64)1<<35)+3;
         struct obj *defense_bag=item(SACK);
         int property;
         for(property=0;property<12;++property) {
@@ -877,6 +929,21 @@ step13_game_fixture(boolean resuming)
         assert(restored==OEP_DEFENSIVE);
     }
     log=fopen("step13-game-results.txt","a");assert(log);
+    for(o=gi.invent;o;o=o->nobj)if(has_oname(o)&&!strcmp(ONAME(o),"step17-checkpoint"))break;
+    assert(o);
+    for(inner=o->cobj;inner;inner=inner->nobj) {
+        assert(enhancement_slots_valid(inner));
+        if(inner->otyp==DAGGER) {
+            assert(inner->o_affixes[0].property==EP_STR_IV && inner->o_enh_values[3]==5);
+            assert(inner->o_affixes[0].history==10 && inner->o_affixes[1].history==10);
+            assert(inner->o_affixes[1].tier==1 && !inner->o_affixes[1].property);
+            assert(inner->o_sockets[0].property==EP_COLD);
+        } else assert(inner->otyp==GENERIC_ESSENCE && inner->quan==37 && inner->owt==37
+                      && inner->known && inner->bknown && !inner->blessed && !inner->cursed);
+    }
+    assert(svc.context.affix_essence[EP_FIRE]==17);
+    assert(svc.context.affix_essence[EP_PURIFICATION_IV]==((uint64)1<<35)+3);
+    fprintf(log,"PASS %s Step 17 mixed slots, history, magnitude, sockets, Essence and 64-bit game ledger\n",resuming?"restored":"created");
     for(o=gi.invent;o;o=o->nobj)if(has_oname(o)&&!strcmp(ONAME(o),"step16c-checkpoint"))break;
     assert(o);
     {

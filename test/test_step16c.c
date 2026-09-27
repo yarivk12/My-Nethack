@@ -120,9 +120,9 @@ step16c_foundations(void)
                 assert(!enhancement_mask_count(enhancement_actual(o)));
             }
         }
-        o->o_enh_props2 = o->o_enh_known2 =
-            enhancement_mask_property(EP_COMMERCE_I).word[1];
-        socket_normalize(o);
+        enhancement_clear(o);
+        assert(enhancement_set_mask(o,enhancement_mask_property(EP_COMMERCE_I),
+                                   OQ_STANDARD,TRUE)==step16c_approved_tool(typ));
         assert(enhancement_has(o, EP_COMMERCE_I) == step16c_approved_tool(typ));
         assert(!!o->o_enh_known2 == step16c_approved_tool(typ));
         obfree(o, NULL);
@@ -140,13 +140,11 @@ step16c_foundations(void)
     o->o_purification_remaining = 17;
     enhancement_normalize(o);
     assert(o->o_purification_remaining == 17);
-    o->otyp = GRAPPLING_HOOK;
-    enhancement_normalize(o);
+    enhancement_change_type(o, GRAPPLING_HOOK);
     assert(!enhancement_has(o, EP_EXCAVATING));
     assert(!enhancement_mask_has(enhancement_known(o), EP_EXCAVATING));
-    assert(enhancement_has(o, EP_PURIFICATION_IV) && o->o_purification_remaining == 17);
-    o->otyp = CRYSTAL_PICK;
-    enhancement_normalize(o);
+    assert(!enhancement_has(o, EP_PURIFICATION_IV) && !o->o_purification_remaining);
+    enhancement_change_type(o, CRYSTAL_PICK);
     assert(!enhancement_mask_count(enhancement_actual(o)));
     assert(!enhancement_mask_count(enhancement_known(o)) && !o->o_purification_remaining);
     obfree(o, NULL);

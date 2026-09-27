@@ -38,7 +38,7 @@ step14_element_tests(void)
         { OEP_PRIMORDIAL | OEP_SHOCK_III, OEP_PRIMORDIAL | OEP_FIRE_II }
     };
     const int resistances[] = { 0, FIRE_RES, COLD_RES, SHOCK_RES };
-    struct obj *o = item(ARROW), *bow = item(BOW), saved;
+    struct obj *o = item(SPEAR), *bow = item(BOW), *arrow = item(ARROW), saved;
     struct monst m = { 0 };
     int i, j, seed, hero, known, use, want, next, value, base;
     m.data = &mons[PM_HUMAN]; m.mhp = m.mhpmax = 1000;
@@ -81,20 +81,18 @@ step14_element_tests(void)
                     assert(enhancement_set(bow, pairs[i][1], OQ_EXCEPTIONAL, FALSE));
                     m.mintrinsics = prop ? res_to_mr(prop) : 0;
                     init_isaac64(seed, rn2);
-                    want = step14_expected_elements(pairs[i][0], prop);
-                    if (use == ENHANCE_AMMO)
-                        want += step14_expected_elements(pairs[i][1], prop);
+                    want = step14_expected_elements(pairs[i][use == ENHANCE_AMMO ? 1 : 0], prop);
                     next = rn2(100000);
                     init_isaac64(seed, rn2);
-                    assert(enhancement_weapon_effects(o, bow, &m, 1000, use) == want);
+                    assert(enhancement_weapon_effects(use == ENHANCE_AMMO ? arrow : o, bow, &m, 1000, use) == want);
                     assert(rn2(100000) == next);
                 }
     m.mintrinsics = 0;
     for (i = 0; i <= 2; ++i) for (j = 0; j <= 2; ++j) {
         assert(enhancement_set(o, OEP_TRUEFLIGHT, i, FALSE));
         assert(enhancement_set(bow, OEP_TRUEFLIGHT, j, FALSE));
-        assert(enhancement_hit_bonus(o, bow, &m, ENHANCE_AMMO) == j + 2);
-        assert(enhancement_damage_bonus(o, bow, &m, ENHANCE_AMMO) == i);
+        assert(enhancement_hit_bonus(arrow, bow, &m, ENHANCE_AMMO) == j + 2);
+        assert(enhancement_damage_bonus(arrow, bow, &m, ENHANCE_AMMO) == 0);
         assert(enhancement_hit_bonus(o, bow, &m, ENHANCE_THROWN) == i + 2);
         assert(enhancement_hit_bonus(o, bow, &m, ENHANCE_MELEE) == i);
         enhancement_observe_attack(o, bow, ENHANCE_AMMO);
@@ -103,7 +101,7 @@ step14_element_tests(void)
         assert(!o->o_enh_known && !bow->o_enh_known);
         HBlinded = 1;
     }
-    obfree(o, NULL); obfree(bow, NULL); HBlinded = 0;
+    obfree(o, NULL); obfree(bow, NULL); obfree(arrow, NULL); HBlinded = 0;
     puts("PASS Step 14 exact native component dice/RNG, resistance, knowledge independence, launcher stacking and Trueflight cap");
 }
 
@@ -208,7 +206,7 @@ step14_combat_path_tests(void)
                 enum enhance_use use = shot ? ENHANCE_AMMO : ENHANCE_THROWN;
                 o->obranch_props = marker == 1 ? OBP_ANARCHIC
                                      : marker == 2 ? OBP_CONCORDANT : 0;
-                assert(enhancement_set(o, pass ? bits[kind] : 0, OQ_STANDARD, FALSE));
+                if (!shot) assert(enhancement_set(o, pass ? bits[kind] : 0, OQ_STANDARD, FALSE));
                 assert(enhancement_set(bow, pass ? bits[kind] : 0, OQ_STANDARD, FALSE));
                 defender->mhp = defender->mhpmax = a->mhp = a->mhpmax = 2000;
                 u.uhp = u.uhpmax = 2000; u.uac = 10;
@@ -237,8 +235,8 @@ step14_combat_path_tests(void)
                 HFire_resistance = HCold_resistance = HShock_resistance = HAcid_resistance = 0;
             }
             assert(loss[0] > 0 && loss[2] == loss[0]);
-            assert(loss[1] - loss[0] >= minimum[kind] * (shot ? 2 : 1));
-            assert(loss[1] - loss[0] <= maximum[kind] * (shot ? 2 : 1));
+            assert(loss[1] - loss[0] >= minimum[kind]);
+            assert(loss[1] - loss[0] <= maximum[kind]);
             /* Both markers double physical damage against these lawful
              * defenders, but cannot change even one point of elemental dice.
              * Seed replay is exact: alignment markers consume no random dice. */
@@ -269,13 +267,13 @@ step14_shade_tests(void)
             for (seed = 1; seed <= 12; ++seed) {
                 for (pass = 0; pass < 2; ++pass) {
                     struct obj *o = item(shot ? ARROW : DAGGER), *bow = item(BOW);
-                    struct obj *enhanced = source ? bow : o;
+                    struct obj *enhanced = shot ? bow : o;
                     o->spe = 50; /* reliable projectile accuracy; shade physical damage stays zero */
                     assert(enhancement_set(enhanced, pass ? OEP_FIRE_III : 0,
                                            OQ_STANDARD, FALSE));
                     defender->mhp = defender->mhpmax = 2000;
                     assert(dmgval(o, defender) == 0);
-                    if (pass && !source)
+                    if (pass && !shot)
                         assert(!shade_miss(a, defender, o, FALSE, FALSE));
                     init_isaac64(seed, rn2);
                     if (path < 3) {
@@ -349,7 +347,7 @@ step14_hero_use_observation_tests(void)
             struct obj weapon_state,bow_state;
             unsigned projectile_id;
             weapon->spe=50; /* certain native projectile hit; not enhancement */
-            assert(enhancement_set(weapon,pass?effects:0,OQ_FINE,FALSE));
+            if (!shot) assert(enhancement_set(weapon,pass?effects:0,OQ_FINE,FALSE));
             assert(enhancement_set(bow,pass?effects:0,OQ_EXCEPTIONAL,FALSE));
             if(pass==2) {
                 enhancement_identify(weapon);enhancement_identify(bow);
@@ -372,7 +370,7 @@ step14_hero_use_observation_tests(void)
                     weapon=addinv(weapon);setuwep(weapon);
                 }
             } else {
-                if(path>=5)weapon->quan=2;
+                if(path>=5 && shot)weapon->quan=2;
                 add_to_minv(attacker,weapon);add_to_minv(attacker,bow);
                 MON_WEP(attacker)=shot?bow:weapon;
                 MON_WEP(attacker)->owornmask=W_WEP;
@@ -389,11 +387,11 @@ step14_hero_use_observation_tests(void)
                 m_throw(attacker,attacker->mx,attacker->my,1,
                         hero_target?0:1,1,weapon);
                 gm.marcher=gm.mtarget=NULL;
-                projectile_id=svc.context.objsplit.child_oid;
-                assert(weapon->quan==1 && weapon->where==OBJ_MINVENT
+                projectile_id=shot?svc.context.objsplit.child_oid:weapon_state.o_id;
+                if (shot) assert(weapon->quan==1 && weapon->where==OBJ_MINVENT
                        && weapon->ocarry==attacker);
                 assert(bow->where==OBJ_MINVENT && bow->ocarry==attacker);
-                assert(MON_WEP(attacker)==(shot?bow:weapon));
+                assert(MON_WEP(attacker)==(shot?bow:NULL));
                 assert(!gt.thrownobj);
                 /* Reacquire by ID: native flight may destroy ammunition. */
                 landed=find_oid(projectile_id);
@@ -402,10 +400,11 @@ step14_hero_use_observation_tests(void)
                     SAME(landed,&weapon_state);++survivors;
                     obj_extract_self(landed);obfree(landed,NULL);
                 }
+                if(!shot)weapon=NULL;
             }
             tail[pass]=rn2(1000000);
             loss[pass]=2000-(hero_target?u.uhp:defender->mhp);
-            assert(weapon->o_enh_props==weapon_state.o_enh_props
+            if(weapon)assert(weapon->o_enh_props==weapon_state.o_enh_props
                    && weapon->o_enh_quality==weapon_state.o_enh_quality
                    && weapon->o_enh_flags==weapon_state.o_enh_flags);
             assert(bow->o_enh_props==bow_state.o_enh_props
@@ -415,7 +414,7 @@ step14_hero_use_observation_tests(void)
                 assert(!weapon->o_enh_known);
                 assert(!bow->o_enh_known);
             } else {
-                assert(weapon->o_enh_known==weapon_state.o_enh_known);
+                if(weapon)assert(weapon->o_enh_known==weapon_state.o_enh_known);
                 assert(bow->o_enh_known==bow_state.o_enh_known);
             }
             if(path<3) {
@@ -423,18 +422,18 @@ step14_hero_use_observation_tests(void)
                 if(carried(weapon))freeinv(weapon);
                 freeinv(bow);
             } else {
-                assert(weapon->where==OBJ_MINVENT && weapon->ocarry==attacker);
+                if(weapon)assert(weapon->where==OBJ_MINVENT && weapon->ocarry==attacker);
                 assert(bow->where==OBJ_MINVENT && bow->ocarry==attacker);
-                setmnotwielded(attacker,MON_WEP(attacker));
+                if(MON_WEP(attacker))setmnotwielded(attacker,MON_WEP(attacker));
                 attacker->misc_worn_check=0;
-                obj_extract_self(weapon);obj_extract_self(bow);
+                if(weapon)obj_extract_self(weapon);obj_extract_self(bow);
                 assert(!attacker->minvent);
             }
-            obfree(weapon,NULL);obfree(bow,NULL);++cases;
+            if(weapon)obfree(weapon,NULL);obfree(bow,NULL);++cases;
         }
         assert(loss[0]>0);
-        assert(loss[1]-loss[0]>=low*(shot?2:1));
-        assert(loss[1]-loss[0]<=high*(shot?2:1));
+        assert(loss[1]-loss[0]>=low);
+        assert(loss[1]-loss[0]<=high);
         assert(loss[1]==loss[2] && tail[1]==tail[2]);
     }
     assert(cases==108 && survivors>0);

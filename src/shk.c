@@ -2965,6 +2965,7 @@ get_cost(
             adjustments (unID'd, dunce/tourist, charisma) are made */
         multiplier = 1L, divisor = 1L;
 
+    if (obj->otyp == GENERIC_ESSENCE) return 0L;
     if (!tmp)
         tmp = 5L;
     /* shopkeeper may notice if the player isn't very knowledgeable -
@@ -3551,6 +3552,7 @@ billable(
 {
     struct monst *shkp = *shkpp;
 
+    if (obj->otyp == GENERIC_ESSENCE) return FALSE;
     /* if caller hasn't supplied a shopkeeper, look one up now */
     if (!shkp) {
         if (!roomno)

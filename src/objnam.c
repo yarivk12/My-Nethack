@@ -1308,7 +1308,13 @@ doname_base(
             bp_end[-6] = '\0';
             ConcUpdate(bp);
         }
-        ConcatF2(bp, 0, " [%d/%u]", socket_count(obj), obj->o_socket_capacity);
+        int slot, known = 0;
+        for (slot = 0; slot < min(obj->o_socket_capacity, 2); ++slot)
+            known += !!obj->o_sockets[slot].known;
+        if (known == obj->o_socket_capacity)
+            ConcatF2(bp, 0, " [%d/%u]", socket_count(obj), obj->o_socket_capacity);
+        else
+            ConcatF1(bp, 0, " [?/%u]", obj->o_socket_capacity);
     }
 
     if (iflags.override_ID) {
@@ -1885,11 +1891,12 @@ not_fully_identified(struct obj *otmp)
         return TRUE;
     if (otmp->oartifact && undiscovered_artifact(otmp->oartifact))
         return TRUE;
-    if ((otmp->o_sockets[0].property && !otmp->o_sockets[0].known)
-        || (otmp->o_sockets[1].property && !otmp->o_sockets[1].known))
-        return FALSE;
+    if ((otmp->o_socket_capacity > 0 && !otmp->o_sockets[0].known)
+        || (otmp->o_socket_capacity > 1 && !otmp->o_sockets[1].known))
+        return TRUE;
     if (enhancement_eligible(otmp)
-        && ((otmp->o_enh_props & ~otmp->o_enh_known)
+        && (!(otmp->o_enh_flags & OEF_AFFIXES_KNOWN)
+            || (otmp->o_enh_props & ~otmp->o_enh_known)
             || (otmp->o_enh_props2 & ~otmp->o_enh_known2)
             || (otmp->o_enh_quality && !(otmp->o_enh_flags & OEF_QUALITY_KNOWN))))
         return TRUE;
@@ -2786,7 +2793,7 @@ static const char *const as_is[] = {
     "boots",   "shoes",     "gloves",    "lenses",   "scales",
     "eyes",    "gauntlets", "iron bars",
     /* both singular and plural are spelled the same */
-    "bison",   "deer",      "elk",       "fish",      "fowl",
+    "Essence", "bison",   "deer",      "elk",       "fish",      "fowl",
     "tuna",    "yaki",      "-hai",      "krill",     "manes",
     "moose",   "ninja",     "sheep",     "ronin",     "roshi",
     "shito",   "tengu",     "ki-rin",    "Nazgul",    "gunyoki",
@@ -5202,6 +5209,8 @@ readobjnam(char *bp, struct obj *no_wish)
         }
         /* note: the owt assignment below will not change glob's weight */
         d.cnt = 0;
+    } else if (d.typ == GENERIC_ESSENCE) {
+        d.otmp->quan = essence_wish_quantity(d.cnt);
     } else if (d.cnt > 0) {
         if (objects[d.typ].oc_merge
             && (wizard /* quantity isn't restricted when debugging */
@@ -5528,6 +5537,7 @@ readobjnam(char *bp, struct obj *no_wish)
             consume_oeaten(d.otmp, 1);
         }
     }
+    essence_normalize(d.otmp);
     d.otmp->owt = weight(d.otmp);
     if (d.very && d.otmp->otyp == HEAVY_IRON_BALL)
         d.otmp->owt += WT_IRON_BALL_INCR;

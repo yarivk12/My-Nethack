@@ -4408,6 +4408,8 @@ struct forge_state {
     int quality, spe, buc, eroded, eroded2;
     struct enhancement_mask props;
     uint8 values[8];
+    uint8 order[EP_COUNT];
+    int order_count;
 };
 
 staticfn void
@@ -4429,7 +4431,13 @@ forge_gather(struct forge_state *state, struct obj *obj)
         state->eroded = min(state->eroded, (int) obj->oeroded);
         state->eroded2 = min(state->eroded2, (int) obj->oeroded2);
     }
-    state->props = enhancement_mask_union(state->props, enhancement_actual(obj));
+    for (i = 0; i < ENHANCEMENT_MAX_SLOTS; ++i) {
+        int id = obj->o_affixes[i].property;
+        if (id && !enhancement_mask_has(state->props, id)) {
+            state->order[state->order_count++] = (uint8) id;
+            enhancement_mask_add(&state->props, id);
+        }
+    }
     for (i = 0; i < 8; ++i)
         if (obj->o_enh_props & enhancement_catalog[24 + i].bit)
             state->values[i] = max(state->values[i], obj->o_enh_values[i]);
@@ -4447,7 +4455,7 @@ forge_inherit(struct obj *obj, const struct forge_state *state)
     if (enhancement_eligible(obj)) {
         /* Filter each identity before ranking, using shared legality. Catalog
          * order breaks ties; family conflicts are filtered before ranking. */
-        for (count = 0; count < 2; ++count) {
+        for (count = 0; count < enhancement_capacity(obj); ++count) {
             best = -1;
             for (i = 0; i < SIZE(enhancement_catalog); ++i) {
                 const struct enhancement_entry *entry = &enhancement_catalog[i];
@@ -4461,11 +4469,15 @@ forge_inherit(struct obj *obj, const struct forge_state *state)
                 enhancement_mask_add(&props, best < 32 ? best + 1 : EP_VAMPIRIC_I + best - 32);
         }
         /* Inheritance is assignment, never acquisition RNG. */
-        obj->o_enh_props = props.word[0];
-        for (i = 0; i < 8; ++i)
-            obj->o_enh_values[i] = (props.word[0] & enhancement_catalog[24 + i].bit)
-                                    ? state->values[i] : 0;
-        (void) enhancement_set_mask(obj, props,
+        for (i = 0; i < state->order_count; ++i) {
+            int id = state->order[i];
+            if (enhancement_mask_has(props, id)
+                && !enhancement_slot_set(obj, enhancement_first_unused(obj),
+                     id, FALSE, id >= EP_STR_I && id <= EP_DEX_IV
+                                    ? state->values[id - EP_STR_I] : -1))
+                panic("forge inheritance lost a legal property");
+        }
+        (void) enhancement_set_mask(obj, enhancement_actual(obj),
             obj->oclass == TOOL_CLASS ? OQ_STANDARD : (enum enhancement_quality) state->quality, FALSE);
     }
     /* Native spe meanings: obj.h, charge_ok and readobjnam. Do not overwrite
@@ -4781,7 +4793,8 @@ staticfn boolean
 affix_target(struct obj *obj, struct obj *hammer)
 {
     return obj && obj != hammer && carried(obj) && !obj->unpaid
-        && obj->quan > 0 && socket_capacity(obj) && obj->o_socket_capacity
+        && obj->quan == 1 && socket_capacity(obj) && obj->o_socket_capacity
+        && enhancement_slots_valid(obj) && !obj->in_use && !obj->oartifact
         && obj->o_socket_capacity <= socket_capacity(obj)
         && !(obj->owornmask & (W_WEP | W_ARMOR | W_RING | W_AMUL))
         && !(u.twoweap && (obj->owornmask & W_SWAPWEP));
@@ -4797,7 +4810,7 @@ staticfn boolean
 affix_gem(struct obj *gem, struct obj *target, int removed)
 {
     int tier, i;
-    if (!gem || !carried(gem) || gem->unpaid || gem->quan < 1
+    if (!gem || !carried(gem) || gem->unpaid || gem->oartifact || gem->quan < 1
         || gem->oclass != GEM_CLASS
         || !(socket_gem_tier(gem->otyp) || objects[gem->otyp].oc_material == GLASS))
         return FALSE;
@@ -5027,6 +5040,393 @@ affix_menu(struct obj *hammer)
     }
 }
 
+/* Step 17: pure planning followed by a single irreversible commit boundary. */
+enum forge_affix_operation { FA_ADD, FA_REROLL, FA_EXTRACT, FA_IMPRINT, FA_SALVAGE };
+struct forge_affix_plan {
+    unsigned oid;
+    int operation, slot, tier, property, count, pool[EP_COUNT];
+    long gold, essence;
+};
+static const char *const forge_tiers[] = { "", "I", "II", "III", "IV" };
+
+staticfn boolean
+forge_affix_target(struct obj *obj, struct obj *hammer, boolean salvage)
+{
+    /* Knowledge first, including known absence. Do not filter menus by hidden
+     * eligibility or expose a different rejection for a hidden property. */
+    if (!obj || !carried(obj))
+        return FALSE;
+    if (!salvage && !enhancement_forge_known(obj)) return FALSE;
+    if (obj == hammer || obj->quan < 1 || obj->owornmask || obj->in_use
+        || obj->lamplit || obj->oartifact || obj->unpaid
+        || (obj->otyp == LEASH && obj->leashmon)
+        || !enhancement_eligible(obj) || !enhancement_slots_valid(obj)) return FALSE;
+    if (!salvage && obj->quan != 1L) return FALSE;
+    if (salvage && Is_container(obj) && (!obj->cknown || Has_contents(obj))) return FALSE;
+    return TRUE;
+}
+
+staticfn void
+forge_affix_cost(int operation, int tier, boolean open, int history, long *gold, long *essence)
+{
+    static const int new_gold[] = {0,300,500,1000,2500};
+    static const int new_essence[] = {0,1,3,6,12};
+    static const int base_gold[] = {0,100,200,400,800};
+    static const int refill[] = {0,1,3,5,8};
+    static const int base_essence[] = {0,2,4,7,10};
+    *gold = *essence = 0;
+    if (tier < 1 || tier > 4) return;
+    if (operation == FA_ADD && !open) {
+        *gold = new_gold[tier]; *essence = new_essence[tier]; return;
+    }
+    *gold = base_gold[tier];
+    *essence = operation == FA_ADD ? refill[tier] : base_essence[tier];
+    if (operation == FA_ADD || operation == FA_REROLL) {
+        *gold = *gold * (2 + history) / 2;
+        *essence = (*essence * (4 + history) + 3) / 4;
+    }
+}
+
+staticfn long
+forge_essence_count(void)
+{
+    struct obj *obj;
+    long count = 0;
+    for (obj = gi.invent; obj; obj = obj->nobj)
+        if (obj->otyp == GENERIC_ESSENCE && !obj->unpaid && obj->quan > 0)
+            count = nowrap_add(count, obj->quan);
+    return count;
+}
+
+/* Gold uses the same eligible-material scope and native consumption as the
+ * existing recipes. Essence has its explicitly restricted inventory scope. */
+staticfn void
+forge_spend(int typ, long amount, struct obj *hammer)
+{
+    struct obj *obj, *next;
+    for (obj = gi.invent; obj && amount; obj = next) {
+        long used;
+        next = obj->nobj;
+        if (obj->otyp != typ || obj->unpaid
+            || (typ == GOLD_PIECE && forge_reason(obj, hammer) != FORGE_USABLE)) continue;
+        used = min(amount, obj->quan);
+        amount -= used;
+        if (used == obj->quan) useupall(obj);
+        else { obj->quan -= used; obj->owt = weight(obj); }
+    }
+    if (amount) panic("Forge payment preflight mismatch");
+}
+
+staticfn boolean
+forge_affix_plan(struct obj *hammer, struct obj *obj, int op, int slot,
+                 int tier, int property, struct forge_affix_plan *plan)
+{
+    const struct affix_slot *s;
+    int i;
+    memset(plan, 0, sizeof *plan);
+    if (!forge_affix_target(obj, hammer, FALSE) || slot < 0
+        || slot >= enhancement_capacity(obj) || op < FA_ADD || op > FA_IMPRINT) return FALSE;
+    s = &obj->o_affixes[slot];
+    if (s->tier) tier = s->tier;
+    if ((op == FA_ADD && s->property)
+        || ((op == FA_REROLL || op == FA_EXTRACT) && !s->property)
+        || (op == FA_IMPRINT && (!s->tier || s->property))) return FALSE;
+    plan->count = enhancement_forge_candidates(obj, slot, tier, op == FA_REROLL, plan->pool);
+    if (!plan->count) return FALSE;
+    if (op == FA_EXTRACT) property = s->property;
+    if (op == FA_IMPRINT || op == FA_EXTRACT) {
+        for (i = 0; i < plan->count && plan->pool[i] != property; ++i) ;
+        if (i == plan->count) return FALSE;
+        if (op == FA_IMPRINT && !svc.context.affix_essence[property]) return FALSE;
+        if (op == FA_EXTRACT && svc.context.affix_essence[property] == ~(uint64) 0) return FALSE;
+    }
+    plan->oid = obj->o_id; plan->operation = op; plan->slot = slot;
+    plan->tier = tier; plan->property = property;
+    forge_affix_cost(op, tier, s->tier != 0, s->history, &plan->gold, &plan->essence);
+    return TRUE;
+}
+
+staticfn void
+forge_property_line(winid win, int choice, int id, const struct obj *target)
+{
+    char buf[BUFSZ], impact[BUFSZ];
+    struct obj description = cg.zeroobj;
+    const struct enhancement_entry *e = equipment_property(id);
+    description.otyp = DAGGER; description.oclass = WEAPON_CLASS;
+    enhancement_property_impact(target ? target : &description, id, -1, impact, sizeof impact);
+    if (!target && id == EP_TRUEFLIGHT)
+        Strcpy(impact, "+2 to hit when throwing the item or firing its ammunition");
+    Snprintf(buf, sizeof buf, "%s %s: %s", e->prefix, forge_tiers[e->tier], impact);
+    forge_menu_line(win, choice, 0, buf);
+}
+
+staticfn int
+forge_affix_commit(struct obj *hammer, const struct forge_affix_plan *requested)
+{
+    struct forge_affix_plan plan;
+    struct obj *obj = forge_find(requested->oid);
+    int op = requested->operation, slot = requested->slot, id, first, second, chosen;
+    winid win;
+    if (!hammer || !carried(hammer) || hammer->otyp != WAR_HAMMER
+        || !IS_FORGE(levl[u.ux][u.uy].typ) || Confusion || Stunned || ACURR(A_STR) < 4
+        || !forge_affix_plan(hammer, obj, op, slot, requested->tier, requested->property, &plan)
+        || forge_quantity(GOLD_PIECE, hammer, 0) < plan.gold
+        || forge_essence_count() < plan.essence) return ECMD_OK;
+    /* COMMIT. All remaining choices are mandatory results or paid Keep. */
+    forge_spend(GOLD_PIECE, plan.gold, hammer);
+    forge_spend(GENERIC_ESSENCE, plan.essence, hammer);
+    id = plan.property;
+    if (op == FA_REROLL) {
+        enhancement_slot_history(obj, slot);
+        first = plan.count == 1 ? 0 : rn2(plan.count);
+        second = -1;
+        if (plan.count > 1) {
+            second = rn2(plan.count - 1);
+            if (second >= first) ++second;
+        }
+        win = create_nhwindow(NHW_MENU); start_menu(win, MENU_BEHAVE_STANDARD);
+        forge_property_line(win, 1, plan.pool[first], obj);
+        if (second >= 0) forge_property_line(win, 2, plan.pool[second], obj);
+        forge_menu_line(win, 3, 'k', "Keep Existing");
+        forge_property_line(win, 0, obj->o_affixes[slot].property, obj);
+        chosen = forge_menu_pick(win, "Choose your affix (ESC keeps existing)", 0);
+        if (chosen != 1 && !(chosen == 2 && second >= 0)) goto finished;
+        id = plan.pool[chosen == 1 ? first : second];
+    } else if (op == FA_ADD) {
+        id = plan.pool[plan.count == 1 ? 0 : rn2(plan.count)];
+    } else if (op == FA_EXTRACT) {
+        if (!enhancement_slot_set(obj, slot, 0, TRUE, -1)) panic("Forge extraction mismatch");
+        enhancement_slot_history(obj, slot);
+        ++svc.context.affix_essence[id];
+        pline("Extracted %s %s Essence.", equipment_property(id)->prefix, forge_tiers[plan.tier]);
+        goto finished;
+    }
+    if (!enhancement_slot_set(obj, slot, id, TRUE, -1)) panic("Forge affix preflight mismatch");
+    if (op == FA_IMPRINT) --svc.context.affix_essence[id];
+    pline("Slot %d: %s %s.", slot + 1, equipment_property(id)->prefix, forge_tiers[plan.tier]);
+ finished:
+    update_inventory(); encumber_msg();
+    return ECMD_TIME;
+}
+
+staticfn void
+forge_ledger(void)
+{
+    int tier, id, ids[EP_COUNT], n, i, j;
+    boolean any = FALSE;
+    winid win = create_nhwindow(NHW_MENU);
+    char buf[BUFSZ];
+    start_menu(win, MENU_BEHAVE_STANDARD);
+    for (tier = 1; tier <= 4; ++tier) {
+        n = 0;
+        for (id = 1; id < EP_COUNT; ++id)
+            if (svc.context.affix_essence[id] && equipment_property(id)->tier == tier) {
+                for (j = n; j && strcmpi(equipment_property(ids[j-1])->prefix,
+                                         equipment_property(id)->prefix) > 0; --j)
+                    ids[j] = ids[j-1];
+                ids[j] = id; ++n;
+            }
+        if (!n) continue;
+        any = TRUE;
+        Snprintf(buf, sizeof buf, "Tier %s", forge_tiers[tier]);
+        forge_menu_line(win, 0, 0, buf);
+        for (i = 0; i < n; ++i) {
+            id = ids[i];
+            Snprintf(buf, sizeof buf, "%s %s Essence x%llu", equipment_property(id)->prefix,
+                     forge_tiers[tier], (unsigned long long) svc.context.affix_essence[id]);
+            forge_menu_line(win, 0, 0, buf);
+            forge_property_line(win, 0, id, (const struct obj *) 0);
+        }
+    }
+    if (!any) forge_menu_line(win, 0, 0, "No stored Affix Essence.");
+    (void) forge_menu_pick(win, "Stored Affix Essence", 0);
+}
+
+staticfn struct obj *
+forge_select_affix_target(void)
+{
+    struct obj *obj;
+    winid win = create_nhwindow(NHW_MENU);
+    int i, choice;
+    start_menu(win, MENU_BEHAVE_STANDARD);
+    /* No hidden-state filtering, even for unavailable targets. */
+    for (obj = gi.invent, i = 1; obj; obj = obj->nobj, ++i)
+        forge_menu_line(win, i, obj->invlet, forge_inventory_name(obj));
+    choice = forge_menu_pick(win, "Choose an item", 0);
+    if (!choice) return 0;
+    for (obj = gi.invent, i = 1; obj && i < choice; obj = obj->nobj, ++i) ;
+    return obj;
+}
+
+staticfn int
+forge_affix_attempt(struct obj *hammer, int op)
+{
+    struct obj *obj = forge_select_affix_target();
+    struct forge_affix_plan plan;
+    int i, slot, tier = 0, property = 0, pool[EP_COUNT], n, unused;
+    winid win;
+    char buf[BUFSZ];
+    if (!obj) return ECMD_OK;
+    if (!forge_affix_target(obj, hammer, FALSE)) {
+        pline("This item is not ready for affix crafting. Identify it fully and put it aside first.");
+        return ECMD_OK;
+    }
+    win = create_nhwindow(NHW_MENU); start_menu(win, MENU_BEHAVE_STANDARD);
+    unused = enhancement_first_unused(obj);
+    for (i = 0; i < enhancement_capacity(obj); ++i) {
+        const struct affix_slot *s = &obj->o_affixes[i];
+        if (!s->tier || ((op == FA_ADD || op == FA_IMPRINT) ? s->property != 0 : !s->property)) continue;
+        Snprintf(buf, sizeof buf, "Slot %d: %s, Tier %s, Rerolls: %u%s", i + 1,
+                 s->property ? equipment_property(s->property)->prefix : "Open Affix Slot",
+                 forge_tiers[s->tier], s->history, s->history == 10 ? " (maximum)" : "");
+        forge_menu_line(win, i + 1, 0, buf);
+    }
+    if (op == FA_ADD && unused >= 0) forge_menu_line(win, unused + 1, 'n', "Create New Affix Slot");
+    slot = forge_menu_pick(win, "Choose an Affix Slot", 0) - 1;
+    if (slot < 0 || slot >= enhancement_capacity(obj)) return ECMD_OK;
+    tier = obj->o_affixes[slot].tier;
+    if (!tier && op == FA_ADD) {
+        win = create_nhwindow(NHW_MENU); start_menu(win, MENU_BEHAVE_STANDARD);
+        for (i = 1; i <= 4; ++i)
+            if (enhancement_forge_candidates(obj, slot, i, FALSE, 0)) {
+                Snprintf(buf, sizeof buf, "Tier %s", forge_tiers[i]);
+                forge_menu_line(win, i, 0, buf);
+            }
+        tier = forge_menu_pick(win, "Choose a tier", 0);
+        if (!tier) return ECMD_OK;
+    }
+    if (op == FA_IMPRINT) {
+        n = enhancement_forge_candidates(obj, slot, tier, FALSE, pool);
+        win = create_nhwindow(NHW_MENU); start_menu(win, MENU_BEHAVE_STANDARD);
+        for (i = 0; i < n; ++i)
+            if (svc.context.affix_essence[pool[i]]) forge_property_line(win, pool[i], pool[i], obj);
+        property = forge_menu_pick(win, "Choose stored Affix Essence", 0);
+        if (!property) return ECMD_OK;
+    }
+    if (!forge_affix_plan(hammer, obj, op, slot, tier, property, &plan)) {
+        pline("No legal affix is available for this operation."); return ECMD_OK;
+    }
+    if (forge_quantity(GOLD_PIECE, hammer, 0) < plan.gold || forge_essence_count() < plan.essence) {
+        pline("This requires %ld gold and %ld Essence.", plan.gold, plan.essence); return ECMD_OK;
+    }
+    win = create_nhwindow(NHW_MENU); start_menu(win, MENU_BEHAVE_STANDARD);
+    forge_menu_line(win, 0, 0, forge_inventory_name(obj));
+    Snprintf(buf, sizeof buf, "Slot %d, Tier %s: %ld gold and %ld Essence%s", slot + 1,
+             forge_tiers[tier], plan.gold, plan.essence, op == FA_IMPRINT ? " and 1 exact Affix Essence" : "");
+    forge_menu_line(win, 0, 0, buf);
+    if (op == FA_ADD) forge_menu_line(win, 0, 0, "The exact property is random; the result must be kept.");
+    if (op == FA_REROLL) forge_menu_line(win, 0, 0, "Payment and history are committed before candidates are revealed.");
+    forge_menu_line(win, 1, 'y', "Confirm"); forge_menu_line(win, 2, 'n', "Cancel");
+    if (forge_menu_pick(win, "Confirm affix crafting?", 0) != 1) return ECMD_OK;
+    return forge_affix_commit(hammer, &plan);
+}
+
+staticfn int
+forge_affix_menu(struct obj *hammer)
+{
+    static const char *const names[] = { "Add Random Affix", "Reroll Affix", "Extract Affix",
+        "Imprint Affix", "View Stored Affix Essence", "Back" };
+    int i, choice, result;
+    winid win;
+    for (;;) {
+        win = create_nhwindow(NHW_MENU); start_menu(win, MENU_BEHAVE_STANDARD);
+        for (i = 0; i < SIZE(names); ++i) forge_menu_line(win, i + 1, 0, names[i]);
+        choice = forge_menu_pick(win, "Affix Crafting", 0);
+        if (!choice || choice == 6) return ECMD_OK;
+        if (choice == 5) { forge_ledger(); continue; }
+        result = forge_affix_attempt(hammer, choice - 1);
+        if (result == ECMD_TIME) return result;
+    }
+}
+
+staticfn long
+forge_salvage_yield(const struct obj *obj)
+{
+    static const int contribution[] = { 0, 1, 2, 3, 5 };
+    long result = obj->o_enh_quality;
+    int i;
+    for (i = 0; i < enhancement_capacity(obj); ++i)
+        result += contribution[obj->o_affixes[i].tier];
+    return result;
+}
+
+staticfn boolean
+forge_salvage_known(const struct obj *obj)
+{
+    int i;
+    if (!enhancement_forge_known(obj) || !(obj->o_enh_flags & OEF_QUALITY_KNOWN)) return FALSE;
+    /* Exact base identity makes the available socket positions public.
+     * Empty positions and occupied unknown positions use the same flag gate. */
+    for (i = 0; i < obj->o_socket_capacity; ++i)
+        if (!obj->o_sockets[i].known) return FALSE;
+    return TRUE;
+}
+
+staticfn int
+forge_salvage_commit(struct obj *hammer, unsigned oid)
+{
+    struct obj *obj = forge_find(oid), *reward;
+    long units, per, amount = 0, i;
+    if (!hammer || !carried(hammer) || hammer->otyp != WAR_HAMMER
+        || !IS_FORGE(levl[u.ux][u.uy].typ) || Confusion || Stunned || ACURR(A_STR) < 4
+        || !forge_affix_target(obj, hammer, TRUE)) return ECMD_OK;
+    units = obj->quan; per = forge_salvage_yield(obj);
+    if (units > LONG_MAX / (per ? per : 20L)) return ECMD_OK;
+    useupall(obj); /* COMMIT and destruction precede any fallback RNG. */
+    if (per) amount = per * units;
+    else for (i = 0; i < units; ++i) amount += d(2, 10);
+    reward = mksobj(per ? GENERIC_ESSENCE : GOLD_PIECE, FALSE, FALSE);
+    reward->quan = amount; reward->owt = weight(reward);
+    reward = addinv(reward); /* the destroyed target freed its inventory slot */
+    pline("Salvage recovered %ld %s.", amount, per ? "Essence" : "gold");
+    update_inventory(); encumber_msg();
+    return ECMD_TIME;
+}
+
+staticfn int
+forge_salvage(struct obj *hammer)
+{
+    struct obj *obj = forge_select_affix_target();
+    long per;
+    int i;
+    char buf[BUFSZ];
+    winid win;
+    if (!obj) return ECMD_OK;
+    if (!forge_affix_target(obj, hammer, TRUE)) {
+        pline("This item is not ready for Salvage. Put it aside; inspect and empty any container first.");
+        return ECMD_OK;
+    }
+    win = create_nhwindow(NHW_MENU); start_menu(win, MENU_BEHAVE_STANDARD);
+    forge_menu_line(win, 0, 0, forge_inventory_name(obj));
+    if (forge_salvage_known(obj)) {
+        per = forge_salvage_yield(obj);
+        Snprintf(buf, sizeof buf, "Quality: +%u Essence per item", obj->o_enh_quality);
+        forge_menu_line(win, 0, 0, buf);
+        for (i = 0; i < enhancement_capacity(obj); ++i)
+            if (obj->o_affixes[i].tier) {
+                int tier = obj->o_affixes[i].tier;
+                Snprintf(buf, sizeof buf, "Slot %d: %sTier %s +%d Essence", i+1,
+                         obj->o_affixes[i].property ? "" : "Open ", forge_tiers[tier], tier == 4 ? 5 : tier);
+                forge_menu_line(win, 0, 0, buf);
+            }
+        if (per) Snprintf(buf, sizeof buf, "Total: %ld x %ld Essence", obj->quan, per);
+        else if (obj->quan == 1) Strcpy(buf, "2d10 gold");
+        else Snprintf(buf, sizeof buf, "%ld x 2d10 gold", obj->quan);
+        forge_menu_line(win, 0, 0, buf);
+    } else {
+        forge_menu_line(win, 0, 0, "Some properties relevant to Salvage are unidentified.");
+        forge_menu_line(win, 0, 0, "The exact Salvage return cannot be determined before destruction.");
+    }
+    for (i = 0; i < obj->o_socket_capacity; ++i)
+        if (obj->o_sockets[i].property && obj->o_sockets[i].known) {
+            forge_menu_line(win, 0, 0, "Socketed gems will be destroyed and contribute no Essence."); break;
+        }
+    forge_menu_line(win, 0, 0, "Salvaging will permanently destroy this item (the entire selected stack).");
+    forge_menu_line(win, 1, 'y', "Salvage item"); forge_menu_line(win, 2, 'n', "Cancel");
+    if (forge_menu_pick(win, "Confirm Salvage?", 0) != 1) return ECMD_OK;
+    return forge_salvage_commit(hammer, obj->o_id);
+}
+
 staticfn int
 forge_menu(struct obj *hammer)
 {
@@ -5043,13 +5443,22 @@ forge_menu(struct obj *hammer)
         panic("Invalid static forge catalogue");
     for (i = 0; i < SIZE(forge_recipes); ++i)
         present[forge_category(forge_recipes[i].output)]++;
+ top:
     win = create_nhwindow(NHW_MENU);
     start_menu(win, MENU_BEHAVE_STANDARD);
     forge_menu_line(win, 1, 'f', "Forge an item");
     forge_menu_line(win, 2, 's', "Socket gemstone");
+    forge_menu_line(win, 3, 'a', "Affix Crafting");
+    forge_menu_line(win, 4, 'v', "Salvage item");
+    forge_menu_line(win, 5, 'l', "Leave Forge");
     i = forge_menu_pick(win, "Use the forge", (long *) 0);
-    if (!i) return ECMD_OK;
+    if (!i || i == 5) return ECMD_OK;
     if (i == 2) return affix_menu(hammer);
+    if (i == 3 || i == 4) {
+        result = i == 3 ? forge_affix_menu(hammer) : forge_salvage(hammer);
+        if (result == ECMD_TIME) return result;
+        goto top;
+    }
     for (;;) {
         (void) memset(available, 0, sizeof available);
         for (i = 0; i < SIZE(forge_recipes); ++i)
@@ -5119,7 +5528,13 @@ forge_menu(struct obj *hammer)
 }
 
 #ifdef STEP15_TEST
+#include "../test/phase1_fixture.h"
 #include "../test/test_step15b.c"
+#undef enhancement_set
+#undef enhancement_set_mask
+#endif
+#ifdef STEP13_TEST
+#include "../test/test_step17_forge.c"
 #endif
 
 /* One entry point for forge operations. Rejections use the no-time ECMD_OK

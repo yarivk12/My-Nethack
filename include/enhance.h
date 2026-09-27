@@ -16,6 +16,20 @@ void enhancement_mask_remove(struct enhancement_mask *, int);
 int enhancement_mask_count(struct enhancement_mask);
 boolean enhancement_mask_allowed(const struct obj *, struct enhancement_mask);
 boolean enhancement_set_mask(struct obj *, struct enhancement_mask, enum enhancement_quality, boolean);
+void essence_normalize(struct obj *);
+long essence_wish_quantity(long);
+boolean essence_loot_context(void);
+struct obj *essence_random(void);
+struct obj *ordinary_loot_at(char, coordxy, coordxy, boolean);
+int enhancement_capacity(const struct obj *);
+int enhancement_slot_count(const struct obj *);
+int enhancement_first_unused(const struct obj *);
+boolean enhancement_slots_valid(const struct obj *);
+boolean enhancement_slot_set(struct obj *, int, int, boolean, int);
+void enhancement_slot_history(struct obj *, int);
+int enhancement_forge_candidates(const struct obj *, int, int, boolean, int *);
+boolean enhancement_forge_known(const struct obj *);
+void enhancement_finalize_stack(struct obj *);
 boolean enhancement_has(const struct obj *, int);
 void enhancement_learn(struct obj *, int);
 enum enhance_use {
@@ -97,6 +111,7 @@ enum enhance_use {
 #define OEP_ELEMENTS   (0x00007f07ULL | OEP_ACID)
 #define OEP_WORN        0x01ff8070U
 #define OEF_QUALITY_KNOWN 0x01U
+#define OEF_AFFIXES_KNOWN 0x02U /* includes knowledge of absence */
 
 boolean enhancement_eligible(const struct obj *);
 boolean enhancement_property_allowed(const struct obj *, uint64);
@@ -153,26 +168,7 @@ struct enhancement_band { int gate, standard, fine, presence, two, tier[4]; };
 const struct enhancement_band *enhancement_depth_band(int);
 /* IDs 1..32 retain their original catalog indices; Step 16A IDs follow
  * the existing socket-only IDs, preserving all earlier persisted identities. */
-enum equipment_property {
-    EP_NONE, EP_FIRE, EP_COLD, EP_SHOCK, EP_TRUEFLIGHT,
-    EP_FIRE_II, EP_COLD_II, EP_SHOCK_II,
-    EP_FIRE_III, EP_COLD_III, EP_SHOCK_III, EP_PRIMORDIAL,
-    EP_SEARCHING, EP_WARNING, EP_STEALTH,
-    EP_FIRE_RES, EP_COLD_RES, EP_SHOCK_RES, EP_POISON_RES,
-    EP_SPEED, EP_REGEN, EP_DISPLACED, EP_SLOW_DIGEST, EP_MAGIC_RES, EP_REFLECTION,
-    EP_STR_I, EP_STR_II, EP_STR_III, EP_STR_IV,
-    EP_DEX_I, EP_DEX_II, EP_DEX_III, EP_DEX_IV,
-    EP_HP_I, EP_HP_III, EP_HP_IV, EP_PROT_I, EP_PROT_III, EP_PROT_IV,
-    EP_CON_I, EP_CON_II, EP_CON_III, EP_CON_IV,
-    EP_MANA_I, EP_MANA_II, EP_MANA_III, EP_MANA_IV,
-    EP_INT_I, EP_INT_II, EP_INT_III, EP_INT_IV,
-    EP_WIS_I, EP_WIS_II, EP_WIS_III, EP_WIS_IV,
-    EP_CHA_I, EP_CHA_II, EP_CHA_III, EP_CHA_IV,
-    EP_SLEEP_RES, EP_SEE_INVIS, EP_JUMPING, EP_BREATHING, EP_TELEPATHY,
-    EP_TELEPORT_CONTROL, EP_POLYMORPH_CONTROL, EP_FLYING,
-    EP_VAMPIRIC_I, EP_VAMPIRIC_II, EP_VAMPIRIC_III, EP_VAMPIRIC_IV, EP_ACID_I, EP_ACID_II, EP_ACID_III, EP_ANARCHIC_I, EP_ANARCHIC_II, EP_AXIOMATIC_I, EP_AXIOMATIC_II, EP_STONING_I, EP_STONING_II, EP_STONING_III, EP_STONING_IV, EP_WARDING, EP_CASTING_II, EP_CASTING_IV, EP_LIGHTNESS_I, EP_LIGHTNESS_II, EP_LIGHTNESS_III, EP_THORNS_I, EP_THORNS_II, EP_DR_I, EP_DR_II, EP_DR_III, EP_DR_IV,
-    EP_EROSION_I, EP_EROSION_II, EP_EROSION_III, EP_EROSION_IV, EP_CURSE_II, EP_CURSE_IV, EP_DISCERNMENT, EP_PURIFICATION_I, EP_PURIFICATION_II, EP_PURIFICATION_III, EP_PURIFICATION_IV, EP_EXCAVATING, EP_COMMERCE_I, EP_COMMERCE_III, EP_TREASURE_I, EP_TREASURE_II, EP_ARCANE_II, EP_ARCANE_III, EP_ARMOR_STORAGE_II, EP_ARMOR_STORAGE_III, EP_WEAPON_STORAGE_II, EP_WEAPON_STORAGE_III, EP_WATERTIGHT, EP_COUNT
-};
+/* Persistent IDs are declared in affix.h. */
 enum equipment_stat { ES_NONE, ES_STR, ES_DEX, ES_CON, ES_INT, ES_WIS,
                       ES_CHA, ES_HP, ES_MANA, ES_PROTECTION };
 const struct enhancement_entry *equipment_property(int);

@@ -59,7 +59,7 @@ step14_names_prices_tests(void)
              * the other rows supply distinct pairs only. */
             if(i>=first && j==i)continue;
             for(q=0;q<3;++q) {
-                o=item(kind?LEATHER_ARMOR:ARROW);
+                o=item(kind?LEATHER_ARMOR:SPEAR);
                 assert(enhancement_set(o,bits,q,FALSE));
                 for(k=0;k<SIZE(bases);++k) {
                     long want=max(1L,bases[k]*(100+surcharge)*(10+q)/1000);

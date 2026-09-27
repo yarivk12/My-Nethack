@@ -357,6 +357,7 @@ int
 socket_candidates(const struct obj *obj, int tier, int removed, int *out)
 {
     int id, i, n = 0;
+    if (obj->quan != 1L) return 0;
     for (id = 1; id < EP_COUNT; ++id) {
         const struct enhancement_entry *e = equipment_property(id);
         if (e->tier != tier || !socket_allowed(obj, id)
@@ -383,26 +384,9 @@ void
 socket_normalize(struct obj *obj)
 {
     int i, cap = socket_capacity(obj);
-    {
-        struct enhancement_mask old = enhancement_actual(obj), kept = {{ 0, 0 }};
-        struct obj ordinary = *obj;
-        int id;
-        memset(ordinary.o_sockets, 0, sizeof ordinary.o_sockets);
-        for (id = 1; id < EP_COUNT; ++id)
-            if (enhancement_mask_has(old, id)) {
-                struct enhancement_mask candidate = kept;
-                enhancement_mask_add(&candidate, id);
-                if (enhancement_mask_allowed(&ordinary, candidate)) kept = candidate;
-            }
-        obj->o_enh_props = kept.word[0]; obj->o_enh_props2 = kept.word[1];
-        if (!enhancement_eligible(obj)) obj->o_enh_quality = obj->o_enh_flags = 0;
-        if (obj->oclass == TOOL_CLASS || obj->o_enh_quality > OQ_EXCEPTIONAL)
-            obj->o_enh_quality = OQ_STANDARD;
-        obj->o_enh_flags &= OEF_QUALITY_KNOWN;
-        if (!utility_purification_interval(obj)) {
-            obj->o_purification_remaining = 0;
-            obj->o_purification_sampled = 0;
-        }
+    if (!enhancement_slots_valid(obj)) {
+        impossible("Corrupt Phase 1 affix slots");
+        return;
     }
     if (!(obj->o_enh_props & OEP_STONING)) {
         obj->o_stoning_remaining = 0;
@@ -412,6 +396,9 @@ socket_normalize(struct obj *obj)
     for (i = 0; i < 2; ++i) {
         struct item_socket *s = &obj->o_sockets[i];
         const struct enhancement_entry *e = equipment_property(s->property);
+        if (i < obj->o_socket_capacity && !s->property) {
+            s->value = 0; s->known = !!s->known; continue;
+        }
         if (i >= obj->o_socket_capacity || !e || !socket_allowed(obj, s->property)
             || (e->bit && (obj->o_enh_props & e->bit))
             || ((e->bit & OEP_ALIGNMENT) && (obj->o_enh_props & OEP_ALIGNMENT))
@@ -424,15 +411,6 @@ socket_normalize(struct obj *obj)
         else {
             s->known = !!s->known;
             if (!e->stat) s->value = 0;
-        }
-    }
-    for (i = 0; i < 8; ++i) {
-        const struct enhancement_entry *e = &enhancement_catalog[24 + i];
-        if (!(obj->o_enh_props & e->bit)) obj->o_enh_values[i] = 0;
-        else if (obj->o_enh_values[i] < e->dice
-                 || obj->o_enh_values[i] > e->dice * e->sides) {
-            obj->o_enh_props &= ~e->bit;
-            obj->o_enh_values[i] = 0;
         }
     }
     obj->o_enh_known &= obj->o_enh_props;
@@ -482,7 +460,8 @@ enhancement_native_property(const struct obj *obj, int prop)
 boolean
 enhancement_eligible(const struct obj *obj)
 {
-    return obj && !obj->oartifact
+    return obj && !obj->oartifact && !is_ammo(obj)
+           && !objects[obj->otyp].oc_unique
            && (obj->oclass == WEAPON_CLASS || obj->oclass == ARMOR_CLASS || utility_recipient(obj));
 }
 
@@ -515,7 +494,6 @@ enhancement_allowed(const struct obj *obj)
 staticfn boolean
 enhancement_word0_allowed(const struct obj *obj, uint64 props)
 {
-    uint64 rest = props & (props - 1U);
     uint64 families[] = { OEP_VAMPIRIC, OEP_ALIGNMENT, OEP_STONING,
                           OEP_CASTING, OEP_LIGHTNESS, OEP_THORNS, OEP_DR };
     int i;
@@ -524,7 +502,7 @@ enhancement_word0_allowed(const struct obj *obj, uint64 props)
         if (bits & (bits - 1ULL)) return FALSE;
         if (bits && (socket_bits(obj) & families[i])) return FALSE;
     }
-    return enhancement_eligible(obj) && !(rest & (rest - 1U))
+    return !(props & socket_bits(obj)) && enhancement_eligible(obj)
            && !(props & ~enhancement_allowed(obj));
 }
 
@@ -538,7 +516,8 @@ enhancement_mask_allowed(const struct obj *obj, struct enhancement_mask m)
         EP_COUNT };
     uint64 covered = 0;
     int i, id, n;
-    if (enhancement_mask_count(m) > 2 || !enhancement_word0_allowed(obj, m.word[0]))
+    if ((obj->quan != 1L && enhancement_mask_count(m))
+        || enhancement_mask_count(m) > enhancement_capacity(obj) || !enhancement_word0_allowed(obj, m.word[0]))
         return FALSE;
     if (!m.word[1]) return TRUE;
     for (i = 0; i < SIZE(starts) - 1; ++i) {
@@ -713,6 +692,7 @@ enhancement_clear(struct obj *obj)
         return;
     if (carried(obj))
         enhancement_worn_off(obj, &gy.youmonst);
+    memset(obj->o_affixes, 0, sizeof obj->o_affixes);
     obj->o_enh_props = obj->o_enh_known = 0;
     obj->o_enh_props2 = obj->o_enh_known2 = 0;
     obj->o_purification_remaining = 0;
@@ -737,6 +717,7 @@ enhancement_change_type(struct obj *obj, int otyp)
         return;
     }
     if (carried(obj)) enhancement_worn_off(obj, &gy.youmonst);
+    memset(obj->o_affixes, 0, sizeof obj->o_affixes);
     obj->o_enh_props = obj->o_enh_known = 0;
     obj->o_enh_props2 = obj->o_enh_known2 = 0;
     obj->o_purification_remaining = 0;
@@ -778,9 +759,10 @@ enhancement_normalize(struct obj *obj)
     enhancement_changed(obj);
 }
 
-boolean
-enhancement_set_mask(struct obj *obj, struct enhancement_mask mask,
-                     enum enhancement_quality quality, boolean known)
+staticfn boolean
+enhancement_apply_mask(struct obj *obj, struct enhancement_mask mask,
+                     enum enhancement_quality quality, boolean known,
+                     const uint8 *values)
 {
     uint64 props = mask.word[0];
     int old_purification = utility_purification_interval(obj), new_purification;
@@ -798,7 +780,7 @@ enhancement_set_mask(struct obj *obj, struct enhancement_mask mask,
             if (!(props & e->bit))
                 obj->o_enh_values[i] = 0;
             else if (!(obj->o_enh_props & e->bit))
-                obj->o_enh_values[i] = (uint8) d(e->dice, e->sides);
+                obj->o_enh_values[i] = values ? values[i] : (uint8) d(e->dice, e->sides);
         }
     }
     if ((obj->o_enh_props & OEP_STONING) != (props & OEP_STONING)) {
@@ -815,12 +797,208 @@ enhancement_set_mask(struct obj *obj, struct enhancement_mask mask,
         obj->o_purification_sampled = 0;
     }
     obj->o_enh_quality = (uint8) quality;
-    obj->o_enh_flags = known ? OEF_QUALITY_KNOWN : 0;
+    obj->o_enh_flags = known ? OEF_QUALITY_KNOWN | OEF_AFFIXES_KNOWN : 0;
     enhancement_changed(obj);
     return TRUE;
 }
 
-/* Word-0 compatibility entry point; replacement clears any former word 1. */
+int
+enhancement_capacity(const struct obj *obj)
+{
+    return enhancement_eligible(obj) ? ENHANCEMENT_MAX_SLOTS : 0;
+}
+
+int
+enhancement_slot_count(const struct obj *obj)
+{
+    int i, n = 0;
+    if (obj)
+        for (i = 0; i < ENHANCEMENT_MAX_SLOTS; ++i)
+            n += obj->o_affixes[i].tier != 0;
+    return n;
+}
+
+int
+enhancement_first_unused(const struct obj *obj)
+{
+    int i;
+    for (i = 0; i < enhancement_capacity(obj); ++i)
+        if (!obj->o_affixes[i].tier) return i;
+    return -1;
+}
+
+/* Pure validation, including derived state. Never repair corrupt identities. */
+boolean
+enhancement_slots_valid(const struct obj *obj)
+{
+    struct enhancement_mask mask = {{0, 0}};
+    int i, count = 0;
+    if (!obj || obj->o_socket_capacity > SIZE(obj->o_sockets)
+        || obj->o_enh_quality > OQ_EXCEPTIONAL
+        || (obj->o_enh_flags & ~(OEF_QUALITY_KNOWN | OEF_AFFIXES_KNOWN))
+        || (obj->oclass == TOOL_CLASS && obj->o_enh_quality)) return FALSE;
+    for (i = 0; i < ENHANCEMENT_MAX_SLOTS; ++i) {
+        const struct affix_slot *s = &obj->o_affixes[i];
+        const struct enhancement_entry *e = equipment_property(s->property);
+        if (!s->tier) {
+            if (s->property || s->history) return FALSE;
+            continue;
+        }
+        ++count;
+        if (s->tier > 4 || s->history > 10) return FALSE;
+        if (s->property) {
+            if (!e || !(e->bit || e->bit2) || e->tier != s->tier
+                || enhancement_mask_has(mask, s->property)) return FALSE;
+            enhancement_mask_add(&mask, s->property);
+        }
+    }
+    if (count > enhancement_capacity(obj)
+        || (obj->quan != 1L && (count || socket_count(obj)))
+        || (is_ammo(obj) && (count || socket_count(obj)))
+        || mask.word[0] != obj->o_enh_props || mask.word[1] != obj->o_enh_props2
+        || (obj->o_enh_known & ~mask.word[0]) || (obj->o_enh_known2 & ~mask.word[1]))
+        return FALSE;
+    if (count && !enhancement_mask_allowed(obj, mask)) return FALSE;
+    for (i = 0; i < 8; ++i) {
+        const struct enhancement_entry *e = &enhancement_catalog[24 + i];
+        int v = obj->o_enh_values[i];
+        if (mask.word[0] & e->bit) {
+            if (v < e->dice || v > e->dice * e->sides) return FALSE;
+        } else if (v) return FALSE;
+    }
+    if (!(mask.word[0] & OEP_STONING)
+        && (obj->o_stoning_remaining || obj->o_stoning_turn)) return FALSE;
+    if (!utility_purification_interval(obj)
+        && (obj->o_purification_remaining || obj->o_purification_sampled)) return FALSE;
+    return TRUE;
+}
+
+/* Legacy whole-mask acquisition accepts additions to unused capacity and
+ * removal to Open. Refilling/replacing needs an explicit slot selection. */
+boolean
+enhancement_set_mask(struct obj *obj, struct enhancement_mask mask,
+                     enum enhancement_quality quality, boolean known)
+{
+    struct affix_slot slots[ENHANCEMENT_MAX_SLOTS];
+    struct enhancement_mask present = {{0, 0}};
+    int i, id;
+    if (!enhancement_slots_valid(obj) || !enhancement_mask_allowed(obj, mask)
+        || quality < OQ_STANDARD || quality > OQ_EXCEPTIONAL
+        || (obj->oclass == TOOL_CLASS && quality != OQ_STANDARD)) return FALSE;
+    memcpy(slots, obj->o_affixes, sizeof slots);
+    for (i = 0; i < enhancement_capacity(obj); ++i) {
+        if (!enhancement_mask_has(mask, slots[i].property)) slots[i].property = 0;
+        if (slots[i].property) enhancement_mask_add(&present, slots[i].property);
+    }
+    for (id = 1; id < EP_COUNT; ++id)
+        if (enhancement_mask_has(mask, id) && !enhancement_mask_has(present, id)) {
+            for (i = 0; i < enhancement_capacity(obj) && slots[i].tier; ++i) ;
+            if (i == enhancement_capacity(obj)) return FALSE;
+            slots[i].tier = (uint8) equipment_property(id)->tier;
+            slots[i].property = (uint8) id;
+        }
+    memcpy(obj->o_affixes, slots, sizeof slots);
+    return enhancement_apply_mask(obj, mask, quality, known, (const uint8 *) 0);
+}
+
+boolean
+enhancement_slot_set(struct obj *obj, int slot, int id, boolean known, int value)
+{
+    struct enhancement_mask mask = {{0, 0}};
+    const struct enhancement_entry *e = equipment_property(id);
+    struct affix_slot *s;
+    uint8 values[8], flags;
+    int i;
+    if (!enhancement_slots_valid(obj) || obj->quan != 1L || slot < 0
+        || slot >= enhancement_capacity(obj)) return FALSE;
+    s = &obj->o_affixes[slot];
+    if (!id) {
+        if (!s->tier || !s->property) return FALSE;
+    } else if (!e || !(e->bit || e->bit2)
+               || (s->tier && s->tier != e->tier)
+               || (!s->tier && slot != enhancement_first_unused(obj))) return FALSE;
+    for (i = 0; i < enhancement_capacity(obj); ++i)
+        if (i != slot && obj->o_affixes[i].property) {
+            if (obj->o_affixes[i].property == id) return FALSE;
+            enhancement_mask_add(&mask, obj->o_affixes[i].property);
+        }
+    if (id) enhancement_mask_add(&mask, id);
+    if (!enhancement_mask_allowed(obj, mask)) return FALSE;
+    if (value >= 0 && e && e->stat
+        && (value < e->dice || value > e->dice * e->sides)) return FALSE;
+    memcpy(values, obj->o_enh_values, sizeof values);
+    if (id >= EP_STR_I && id <= EP_DEX_IV && value >= 0)
+        values[id - EP_STR_I] = (uint8) value;
+    flags = obj->o_enh_flags;
+    s->property = (uint8) id;
+    if (!s->tier) s->tier = (uint8) e->tier;
+    if (!enhancement_apply_mask(obj, mask, (enum enhancement_quality) obj->o_enh_quality,
+                                FALSE, value >= 0 ? values : (const uint8 *) 0))
+        panic("Validated affix assignment failed");
+    obj->o_enh_flags = flags;
+    if (known && id) enhancement_learn(obj, id);
+    return TRUE;
+}
+
+void
+enhancement_slot_history(struct obj *obj, int slot)
+{
+    if (slot >= 0 && slot < enhancement_capacity(obj) && obj->o_affixes[slot].tier
+        && obj->o_affixes[slot].history < 10) ++obj->o_affixes[slot].history;
+}
+
+int
+enhancement_forge_candidates(const struct obj *obj, int slot, int tier,
+                              boolean exclude_current, int *out)
+{
+    struct enhancement_mask retained = {{0, 0}};
+    int i, id, n = 0, current;
+    if (!enhancement_slots_valid(obj) || obj->quan != 1L || tier < 1 || tier > 4
+        || slot < 0 || slot >= enhancement_capacity(obj)) return 0;
+    if (obj->o_affixes[slot].tier && obj->o_affixes[slot].tier != tier) return 0;
+    if (!obj->o_affixes[slot].tier && slot != enhancement_first_unused(obj)) return 0;
+    current = obj->o_affixes[slot].property;
+    for (i = 0; i < enhancement_capacity(obj); ++i) {
+        if (!obj->o_affixes[slot].tier && obj->o_affixes[i].tier == tier
+            && !obj->o_affixes[i].property) return 0;
+        if (i != slot && obj->o_affixes[i].property)
+            enhancement_mask_add(&retained, obj->o_affixes[i].property);
+    }
+    for (id = 1; id < EP_COUNT; ++id) {
+        const struct enhancement_entry *e = equipment_property(id);
+        if (e->tier != tier || !(e->bit || e->bit2)
+            || (exclude_current && id == current) || enhancement_mask_has(retained, id)) continue;
+        if (!enhancement_mask_allowed(obj, enhancement_mask_union(retained,
+                                                  enhancement_mask_property(id)))) continue;
+        if (out) out[n] = id;
+        ++n;
+    }
+    return n;
+}
+
+boolean
+enhancement_forge_known(const struct obj *obj)
+{
+    int i;
+    if (!obj || obj->o_socket_capacity > SIZE(obj->o_sockets)) return FALSE;
+    for (i = 0; i < obj->o_socket_capacity; ++i)
+        if (!obj->o_sockets[i].known) return FALSE;
+    return obj->dknown && obj->known && objects[obj->otyp].oc_name_known
+        && (obj->o_enh_flags & OEF_AFFIXES_KNOWN)
+        && obj->o_enh_known == obj->o_enh_props && obj->o_enh_known2 == obj->o_enh_props2;
+}
+
+/* Called only by constructors after their final quantity is established. */
+void
+enhancement_finalize_stack(struct obj *obj)
+{
+    if (obj->quan != 1L || is_ammo(obj)) {
+        enhancement_clear(obj);
+        socket_init(obj);
+    }
+}
+
+/* Word-0 compatibility entry point. */
 boolean
 enhancement_set(struct obj *obj, uint64 props,
                 enum enhancement_quality quality, boolean known)
@@ -835,11 +1013,11 @@ enhancement_identify(struct obj *obj)
 {
     int i;
     for (i = 0; i < min(obj->o_socket_capacity, 2); ++i)
-        if (obj->o_sockets[i].property) obj->o_sockets[i].known = 1;
+        obj->o_sockets[i].known = 1;
     if (enhancement_eligible(obj)) {
         obj->o_enh_known = obj->o_enh_props;
         obj->o_enh_known2 = obj->o_enh_props2;
-        obj->o_enh_flags |= OEF_QUALITY_KNOWN;
+        obj->o_enh_flags |= OEF_QUALITY_KNOWN | OEF_AFFIXES_KNOWN;
     }
 }
 
@@ -867,7 +1045,7 @@ staticfn boolean
 enhancement_knowledge_complete(const struct obj *obj)
 {
     return enhancement_eligible(obj)
-           && (obj->o_enh_flags & OEF_QUALITY_KNOWN)
+           && (obj->o_enh_flags & OEF_AFFIXES_KNOWN)
            && obj->o_enh_known == obj->o_enh_props
            && obj->o_enh_known2 == obj->o_enh_props2;
 }
@@ -1264,6 +1442,11 @@ enhancement_property_impact(const struct obj *obj, int property, int value,
     if (!size) return;
     *buf = '\0';
     if (!obj || !e) return;
+    if (value < 0 && e->stat) {
+        Snprintf(buf, size, "rolls %dd%d %s when acquired", e->dice, e->sides,
+                 enhancement_stat_name(e->stat));
+        return;
+    }
     if (property >= EP_EROSION_I) {
         if (property <= EP_EROSION_IV)
             Snprintf(buf, size, "protects direct inventory from %s while directly carried",
@@ -1275,7 +1458,8 @@ enhancement_property_impact(const struct obj *obj, int property, int value,
         else if (property == EP_DISCERNMENT)
             Snprintf(buf, size, "reveals direct inventory beatitude while directly carried");
         else if (property <= EP_PURIFICATION_IV) {
-            if (!obj->o_purification_remaining) Snprintf(buf, size, "Ready");
+            if (value < 0) Snprintf(buf, size, "periodically removes a curse from eligible carried items");
+            else if (!obj->o_purification_remaining) Snprintf(buf, size, "Ready");
             else Snprintf(buf, size, "%u turns remaining", obj->o_purification_remaining);
         } else if (property == EP_EXCAVATING)
             Snprintf(buf, size, "doubles digging effort when using this pick-axe");
@@ -1312,7 +1496,8 @@ enhancement_property_impact(const struct obj *obj, int property, int value,
         return;
     }
     if (e->bit & OEP_STONING) {
-        if (!obj->o_stoning_remaining) Snprintf(buf, size, "Ready");
+        if (value < 0) Snprintf(buf, size, "petrifies eligible targets when ready");
+        else if (!obj->o_stoning_remaining) Snprintf(buf, size, "Ready");
         else Snprintf(buf, size, "%u turns remaining", obj->o_stoning_remaining);
         return;
     }
@@ -1389,8 +1574,9 @@ enhancement_generate(struct obj *obj, int dep)
 {
     const struct enhancement_band *band = enhancement_depth_band(dep);
     int quality, presence, roll, slots, slot, tier, i, count, candidates[SIZE(enhancement_catalog)];
+    int acquired[ENHANCEMENT_MAX_SLOTS], n_acquired = 0;
     struct enhancement_mask props = {{ 0, 0 }};
-    if (!enhancement_eligible(obj) || rn2(100) >= band->gate)
+    if (!enhancement_eligible(obj) || obj->quan != 1L || rn2(100) >= band->gate)
         return;
     do {
         roll = rn2(100);
@@ -1399,7 +1585,7 @@ enhancement_generate(struct obj *obj, int dep)
         presence = rn2(100) < band->presence;
         if (obj->oclass == TOOL_CLASS) quality = OQ_STANDARD;
     } while (quality == OQ_STANDARD && !presence);
-    slots = presence ? (rn2(100) < band->two ? 2 : 1) : 0;
+    slots = presence ? (rn2(100) < band->two ? enhancement_capacity(obj) : 1) : 0;
     for (slot = 0; slot < slots; ++slot) {
         roll = rn2(100);
         for (tier = 1; tier < 4 && roll >= band->tier[tier - 1]; ++tier)
@@ -1414,18 +1600,71 @@ enhancement_generate(struct obj *obj, int dep)
                     candidates[count++] = i;
             if (count) {
                 i = candidates[rn2(count)];
+                acquired[n_acquired++] = i < 32 ? i + 1 : EP_VAMPIRIC_I + i - 32;
                 enhancement_mask_add(&props, i < 32 ? i + 1 : EP_VAMPIRIC_I + i - 32);
                 break;
             }
         }
         /* A restricted recipient may have fewer legal families than slots. */
     }
-    (void) enhancement_set_mask(obj, props, (enum enhancement_quality) quality, FALSE);
+    for (i = 0; i < n_acquired; ++i)
+        (void) enhancement_slot_set(obj, enhancement_first_unused(obj), acquired[i], FALSE, -1);
+    obj->o_enh_quality = (uint8) quality;
+    enhancement_changed(obj);
 }
 
 /* Synchronous creation scope, default-deny. Only original constructors call
  * enhancement_created, never movement, restore, split, or ownership code. */
 static enum enhancement_context creation_context = ENH_CONTEXT_NONE;
+static boolean ordinary_loot_context;
+
+void
+essence_normalize(struct obj *obj)
+{
+    if (!obj || obj->otyp != GENERIC_ESSENCE) return;
+    obj->blessed = obj->cursed = 0;
+    obj->known = obj->dknown = obj->bknown = 1;
+    objects[GENERIC_ESSENCE].oc_name_known = 1;
+}
+
+long
+essence_wish_quantity(long requested)
+{
+    if (requested < 1) return 1;
+    if (requested <= 5) return requested;
+    if (requested >= 10) return 1;
+    return rn2(100) < 20 * (10 - requested) ? requested : 1;
+}
+
+boolean
+essence_loot_context(void)
+{
+    return ordinary_loot_context;
+}
+
+struct obj *
+essence_random(void)
+{
+    struct obj *obj = mksobj(GENERIC_ESSENCE, FALSE, FALSE);
+    obj->quan = rnd(2);
+    obj->owt = weight(obj);
+    return obj;
+}
+
+struct obj *
+ordinary_loot_at(char cls, coordxy x, coordxy y, boolean artif)
+{
+    boolean previous = ordinary_loot_context;
+    struct obj *obj;
+    if (cls != RANDOM_CLASS) return enhancement_mkobj_at(cls, x, y, artif);
+    ordinary_loot_context = TRUE;
+    if (!rn2(100)) {
+        obj = essence_random();
+        place_object(obj, x, y);
+    } else obj = enhancement_mkobj_at(cls, x, y, artif);
+    ordinary_loot_context = previous;
+    return obj;
+}
 
 enum enhancement_context
 enhancement_context_set(enum enhancement_context context)
@@ -1561,6 +1800,13 @@ doinspect(void)
         putstr(win, ATR_NONE, buf);
     }
     putstr(win, ATR_NONE, "");
+    if (obj->otyp == GENERIC_ESSENCE) {
+        putstr(win, ATR_NONE, "Essence: a neutral, stackable Forge crafting material.");
+        putstr(win, ATR_NONE, "Weight: 1 per unit. Obtained primarily through Salvage.");
+        putstr(win, ATR_NONE, "Carry it directly in inventory to pay Forge costs.");
+        display_nhwindow(win, TRUE); destroy_nhwindow(win);
+        return ECMD_OK;
+    }
     if (obj->oclass == TOOL_CLASS) {
         putstr(win, ATR_NONE, "Quality: Standard");
     } else {
@@ -1593,13 +1839,36 @@ doinspect(void)
         putstr(win, ATR_NONE,
                enhancement_knowledge_complete(obj) ? "    none" : "    none known");
     putstr(win, ATR_NONE, "");
-    if (socket_capacity(obj)) {
-        Snprintf(buf, sizeof buf, "Sockets: %d/%u", socket_count(obj), obj->o_socket_capacity);
+    putstr(win, ATR_NONE, "Affix Slots:");
+    for (i = 0; i < enhancement_capacity(obj); ++i) {
+        const struct affix_slot *s = &obj->o_affixes[i];
+        static const char *const roman[] = { "", "I", "II", "III", "IV" };
+        if (s->tier && (!s->property
+                        || enhancement_mask_has(enhancement_known(obj), s->property))) {
+            Snprintf(buf, sizeof buf, "    Slot %d: %s, Tier %s; Rerolls: %u%s",
+                     i + 1, s->property ? equipment_property_name(s->property)
+                                       : "Open Affix Slot", roman[s->tier],
+                     s->history, s->history == 10 ? " (maximum)" : "");
+            putstr(win, ATR_NONE, buf);
+        }
+    }
+    if (enhancement_forge_known(obj)) {
+        Snprintf(buf, sizeof buf, "    Unused capacity: %d",
+                 enhancement_capacity(obj) - enhancement_slot_count(obj));
+        putstr(win, ATR_NONE, buf);
+    } else {
+        putstr(win, ATR_NONE, "    Remaining affix state is not fully identified.");
+    }
+    putstr(win, ATR_NONE, "");
+    if (obj->dknown && objects[obj->otyp].oc_name_known && socket_capacity(obj)) {
+        /* Unknown empty and occupied positions have identical presentation. */
+        Snprintf(buf, sizeof buf, "Sockets: capacity %u", obj->o_socket_capacity);
         putstr(win, ATR_NONE, buf);
         for (i = 0; i < min(obj->o_socket_capacity, 2); ++i) {
             const struct item_socket *socket = &obj->o_sockets[i];
             const struct enhancement_entry *entry = equipment_property(socket->property);
-            socket_label(obj, i, label, sizeof label);
+            if (socket->known) socket_label(obj, i, label, sizeof label);
+            else Strcpy(label, "unknown");
             if (entry && socket->known) {
                 enhancement_property_impact(obj, socket->property, socket->value,
                                              impact, sizeof impact);

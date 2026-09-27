@@ -1244,6 +1244,9 @@ ini_inv_adjust_obj(const struct trobj *trop, struct obj *obj)
             obj->blessed = trop->trbless;
 
     }
+    /* Starting equipment is explicitly identified, including known absence. */
+    enhancement_finalize_stack(obj);
+    enhancement_identify(obj);
     /* defined after setting otyp+quan + blessedness */
     obj->owt = weight(obj);
     return stop;

@@ -109,3 +109,10 @@ by explicit child environments in diagnostic runners. A fresh symbols
 directory avoided a locked PDB during the normal solution build. Save tests
 package only game assets so old diagnostic panic logs cannot contaminate a
 new run. No unresolved implementation or environment blocker remains.
+
+## Follow-on integration
+
+The later post-Step-17 integration that gives successfully wished eligible
+single items a normal enhancement-generation opportunity is documented
+separately in [Phase 1 Step 17.5](step17.5.md). It is a follow-on to this
+implementation record, not part of the original Step 17 implementation.

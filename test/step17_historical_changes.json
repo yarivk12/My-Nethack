@@ -383,6 +383,22 @@
         {
           "before": "        otmp->o_stoning_remaining = obj->o_stoning_remaining;\n        otmp->o_stoning_turn = obj->o_stoning_turn;\n        otmp->o_purification_remaining = obj->o_purification_remaining;\n        otmp->o_purification_sampled = obj->o_purification_sampled;\n        otmp->o_enh_props2 = obj->o_enh_props2;\n        otmp->o_enh_known2 = obj->o_enh_known2;\n        otmp->o_enh_props = obj->o_enh_props;\n        otmp->o_enh_known = obj->o_enh_known;\n",
           "after": "        otmp->o_stoning_remaining = obj->o_stoning_remaining;\n        otmp->o_stoning_turn = obj->o_stoning_turn;\n        otmp->o_purification_remaining = obj->o_purification_remaining;\n        otmp->o_purification_sampled = obj->o_purification_sampled;\n        memcpy(otmp->o_affixes, obj->o_affixes, sizeof otmp->o_affixes);\n        otmp->o_enh_props2 = obj->o_enh_props2;\n        otmp->o_enh_known2 = obj->o_enh_known2;\n        otmp->o_enh_props = obj->o_enh_props;\n        otmp->o_enh_known = obj->o_enh_known;\n"
+        },
+        {
+          "before": "",
+          "after": "#ifdef STEP13_TEST\nstatic const char *step17_test_wish_input;\nint step17_wish_generation_calls;\n#endif\n\n"
+        },
+        {
+          "before": "    if (iflags.menu_requested && wish_history[0] && (tries == 0))\n        wish_history_menu(buf);\n    else\n        getlin(promptbuf, buf);\n",
+          "after": "#ifdef STEP13_TEST\n    if (step17_test_wish_input) {\n        Strcpy(buf, step17_test_wish_input);\n        step17_test_wish_input = (const char *) 0;\n    } else\n#endif\n    if (iflags.menu_requested && wish_history[0] && (tries == 0))\n        wish_history_menu(buf);\n    else\n        getlin(promptbuf, buf);\n"
+        },
+        {
+          "before": "    maybe_LL_arti = ((oldwisharti < u.uconduct.wisharti) ? LL_ARTIFACT : 0L);\n    Snprintf(wish, sizeof wish, \"\\\"%s\\\", got \\\"%s\\\"\", bufcpy, doname(otmp));\n",
+          "after": "    maybe_LL_arti = ((oldwisharti < u.uconduct.wisharti) ? LL_ARTIFACT : 0L);\n#ifdef STEP13_TEST\n    ++step17_wish_generation_calls;\n#endif\n    enhancement_generate(otmp, depth(&u.uz));\n    Snprintf(wish, sizeof wish, \"\\\"%s\\\", got \\\"%s\\\"\", bufcpy, doname(otmp));\n"
+        },
+        {
+          "before": "",
+          "after": "#ifdef STEP13_TEST\nvoid\nstep17_test_makewish(const char *request)\n{\n    step17_test_wish_input = request;\n    makewish();\n    step17_test_wish_input = (const char *) 0;\n}\n#endif\n\n"
         }
       ]
     },

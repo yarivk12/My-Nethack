@@ -6512,6 +6512,11 @@ wish_history_menu(char *buf)
 
 RESTORE_WARNING_FORMAT_NONLITERAL
 
+#ifdef STEP13_TEST
+static const char *step17_test_wish_input;
+int step17_wish_generation_calls;
+#endif
+
 void
 makewish(void)
 {
@@ -6533,6 +6538,12 @@ makewish(void)
         Strcat(promptbuf, " (enter 'help' for assistance)");
     Strcat(promptbuf, "?");
 
+#ifdef STEP13_TEST
+    if (step17_test_wish_input) {
+        Strcpy(buf, step17_test_wish_input);
+        step17_test_wish_input = (const char *) 0;
+    } else
+#endif
     if (iflags.menu_requested && wish_history[0] && (tries == 0))
         wish_history_menu(buf);
     else
@@ -6587,6 +6598,10 @@ makewish(void)
 
     /* wisharti conduct handled in readobjnam() */
     maybe_LL_arti = ((oldwisharti < u.uconduct.wisharti) ? LL_ARTIFACT : 0L);
+#ifdef STEP13_TEST
+    ++step17_wish_generation_calls;
+#endif
+    enhancement_generate(otmp, depth(&u.uz));
     Snprintf(wish, sizeof wish, "\"%s\", got \"%s\"", bufcpy, doname(otmp));
     /* KMH, conduct */
     if (!u.uconduct.wishes++)
@@ -6622,6 +6637,16 @@ makewish(void)
                                (const char *) 0);
     u.ublesscnt += rn1(100, 50); /* the gods take notice */
 }
+
+#ifdef STEP13_TEST
+void
+step17_test_makewish(const char *request)
+{
+    step17_test_wish_input = request;
+    makewish();
+    step17_test_wish_input = (const char *) 0;
+}
+#endif
 
 /* Fills buf with the appropriate string for this ray.
  * In the hallucination case, insert "blast of <silly thing>".

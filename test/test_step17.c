@@ -1,5 +1,230 @@
 /* Step 17 contracts, included in the existing native diagnostic harness. */
 extern void step17_forge_tests(void);
+extern void step17_test_makewish(const char *);
+extern int step17_wish_generation_calls;
+
+static struct obj *
+step17_new_wish(struct obj *before, int type)
+{
+    struct obj *obj;
+    for (obj = gi.invent; obj && obj != before; obj = obj->nobj)
+        if (obj->otyp == type)
+            return obj;
+    return (struct obj *) 0;
+}
+
+static void
+step17_discard_wish(struct obj *obj)
+{
+    freeinv(obj);
+    obfree(obj, NULL);
+}
+
+static void
+step17_wish_generation_tests(void)
+{
+    char sword_wish[] = "blessed +3 long sword";
+    char tool_wish[] = "pick-axe";
+    char wishbuf[BUFSZ];
+    d_level saved_level = u.uz;
+    static const char *forbidden_wish_forms[] = {
+        "Fine long sword", "Exceptional long sword", "long sword of Fire",
+        "Tier II long sword", "two affixes long sword"
+    };
+    int saved_start = svd.dungeons[1].depth_start;
+    int seed, selected, i;
+    struct obj state, *expected, *comparison, *before, *wished;
+
+    u.uz.dnum = 1;
+    u.uz.dlevel = 2;
+    svd.dungeons[1].depth_start = 149;
+    assert(depth(&u.uz) == 150);
+
+    {
+        static const struct {
+            int type;
+            long quantity;
+            short artifact;
+            boolean eligible;
+        } excluded[] = {
+            { LONG_SWORD, 2L, 0, TRUE },
+            { ARROW, 1L, 0, FALSE },
+            { LONG_SWORD, 1L, ART_EXCALIBUR, FALSE },
+            { AMULET_OF_YENDOR, 1L, 0, FALSE }
+        };
+        for (i = 0; i < SIZE(excluded); ++i) {
+            int next;
+            comparison = item(excluded[i].type);
+            comparison->quan = excluded[i].quantity;
+            comparison->oartifact = excluded[i].artifact;
+            assert(enhancement_eligible(comparison) == excluded[i].eligible);
+            init_isaac64(170021UL, rn2);
+            next = rn2(1000000);
+            init_isaac64(170021UL, rn2);
+            enhancement_generate(comparison, depth(&u.uz));
+            assert(!comparison->o_enh_quality && !comparison->o_enh_props
+                   && !comparison->o_enh_props2
+                   && rn2(1000000) == next);
+            obfree(comparison, NULL);
+        }
+    }
+
+    for (i = 0; i < SIZE(forbidden_wish_forms); ++i) {
+        Strcpy(wishbuf, forbidden_wish_forms[i]);
+        comparison = readobjnam(wishbuf, (struct obj *) 0);
+        if (comparison && comparison != &hands_obj) {
+            assert(!comparison->o_enh_quality && !comparison->o_enh_props
+                   && !comparison->o_enh_props2
+                   && !enhancement_slot_count(comparison));
+            obfree(comparison, NULL);
+        }
+    }
+
+    selected = 0;
+    for (seed = 1; seed <= 1000 && !selected; ++seed) {
+        init_isaac64((unsigned long) seed, rn2);
+        Strcpy(wishbuf, sword_wish);
+        expected = readobjnam(wishbuf, (struct obj *) 0);
+        assert(expected && expected->otyp == LONG_SWORD);
+        enhancement_generate(expected, depth(&u.uz));
+        if (expected->o_enh_quality || expected->o_enh_props
+            || expected->o_enh_props2) {
+            state = *expected;
+            init_isaac64((unsigned long) seed, rn2);
+            Strcpy(wishbuf, sword_wish);
+            comparison = readobjnam(wishbuf, (struct obj *) 0);
+            assert(comparison && comparison->otyp == LONG_SWORD);
+            enhancement_generate(comparison, u.uz.dlevel);
+            if (comparison->o_enh_quality != state.o_enh_quality
+                || comparison->o_enh_props != state.o_enh_props
+                || comparison->o_enh_props2 != state.o_enh_props2
+                || memcmp(comparison->o_affixes, state.o_affixes,
+                          sizeof comparison->o_affixes))
+                selected = seed;
+            obfree(comparison, NULL);
+        }
+        obfree(expected, NULL);
+    }
+    assert(selected);
+
+    init_isaac64((unsigned long) selected, rn2);
+    before = gi.invent;
+    step17_wish_generation_calls = 0;
+    step17_test_makewish(sword_wish);
+    assert(step17_wish_generation_calls == 1);
+    wished = step17_new_wish(before, LONG_SWORD);
+    assert(wished && wished->quan == 1 && wished->spe == 3
+           && wished->blessed && !wished->cursed);
+    assert(wished->o_enh_quality == state.o_enh_quality
+           && wished->o_enh_props == state.o_enh_props
+           && wished->o_enh_props2 == state.o_enh_props2
+           && !memcmp(wished->o_affixes, state.o_affixes,
+                      sizeof wished->o_affixes)
+           && !memcmp(wished->o_enh_values, state.o_enh_values,
+                      sizeof wished->o_enh_values));
+    assert(!wished->o_enh_known && !wished->o_enh_known2
+           && !wished->o_enh_flags);
+    step17_discard_wish(wished);
+
+    init_isaac64(170017UL, rn2);
+    before = gi.invent;
+    step17_wish_generation_calls = 0;
+    step17_test_makewish("3 blessed Essence");
+    assert(step17_wish_generation_calls == 1);
+    wished = step17_new_wish(before, GENERIC_ESSENCE);
+    assert(wished && wished->quan == 3 && !wished->o_enh_quality
+           && !wished->o_enh_props && !wished->o_enh_props2);
+    step17_discard_wish(wished);
+
+    init_isaac64(170023UL, rn2);
+    before = gi.invent;
+    step17_wish_generation_calls = 0;
+    step17_test_makewish("2 daggers");
+    assert(step17_wish_generation_calls == 1);
+    wished = step17_new_wish(before, DAGGER);
+    assert(wished && wished->quan == 2 && enhancement_eligible(wished)
+           && !wished->o_enh_quality && !wished->o_enh_props
+           && !wished->o_enh_props2);
+    step17_discard_wish(wished);
+
+    init_isaac64(170018UL, rn2);
+    before = gi.invent;
+    step17_wish_generation_calls = 0;
+    step17_test_makewish("arrow");
+    assert(step17_wish_generation_calls == 1);
+    wished = step17_new_wish(before, ARROW);
+    assert(wished && !wished->o_enh_quality && !wished->o_enh_props
+           && !wished->o_enh_props2);
+    step17_discard_wish(wished);
+
+    init_isaac64(170019UL, rn2);
+    before = gi.invent;
+    step17_wish_generation_calls = 0;
+    step17_test_makewish("Excalibur");
+    assert(step17_wish_generation_calls == 1);
+    wished = step17_new_wish(before, LONG_SWORD);
+    assert(wished && wished->oartifact == ART_EXCALIBUR
+           && !wished->o_enh_quality && !wished->o_enh_props
+           && !wished->o_enh_props2);
+    step17_discard_wish(wished);
+
+    init_isaac64(170020UL, rn2);
+    before = gi.invent;
+    step17_wish_generation_calls = 0;
+    step17_test_makewish("Amulet of Yendor");
+    assert(step17_wish_generation_calls == 1);
+    wished = step17_new_wish(before, AMULET_OF_YENDOR);
+    assert(wished && objects[wished->otyp].oc_unique
+           && !wished->o_enh_quality && !wished->o_enh_props
+           && !wished->o_enh_props2);
+    step17_discard_wish(wished);
+
+    step17_wish_generation_calls = 0;
+    step17_test_makewish("nothing");
+    assert(step17_wish_generation_calls == 0);
+
+    before = gi.invent;
+    step17_wish_generation_calls = 0;
+    step17_test_makewish("door");
+    assert(step17_wish_generation_calls == 0 && gi.invent == before
+           && levl[u.ux][u.uy].typ == ROOM);
+
+    selected = 0;
+    for (seed = 1; seed <= 1000 && !selected; ++seed) {
+        init_isaac64((unsigned long) seed, rn2);
+        Strcpy(wishbuf, tool_wish);
+        expected = readobjnam(wishbuf, (struct obj *) 0);
+        assert(expected && expected->otyp == PICK_AXE
+               && enhancement_eligible(expected));
+        enhancement_generate(expected, depth(&u.uz));
+        if (expected->o_enh_props || expected->o_enh_props2) {
+            state = *expected;
+            selected = seed;
+        }
+        obfree(expected, NULL);
+    }
+    assert(selected);
+    init_isaac64((unsigned long) selected, rn2);
+    before = gi.invent;
+    step17_wish_generation_calls = 0;
+    step17_test_makewish(tool_wish);
+    assert(step17_wish_generation_calls == 1);
+    wished = step17_new_wish(before, PICK_AXE);
+    assert(wished && wished->o_enh_quality == OQ_STANDARD
+           && (wished->o_enh_props || wished->o_enh_props2)
+           && wished->o_enh_props == state.o_enh_props
+           && wished->o_enh_props2 == state.o_enh_props2
+           && !memcmp(wished->o_affixes, state.o_affixes,
+                      sizeof wished->o_affixes)
+           && !wished->o_enh_known && !wished->o_enh_known2
+           && !wished->o_enh_flags);
+    step17_discard_wish(wished);
+
+    svd.dungeons[1].depth_start = saved_start;
+    u.uz = saved_level;
+    puts("PASS Step 17.5 fixed-seed wished sword/tool generation, modifiers, exclusions, depth and single-call contract");
+}
+
 static void
 step17_codec(void)
 {
@@ -158,6 +383,7 @@ step17_tests(void)
     puts("PASS Step 17 Essence neutrality, identification, weight and stacking");
     step17_codec();
     step17_essence_rng();
+    step17_wish_generation_tests();
     step17_forge_tests();
     level_bones();
 }

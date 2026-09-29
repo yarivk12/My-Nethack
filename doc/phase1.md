@@ -7,14 +7,14 @@ The exact baseline is the annotated tag `phase0-dod-expansion-complete`, which
 points to commit `216bf60903cbde8b3ef1de33aeb7368a09ba6719`, the final commit on
 the preserved historical branch `phase0/dod-length`.
 
-Phase 1 is active on `phase1/equipment-enhancement`. Steps 13 and 14, the
-Step 15A forge foundation, and Step 15B recipe transactions are complete through
-the Phase 1 audit and closeout. Step 15C deterministic equipment-state
-inheritance is complete and validated; [Step 15](step15.md) records its separate
-native, production persistence and x64 package evidence. Step 15D gemstone
-affixing remains deferred. The finalized step documents govern
-current semantics; [the Phase 1 audit](phase1-audit.md) records validation and
-remaining limitations through Step 15B.
+Phase 1 remains active on `phase1/equipment-enhancement`. Steps 13 and 14,
+Steps 15A through 15D, Steps 16A through 16C, Step 17, and the later Step 17.5
+wish integration are complete. Their implementation records contain the
+step-specific behavior and validation evidence: [Step 15](step15.md),
+[Step 16A](step16a.md), [Step 16B](step16b.md), [Step 16C](step16c.md),
+[Step 17](step17.md), and [Step 17.5](step17.5.md). The [Phase 1 audit](phase1-audit.md)
+is retained as a historical audit with scope and evidence through Step 15B;
+later step records supersede its milestone status.
 
 ## Objective
 
@@ -82,22 +82,29 @@ requiring preservation. Therefore:
 - saves and bones created by the resulting new implementation must still
   function correctly within that implementation.
 
-## Milestones
+## Current milestones
 
-The original planning boundaries have been refined by finalized Step 15:
+The following implementation milestones are complete:
 
-1. **Step 13 — Unified Enhancement Engine + initial properties + quality**
-2. **Step 14 — Depth-scaled random enhanced equipment generation**
-3. **Step 15A/B — Forge foundation and recipe transactions**
-4. **Step 15C — Deterministic equipment-state inheritance** (complete and validated)
-5. **Step 15D — Gemstone affixing** (deferred)
-6. **Step 16+ — Later combinations and progression** (not implemented)
+1. **Step 13: Unified Enhancement Engine, initial properties, and Quality**
+2. **Step 14: Depth-scaled random enhanced equipment generation**
+3. **Steps 15A and 15B: Forge foundation and recipe transactions**
+4. **Step 15C: Deterministic equipment-state inheritance**
+5. **Step 15D: Gemstone affixing**
+6. **Step 16A: Offensive affixes**
+7. **Step 16B: Defensive and armor affixes**
+8. **Step 16C: Utility and tool affixes**
+9. **Step 17: Forge and Affix System**
+10. **Step 17.5: Wished Item Enhancement Generation**
 
-Optional later extensions may include dragon-scaled armor, monster-essence
-concepts, and explicitly designed artifact interactions.
+The original planning label that grouped later combinations and progression
+under Step 16+ is historical and has been superseded by the completed Step 16A
+through Step 17.5 records above. Further Phase 1 extensions, such as
+dragon-scaled armor, monster-essence concepts, or explicitly designed artifact
+interactions, remain possible future work and are not part of these completed
+milestones.
 
-These milestone boundaries may be refined by later design work without changing
-the overall Phase 1 objective.
+These milestones refine the overall Phase 1 objective without changing it.
 
 ## Historical Step 13 entry requirement
 

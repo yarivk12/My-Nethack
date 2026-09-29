@@ -45,6 +45,14 @@ assert 'enhancement_finalize_stack' in read('src/u_init.c')
 for path in ('src/makemon.c','src/mplayer.c','src/sp_lev.c'):
     assert 'enhancement_finalize_stack' in read(path)
 assert 'is_ammo(obj)' in body('src/enhance.c', 'enhancement_eligible')
+wish = body('src/zap.c', 'makewish')
+wish_roll = 'enhancement_generate(otmp, depth(&u.uz));'
+assert wish.count(wish_roll) == 1
+assert wish.index('if (otmp == &hands_obj)') < wish.index(wish_roll) < wish.index('doname(otmp)')
+assert wish.index(wish_roll) < wish.index('hold_another_object(')
+assert 'enhancement_eligible(' not in wish and 'enhancement_context_set(' not in wish
+read_wish = body('src/objnam.c', 'readobjnam')
+assert 'enhancement_generate(' not in read_wish
 assert 'GENERIC_ESSENCE' in body('src/shk.c', 'billable')
 assert 'GENERIC_ESSENCE' in body('src/shknam.c', 'saleable')
 assert 'GENERIC_ESSENCE' in body('src/shk.c', 'get_cost')

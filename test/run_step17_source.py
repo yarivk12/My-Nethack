@@ -5,6 +5,7 @@ import re
 import runpy
 from unittest.mock import patch
 from step17_source_projection import MANIFEST, project
+from step18a_source_projection import project as project_step18a
 
 R = Path(__file__).resolve().parents[1]
 def read(path):
@@ -18,7 +19,7 @@ def digest(text):
 
 mutations = 0
 for path, record in MANIFEST['files'].items():
-    current = read(path)
+    current = project_step18a(path, read(path))
     assert digest(project(path, current)) == record['baseline_sha256'], (path, 'unreviewed delta')
     for hunk in record['hunks']:
         assert current.count(hunk['after']) == 1, (path, 'missing accepted hunk')

@@ -8,13 +8,14 @@ points to commit `216bf60903cbde8b3ef1de33aeb7368a09ba6719`, the final commit on
 the preserved historical branch `phase0/dod-length`.
 
 Phase 1 remains active on `phase1/equipment-enhancement`. Steps 13 and 14,
-Steps 15A through 15D, Steps 16A through 16C, Step 17, and the later Step 17.5
-wish integration are complete. Their implementation records contain the
-step-specific behavior and validation evidence: [Step 15](step15.md),
-[Step 16A](step16a.md), [Step 16B](step16b.md), [Step 16C](step16c.md),
-[Step 17](step17.md), and [Step 17.5](step17.5.md). The [Phase 1 audit](phase1-audit.md)
-is retained as a historical audit with scope and evidence through Step 15B;
-later step records supersede its milestone status.
+Steps 15A through 15D, Steps 16A through 16C, Step 17, Step 17.5, and Step 18A
+are complete. Their implementation records contain the step-specific behavior
+and validation evidence: [Step 15](step15.md), [Step 16A](step16a.md),
+[Step 16B](step16b.md), [Step 16C](step16c.md), [Step 17](step17.md),
+[Step 17.5](step17.5.md), and [Step 18A](step18a.md). The
+[Phase 1 audit](phase1-audit.md) is retained as a historical audit with scope
+and evidence through Step 15B; later step records supersede its milestone
+status.
 
 ## Objective
 
@@ -96,10 +97,11 @@ The following implementation milestones are complete:
 8. **Step 16C: Utility and tool affixes**
 9. **Step 17: Forge and Affix System**
 10. **Step 17.5: Wished Item Enhancement Generation**
+11. **Step 18A: Weapon and Armor Forge Progression Chains**
 
 The original planning label that grouped later combinations and progression
 under Step 16+ is historical and has been superseded by the completed Step 16A
-through Step 17.5 records above. Further Phase 1 extensions, such as
+through Step 18A records above. Further Phase 1 extensions, such as
 dragon-scaled armor, monster-essence concepts, or explicitly designed artifact
 interactions, remain possible future work and are not part of these completed
 milestones.

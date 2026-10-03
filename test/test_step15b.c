@@ -125,6 +125,19 @@ static void forge_test_answer_default(char answer) {
 static struct obj *forge_test_item(int, long);
 static void forge_test_clear(void);
 
+static boolean
+forge_test_has_primary_erosion(struct obj *obj)
+{
+    return erosion_matters(obj);
+}
+
+static boolean
+forge_test_output_has_primary_erosion(struct obj *obj)
+{
+    return forge_test_has_primary_erosion(obj)
+        && (is_flammable(obj) || is_rustprone(obj) || is_crackable(obj));
+}
+
 /* Compare gameplay state explicitly, without depending on struct padding.
  * Pointer topology is included: free interactions may not reorder stacks. */
 static void
@@ -597,15 +610,17 @@ forge_test_navigation(void)
 
 #include "test_step15c.c"
 #include "test_step15d_forge.c"
+#include "test_step18a.c"
 
 void
 step15b_test_main(void)
 {
     struct forge_recipe pair[2];
     struct forge_allocation a[2];
-    struct obj *obj, *other;
-    int i, j;
-    assert(SIZE(forge_recipes) == 12);
+    struct obj *obj, *other = 0, *output_capability;
+    int i, j, expected_eroded, expected_quality;
+    boolean has_eroded;
+    step18a_test_main();
     assert(forge_catalog_valid(forge_recipes, SIZE(forge_recipes)));
     pair[0] = pair[1] = forge_recipes[1];
     pair[1].need[0] = pair[0].need[1];
@@ -647,22 +662,45 @@ step15b_test_main(void)
                                    OQ_EXCEPTIONAL, FALSE));
         obj->spe=7;obj->cursed=1;obj->oeroded=2;obj->greased=1;
         obj->obranch_material=GOLD;obj=oname(obj,"ingredient",ONAME_NO_FLAGS);
+        expected_eroded = 0;
+        has_eroded = FALSE;
+        if (forge_test_has_primary_erosion(obj)) {
+            expected_eroded = obj->oeroded;
+            has_eroded = TRUE;
+        }
+        if (j == 2 && forge_test_has_primary_erosion(other)) {
+            expected_eroded = has_eroded ? min(expected_eroded, (int) other->oeroded)
+                                          : other->oeroded;
+            has_eroded = TRUE;
+        }
+        output_capability = forge_output(r->output);
+        if (!forge_test_output_has_primary_erosion(output_capability))
+            has_eroded = FALSE;
+        expected_quality = OQ_STANDARD;
+        if (enhancement_eligible(output_capability)
+            && output_capability->oclass != TOOL_CLASS
+            && enhancement_eligible(obj) && obj->oclass != TOOL_CLASS)
+            expected_quality = OQ_EXCEPTIONAL;
+        obfree(output_capability, NULL);
+        if (!has_eroded)
+            expected_eroded = 0;
         assert(forge_commit(r, a, j) == ECMD_TIME);
         assert(forge_find(a[0].oid)->quan == (j == 1 ? 1 : 2));
         if (j == 2) assert(!forge_find(a[1].oid));
         for (other = gi.invent; other && other->otyp != r->output; other = other->nobj) ;
         assert(other && other->quan == 1 && other->dknown);
         assert(other->spe == 7 && !other->blessed && (int) other->cursed == (j == 1));
-        assert(other->o_enh_quality == (i == 4 ? OQ_STANDARD : OQ_EXCEPTIONAL));
+        assert(other->o_enh_quality == expected_quality);
         assert(!other->o_enh_props && !enhancement_slot_count(other));
         assert(!other->bknown && !other->rknown && !other->o_enh_known);
         assert(!other->oextra && !other->obranch_material
-               && (int) other->oeroded == (j == 1 ? 2 : 0) && !other->greased);
+               && (int) other->oeroded == expected_eroded && !other->greased);
         assert(!objects[r->output].oc_uses_known || !other->known);
         assert(objects[r->output].oc_name_known);
         forge_test_clear();
     }
-    puts("PASS Step 15B catalogue and all 12 native crafting transactions");
+    printf("PASS Forge catalogue and all %d native crafting transactions\n",
+           SIZE(forge_recipes));
     forge_test_eligibility();
     forge_test_quantity_limits();
     forge_test_transactions();

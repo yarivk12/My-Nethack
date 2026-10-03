@@ -8,8 +8,10 @@ import json
 from pathlib import Path
 
 MANIFEST = json.loads(Path(__file__).with_name('step17_historical_changes.json').read_text())
+from step18a_source_projection import project as project_step18a
 
 def project(path, text):
+    text = project_step18a(path, text)
     for hunk in MANIFEST['files'].get(path, {}).get('hunks', []):
         if hunk['after'] in text:
             assert text.count(hunk['after']) == 1, (path, 'ambiguous Step 17 hunk')

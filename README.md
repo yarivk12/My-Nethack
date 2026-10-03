@@ -14,8 +14,8 @@ Phase 0 — Dungeons of Doom Expansion is complete and frozen through Step 12 at
 commit `216bf60903cbde8b3ef1de33aeb7368a09ba6719`, tagged
 `phase0-dod-expansion-complete`. The historical `phase0/dod-length` branch is
 preserved at that baseline. Phase 1 — Equipment Enhancement is active on
-`phase1/equipment-enhancement`; Step 13 — Unified Enhancement Engine + initial
-properties + quality — is next. No Step 13 gameplay implementation has begun.
+`phase1/equipment-enhancement`. Steps 13 through 17.5 and Step 18A are complete;
+the active roadmap is maintained in [doc/phase1.md](doc/phase1.md).
 
 The frozen Phase 0 includes the 200-level dungeon, Step 5 shops, Step 6/7
 NerfHack enrichment, Moria, Sheol, Dragon Caves, Mithardir, Neutral Quest / Lost
@@ -30,6 +30,23 @@ saves and bones are rejected. See [Step 11 implementation, validation and
 playtest guide](doc/step11.md) and [Step 12 Library guide](doc/step12.md) for
 historical eligibility, compatibility, commands and validation details.
 User playtesting has not occurred.
+
+## Phase 1 Step 18A: Weapon and Armor Forge Progression Chains
+
+Step 18A completes the expanded Forge progression catalogue with 23 recipes:
+13 weapons and 10 armor. It adds connected weapon and armor progression chains,
+changes Battle-Axe crafting to 2 Axes, retains both approved Plate Mail
+recipes, and adds `Large Shield + Amulet of Reflection -> Shield of Reflection`.
+Generic Forge inheritance now limits cross-class ingredients to fields
+supported by both the source and output. Regression coverage includes
+the progression chains, worn-Amulet exclusion, socket destruction, and
+inheritance behavior.
+
+The focused Forge runner, Step 17 source and mutation gates, focused native
+fixtures, Phase 1 world corpus, and Release x64 NetHack project build passed.
+The full Visual Studio solution build was blocked by bundled library `.tlog`
+write failures; the affected NetHack project built successfully. See the
+[Step 18A implementation record](doc/step18a.md) for validation details.
 
 ## Frozen structural baseline
 

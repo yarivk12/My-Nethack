@@ -9,11 +9,11 @@ the preserved historical branch `phase0/dod-length`.
 
 Phase 1 remains active on `phase1/equipment-enhancement`. Steps 13 and 14,
 Steps 15A through 15D, Steps 16A through 16C, Step 17, Step 17.5, Step 17.6,
-and Step 18A are complete. Their implementation records contain
+and Steps 18A and 18B are complete. Their implementation records contain
 the step-specific behavior and validation evidence: [Step 15](step15.md),
 [Step 16A](step16a.md), [Step 16B](step16b.md), [Step 16C](step16c.md),
 [Step 17](step17.md), [Step 17.5](step17.5.md), [Step 17.6](step17.6.md), and
-[Step 18A](step18a.md). The
+[Step 18A](step18a.md) and [Step 18B](step18b.md). The
 [Phase 1 audit](phase1-audit.md) is retained as a historical audit with scope
 and evidence through Step 15B; later step records supersede its milestone
 status.
@@ -100,10 +100,17 @@ The following implementation milestones are complete:
 10. **Step 17.5: Wished Item Enhancement Generation**
 11. **Step 17.6: Forge Menu Terminology**
 12. **Step 18A: Weapon and Armor Forge Progression Chains**
+13. **Step 18B: Magical Equipment and Tools Forge Recipes**
+
+The current Forge has 47 exact formulas: 23 from Step 18A and 24 from Step 18B.
+Output types are deterministic. Enchantments inherit from supported sources;
+consumable charges never inherit. Magic Flute and Magic Harp receive their
+native fresh randomized `4..8` charges. Step 18B changes no persistence format
+or EDITLEVEL.
 
 The original planning label that grouped later combinations and progression
 under Step 16+ is historical and has been superseded by the completed Step 16A
-through Step 18A records above. Further Phase 1 extensions, such as
+through Step 18B records above. Further Phase 1 extensions, such as
 dragon-scaled armor, monster-essence concepts, or explicitly designed artifact
 interactions, remain possible future work and are not part of these completed
 milestones.

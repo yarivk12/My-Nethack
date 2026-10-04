@@ -64,9 +64,10 @@ step18a_catalogue(void)
     int i, j, found, weapons = 0, armor = 0;
 
     assert(forge_catalog_valid(forge_recipes, SIZE(forge_recipes)));
-    for (i = 0; i < SIZE(forge_recipes); ++i) {
-        if (forge_category(forge_recipes[i].output) == 0) ++weapons;
-        else if (forge_category(forge_recipes[i].output) == 1) ++armor;
+    for (i = 0; i < SIZE(step18a_expected); ++i) {
+        assert(step18a_find_recipe(&step18a_expected[i]));
+        if (forge_category(step18a_expected[i].output) == 0) ++weapons;
+        else if (forge_category(step18a_expected[i].output) == 1) ++armor;
     }
     assert(weapons == 13 && armor == 10);
     for (i = 0; i < SIZE(step18a_expected); ++i) {

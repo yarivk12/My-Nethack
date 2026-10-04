@@ -1723,6 +1723,7 @@ extern void costly_alteration(struct obj *, int) NONNULLARG1;
 extern void clear_dknown(struct obj *);
 extern void unknow_object(struct obj *);
 extern struct obj *mksobj(int, boolean, boolean) NONNULL;
+extern boolean init_obj_charges(struct obj *);
 extern boolean stone_object_type(unsigned);
 extern boolean stone_furniture_type(unsigned);
 extern int bcsign(struct obj *) NONNULLARG1;

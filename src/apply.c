@@ -4284,7 +4284,31 @@ static const struct forge_recipe forge_recipes[] = {
     { PLATE_MAIL, { { BANDED_MAIL, 1 }, { CHAIN_MAIL, 1 } } },
     { LARGE_SHIELD, { { SMALL_SHIELD, 1 }, { SMALL_SHIELD, 1 } } },
     { SHIELD_OF_REFLECTION, { { LARGE_SHIELD, 1 }, { AMULET_OF_REFLECTION, 1 } } },
-    { ELVEN_SHIELD, { { ELVEN_DAGGER, 1 }, { SMALL_SHIELD, 1 } } }
+    { ELVEN_SHIELD, { { ELVEN_DAGGER, 1 }, { SMALL_SHIELD, 1 } } },
+    { HELM_OF_BRILLIANCE, { { HELMET, 1 }, { POT_GAIN_ABILITY, 1 } } },
+    { HELM_OF_CAUTION, { { HELMET, 1 }, { RIN_WARNING, 1 } } },
+    { HELM_OF_TELEPATHY, { { HELMET, 1 }, { AMULET_OF_ESP, 1 } } },
+    { CLOAK_OF_PROTECTION, { { LEATHER_CLOAK, 1 }, { AMULET_OF_GUARDING, 1 } } },
+    { CLOAK_OF_INVISIBILITY, { { LEATHER_CLOAK, 1 }, { RIN_INVISIBILITY, 1 } } },
+    { CLOAK_OF_MAGIC_RESISTANCE, { { LEATHER_CLOAK, 1 }, { AMULET_OF_UNCHANGING, 1 } } },
+    { CLOAK_OF_DISPLACEMENT, { { LEATHER_CLOAK, 1 }, { RIN_TELEPORTATION, 1 } } },
+    { ALCHEMY_SMOCK, { { ROBE, 1 }, { AMULET_VERSUS_POISON, 1 } } },
+    { GAUNTLETS_OF_POWER, { { LEATHER_GLOVES, 1 }, { RIN_GAIN_STRENGTH, 1 } } },
+    { GAUNTLETS_OF_DEXTERITY, { { LEATHER_GLOVES, 1 }, { RIN_INCREASE_ACCURACY, 1 } } },
+    { GAUNTLETS_OF_FUMBLING, { { LEATHER_GLOVES, 1 }, { POT_CONFUSION, 1 } } },
+    { ELVEN_BOOTS, { { LOW_BOOTS, 1 }, { RIN_STEALTH, 1 } } },
+    { SPEED_BOOTS, { { ELVEN_BOOTS, 1 }, { SPE_HASTE_SELF, 1 } } },
+    { WATER_WALKING_BOOTS, { { HIGH_BOOTS, 1 }, { AMULET_OF_MAGICAL_BREATHING, 1 } } },
+    { JUMPING_BOOTS, { { HIGH_BOOTS, 1 }, { SPE_JUMPING, 1 } } },
+    { KICKING_BOOTS, { { IRON_SHOES, 1 }, { RIN_INCREASE_DAMAGE, 1 } } },
+    { FUMBLE_BOOTS, { { HIGH_BOOTS, 1 }, { POT_CONFUSION, 1 } } },
+    { LEVITATION_BOOTS, { { LOW_BOOTS, 1 }, { RIN_LEVITATION, 1 } } },
+    { SHIELD_OF_DRAIN_RESISTANCE, { { LARGE_SHIELD, 1 }, { SPE_DRAIN_LIFE, 1 } } },
+    { SHIELD_OF_SHOCK_RESISTANCE, { { LARGE_SHIELD, 1 }, { RIN_SHOCK_RESISTANCE, 1 } } },
+    { BAG_OF_HOLDING, { { SACK, 1 }, { RIN_LEVITATION, 1 } } },
+    { MAGIC_WHISTLE, { { TIN_WHISTLE, 1 }, { SCR_TAMING, 1 } } },
+    { MAGIC_FLUTE, { { WOODEN_FLUTE, 1 }, { SCR_TAMING, 1 } } },
+    { MAGIC_HARP, { { WOODEN_HARP, 1 }, { SCR_TAMING, 1 } } }
 };
 
 staticfn boolean
@@ -4424,13 +4448,11 @@ struct forge_state {
 };
 
 staticfn boolean
-forge_spe_supported(const struct obj *obj)
+forge_enchantment_supported(const struct obj *obj)
 {
     return obj->oclass == WEAPON_CLASS || obj->oclass == ARMOR_CLASS
         || is_weptool(obj)
-        || ((obj->oclass == RING_CLASS || obj->oclass == TOOL_CLASS)
-            && objects[obj->otyp].oc_charged)
-        || obj->oclass == WAND_CLASS;
+        || (obj->oclass == RING_CLASS && objects[obj->otyp].oc_charged);
 }
 
 staticfn void
@@ -4457,7 +4479,7 @@ forge_gather(struct forge_state *state, struct obj *obj)
             if (obj->o_enh_props & enhancement_catalog[24 + i].bit)
                 state->values[i] = max(state->values[i], obj->o_enh_values[i]);
     }
-    if (forge_spe_supported(obj)) {
+    if (forge_enchantment_supported(obj)) {
         state->spe = state->spe_present ? max(state->spe, (int) obj->spe)
                                        : obj->spe;
         state->spe_present = TRUE;
@@ -4479,7 +4501,7 @@ staticfn void
 forge_inherit(struct obj *obj, const struct forge_state *state)
 {
     struct enhancement_mask props = {{ 0, 0 }};
-    int i, best, count, low;
+    int i, best, count;
 
     if (!state->present)
         return;
@@ -4511,17 +4533,11 @@ forge_inherit(struct obj *obj, const struct forge_state *state)
         (void) enhancement_set_mask(obj, enhancement_actual(obj),
             obj->oclass == TOOL_CLASS ? OQ_STANDARD : (enum enhancement_quality) state->quality, FALSE);
     }
-    /* Native spe meanings: obj.h, charge_ok and readobjnam. Do not overwrite
-     * gender, fruit/tin/box flags, lamp contents, or other overloaded values.
-     * obj.h defines SPE_LIM and the -1 charge floor. Wishing/recharging
-     * balance limits and cancellation defaults are not inheritance caps. */
-    if (forge_spe_supported(obj) && state->spe_present) {
-        low = -SPE_LIM;
-        if (obj->oclass == WAND_CLASS
-            || (obj->oclass == TOOL_CLASS && !is_weptool(obj)))
-            low = -1;
-        obj->spe = (schar) max(low, min(SPE_LIM, state->spe));
-    }
+    /* Only enchantment-valued spe participates. Consumable charges and
+     * overloaded flags never cross this channel; charges are freshly drawn
+     * by the target's native initializer during output construction. */
+    if (forge_enchantment_supported(obj) && state->spe_present)
+        obj->spe = (schar) max(-SPE_LIM, min(SPE_LIM, state->spe));
     /* Native setters exclude coins and maintain BUC-dependent state. */
     if (state->buc > 0)
         bless(obj);
@@ -4553,8 +4569,10 @@ forge_output(int typ)
 #endif
 
     (void) enhancement_context_set(old);
-    if (obj)
+    if (obj) {
+        (void) init_obj_charges(obj);
         obj->dknown = 1; /* crafted base type only, not full identification */
+    }
     return obj;
 }
 

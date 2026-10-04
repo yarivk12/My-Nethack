@@ -1,0 +1,53 @@
+{
+  "src/apply.c": {
+    "baseline_sha256": "62e2b59947e51be0c93de67a35fa0e8cfcc42ab07031a375197cf492f6781f80",
+    "hunks": [
+      {
+        "before": "    { PLATE_MAIL, { { BANDED_MAIL, 1 }, { CHAIN_MAIL, 1 } } },\n    { LARGE_SHIELD, { { SMALL_SHIELD, 1 }, { SMALL_SHIELD, 1 } } },\n    { SHIELD_OF_REFLECTION, { { LARGE_SHIELD, 1 }, { AMULET_OF_REFLECTION, 1 } } },\n    { ELVEN_SHIELD, { { ELVEN_DAGGER, 1 }, { SMALL_SHIELD, 1 } } }\n};\n\nstaticfn boolean\n",
+        "after": "    { PLATE_MAIL, { { BANDED_MAIL, 1 }, { CHAIN_MAIL, 1 } } },\n    { LARGE_SHIELD, { { SMALL_SHIELD, 1 }, { SMALL_SHIELD, 1 } } },\n    { SHIELD_OF_REFLECTION, { { LARGE_SHIELD, 1 }, { AMULET_OF_REFLECTION, 1 } } },\n    { ELVEN_SHIELD, { { ELVEN_DAGGER, 1 }, { SMALL_SHIELD, 1 } } },\n    { HELM_OF_BRILLIANCE, { { HELMET, 1 }, { POT_GAIN_ABILITY, 1 } } },\n    { HELM_OF_CAUTION, { { HELMET, 1 }, { RIN_WARNING, 1 } } },\n    { HELM_OF_TELEPATHY, { { HELMET, 1 }, { AMULET_OF_ESP, 1 } } },\n    { CLOAK_OF_PROTECTION, { { LEATHER_CLOAK, 1 }, { AMULET_OF_GUARDING, 1 } } },\n    { CLOAK_OF_INVISIBILITY, { { LEATHER_CLOAK, 1 }, { RIN_INVISIBILITY, 1 } } },\n    { CLOAK_OF_MAGIC_RESISTANCE, { { LEATHER_CLOAK, 1 }, { AMULET_OF_UNCHANGING, 1 } } },\n    { CLOAK_OF_DISPLACEMENT, { { LEATHER_CLOAK, 1 }, { RIN_TELEPORTATION, 1 } } },\n    { ALCHEMY_SMOCK, { { ROBE, 1 }, { AMULET_VERSUS_POISON, 1 } } },\n    { GAUNTLETS_OF_POWER, { { LEATHER_GLOVES, 1 }, { RIN_GAIN_STRENGTH, 1 } } },\n    { GAUNTLETS_OF_DEXTERITY, { { LEATHER_GLOVES, 1 }, { RIN_INCREASE_ACCURACY, 1 } } },\n    { GAUNTLETS_OF_FUMBLING, { { LEATHER_GLOVES, 1 }, { POT_CONFUSION, 1 } } },\n    { ELVEN_BOOTS, { { LOW_BOOTS, 1 }, { RIN_STEALTH, 1 } } },\n    { SPEED_BOOTS, { { ELVEN_BOOTS, 1 }, { SPE_HASTE_SELF, 1 } } },\n    { WATER_WALKING_BOOTS, { { HIGH_BOOTS, 1 }, { AMULET_OF_MAGICAL_BREATHING, 1 } } },\n    { JUMPING_BOOTS, { { HIGH_BOOTS, 1 }, { SPE_JUMPING, 1 } } },\n    { KICKING_BOOTS, { { IRON_SHOES, 1 }, { RIN_INCREASE_DAMAGE, 1 } } },\n    { FUMBLE_BOOTS, { { HIGH_BOOTS, 1 }, { POT_CONFUSION, 1 } } },\n    { LEVITATION_BOOTS, { { LOW_BOOTS, 1 }, { RIN_LEVITATION, 1 } } },\n    { SHIELD_OF_DRAIN_RESISTANCE, { { LARGE_SHIELD, 1 }, { SPE_DRAIN_LIFE, 1 } } },\n    { SHIELD_OF_SHOCK_RESISTANCE, { { LARGE_SHIELD, 1 }, { RIN_SHOCK_RESISTANCE, 1 } } },\n    { BAG_OF_HOLDING, { { SACK, 1 }, { RIN_LEVITATION, 1 } } },\n    { MAGIC_WHISTLE, { { TIN_WHISTLE, 1 }, { SCR_TAMING, 1 } } },\n    { MAGIC_FLUTE, { { WOODEN_FLUTE, 1 }, { SCR_TAMING, 1 } } },\n    { MAGIC_HARP, { { WOODEN_HARP, 1 }, { SCR_TAMING, 1 } } }\n};\n\nstaticfn boolean\n"
+      },
+      {
+        "before": "};\n\nstaticfn boolean\nforge_spe_supported(const struct obj *obj)\n{\n    return obj->oclass == WEAPON_CLASS || obj->oclass == ARMOR_CLASS\n        || is_weptool(obj)\n        || ((obj->oclass == RING_CLASS || obj->oclass == TOOL_CLASS)\n            && objects[obj->otyp].oc_charged)\n        || obj->oclass == WAND_CLASS;\n}\n\nstaticfn void\n",
+        "after": "};\n\nstaticfn boolean\nforge_enchantment_supported(const struct obj *obj)\n{\n    return obj->oclass == WEAPON_CLASS || obj->oclass == ARMOR_CLASS\n        || is_weptool(obj)\n        || (obj->oclass == RING_CLASS && objects[obj->otyp].oc_charged);\n}\n\nstaticfn void\n"
+      },
+      {
+        "before": "            if (obj->o_enh_props & enhancement_catalog[24 + i].bit)\n                state->values[i] = max(state->values[i], obj->o_enh_values[i]);\n    }\n    if (forge_spe_supported(obj)) {\n        state->spe = state->spe_present ? max(state->spe, (int) obj->spe)\n                                       : obj->spe;\n        state->spe_present = TRUE;\n",
+        "after": "            if (obj->o_enh_props & enhancement_catalog[24 + i].bit)\n                state->values[i] = max(state->values[i], obj->o_enh_values[i]);\n    }\n    if (forge_enchantment_supported(obj)) {\n        state->spe = state->spe_present ? max(state->spe, (int) obj->spe)\n                                       : obj->spe;\n        state->spe_present = TRUE;\n"
+      },
+      {
+        "before": "forge_inherit(struct obj *obj, const struct forge_state *state)\n{\n    struct enhancement_mask props = {{ 0, 0 }};\n    int i, best, count, low;\n\n    if (!state->present)\n        return;\n",
+        "after": "forge_inherit(struct obj *obj, const struct forge_state *state)\n{\n    struct enhancement_mask props = {{ 0, 0 }};\n    int i, best, count;\n\n    if (!state->present)\n        return;\n"
+      },
+      {
+        "before": "        (void) enhancement_set_mask(obj, enhancement_actual(obj),\n            obj->oclass == TOOL_CLASS ? OQ_STANDARD : (enum enhancement_quality) state->quality, FALSE);\n    }\n    /* Native spe meanings: obj.h, charge_ok and readobjnam. Do not overwrite\n     * gender, fruit/tin/box flags, lamp contents, or other overloaded values.\n     * obj.h defines SPE_LIM and the -1 charge floor. Wishing/recharging\n     * balance limits and cancellation defaults are not inheritance caps. */\n    if (forge_spe_supported(obj) && state->spe_present) {\n        low = -SPE_LIM;\n        if (obj->oclass == WAND_CLASS\n            || (obj->oclass == TOOL_CLASS && !is_weptool(obj)))\n            low = -1;\n        obj->spe = (schar) max(low, min(SPE_LIM, state->spe));\n    }\n    /* Native setters exclude coins and maintain BUC-dependent state. */\n    if (state->buc > 0)\n        bless(obj);\n",
+        "after": "        (void) enhancement_set_mask(obj, enhancement_actual(obj),\n            obj->oclass == TOOL_CLASS ? OQ_STANDARD : (enum enhancement_quality) state->quality, FALSE);\n    }\n    /* Only enchantment-valued spe participates. Consumable charges and\n     * overloaded flags never cross this channel; charges are freshly drawn\n     * by the target's native initializer during output construction. */\n    if (forge_enchantment_supported(obj) && state->spe_present)\n        obj->spe = (schar) max(-SPE_LIM, min(SPE_LIM, state->spe));\n    /* Native setters exclude coins and maintain BUC-dependent state. */\n    if (state->buc > 0)\n        bless(obj);\n"
+      },
+      {
+        "before": "#endif\n\n    (void) enhancement_context_set(old);\n    if (obj)\n        obj->dknown = 1; /* crafted base type only, not full identification */\n    return obj;\n}\n\n",
+        "after": "#endif\n\n    (void) enhancement_context_set(old);\n    if (obj) {\n        (void) init_obj_charges(obj);\n        obj->dknown = 1; /* crafted base type only, not full identification */\n    }\n    return obj;\n}\n\n"
+      }
+    ]
+  },
+  "src/mkobj.c": {
+    "baseline_sha256": "31985ddb9e48b58e26da724385c55698531d624f2adb3edafcc57f42616923fb",
+    "hunks": [
+      {
+        "before": "    obj->known = objects[obj->otyp].oc_uses_known ? 0 : 1;\n}\n\n/* do some initialization to newly created object; otyp must already be set */\nstaticfn void\nmksobj_init(struct obj **obj, boolean artif)\n",
+        "after": "    obj->known = objects[obj->otyp].oc_uses_known ? 0 : 1;\n}\n\n/* Initialize charges only, without the other mksobj_init side effects.\n * Currently shared for the native magical-instrument group. Add other native\n * charge rules here when a caller needs them; FALSE leaves spe untouched.\n * Enchantments (including charged rings and weapon-tools) are not charges. */\nboolean\ninit_obj_charges(struct obj *obj)\n{\n    if (obj->oclass != TOOL_CLASS || is_weptool(obj)\n        || !objects[obj->otyp].oc_charged)\n        return FALSE;\n    switch (obj->otyp) {\n    case MAGIC_FLUTE:\n    case MAGIC_HARP:\n    case FROST_HORN:\n    case FIRE_HORN:\n    case DRUM_OF_EARTHQUAKE:\n        obj->spe = rn1(5, 4);\n        return TRUE;\n    default:\n        return FALSE;\n    }\n}\n\n/* do some initialization to newly created object; otyp must already be set */\nstaticfn void\nmksobj_init(struct obj **obj, boolean artif)\n"
+      },
+      {
+        "before": "        case FROST_HORN:\n        case FIRE_HORN:\n        case DRUM_OF_EARTHQUAKE:\n            otmp->spe = rn1(5, 4);\n            break;\n        }\n        break;\n",
+        "after": "        case FROST_HORN:\n        case FIRE_HORN:\n        case DRUM_OF_EARTHQUAKE:\n            (void) init_obj_charges(otmp);\n            break;\n        }\n        break;\n"
+      }
+    ]
+  },
+  "include/extern.h": {
+    "baseline_sha256": "400ff014d5c1aaf4f0b4c63ae8d07664f3ae10a673bdee2a98781d2bbd584926",
+    "hunks": [
+      {
+        "before": "extern void clear_dknown(struct obj *);\nextern void unknow_object(struct obj *);\nextern struct obj *mksobj(int, boolean, boolean) NONNULL;\nextern boolean stone_object_type(unsigned);\nextern boolean stone_furniture_type(unsigned);\nextern int bcsign(struct obj *) NONNULLARG1;\n",
+        "after": "extern void clear_dknown(struct obj *);\nextern void unknow_object(struct obj *);\nextern struct obj *mksobj(int, boolean, boolean) NONNULL;\nextern boolean init_obj_charges(struct obj *);\nextern boolean stone_object_type(unsigned);\nextern boolean stone_furniture_type(unsigned);\nextern int bcsign(struct obj *) NONNULLARG1;\n"
+      }
+    ]
+  }
+}

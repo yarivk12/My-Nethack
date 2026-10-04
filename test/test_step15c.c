@@ -124,7 +124,7 @@ forge15c_properties(void)
 static void
 forge15c_capabilities(void)
 {
-    /* spe: 1 = signed enchantment, 2 = charges >= -1 (obj.h).
+    /* spe: 1 = signed enchantment; charges are never inherited.
      * e1/e2/proof are literal native default-material expectations. */
     static const struct { int typ, quality, spe, e1, e2, proof, buc; } cases[] = {
         { KATANA, 1, 1, 1, 1, 1, 1 },
@@ -136,10 +136,10 @@ forge15c_capabilities(void)
         { CRYSKNIFE, 1, 1, 0, 0, 1, 1 },
         { RIN_GAIN_STRENGTH, 0, 1, 0, 0, 0, 1 },
         { RIN_WARNING, 0, 0, 0, 0, 0, 1 },
-        { WAN_FIRE, 0, 2, 0, 0, 0, 1 },
-        { CRYSTAL_BALL, 0, 2, 0, 0, 0, 1 },
-        { MAGIC_MARKER, 0, 2, 0, 0, 0, 1 },
-        { MAGIC_FLUTE, 0, 2, 0, 0, 0, 1 },
+        { WAN_FIRE, 0, 0, 0, 0, 0, 1 },
+        { CRYSTAL_BALL, 0, 0, 0, 0, 0, 1 },
+        { MAGIC_MARKER, 0, 0, 0, 0, 0, 1 },
+        { MAGIC_FLUTE, 0, 0, 0, 0, 0, 1 },
         { MAGIC_LAMP, 0, 0, 0, 0, 0, 1 },
         { TIN_OPENER, 0, 0, 0, 0, 0, 1 },
         { HEAVY_IRON_BALL, 0, 0, 1, 1, 1, 1 },
@@ -172,6 +172,7 @@ forge15c_capabilities(void)
             init_isaac64(151503UL, rn2);
             previous = enhancement_context_set(ENH_CONTEXT_NONE);
             fresh = mksobj(cases[i].typ, FALSE, FALSE);
+            (void) init_obj_charges(fresh);
             (void) enhancement_context_set(previous);
             tail = rn2(1000000);
             init_isaac64(151503UL, rn2);

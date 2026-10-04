@@ -877,6 +877,29 @@ unknow_object(struct obj *obj)
     obj->known = objects[obj->otyp].oc_uses_known ? 0 : 1;
 }
 
+/* Initialize charges only, without the other mksobj_init side effects.
+ * Currently shared for the native magical-instrument group. Add other native
+ * charge rules here when a caller needs them; FALSE leaves spe untouched.
+ * Enchantments (including charged rings and weapon-tools) are not charges. */
+boolean
+init_obj_charges(struct obj *obj)
+{
+    if (obj->oclass != TOOL_CLASS || is_weptool(obj)
+        || !objects[obj->otyp].oc_charged)
+        return FALSE;
+    switch (obj->otyp) {
+    case MAGIC_FLUTE:
+    case MAGIC_HARP:
+    case FROST_HORN:
+    case FIRE_HORN:
+    case DRUM_OF_EARTHQUAKE:
+        obj->spe = rn1(5, 4);
+        return TRUE;
+    default:
+        return FALSE;
+    }
+}
+
 /* do some initialization to newly created object; otyp must already be set */
 staticfn void
 mksobj_init(struct obj **obj, boolean artif)
@@ -1068,7 +1091,7 @@ mksobj_init(struct obj **obj, boolean artif)
         case FROST_HORN:
         case FIRE_HORN:
         case DRUM_OF_EARTHQUAKE:
-            otmp->spe = rn1(5, 4);
+            (void) init_obj_charges(otmp);
             break;
         }
         break;

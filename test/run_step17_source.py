@@ -6,8 +6,10 @@ import runpy
 from unittest.mock import patch
 from step17_source_projection import MANIFEST, project
 from step18a_source_projection import project as project_step18a
+from step18b_source_projection import project as project_step18b
 
 R = Path(__file__).resolve().parents[1]
+runpy.run_path(str(R / 'test/test_step18b_source.py'), run_name='__main__')
 def read(path):
     return (R / path).read_text(encoding='utf8')
 def body(path, name):
@@ -19,7 +21,7 @@ def digest(text):
 
 mutations = 0
 for path, record in MANIFEST['files'].items():
-    current = project_step18a(path, read(path))
+    current = project_step18a(path, project_step18b(path, read(path)))
     assert digest(project(path, current)) == record['baseline_sha256'], (path, 'unreviewed delta')
     for hunk in record['hunks']:
         assert current.count(hunk['after']) == 1, (path, 'missing accepted hunk')

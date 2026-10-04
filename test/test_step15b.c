@@ -552,7 +552,7 @@ forge_test_navigation(void)
         assert(!memcmp(&saved,obj,sizeof saved));
         assert(svm.moves==moves);
         if(i>1) {
-            assert(strstr(forge_screen,"Tools\nOther\n"));
+            assert(strstr(forge_screen,"Tools (0)\nOther\n"));
             assert(strstr(forge_screen,"Weapons (1)"));
             assert(strstr(forge_screen,"katana - 2 long swords"));
             assert(!strstr(forge_screen,"[Available]")
@@ -614,6 +614,7 @@ forge_test_navigation(void)
 #include "test_step15c.c"
 #include "test_step15d_forge.c"
 #include "test_step18a.c"
+#include "test_step18b.c"
 
 void
 step15b_test_main(void)
@@ -623,6 +624,7 @@ step15b_test_main(void)
     struct obj *obj, *other = 0, *output_capability;
     int i, j, expected_eroded, expected_quality;
     boolean has_eroded;
+    step18b_test_main();
     step18a_test_main();
     assert(forge_catalog_valid(forge_recipes, SIZE(forge_recipes)));
     pair[0] = pair[1] = forge_recipes[1];
@@ -692,7 +694,12 @@ step15b_test_main(void)
         if (j == 2) assert(!forge_find(a[1].oid));
         for (other = gi.invent; other && other->otyp != r->output; other = other->nobj) ;
         assert(other && other->quan == 1 && other->dknown);
-        assert(other->spe == 7 && !other->blessed && (int) other->cursed == (j == 1));
+        if (other->oclass == ARMOR_CLASS || other->oclass == WEAPON_CLASS)
+            assert(other->spe == 7);
+        else if (other->otyp == MAGIC_FLUTE || other->otyp == MAGIC_HARP)
+            assert(other->spe >= 4 && other->spe <= 8);
+        else assert(other->spe == 0);
+        assert(!other->blessed && (int) other->cursed == (j == 1));
         assert(other->o_enh_quality == expected_quality);
         assert(!other->o_enh_props && !enhancement_slot_count(other));
         assert(!other->bknown && !other->rknown && !other->o_enh_known);

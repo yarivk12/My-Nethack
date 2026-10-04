@@ -156,6 +156,14 @@ fa_entry_and_replay(struct obj *hammer, struct obj *obj)
     long gold, essence;
     long turn = svm.moves;
     unsigned oid = obj->o_id;
+    fa_script(); fa_choice(0);
+    assert(forge_interact(hammer) == ECMD_OK && svm.moves == turn);
+    assert(!strcmp(fa_prompt, "Use the forge"));
+    assert(!strcmp(fa_screen,
+                   "Craft Equipment\nSocket Gems\nManage Affixes\n"
+                   "Salvage Equipment\nLeave Forge\n"));
+    assert(fa_nids == 5);
+    for (op = 0; op < 5; ++op) assert(fa_ids[op] == op + 1);
     /* The ordinary activation entry returns the command dispatcher exactly
      * one ECMD_TIME, with no private turn mutation or second menu commit. */
     hammer->oartifact = ART_MJOLLNIR;

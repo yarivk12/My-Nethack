@@ -54,6 +54,27 @@ assert wish.index(wish_roll) < wish.index('hold_another_object(')
 assert 'enhancement_eligible(' not in wish and 'enhancement_context_set(' not in wish
 read_wish = body('src/objnam.c', 'readobjnam')
 assert 'enhancement_generate(' not in read_wish
+forge = body('src/apply.c', 'forge_menu')
+top_labels = (
+    'forge_menu_line(win, 1, \'f\', "Craft Equipment");',
+    'forge_menu_line(win, 2, \'s\', "Socket Gems");',
+    'forge_menu_line(win, 3, \'a\', "Manage Affixes");',
+    'forge_menu_line(win, 4, \'v\', "Salvage Equipment");',
+    'forge_menu_line(win, 5, \'l\', "Leave Forge");',
+)
+label_positions = [forge.index(label) for label in top_labels]
+assert label_positions == sorted(label_positions)
+assert 'if (!i || i == 5) return ECMD_OK;' in forge
+assert 'if (i == 2) return affix_menu(hammer);' in forge
+assert 'result = i == 3 ? forge_affix_menu(hammer) : forge_salvage(hammer);' in forge
+affix_menu = body('src/apply.c', 'forge_affix_menu')
+submenu_labels = (
+    '"Add Random Affix"', '"Reroll Affix"', '"Extract Affix"',
+    '"Imprint Affix"', '"View Stored Affix Essence"', '"Back"',
+)
+submenu_positions = [affix_menu.index(label) for label in submenu_labels]
+assert submenu_positions == sorted(submenu_positions)
+assert 'forge_menu_pick(win, "Manage Affixes", 0)' in affix_menu
 assert 'GENERIC_ESSENCE' in body('src/shk.c', 'billable')
 assert 'GENERIC_ESSENCE' in body('src/shknam.c', 'saleable')
 assert 'GENERIC_ESSENCE' in body('src/shk.c', 'get_cost')

@@ -51,9 +51,12 @@ static void forge_test_add(winid win, const glyph_info *glyph, const ANY_P *id,
     forge_menu_ids[forge_menu_n++] = id->a_int;
     forge_menu_letters[forge_menu_n - 1] = letter;
     forge_test_putstr(win, attr, s);
+    if (!strcmp(s, "Socket Gems")) {
+        assert(letter == 's');
+        forge_socket_shortcut_seen = TRUE;
+    }
     if (!strcmp(s, "Socket gemstone")) {
-        assert(letter == 's' || letter == 'y');
-        if (letter == 's') forge_socket_shortcut_seen = TRUE;
+        assert(letter == 'y');
         assert(strcmp(s, "Affix gemstone"));
     }
     if (!strcmp(s, "Tools") || !strcmp(s, "Other")) assert(!id->a_int);

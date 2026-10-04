@@ -5359,7 +5359,7 @@ forge_affix_menu(struct obj *hammer)
     for (;;) {
         win = create_nhwindow(NHW_MENU); start_menu(win, MENU_BEHAVE_STANDARD);
         for (i = 0; i < SIZE(names); ++i) forge_menu_line(win, i + 1, 0, names[i]);
-        choice = forge_menu_pick(win, "Affix Crafting", 0);
+        choice = forge_menu_pick(win, "Manage Affixes", 0);
         if (!choice || choice == 6) return ECMD_OK;
         if (choice == 5) { forge_ledger(); continue; }
         result = forge_affix_attempt(hammer, choice - 1);
@@ -5474,10 +5474,10 @@ forge_menu(struct obj *hammer)
  top:
     win = create_nhwindow(NHW_MENU);
     start_menu(win, MENU_BEHAVE_STANDARD);
-    forge_menu_line(win, 1, 'f', "Forge an item");
-    forge_menu_line(win, 2, 's', "Socket gemstone");
-    forge_menu_line(win, 3, 'a', "Affix Crafting");
-    forge_menu_line(win, 4, 'v', "Salvage item");
+    forge_menu_line(win, 1, 'f', "Craft Equipment");
+    forge_menu_line(win, 2, 's', "Socket Gems");
+    forge_menu_line(win, 3, 'a', "Manage Affixes");
+    forge_menu_line(win, 4, 'v', "Salvage Equipment");
     forge_menu_line(win, 5, 'l', "Leave Forge");
     i = forge_menu_pick(win, "Use the forge", (long *) 0);
     if (!i || i == 5) return ECMD_OK;

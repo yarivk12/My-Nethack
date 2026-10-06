@@ -371,14 +371,20 @@ static NEARDATA struct artifact artilist[] = {
       NO_ATTK, NO_DFNS, NO_CARY, CREATE_PORTAL, A_NEUTRAL, NON_PM, NON_PM,
       0, 0, 5000L, NO_COLOR, SILVER_KEY),
 
+    A("Nighthorn", UNICORN_HORN, SPFX_NOGEN | SPFX_RESTR | SPFX_REFLECT,
+      0, 0, NO_ATTK, NO_DFNS, NO_CARY, 0, A_LAWFUL, NON_PM, NON_PM,
+      0, 0, 10000L, NO_COLOR, NIGHTHORN),
+    A("The Eye of Vecna", EYEBALL, SPFX_NOGEN | SPFX_RESTR | SPFX_INTEL,
+      SPFX_ESP | SPFX_HSPDAM, 0, NO_ATTK, NO_DFNS, CARY(AD_COLD),
+      DEATH_MAGIC, A_NONE, NON_PM, NON_PM, 0, 0, 50000L, NO_COLOR, EYE_OF_VECNA),
+    A("The Hand of Vecna", MUMMIFIED_HAND, SPFX_NOGEN | SPFX_RESTR
+      | SPFX_INTEL | SPFX_REGEN | SPFX_HPHDAM, 0, 0, NO_ATTK, DFNS(AD_DISE), NO_CARY,
+      DEATH_MAGIC, A_NONE, NON_PM, NON_PM, 0, 0, 50000L, NO_COLOR, HAND_OF_VECNA),
+
 #if !defined(ARTI_ENUM) && !defined(DUMP_ARTI_ENUM)
-    /*
-     *  terminator; otyp must be zero
-     */
     A(0, 0, 0, 0, 0, NO_ATTK, NO_DFNS, NO_CARY, 0, A_NONE, NON_PM, NON_PM,
       0, 0, 0L, NO_COLOR, TERMINATOR)
-
-}; /* artilist[] (or artifact_names[]) */
+};
 #endif
 
 #undef A

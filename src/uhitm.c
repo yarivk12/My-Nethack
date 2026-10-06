@@ -1941,6 +1941,16 @@ hmon_hitmon(
             hmd.hittxt = shade_miss(&gy.youmonst, mon, obj, FALSE, TRUE);
     }
 
+    if (is_art(uarmg, ART_HAND_OF_VECNA) && hmd.hand_to_hand
+        && !hmd.destroyed) {
+        if (resists_cold(mon) || defended(mon, AD_COLD)) {
+            shieldeff(mon->mx, mon->my);
+            golemeffects(mon, AD_COLD, hmd.dmg);
+        } else {
+            (void) destroy_items(mon, AD_COLD, hmd.dmg);
+            hmd.dmg += rnd(5) + 7;
+        }
+    }
     enh_before_joust = hmd.dmg;
     if (hmd.jousting) {
         hmon_hitmon_jousting(&hmd, mon, obj);
@@ -2014,6 +2024,19 @@ hmon_hitmon(
     hmon_hitmon_splitmon(&hmd, mon, obj);
 
     hmon_hitmon_msg_hit(&hmd, mon, obj);
+
+    if (!hmd.destroyed && !hmd.offmap && hmd.hand_to_hand
+        && is_art(uarmg, ART_HAND_OF_VECNA)
+        && !resists_cold(mon) && !defended(mon, AD_COLD)
+        && !rn2(8) && !((uwep && uwep->oartifact)
+                         || (u.twoweap && uswapwep && uswapwep->oartifact))) {
+        explode(mon->mx, mon->my, 20 + AD_COLD - 1,
+                d(uwep ? 2 : 4, 6), 0, EXPL_FROSTY);
+        if (DEADMONSTER(mon)) {
+            hmd.destroyed = TRUE;
+            hmd.already_killed = TRUE;
+        }
+    }
 
     if (hmd.dryit) { /* dryit implies wet towel, so 'obj' is still intact */
         assert(obj != NULL);
@@ -2663,6 +2686,52 @@ mith_drain_attack(struct monst *magr, struct attack *mattk,
                 mith_attack_kill(magr, mdef, mhm, AD_DRST);
         }
     }
+}
+
+/* Hack'EM's disintegration gaze consumes outer armor before the body.
+   Keep this distinct from the Aspect's erosion-based disintegration touch. */
+staticfn void
+step19_disintegrating_gaze(struct monst *magr, struct monst *mdef,
+                          struct mhitm_data *mhm)
+{
+    struct obj *armor, *obj, *next, *amulet;
+
+    mhm->damage = 0;
+    if (magr->mcan || rn2(5))
+        return;
+    if (resists_disint(mdef) || defended(mdef, AD_DISN)) {
+        shieldeff(mdef->mx, mdef->my);
+        return;
+    }
+    if ((armor = which_armor(mdef, W_ARMS)) != 0) {
+        m_useup(mdef, armor);
+        return;
+    }
+    if ((armor = which_armor(mdef, W_ARM)) != 0) {
+        m_useup(mdef, armor);
+        if ((armor = which_armor(mdef, W_ARMC)) != 0)
+            m_useup(mdef, armor);
+        return;
+    }
+    amulet = mlifesaver(mdef);
+    if ((armor = which_armor(mdef, W_ARMC)) != 0)
+        m_useup(mdef, armor);
+    if ((armor = which_armor(mdef, W_ARMU)) != 0)
+        m_useup(mdef, armor);
+    if (is_rider(mdef->data)) {
+        mdef->mhp = mdef->mhpmax;
+        return;
+    }
+    for (obj = mdef->minvent; obj; obj = next) {
+        next = obj->nobj;
+        if (objects[obj->otyp].oc_oprop != DISINT_RES
+            && !obj_resists(obj, 5, 50) && !is_quest_artifact(obj)
+            && obj != amulet) {
+            extract_from_minvent(mdef, obj, TRUE, TRUE);
+            obfree(obj, (struct obj *) 0);
+        }
+    }
+    mith_attack_kill(magr, mdef, mhm, AD_DISN);
 }
 
 /* The Aspect's touch erodes a randomly selected armor piece once per
@@ -3926,6 +3995,14 @@ mhitm_ad_slee(
         }
     } else {
         /* mhitm */
+        if (mattk->aatyp == AT_GAZE) {
+            if (!magr->mcan && !mdef->msleeping
+                && sleep_monst(mdef, rnd(10), -1)) {
+                mdef->mstrategy &= ~STRAT_WAITFORU;
+                slept_monst(mdef);
+            }
+            return;
+        }
         if (!mdef->msleeping && sleep_monst(mdef, rnd(10), -1)
             && sleep_monst(mdef, rnd(10), -1)) {
             if (gv.vis && canspotmon(mdef)) {
@@ -4259,6 +4336,30 @@ mhitm_ad_deth(
     struct monst *mdef, struct mhitm_data *mhm)
 {
     struct permonst *pd = mdef->data;
+
+    /* EvilHack's death gaze has its own kill/drain/miss distribution.
+       Native Death touch continues through the existing code below. */
+    if (mattk->aatyp == AT_GAZE && mdef != &gy.youmonst) {
+        int roll;
+        if (dmgtype(pd, AD_DETH) || nonliving(pd) || pd->mlet == S_ANGEL
+            || is_demon(pd) || pd->msound == MS_LEADER
+            || pd == &mons[PM_CELESTIAL_DRAGON] || defended(mdef, AD_DETH))
+            return;
+        roll = rn2(20);
+        if (roll >= 17) {
+            if (!resists_magm(mdef) && !defended(mdef, AD_MAGM)
+                && !resist(mdef, 0, 0, NOTELL))
+                mith_attack_kill(magr, mdef, mhm, AD_DETH);
+        } else if (roll >= 5) {
+            int loss = rn2(mhm->damage / 2 + 1);
+            mdef->mhpmax = max(1, mdef->mhpmax - loss);
+        } else {
+            if (resists_magm(mdef) || defended(mdef, AD_MAGM))
+                shieldeff(mdef->mx, mdef->my);
+            mhm->damage = 0;
+        }
+        return;
+    }
 
     if (magr == &gy.youmonst) {
         /* uhitm; hero can't polymorph into anything with this attack
@@ -5336,7 +5437,22 @@ mhitm_adtyping(
         }
         break;
     case AD_DESC: mith_desiccate(magr, mattk, mdef, mhm); break;
-    case AD_DISN: mith_disintegrate(magr, mattk, mdef, mhm); break;
+    case AD_CNCL: {
+        struct obj pseudo = cg.zeroobj;
+        pseudo.otyp = WAN_CANCELLATION;
+        pseudo.oclass = (mattk->aatyp == AT_GAZE && mdef != &gy.youmonst)
+                           ? 0 : WAND_CLASS;
+        if (mattk->aatyp != AT_GAZE || mdef == &gy.youmonst || !rn2(3))
+            (void) cancel_monst(mdef, &pseudo, magr == &gy.youmonst, TRUE, FALSE);
+        mhm->damage = 0;
+        break;
+    }
+    case AD_DISN:
+        if (mattk->aatyp == AT_GAZE && mdef != &gy.youmonst)
+            step19_disintegrating_gaze(magr, mdef, mhm);
+        else
+            mith_disintegrate(magr, mattk, mdef, mhm);
+        break;
     case AD_RUST: mhitm_ad_rust(magr, mattk, mdef, mhm); break;
     case AD_FREZ:
         if (mdef == &gy.youmonst)

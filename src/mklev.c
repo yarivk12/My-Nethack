@@ -2229,11 +2229,67 @@ level_finalize_topology(void)
 #ifdef STEP15_TEST
 int step15_forge_result;
 #endif
+/* Bosses require safe room floor, including procedural maze room-floor
+   squares that have no ordinary room index. Authored regions stay excluded. */
+staticfn boolean
+dod_boss_candidate(coordxy x, coordxy y)
+{
+    struct mkroom *room;
+    int i, r;
+    if (!isok(x, y) || forge_scripted[x][y]
+        || levl[x][y].typ != ROOM || levl[x][y].edge
+        || t_at(x, y) || stairway_at(x, y))
+        return FALSE;
+    for (i = 0; i < svn.nroom; ++i) {
+        room = &svr.rooms[i];
+        if (x >= room->lx && x <= room->hx
+            && y >= room->ly && y <= room->hy
+            && (room->rtype != OROOM || room->orig_rtype != OROOM
+                || room->custom_id || room->nsubrooms))
+            return FALSE;
+    }
+    r = levl[x][y].roomno - ROOMOFFSET;
+    if (r >= 0 && r < svn.nroom) {
+        room = &svr.rooms[r];
+        return room->rtype == OROOM && room->orig_rtype == OROOM
+            && !room->custom_id && !room->nsubrooms
+            && x >= room->lx && x <= room->hx
+            && y >= room->ly && y <= room->hy;
+    }
+    return svl.level.flags.is_maze_lev && levl[x][y].roomno == NO_ROOM;
+}
+
+staticfn void
+place_dod_bosses(void)
+{
+    static const int bosses[] = { PM_NIGHTMARE, PM_BEHOLDER, PM_VECNA };
+    static const int thresholds[] = { 40, 50, 80 };
+    int i, count;
+    coordxy x, y, bx, by;
+    if (u.uz.dnum != medusa_level.dnum || Is_special(&u.uz)
+        || Is_branchlev(&u.uz) || Is_medusa_level(&u.uz)
+        || Is_stronghold(&u.uz) || svd.dungeons[u.uz.dnum].proto[0]
+        || svd.dungeons[u.uz.dnum].fill_lvl[0]) return;
+    for (i = 0; i < SIZE(bosses); ++i) {
+        if (depth(&u.uz) < thresholds[i] || svm.mvitals[bosses[i]].born)
+            continue;
+        count = 0; bx = by = 0;
+        for (x = 1; x < COLNO; ++x)
+            for (y = 0; y < ROWNO; ++y)
+                if (dod_boss_candidate(x, y) && !MON_AT(x, y)
+                    && goodpos(x, y, (struct monst *) 0, 0)
+                    && !rn2(++count)) { bx = x; by = y; }
+        if (count)
+            (void) makemon(&mons[bosses[i]], bx, by, NO_MM_FLAGS);
+    }
+}
+
 staticfn void
 generate_level(void)
 {
     makelevel();
     level_finalize_topology();
+    place_dod_bosses();
 #ifdef STEP15_TEST
     step15_forge_result = forge_generate();
 #else
@@ -2242,6 +2298,12 @@ generate_level(void)
 }
 
 #ifdef STEP15_TEST
+void
+step19_place_bosses(void)
+{
+    place_dod_bosses();
+}
+
 void
 step15_generate(void)
 {

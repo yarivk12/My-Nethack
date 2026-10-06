@@ -254,7 +254,7 @@ erode_obj(
     int erosion, cost_type;
     struct monst *victim;
 
-    if (!otmp)
+    if (!otmp || is_art(otmp, ART_HAND_OF_VECNA))
         return ER_NOTHING;
 
     if (utility_erosion_protected(otmp, type))

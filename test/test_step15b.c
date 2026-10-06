@@ -615,6 +615,7 @@ forge_test_navigation(void)
 #include "test_step15d_forge.c"
 #include "test_step18a.c"
 #include "test_step18b.c"
+#include "test_step19.c"
 
 void
 step15b_test_main(void)
@@ -625,6 +626,7 @@ step15b_test_main(void)
     int i, j, expected_eroded, expected_quality;
     boolean has_eroded;
     step18b_test_main();
+    step19_test_main();
     step18a_test_main();
     assert(forge_catalog_valid(forge_recipes, SIZE(forge_recipes)));
     pair[0] = pair[1] = forge_recipes[1];

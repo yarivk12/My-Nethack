@@ -579,6 +579,13 @@ Gloves_on(void)
         u.uprops[objects[uarmg->otyp].oc_oprop].extrinsic & ~WORN_GLOVES;
 
     switch (uarmg->otyp) {
+    case MUMMIFIED_HAND:
+        if (is_art(uarmg, ART_HAND_OF_VECNA)) {
+            ESick_resistance |= W_ARMG;
+            Your("mummified hand fuses to your arm!");
+            disp.botl = TRUE;
+        }
+        break;
     case LEATHER_GLOVES:
         break;
     case GAUNTLETS_OF_FUMBLING:
@@ -650,9 +657,12 @@ Gloves_off(void)
         u.uprops[objects[uarmg->otyp].oc_oprop].extrinsic & ~WORN_GLOVES;
     boolean on_purpose = !svc.context.mon_moving && !uarmg->in_use;
 
+    if (is_art(uarmg, ART_HAND_OF_VECNA))
+        return ECMD_OK;
     svc.context.takeoff.mask &= ~W_ARMG;
 
     switch (uarmg->otyp) {
+    case MUMMIFIED_HAND:
     case LEATHER_GLOVES:
         break;
     case GAUNTLETS_OF_FUMBLING:
@@ -806,6 +816,18 @@ dragon_armor_handling(
     switch (otmp->otyp) {
         /* grey: no extra effect */
         /* silver: no extra effect */
+    case SHADOW_DRAGON_SCALE_MAIL:
+    case CELESTIAL_DRAGON_SCALE_MAIL: {
+        int prop = otmp->otyp == SHADOW_DRAGON_SCALE_MAIL ? DRAIN_RES : SHOCK_RES;
+        if (puton) {
+            ESleep_resistance |= W_ARM;
+            u.uprops[prop].extrinsic |= W_ARM;
+        } else {
+            ESleep_resistance &= ~W_ARM;
+            u.uprops[prop].extrinsic &= ~W_ARM;
+        }
+        break;
+    }
     case BLACK_DRAGON_SCALES:
     case BLACK_DRAGON_SCALE_MAIL:
         if (puton) {
@@ -1337,6 +1359,15 @@ Ring_on(struct obj *obj)
     case RIN_GAIN_STRENGTH:
         adjust_attrib(obj, A_STR, obj->spe);
         break;
+    case RIN_GAIN_INTELLIGENCE:
+        adjust_attrib(obj, A_INT, obj->spe);
+        break;
+    case RIN_GAIN_WISDOM:
+        adjust_attrib(obj, A_WIS, obj->spe);
+        break;
+    case RIN_CARRYING:
+        (void) encumber_msg();
+        break;
     case RIN_GAIN_CONSTITUTION:
         adjust_attrib(obj, A_CON, obj->spe);
         break;
@@ -1435,6 +1466,15 @@ Ring_off_or_gone(struct obj *obj, boolean gone)
         break;
     case RIN_GAIN_STRENGTH:
         adjust_attrib(obj, A_STR, -obj->spe);
+        break;
+    case RIN_GAIN_INTELLIGENCE:
+        adjust_attrib(obj, A_INT, -obj->spe);
+        break;
+    case RIN_GAIN_WISDOM:
+        adjust_attrib(obj, A_WIS, -obj->spe);
+        break;
+    case RIN_CARRYING:
+        (void) encumber_msg();
         break;
     case RIN_GAIN_CONSTITUTION:
         adjust_attrib(obj, A_CON, -obj->spe);
@@ -2733,6 +2773,10 @@ select_off(struct obj *otmp)
     struct obj *why;
     char buf[BUFSZ];
 
+    if (is_art(otmp, ART_HAND_OF_VECNA) && otmp == uarmg) {
+        Your("mummified hand is part of your arm.");
+        return 0;
+    }
     if (!otmp)
         return 0;
     *buf = '\0'; /* lint suppression */

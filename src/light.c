@@ -177,7 +177,8 @@ do_light_sources(seenV **cs_rows)
 
     for (ls = gl.light_base; ls; ls = ls->next) {
         boolean dark = ls->type == LS_MONSTER
-            && ls->id.a_monst->data == &mons[PM_ASPECT_OF_THE_SILENCE];
+            && (ls->id.a_monst->data == &mons[PM_ASPECT_OF_THE_SILENCE]
+                || ls->id.a_monst->data == &mons[PM_SHADOW_DRAGON]);
 
         ls->flags &= ~LSF_SHOW;
 

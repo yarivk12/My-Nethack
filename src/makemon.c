@@ -13,6 +13,31 @@
      && (mptr->msound == MS_LEADER || mptr->msound == MS_NEMESIS))
 
 staticfn boolean uncommon(int);
+
+int
+step19_min_depth(int mndx)
+{
+    switch (mndx) {
+    case PM_BABY_SHIMMERING_DRAGON: return 20;
+    case PM_SHIMMERING_DRAGON: return 30;
+    case PM_DEEP_DRAGON: case PM_FILTH_DRAGON: return 45;
+    case PM_RUBY_GOLEM: return 55;
+    case PM_SAPPHIRE_GOLEM: return 60;
+    case PM_SHADOW_DRAGON: return 70;
+    case PM_CRYSTAL_GOLEM: return 75;
+    case PM_RAZOR_DRAGON: case PM_CELESTIAL_DRAGON: return 80;
+    case PM_DIAMOND_GOLEM: return 85;
+    default: return 0;
+    }
+}
+
+boolean
+step19_generation_ok(int mndx)
+{
+    int minimum = step19_min_depth(mndx);
+    return !minimum || (u.uz.dnum == medusa_level.dnum
+                        && depth(&u.uz) >= minimum);
+}
 staticfn int align_shift(struct permonst *);
 staticfn int temperature_shift(struct permonst *);
 staticfn boolean mk_gen_ok(int, unsigned, unsigned);
@@ -2548,6 +2573,8 @@ sheol_mon_boosted(int mndx)
 staticfn boolean
 uncommon(int mndx)
 {
+    if (!step19_generation_ok(mndx))
+        return TRUE;
     if (mons[mndx].geno & (G_NOGEN | G_UNIQ))
         return TRUE;
     if (svm.mvitals[mndx].mvflags & G_GONE)
@@ -2954,6 +2981,8 @@ mkclass_aligned(char class, int spc, /* special mons[].geno handling */
      */
     for (last = first; last < SPECIAL_PM && mons[MONSi(last)].mlet == class;
          last++) {
+        if (!step19_generation_ok(MONSi(last)))
+            continue;
         /* The donor's ten adult identities include lava, but not native
          * NetHack5's gold dragon. Keep that local addition out of this
          * branch's explicit dragon-class rolls only. */
@@ -3313,6 +3342,10 @@ golemhp(int type)
         return 130;
     case PM_CRYSTAL_ICE_GOLEM:
         return 160;
+    case PM_RUBY_GOLEM: return 250;
+    case PM_DIAMOND_GOLEM: return 270;
+    case PM_SAPPHIRE_GOLEM: return 280;
+    case PM_CRYSTAL_GOLEM: return 300;
     case PM_IRON_GOLEM:
         return 120;
     case PM_LIVING_LECTERN:

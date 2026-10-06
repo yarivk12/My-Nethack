@@ -82,7 +82,13 @@ set_uasmon(void)
     PROPSET(ANTIMAGIC, (dmgtype(mdat, AD_MAGM)
                         || mdat == &mons[PM_BABY_GRAY_DRAGON]
                         || dmgtype(mdat, AD_RBRE)));
-    PROPSET(SICK_RES, (mdat->mlet == S_FUNGUS || mdat == &mons[PM_GHOUL]));
+    PROPSET(SICK_RES, (mdat->mlet == S_FUNGUS || mdat == &mons[PM_GHOUL]
+                      || mdat == &mons[PM_FILTH_DRAGON]
+                      || mdat == &mons[PM_RUBY_GOLEM]
+                      || mdat == &mons[PM_DIAMOND_GOLEM]
+                      || mdat == &mons[PM_SAPPHIRE_GOLEM]
+                      || mdat == &mons[PM_CRYSTAL_GOLEM]));
+    PROPSET(DISPLACED, mdat == &mons[PM_SHIMMERING_DRAGON]);
 
     PROPSET(STUNNED, (mdat == &mons[PM_STALKER] || is_bat(mdat)));
     PROPSET(HALLUC_RES, dmgtype(mdat, AD_HALU));
@@ -104,6 +110,9 @@ set_uasmon(void)
     PROPSET(PASSES_WALLS, passes_walls(mdat));
     PROPSET(REGENERATION, regenerates(mdat));
     PROPSET(REFLECTING, (mdat == &mons[PM_SILVER_DRAGON]
+                        || mdat == &mons[PM_DIAMOND_GOLEM]
+                        || mdat == &mons[PM_SAPPHIRE_GOLEM]
+                        || mdat == &mons[PM_CRYSTAL_GOLEM]
                         || mdat == &mons[PM_CAVE_CHROMATIC_DRAGON]));
     PROPSET(BLINDED, !haseyes(mdat));
     PROPSET(BLND_RES, (dmgtype_fromattack(mdat, AD_BLND, AT_EXPL)
@@ -651,7 +660,8 @@ polyself(int psflags)
                     /* uarm->spe enchantment remains unchanged;
                        re-converting scales to mail poses risk
                        of evaporation due to over enchanting */
-                    enhancement_change_type(uarm, uarm->otyp + GRAY_DRAGON_SCALES - GRAY_DRAGON_SCALE_MAIL);
+                    enhancement_change_type(uarm,
+                        dragon_armor_type(dragon_armor_monster(uarm->otyp), FALSE));
                     observe_object(uarm);
                     disp.botl = TRUE; /* AC is changing */
                 }
@@ -1256,7 +1266,7 @@ break_armor(void)
         }
     }
     if (nohands(uptr) || verysmall(uptr)) {
-        if ((otmp = uarmg) != 0) {
+        if ((otmp = uarmg) != 0 && !is_art(otmp, ART_HAND_OF_VECNA)) {
             if (donning(otmp))
                 cancel_don();
             /* Drop weapon along with gloves */
@@ -2207,51 +2217,7 @@ ugolemeffects(int damtype, int dam)
 staticfn int
 armor_to_dragon(int atyp)
 {
-    switch (atyp) {
-    case GRAY_DRAGON_SCALE_MAIL:
-    case GRAY_DRAGON_SCALES:
-        return PM_GRAY_DRAGON;
-    case SILVER_DRAGON_SCALE_MAIL:
-    case SILVER_DRAGON_SCALES:
-        return PM_SILVER_DRAGON;
-    case GOLD_DRAGON_SCALE_MAIL:
-    case GOLD_DRAGON_SCALES:
-        return PM_GOLD_DRAGON;
-#if 0 /* DEFERRED */
-    case SHIMMERING_DRAGON_SCALE_MAIL:
-    case SHIMMERING_DRAGON_SCALES:
-        return PM_SHIMMERING_DRAGON;
-#endif
-    case RED_DRAGON_SCALE_MAIL:
-    case RED_DRAGON_SCALES:
-        return PM_RED_DRAGON;
-    case ORANGE_DRAGON_SCALE_MAIL:
-    case ORANGE_DRAGON_SCALES:
-        return PM_ORANGE_DRAGON;
-    case WHITE_DRAGON_SCALE_MAIL:
-    case WHITE_DRAGON_SCALES:
-        return PM_WHITE_DRAGON;
-    case BLACK_DRAGON_SCALE_MAIL:
-    case BLACK_DRAGON_SCALES:
-        return PM_BLACK_DRAGON;
-    case BLUE_DRAGON_SCALE_MAIL:
-    case BLUE_DRAGON_SCALES:
-        return PM_BLUE_DRAGON;
-    case GREEN_DRAGON_SCALE_MAIL:
-    case GREEN_DRAGON_SCALES:
-        return PM_GREEN_DRAGON;
-    case YELLOW_DRAGON_SCALE_MAIL:
-    case YELLOW_DRAGON_SCALES:
-        return PM_YELLOW_DRAGON;
-    case GLOWING_DRAGON_SCALE_MAIL:
-    case GLOWING_DRAGON_SCALES:
-        return PM_GLOWING_DRAGON;
-    case CHROMATIC_DRAGON_SCALE_MAIL:
-    case CHROMATIC_DRAGON_SCALES:
-        return PM_CAVE_CHROMATIC_DRAGON;
-    default:
-        return NON_PM;
-    }
+    return dragon_armor_monster(atyp);
 }
 
 /* some species have awareness of other species */

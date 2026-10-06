@@ -2818,7 +2818,11 @@ mon_reflects(struct monst *mon, const char *str)
         return TRUE;
     }
 
-    if (step10b_innate_reflection(mon->data)) {
+    if (mon->data == &mons[PM_NIGHTMARE]
+        || mon->data == &mons[PM_DIAMOND_GOLEM]
+        || mon->data == &mons[PM_SAPPHIRE_GOLEM]
+        || mon->data == &mons[PM_CRYSTAL_GOLEM]
+        || step10b_innate_reflection(mon->data)) {
         if (str)
             pline(str, s_suffix(mon_nam(mon)), "body");
         return TRUE;

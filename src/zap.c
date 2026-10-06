@@ -1275,6 +1275,13 @@ cancel_item(struct obj *obj)
                 disp.botl = TRUE;
             }
             break;
+        case RIN_GAIN_INTELLIGENCE:
+        case RIN_GAIN_WISDOM:
+            if ((obj->owornmask & W_RING) != 0L) {
+                ABON(otyp == RIN_GAIN_INTELLIGENCE ? A_INT : A_WIS) -= obj->spe;
+                disp.botl = TRUE;
+            }
+            break;
         case RIN_ADORNMENT:
             if ((obj->owornmask & W_RING) != 0L) {
                 ABON(A_CHA) -= obj->spe;
@@ -1334,7 +1341,8 @@ cancel_item(struct obj *obj)
             obj->owornmask = 0L;
             update_mon_extrinsics(carrier, obj, FALSE, TRUE);
         }
-        enhancement_change_type(obj, obj->otyp + GRAY_DRAGON_SCALES - GRAY_DRAGON_SCALE_MAIL);
+        enhancement_change_type(obj,
+            dragon_armor_type(dragon_armor_monster(obj->otyp), FALSE));
         if (worn) {
             setworn(obj, W_ARM);
             /* Mail's primary poison property becomes one of the scales'
@@ -1470,6 +1478,13 @@ drain_item(struct obj *obj, boolean by_you)
             disp.botl = TRUE;
         }
         break;
+    case RIN_GAIN_INTELLIGENCE:
+    case RIN_GAIN_WISDOM:
+        if ((obj->owornmask & W_RING) && u_ring) {
+            ABON(obj->otyp == RIN_GAIN_INTELLIGENCE ? A_INT : A_WIS)--;
+            disp.botl = TRUE;
+        }
+        break;
     case RIN_ADORNMENT:
         if ((obj->owornmask & W_RING) && u_ring) {
             ABON(A_CHA)--;
@@ -1516,7 +1531,8 @@ obj_resists(struct obj *obj,
             int ochance, /* percent chance for ordinary objects */
             int achance) /* percent chance for artifacts */
 {
-    if (obj->otyp == AMULET_OF_YENDOR
+    if (is_art(obj, ART_HAND_OF_VECNA)
+        || obj->otyp == AMULET_OF_YENDOR
         || obj->otyp == SPE_BOOK_OF_THE_DEAD
         || obj->otyp == CANDELABRUM_OF_INVOCATION
         || obj->otyp == BELL_OF_OPENING

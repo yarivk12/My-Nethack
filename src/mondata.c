@@ -5,6 +5,50 @@
 
 #include "hack.h"
 
+/* Native Gray-Yellow offsets remain intact. All custom associations have
+   one owner, shared by drops, equipment conversion, and polymorph. */
+static const struct {
+    int monster, scales, mail;
+} custom_dragon_armor[] = {
+    { PM_GLOWING_DRAGON, GLOWING_DRAGON_SCALES, GLOWING_DRAGON_SCALE_MAIL },
+    { PM_CAVE_CHROMATIC_DRAGON, CHROMATIC_DRAGON_SCALES, CHROMATIC_DRAGON_SCALE_MAIL },
+    { PM_SHIMMERING_DRAGON, SHIMMERING_DRAGON_SCALES, SHIMMERING_DRAGON_SCALE_MAIL },
+    { PM_DEEP_DRAGON, DEEP_DRAGON_SCALES, DEEP_DRAGON_SCALE_MAIL },
+    { PM_RAZOR_DRAGON, RAZOR_DRAGON_SCALES, RAZOR_DRAGON_SCALE_MAIL },
+    { PM_FILTH_DRAGON, FILTH_DRAGON_SCALES, FILTH_DRAGON_SCALE_MAIL },
+    { PM_SHADOW_DRAGON, SHADOW_DRAGON_SCALES, SHADOW_DRAGON_SCALE_MAIL },
+    { PM_CELESTIAL_DRAGON, CELESTIAL_DRAGON_SCALES, CELESTIAL_DRAGON_SCALE_MAIL }
+};
+
+int
+dragon_armor_type(int monster, boolean mail)
+{
+    int i;
+    if (monster >= PM_GRAY_DRAGON && monster <= PM_YELLOW_DRAGON)
+        return (mail ? GRAY_DRAGON_SCALE_MAIL : GRAY_DRAGON_SCALES)
+               + monster - PM_GRAY_DRAGON;
+    for (i = 0; i < SIZE(custom_dragon_armor); ++i)
+        if (custom_dragon_armor[i].monster == monster)
+            return mail ? custom_dragon_armor[i].mail
+                        : custom_dragon_armor[i].scales;
+    return STRANGE_OBJECT;
+}
+
+int
+dragon_armor_monster(int otyp)
+{
+    int i;
+    if (otyp >= GRAY_DRAGON_SCALES && otyp <= YELLOW_DRAGON_SCALES)
+        return PM_GRAY_DRAGON + otyp - GRAY_DRAGON_SCALES;
+    if (otyp >= GRAY_DRAGON_SCALE_MAIL && otyp <= YELLOW_DRAGON_SCALE_MAIL)
+        return PM_GRAY_DRAGON + otyp - GRAY_DRAGON_SCALE_MAIL;
+    for (i = 0; i < SIZE(custom_dragon_armor); ++i)
+        if (custom_dragon_armor[i].scales == otyp
+            || custom_dragon_armor[i].mail == otyp)
+            return custom_dragon_armor[i].monster;
+    return NON_PM;
+}
+
 /* The selected dNetHack branches use moisture-sensitive attacks and dust.
    Only bodies present locally are listed; unrelated donor species are not
    silently imported through its global body-classification framework. */
@@ -112,7 +156,7 @@ boolean
 defended(struct monst *mon, int adtyp)
 {
     struct obj *o, otemp;
-    int mndx;
+    int mndx, scales;
     boolean is_you = (mon == &gy.youmonst);
 
     /* is 'mon' wielding an artifact that protects against 'adtyp'? */
@@ -123,13 +167,18 @@ defended(struct monst *mon, int adtyp)
     /* if 'mon' is an adult dragon, treat it as if it was wearing scales
        so that it has the same benefit as a hero wearing dragon scales */
     mndx = monsndx(mon->data);
-    if (mndx >= PM_GRAY_DRAGON && mndx <= PM_YELLOW_DRAGON) {
+    if (adtyp == AD_DISE
+        && (mndx == PM_RUBY_GOLEM || mndx == PM_DIAMOND_GOLEM
+            || mndx == PM_SAPPHIRE_GOLEM || mndx == PM_CRYSTAL_GOLEM))
+        return TRUE;
+    scales = dragon_armor_type(mndx, FALSE);
+    if (scales != STRANGE_OBJECT) {
         /* a dragon is its own suit...  if mon is poly'd hero, we don't
            care about embedded scales (uskin) because being a dragon with
            embedded scales is no better than just being a dragon */
         otemp = cg.zeroobj;
         otemp.oclass = ARMOR_CLASS;
-        otemp.otyp = GRAY_DRAGON_SCALES + (mndx - PM_GRAY_DRAGON);
+        otemp.otyp = scales;
         /* defends() and Is_dragon_armor() only care about otyp so ignore
            the rest of otemp's fields */
         o = &otemp;
@@ -227,6 +276,8 @@ resists_drli(struct monst *mon)
         /* is_were() doesn't handle hero in human form */
         || (mon == &gy.youmonst && u.ulycn >= LOW_PM)
         || ptr == &mons[PM_DEATH] || is_vampshifter(mon)
+        || ptr == &mons[PM_DEEP_DRAGON]
+        || ptr == &mons[PM_SHADOW_DRAGON]
         || ptr == &mons[PM_WRAITHWORM]
         || ptr == &mons[PM_FIRST_WRAITHWORM]
         || ptr == &mons[PM_VOICE_IN_THE_DARK])
@@ -240,6 +291,7 @@ boolean
 mith_displaced(struct monst *mon)
 {
     return enhancement_mon_confers(mon, DISPLACED)
+           || mon->data == &mons[PM_SHIMMERING_DRAGON]
            || mon->data == &mons[PM_WRAITHWORM]
            || mon->data == &mons[PM_FIRST_WRAITHWORM]
            || mon->data == &mons[PM_ASPECT_OF_THE_SILENCE]
@@ -1385,9 +1437,7 @@ static const short grownups[][2] = {
     { PM_BABY_GRAY_DRAGON, PM_GRAY_DRAGON },
     { PM_BABY_GOLD_DRAGON, PM_GOLD_DRAGON },
     { PM_BABY_SILVER_DRAGON, PM_SILVER_DRAGON },
-#if 0 /* DEFERRED */
     {PM_BABY_SHIMMERING_DRAGON, PM_SHIMMERING_DRAGON},
-#endif
     { PM_BABY_RED_DRAGON, PM_RED_DRAGON },
     { PM_BABY_WHITE_DRAGON, PM_WHITE_DRAGON },
     { PM_BABY_ORANGE_DRAGON, PM_ORANGE_DRAGON },

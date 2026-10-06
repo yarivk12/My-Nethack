@@ -673,8 +673,19 @@ defends(int adtyp, struct obj *otmp)
         int otyp = otmp->otyp;
 
         /* convert mail to scales to simplify testing */
+        if ((adtyp == AD_DRLI && (otyp == DEEP_DRAGON_SCALES
+                                 || otyp == DEEP_DRAGON_SCALE_MAIL
+                                 || otyp == SHADOW_DRAGON_SCALE_MAIL))
+            || (adtyp == AD_DISE && (otyp == FILTH_DRAGON_SCALES
+                                    || otyp == FILTH_DRAGON_SCALE_MAIL))
+            || (adtyp == AD_SLEE && (otyp == SHADOW_DRAGON_SCALE_MAIL
+                                    || otyp == CELESTIAL_DRAGON_SCALE_MAIL))
+            || (adtyp == AD_ELEC && otyp == CELESTIAL_DRAGON_SCALE_MAIL)
+            || (adtyp == AD_SLOW && (otyp == RAZOR_DRAGON_SCALES
+                                    || otyp == RAZOR_DRAGON_SCALE_MAIL)))
+            return TRUE;
         if (Is_dragon_mail(otmp))
-            otyp += GRAY_DRAGON_SCALES - GRAY_DRAGON_SCALE_MAIL;
+            otyp = dragon_armor_type(dragon_armor_monster(otyp), FALSE);
 
         switch (adtyp) {
         case AD_MAGM: /* magic missiles => general magic resistance */
@@ -754,6 +765,14 @@ set_artifact_intrinsic(
 
     if (oart == &artilist[ART_NONARTIFACT])
         return;
+
+    /* Rebuilding worn artifact properties on restore bypasses Gloves_on(). */
+    if (is_art(otmp, ART_HAND_OF_VECNA) && (wp_mask & W_ARMG)) {
+        if (on)
+            ESick_resistance |= W_ARMG;
+        else
+            ESick_resistance &= ~W_ARMG;
+    }
 
     /* effects from the defn field */
     dtyp = (wp_mask != W_ART) ? oart->defn.adtyp : oart->cary.adtyp;
@@ -2365,6 +2384,63 @@ arti_invoke(struct obj *obj)
             return ECMD_TIME;
 
         switch (oart->inv_prop) {
+        case DEATH_MAGIC: {
+            struct monst *mon, *next;
+            if (is_art(obj, ART_HAND_OF_VECNA) && obj != uarmg) {
+                pline1(nothing_happens);
+                break;
+            }
+            if (u.uluck <= -10) {
+                pline("%s turns on you!", The(xname(obj)));
+                u.uhp = 0;
+                svk.killer.format = KILLED_BY;
+                Strcpy(svk.killer.name, artiname(obj->oartifact));
+                done(DIED);
+            } else for (mon = fmon; mon; mon = next) {
+                boolean resistant, high;
+                next = mon->nmon;
+                if (DEADMONSTER(mon)
+                    || !(is_art(obj, ART_EYE_OF_VECNA)
+                         ? couldsee(mon->mx, mon->my) : canspotmon(mon)))
+                    continue;
+                if (dmgtype(mon->data, AD_DETH) || nonliving(mon->data)
+                    || mon->data->mlet == S_ANGEL || is_demon(mon->data)
+                    || mon->data->msound == MS_LEADER
+                    || mon->data == &mons[PM_CELESTIAL_DRAGON]) {
+                    shieldeff(mon->mx, mon->my);
+                    continue;
+                }
+                high = rn2(20) >= 15;
+                resistant = resists_magm(mon) || defended(mon, AD_MAGM);
+                if (high && !resistant) {
+                    mon->mhp = 0;
+                    monkilled(mon, (char *) 0, AD_DETH);
+                    continue;
+                }
+                if (resistant) {
+                    int damage = d(high ? 6 : 4, 4);
+                    shieldeff(mon->mx, mon->my);
+                    mon->mhp = max(1, mon->mhp - damage);
+                } else {
+                    int loss = rn1(9, 4);
+                    mon->mhpmax = max(1, mon->mhpmax - loss);
+                    mon->mhp = max(1, mon->mhp / 2);
+                }
+                if (mon->mpeaceful || mon->mtame) {
+                    mon->mpeaceful = mon->mtame = 0;
+                    if (mon->mleashed) m_unleash(mon, TRUE);
+                    set_malign(mon);
+                    newsym(mon->mx, mon->my);
+                    if (u.ualign.type != A_NONE) adjalign(-3);
+                }
+            }
+            if (u.ualign.type != A_NONE)
+                adjalign(u.ualign.type == A_LAWFUL ? -7 : -3);
+            change_luck(u.ualign.type == A_NONE ? -1 : -3);
+            exercise(A_WIS, FALSE);
+            res = ECMD_TIME;
+            break;
+        }
         case TAMING: res = invoke_taming(obj); break;
         case HEALING: res = invoke_healing(obj); break;
         case ENERGY_BOOST: res = invoke_energy_boost(obj); break;

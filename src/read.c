@@ -1324,7 +1324,7 @@ seffect_enchant_armor(struct obj **sobjp)
         return;
     }
     /* elven armor vibrates warningly when enchanted beyond a limit */
-    special_armor = is_elven_armor(otmp)
+    special_armor = is_art(otmp, ART_HAND_OF_VECNA) || is_elven_armor(otmp)
         || (Role_if(PM_WIZARD) && otmp->otyp == CORNUTHAUM);
     if (scursed)
         same_color = (otmp->otyp == BLACK_DRAGON_SCALE_MAIL
@@ -1339,6 +1339,10 @@ seffect_enchant_armor(struct obj **sobjp)
     /* KMH -- catch underflow */
     s = scursed ? -otmp->spe : otmp->spe;
     if (s > (special_armor ? 5 : 3) && rn2(s)) {
+        if (is_art(otmp, ART_HAND_OF_VECNA)) {
+            Your("mummified hand resists the destructive magic.");
+            return;
+        }
         otmp->in_use = TRUE;
         pline("%s violently %s%s%s for a while, then %s.", Yname2(otmp),
               otense(otmp, Blind ? "vibrate" : "glow"),
@@ -1391,20 +1395,13 @@ seffect_enchant_armor(struct obj **sobjp)
         /* dragon scales get turned into dragon scale mail */
         pline("%s merges and hardens!", Yname2(otmp));
         setworn((struct obj *) 0, W_ARM);
-        /* assumes same order */
-        enhancement_change_type(otmp, otmp->otyp + GRAY_DRAGON_SCALE_MAIL - GRAY_DRAGON_SCALES);
-        otmp->lamplit = 0; /* don't want bless() or uncurse() to adjust
-                            * light radius because scales -> scale_mail will
-                            * result in a second increase with own message */
-        if (sblessed) {
-            otmp->spe++;
-            cap_spe(otmp);
-            if (!otmp->blessed)
-                bless(otmp);
-        } else if (otmp->cursed)
-            uncurse(otmp);
+        enhancement_change_type(otmp,
+            dragon_armor_type(dragon_armor_monster(otmp->otyp), TRUE));
+        /* Conversion preserves enchantment, BUC and enhancement state.
+         * Activate secondary DSM properties through the normal wear path. */
         otmp->known = 1;
         setworn(otmp, W_ARM);
+        set_wear(otmp);
         if (otmp->unpaid)
             alter_cost(otmp, 0L); /* shop bill */
         otmp->lamplit = was_lit;

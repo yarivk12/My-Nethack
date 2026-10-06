@@ -599,9 +599,12 @@ make_corpse(struct monst *mtmp, unsigned int corpseflags)
     case PM_GRAY_DRAGON:
     case PM_GOLD_DRAGON:
     case PM_SILVER_DRAGON:
-#if 0 /* DEFERRED */
     case PM_SHIMMERING_DRAGON:
-#endif
+    case PM_DEEP_DRAGON:
+    case PM_RAZOR_DRAGON:
+    case PM_FILTH_DRAGON:
+    case PM_SHADOW_DRAGON:
+    case PM_CELESTIAL_DRAGON:
     case PM_RED_DRAGON:
     case PM_ORANGE_DRAGON:
     case PM_WHITE_DRAGON:
@@ -612,7 +615,7 @@ make_corpse(struct monst *mtmp, unsigned int corpseflags)
         /* Make dragon scales.  This assumes that the order of the
            dragons is the same as the order of the scales. */
         if (!rn2(mtmp->mrevived ? 20 : 3)) {
-            num = GRAY_DRAGON_SCALES + monsndx(mdat) - PM_GRAY_DRAGON;
+            num = dragon_armor_type(mndx, FALSE);
             obj = mksobj_at(num, x, y, FALSE, FALSE);
             obj->spe = 0;
             obj->cursed = obj->blessed = FALSE;
@@ -622,8 +625,7 @@ make_corpse(struct monst *mtmp, unsigned int corpseflags)
     case PM_CAVE_CHROMATIC_DRAGON: {
         int chance = cave_dragon_scale_chance(mtmp);
         if (chance && !rn2(chance)) {
-            num = mndx == PM_GLOWING_DRAGON ? GLOWING_DRAGON_SCALES
-                                           : CHROMATIC_DRAGON_SCALES;
+            num = dragon_armor_type(mndx, FALSE);
             obj = mksobj_at(num, x, y, FALSE, FALSE);
             obj->spe = 0;
             obj->cursed = obj->blessed = FALSE;
@@ -858,6 +860,7 @@ make_corpse(struct monst *mtmp, unsigned int corpseflags)
     case PM_PLAINS_CENTAUR: case PM_FOREST_CENTAUR: case PM_MOUNTAIN_CENTAUR:
 
     case PM_BABY_GRAY_DRAGON: case PM_BABY_GOLD_DRAGON:
+    case PM_BABY_SHIMMERING_DRAGON:
     case PM_BABY_SILVER_DRAGON: case PM_BABY_RED_DRAGON:
     case PM_BABY_WHITE_DRAGON: case PM_BABY_ORANGE_DRAGON:
     case PM_BABY_BLACK_DRAGON: case PM_BABY_BLUE_DRAGON:
@@ -3533,6 +3536,55 @@ corpse_chance(
     return (boolean) !rn2(tmp);
 }
 
+/* Death-path rewards do not depend on corpse flags or corpse creation. */
+void
+step19_death_reward(struct monst *mon)
+{
+    int art = 0, typ = 0, n, i, total, pick;
+    boolean tier4 = FALSE;
+    struct obj *obj;
+    switch (monsndx(mon->data)) {
+    case PM_NIGHTMARE: art = ART_NIGHTHORN; typ = UNICORN_HORN; break;
+    case PM_VECNA:
+        art = rn2(2) ? ART_EYE_OF_VECNA : ART_HAND_OF_VECNA;
+        typ = art == ART_EYE_OF_VECNA ? EYEBALL : MUMMIFIED_HAND;
+        break;
+    case PM_RUBY_GOLEM: typ = RUBY; break;
+    case PM_DIAMOND_GOLEM: typ = DIAMOND; break;
+    case PM_SAPPHIRE_GOLEM: typ = SAPPHIRE; break;
+    case PM_CRYSTAL_GOLEM: typ = STRANGE_OBJECT; break;
+    default: return;
+    }
+    if (art) {
+        if (exist_artifact(typ, artiname(art))) return;
+        obj = mksobj(typ, FALSE, FALSE);
+        obj = oname(obj, artiname(art), ONAME_NO_FLAGS);
+        obj->spe = 0;
+        curse(obj);
+        place_object(obj, mon->mx, mon->my);
+        newsym(mon->mx, mon->my);
+        return;
+    }
+    n = rnd(typ == DIAMOND ? 2 : 3);
+    while (n--) {
+        int gem = typ;
+        if (!gem) {
+            total = 0;
+            for (i = DILITHIUM_CRYSTAL; i <= JADE; ++i)
+                if (!tier4 || socket_gem_tier(i) != 4)
+                    total += objects[i].oc_prob;
+            pick = rn2(total);
+            for (i = DILITHIUM_CRYSTAL; i <= JADE; ++i) {
+                if (tier4 && socket_gem_tier(i) == 4) continue;
+                if ((pick -= objects[i].oc_prob) < 0) { gem = i; break; }
+            }
+            if (socket_gem_tier(gem) == 4) tier4 = TRUE;
+        }
+        obj = mksobj_at(gem, mon->mx, mon->my, FALSE, FALSE);
+        stackobj(obj);
+    }
+}
+
 /* drop (perhaps) a cadaver and remove monster */
 void
 mondied(struct monst *mdef)
@@ -3542,6 +3594,7 @@ mondied(struct monst *mdef)
         return; /* lifesaved */
 
     /* this assumes that the dead monster's map coordinates remain accurate */
+    step19_death_reward(mdef);
     if (corpse_chance(mdef, (struct monst *) 0, FALSE)
         && (accessible(mdef->mx, mdef->my) || is_pool(mdef->mx, mdef->my)))
         (void) make_corpse(mdef, CORPSTAT_NONE);
@@ -3864,6 +3917,8 @@ xkilled(
         goto cleanup;
     }
 
+    if (!nocorpse)
+        step19_death_reward(mtmp);
     if (nocorpse || LEVEL_SPECIFIC_NOCORPSE(mdat))
         goto cleanup;
 

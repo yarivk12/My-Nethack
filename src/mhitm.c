@@ -824,6 +824,12 @@ gazemm(struct monst *magr, struct monst *mdef, struct attack *mattk)
     }
     if (mattk->adtyp == AD_PLYS)
         return mith_paralyze_gaze(magr, mdef, mattk);
+    /* Hack'EM's Beholder petrification activates one time in three.
+       This engine resolves monster stoning immediately, using its native
+       cure/polymorph/life-saving path rather than a donor-only timer field. */
+    if (mattk->adtyp == AD_STON && magr->data == &mons[PM_BEHOLDER]
+        && (rn2(3) || defended(mdef, AD_STON)))
+        return M_ATTK_MISS;
     if (mattk->adtyp == AD_MIST) {
         if (!rn2(5))
             mdef->mconf = 1;
@@ -1652,5 +1658,13 @@ int step13_mdamagem(struct monst *a, struct monst *d, struct obj *o)
 {
     struct attack attack = { AT_WEAP, AD_PHYS, 1, 4 };
     return mdamagem(a, d, &attack, o, 10);
+}
+#endif
+
+#ifdef STEP15_TEST
+int
+step19_gazemm(struct monst *a, struct monst *d, struct attack *attack)
+{
+    return gazemm(a, d, attack);
 }
 #endif

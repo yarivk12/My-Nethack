@@ -1846,6 +1846,8 @@ sacrifice_value(struct obj *otmp)
         if (otmp->oeaten)
             value = eaten_stat(value, otmp);
     }
+    if (uwep && uwep->otyp == SACRIFICIAL_KNIFE)
+        value = value * (uwep->cursed ? 1 : 3) / 2;
     return value;
 }
 

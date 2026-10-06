@@ -814,6 +814,83 @@ getspell(int *spell_no)
                        spell_no);
 }
 
+/* Each choice is made before modifying the armor, so ESC at either menu
+   leaves it untouched. Like jumping, an aborted effect is still a cast. */
+void
+cast_repair_armor(int skill)
+{
+    struct obj *obj, *targets[7];
+    int count = 0, choice = 0, erosion, n, i;
+    winid win;
+    menu_item *selected = 0;
+    anything any;
+
+    for (obj = gi.invent; obj; obj = obj->nobj)
+        if (obj->oclass == ARMOR_CLASS && (obj->owornmask & W_ARMOR)
+            && !is_art(obj, ART_HAND_OF_VECNA)
+            && (obj->oeroded || obj->oeroded2))
+            targets[count++] = obj;
+    if (!count) {
+        pline1(nothing_happens);
+        return;
+    }
+    if (skill < P_BASIC) {
+        choice = rn2(count);
+    } else if (count > 1) {
+        win = create_nhwindow(NHW_MENU);
+        start_menu(win, MENU_BEHAVE_STANDARD);
+        for (i = 0; i < count; ++i) {
+            any = cg.zeroany;
+            any.a_int = i + 1;
+            add_menu(win, &nul_glyphinfo, &any, 0, 0, ATR_NONE, NO_COLOR,
+                     doname(targets[i]), MENU_ITEMFLAGS_NONE);
+        }
+        end_menu(win, "Repair which armor?");
+        n = select_menu(win, PICK_ONE, &selected);
+        destroy_nhwindow(win);
+        if (n > 0)
+            choice = selected[0].item.a_int - 1;
+        if (selected)
+            free((genericptr_t) selected);
+        if (n <= 0)
+            return;
+    }
+    obj = targets[choice];
+    erosion = obj->oeroded ? 1 : 2;
+    if (obj->oeroded && obj->oeroded2) {
+        if (skill < P_BASIC) {
+            erosion = 1 + rn2(2);
+        } else {
+            win = create_nhwindow(NHW_MENU);
+            start_menu(win, MENU_BEHAVE_STANDARD);
+            for (i = 1; i <= 2; ++i) {
+                any = cg.zeroany;
+                any.a_int = i;
+                add_menu(win, &nul_glyphinfo, &any, 0, 0, ATR_NONE, NO_COLOR,
+                         i == 1 ? (is_rustprone(obj) ? "Rust" : "Burning")
+                                : (is_corrodeable(obj) ? "Corrosion" : "Rot"),
+                         MENU_ITEMFLAGS_NONE);
+            }
+            end_menu(win, "Repair which damage?");
+            selected = 0;
+            n = select_menu(win, PICK_ONE, &selected);
+            destroy_nhwindow(win);
+            if (n > 0)
+                erosion = selected[0].item.a_int;
+            if (selected)
+                free((genericptr_t) selected);
+            if (n <= 0)
+                return;
+        }
+    }
+    if (erosion == 1)
+        --obj->oeroded;
+    else
+        --obj->oeroded2;
+    Your("%s looks better.", xname(obj));
+    update_inventory();
+}
+
 /* #wizcast - cast any spell even without knowing it */
 int
 dowizcast(void)
@@ -1609,6 +1686,13 @@ spelleffects(int spell_otyp, boolean atme, boolean force)
         /* at present, only one thing blocks clairvoyance */
         } else if (uarmh && uarmh->otyp == CORNUTHAUM)
             You("sense a pointy hat on top of your %s.", body_part(HEAD));
+        break;
+    case SPE_PASSWALL:
+        incr_itimeout(&HPasses_walls, (long) rn1(100, 50));
+        You_feel("insubstantial.");
+        break;
+    case SPE_REPAIR_ARMOR:
+        cast_repair_armor(role_skill);
         break;
     case SPE_PROTECTION:
         cast_protection();

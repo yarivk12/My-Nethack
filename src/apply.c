@@ -2290,6 +2290,157 @@ use_tinning_kit(struct obj *obj)
         impossible("Tinning failed.");
 }
 
+/* Exact uncursed algorithm from 43d331c4e^ (pre-nerf lineage).
+   Cursed Nighthorn stays on the current horn path below. */
+staticfn void
+use_nighthorn(struct obj *obj)
+{
+#define PROP_COUNT 7           /* number of properties we're dealing with */
+#define ATTR_COUNT (A_MAX * 3) /* number of attribute points we might fix */
+    int idx, val, val_limit, trouble_count, unfixable_trbl, did_prop,
+        did_attr;
+    int trouble_list[PROP_COUNT + ATTR_COUNT];
+
+/*
+ * Entries in the trouble list use a very simple encoding scheme.
+ */
+#define prop2trbl(X) ((X) + A_MAX)
+#define attr2trbl(Y) (Y)
+#define prop_trouble(X) trouble_list[trouble_count++] = prop2trbl(X)
+#define attr_trouble(Y) trouble_list[trouble_count++] = attr2trbl(Y)
+#define TimedTrouble(P) (((P) && !((P) & ~TIMEOUT)) ? ((P) & TIMEOUT) : 0L)
+
+    trouble_count = unfixable_trbl = did_prop = did_attr = 0;
+
+    /* collect property troubles */
+    if (TimedTrouble(Sick))
+        prop_trouble(SICK);
+    if (TimedTrouble(Blinded) > (long) u.ucreamed
+        && !(u.uswallow
+             && attacktype_fordmg(u.ustuck->data, AT_ENGL, AD_BLND)))
+        prop_trouble(BLINDED);
+    if (TimedTrouble(HHallucination))
+        prop_trouble(HALLUC);
+    if (TimedTrouble(Vomiting))
+        prop_trouble(VOMITING);
+    if (TimedTrouble(HConfusion))
+        prop_trouble(CONFUSION);
+    if (TimedTrouble(HStun))
+        prop_trouble(STUNNED);
+    if (TimedTrouble(HDeaf))
+        prop_trouble(DEAF);
+
+    unfixable_trbl = unfixable_trouble_count(TRUE);
+
+    /* collect attribute troubles */
+    for (idx = 0; idx < A_MAX; idx++) {
+        if (ABASE(idx) >= AMAX(idx))
+            continue;
+        val_limit = AMAX(idx);
+        /* this used to adjust 'val_limit' for A_STR when u.uhs was
+           WEAK or worse, but that's handled via ATEMP(A_STR) now */
+        if (Fixed_abil) {
+            /* potion/spell of restore ability override sustain ability
+               intrinsic but unicorn horn usage doesn't */
+            unfixable_trbl += val_limit - ABASE(idx);
+            continue;
+        }
+        /* don't recover more than 3 points worth of any attribute */
+        if (val_limit > ABASE(idx) + 3)
+            val_limit = ABASE(idx) + 3;
+
+        for (val = ABASE(idx); val < val_limit; val++)
+            attr_trouble(idx);
+        /* keep track of unfixed trouble, for message adjustment below */
+        unfixable_trbl += (AMAX(idx) - val_limit);
+    }
+
+    if (trouble_count == 0) {
+        pline1(nothing_happens);
+        return;
+    } else if (trouble_count > 1) { /* shuffle */
+        int i, j, k;
+
+        for (i = trouble_count - 1; i > 0; i--)
+            if ((j = rn2(i + 1)) != i) {
+                k = trouble_list[j];
+                trouble_list[j] = trouble_list[i];
+                trouble_list[i] = k;
+            }
+    }
+
+    /*
+     *  Chances for number of troubles to be fixed
+     *               0      1      2      3      4      5      6      7
+     *   blessed:  22.7%  22.7%  19.5%  15.4%  10.7%   5.7%   2.6%   0.8%
+     *  uncursed:  35.4%  35.4%  22.9%   6.3%    0      0      0      0
+     */
+    val_limit = rn2(d(2, (obj && obj->blessed) ? 4 : 2));
+    if (val_limit > trouble_count)
+        val_limit = trouble_count;
+
+    /* fix [some of] the troubles */
+    for (val = 0; val < val_limit; val++) {
+        idx = trouble_list[val];
+
+        switch (idx) {
+        case prop2trbl(SICK):
+            make_sick(0L, (char *) 0, TRUE, SICK_ALL);
+            did_prop++;
+            break;
+        case prop2trbl(BLINDED):
+            make_blinded((long) u.ucreamed, TRUE);
+            did_prop++;
+            break;
+        case prop2trbl(HALLUC):
+            (void) make_hallucinated(0L, TRUE, 0L);
+            did_prop++;
+            break;
+        case prop2trbl(VOMITING):
+            make_vomiting(0L, TRUE);
+            did_prop++;
+            break;
+        case prop2trbl(CONFUSION):
+            make_confused(0L, TRUE);
+            did_prop++;
+            break;
+        case prop2trbl(STUNNED):
+            make_stunned(0L, TRUE);
+            did_prop++;
+            break;
+        case prop2trbl(DEAF):
+            make_deaf(0L, TRUE);
+            did_prop++;
+            break;
+        default:
+            if (idx >= 0 && idx < A_MAX) {
+                ABASE(idx) += 1;
+                did_attr++;
+            } else
+                panic("use_unicorn_horn: bad trouble? (%d)", idx);
+            break;
+        }
+    }
+
+    if (did_attr || did_prop)
+        disp.botl = TRUE;
+    if (did_attr)
+        pline("This makes you feel %s!",
+              (did_prop + did_attr) == (trouble_count + unfixable_trbl)
+                  ? "great"
+                  : "better");
+    else if (!did_prop)
+        pline("Nothing seems to happen.");
+
+#undef PROP_COUNT
+#undef ATTR_COUNT
+#undef prop2trbl
+#undef attr2trbl
+#undef prop_trouble
+#undef attr_trouble
+#undef TimedTrouble
+}
+
 void
 use_unicorn_horn(struct obj **optr)
 {
@@ -2297,6 +2448,11 @@ use_unicorn_horn(struct obj **optr)
     int idx, val, val_limit, trouble_count, unfixable_trbl, did_prop;
     int trouble_list[PROP_COUNT];
     struct obj *obj = (optr ? *optr : (struct obj *) 0);
+
+    if (is_art(obj, ART_NIGHTHORN) && !obj->cursed) {
+        use_nighthorn(obj);
+        return;
+    }
 
     if (obj && obj->cursed) {
         long lcount = (long) rn1(90, 10);

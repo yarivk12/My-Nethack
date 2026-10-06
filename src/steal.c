@@ -216,6 +216,8 @@ remove_worn_item(
 {
     unsigned oldinuse;
 
+    if (obj == uarmg && is_art(obj, ART_HAND_OF_VECNA))
+        return;
     if (donning(obj))
         cancel_don();
     if (!obj->owornmask)
@@ -446,6 +448,8 @@ steal(struct monst *mtmp, char *objnambuf)
         otmp = uarm;
 
  gotobj:
+    if (is_art(otmp, ART_HAND_OF_VECNA) && otmp == uarmg)
+        return 0;
     if (otmp->o_id == gs.stealoid)
         return 0;
 

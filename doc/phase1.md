@@ -18,6 +18,12 @@ the step-specific behavior and validation evidence: [Step 15](step15.md),
 and evidence through Step 15B; later step records supersede its milestone
 status.
 
+Phase 2 begins with [Step 19](step19.md), which adds ordinary equipment,
+high-level dragons and golems, three procedural bosses and their artifacts.
+It preserves the Phase-1 enhancement model, including existing socket and
+affix state across dragon armor conversions. Its persistent catalogue uses
+`EDITLEVEL 15`; the completed Phase-1 milestone used 14.
+
 ## Objective
 
 Introduce a unified enhancement framework for weapons and armor, followed by

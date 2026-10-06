@@ -383,16 +383,16 @@ struct obj {
     ((obj)->otyp == CHROMATIC_DRAGON_SCALES \
      || (obj)->otyp == CHROMATIC_DRAGON_SCALE_MAIL)
 #define Is_dragon_scales(obj) \
-    ((obj)->otyp >= GRAY_DRAGON_SCALES && (obj)->otyp <= CHROMATIC_DRAGON_SCALES)
+    ((obj)->otyp >= GRAY_DRAGON_SCALES && (obj)->otyp <= CELESTIAL_DRAGON_SCALES)
 #define Is_dragon_mail(obj)                \
     ((obj)->otyp >= GRAY_DRAGON_SCALE_MAIL \
-     && (obj)->otyp <= CHROMATIC_DRAGON_SCALE_MAIL)
+     && (obj)->otyp <= CELESTIAL_DRAGON_SCALE_MAIL)
 #define Is_dragon_armor(obj) (Is_dragon_scales(obj) || Is_dragon_mail(obj))
 #define Dragon_scales_to_pm(obj) \
-    &mons[PM_GRAY_DRAGON + (obj)->otyp - GRAY_DRAGON_SCALES]
+    &mons[dragon_armor_monster((obj)->otyp)]
 #define Dragon_mail_to_pm(obj) \
-    &mons[PM_GRAY_DRAGON + (obj)->otyp - GRAY_DRAGON_SCALE_MAIL]
-#define Dragon_to_scales(pm) (GRAY_DRAGON_SCALES + (pm - mons))
+    &mons[dragon_armor_monster((obj)->otyp)]
+#define Dragon_to_scales(pm) dragon_armor_type((int) ((pm) - mons), FALSE)
 
 /* Elven gear */
 #define is_elven_weapon(otmp)                                             \

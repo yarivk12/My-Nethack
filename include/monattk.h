@@ -119,6 +119,7 @@
 #define AD_WISD 65  /* Step 10B2-4: Great Cthulhu's wisdom-draining gaze */
 #define AD_LOAD 66  /* Step 10B2-4: internal cursed loadstone launcher */
 #define AD_POSN 67  /* Step 10B2-4: noxious death marker */
+#define AD_CNCL 68  /* Step 19: Beholder cancellation gaze */
 
 #define AD_CLRC 240 /* random clerical spell */
 #define AD_SPEL 241 /* random magic spell */

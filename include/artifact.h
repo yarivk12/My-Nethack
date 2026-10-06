@@ -100,7 +100,8 @@ enum invoke_prop_types {
     /* artifact-local alternate mode; persisted in obj.usecount */
     ALTMODE,
     /* readable artifact; #invoke safely directs the hero to read it */
-    NECRONOMICON
+    NECRONOMICON,
+    DEATH_MAGIC
 };
 
 /* artifact tracking; gift and wish imply found; it also gets set for items

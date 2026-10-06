@@ -290,7 +290,7 @@ int
 socket_capacity(const struct obj *obj)
 {
     int cls;
-    if (!obj || obj->oartifact) return 0;
+    if (!obj || obj->oartifact || obj->otyp == MUMMIFIED_HAND) return 0;
     cls = objects[obj->otyp].oc_class;
     if (cls == WEAPON_CLASS) {
         if (is_ammo(obj) || is_missile(obj)) return 0;
@@ -335,10 +335,7 @@ socket_allowed(const struct obj *obj, int id)
 {
     const struct enhancement_entry *e = equipment_property(id);
     int cls = objects[obj->otyp].oc_class;
-    if (!socket_capacity(obj) || !e
-        || (e->native_property && enhancement_native_property(obj, e->native_property))
-        || (e->stat == ES_PROTECTION && enhancement_native_property(obj, PROTECTION))
-        || (e->stat == ES_CHA && enhancement_native_property(obj, ADORNED)))
+    if (!socket_capacity(obj) || !e)
         return FALSE;
     if (cls == WEAPON_CLASS)
         return (id <= EP_PRIMORDIAL && (id != EP_TRUEFLIGHT || is_launcher(obj)))
@@ -346,6 +343,7 @@ socket_allowed(const struct obj *obj, int id)
                || (e->bit & (OEP_ACID | OEP_ALIGNMENT));
     if (cls == ARMOR_CLASS)
         return id == EP_STEALTH || id == EP_WARNING
+            || id == EP_SLEEP_RES
             || (id >= EP_FIRE_RES && id <= EP_POISON_RES)
             || id == EP_DISPLACED || id == EP_MAGIC_RES
             || (id >= EP_HP_I && id <= EP_CON_IV);
@@ -361,6 +359,9 @@ socket_candidates(const struct obj *obj, int tier, int removed, int *out)
     for (id = 1; id < EP_COUNT; ++id) {
         const struct enhancement_entry *e = equipment_property(id);
         if (e->tier != tier || !socket_allowed(obj, id)
+            || (e->native_property && enhancement_native_property(obj, e->native_property))
+            || (e->stat == ES_PROTECTION && enhancement_native_property(obj, PROTECTION))
+            || (e->stat == ES_CHA && enhancement_native_property(obj, ADORNED))
             || (e->bit && (obj->o_enh_props & e->bit))) continue;
         for (i = 0; i < min(obj->o_socket_capacity, 2); ++i)
             if (i != removed && obj->o_sockets[i].property == id) break;
@@ -446,6 +447,10 @@ boolean
 enhancement_native_property(const struct obj *obj, int prop)
 {
     return objects[obj->otyp].oc_oprop == prop
+        || (obj->otyp == SHADOW_DRAGON_SCALE_MAIL
+            && (prop == SLEEP_RES || prop == DRAIN_RES))
+        || (obj->otyp == CELESTIAL_DRAGON_SCALE_MAIL
+            && (prop == SLEEP_RES || prop == SHOCK_RES))
         || (obj->otyp == ALCHEMY_SMOCK && (prop == POISON_RES || prop == ACID_RES))
         /* Secondary native powers from dragon_armor_handling(). */
         || ((obj->otyp == BLUE_DRAGON_SCALES || obj->otyp == BLUE_DRAGON_SCALE_MAIL)
@@ -461,6 +466,7 @@ boolean
 enhancement_eligible(const struct obj *obj)
 {
     return obj && !obj->oartifact && !is_ammo(obj)
+           && obj->otyp != MUMMIFIED_HAND
            && !objects[obj->otyp].oc_unique
            && (obj->oclass == WEAPON_CLASS || obj->oclass == ARMOR_CLASS || utility_recipient(obj));
 }
@@ -479,6 +485,7 @@ enhancement_allowed(const struct obj *obj)
         int i;
         for (i = 0; i < SIZE(enhancement_catalog); ++i)
             if (enhancement_catalog[i].native_property
+                && !(obj->o_enh_props & enhancement_catalog[i].bit)
                 && enhancement_native_property(obj, enhancement_catalog[i].native_property))
                 allowed &= ~enhancement_catalog[i].bit;
         return allowed;
@@ -710,6 +717,14 @@ void
 enhancement_change_type(struct obj *obj, int otyp)
 {
     if (obj->otyp == otyp) return;
+    if (dragon_armor_monster(obj->otyp) != NON_PM
+        && dragon_armor_monster(obj->otyp) == dragon_armor_monster(otyp)) {
+        if (carried(obj)) enhancement_worn_off(obj, &gy.youmonst);
+        obj->otyp = otyp;
+        obj->oclass = objects[otyp].oc_class;
+        enhancement_changed(obj);
+        return;
+    }
     if (obj->otyp == MAGIC_LAMP && otyp == OIL_LAMP) {
         obj->otyp = otyp;
         obj->oclass = objects[otyp].oc_class;
@@ -967,6 +982,7 @@ enhancement_forge_candidates(const struct obj *obj, int slot, int tier,
     for (id = 1; id < EP_COUNT; ++id) {
         const struct enhancement_entry *e = equipment_property(id);
         if (e->tier != tier || !(e->bit || e->bit2)
+            || (e->native_property && enhancement_native_property(obj, e->native_property))
             || (exclude_current && id == current) || enhancement_mask_has(retained, id)) continue;
         if (!enhancement_mask_allowed(obj, enhancement_mask_union(retained,
                                                   enhancement_mask_property(id)))) continue;

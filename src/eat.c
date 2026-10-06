@@ -2355,6 +2355,13 @@ eataccessory(struct obj *otmp)
             if (adjattrib(A_CON, otmp->spe, -1))
                 makeknown(typ);
             break;
+        case RIN_GAIN_INTELLIGENCE:
+        case RIN_GAIN_WISDOM:
+            accessory_has_effect(otmp);
+            if (adjattrib(typ == RIN_GAIN_INTELLIGENCE ? A_INT : A_WIS,
+                         otmp->spe, -1))
+                makeknown(typ);
+            break;
         case RIN_INCREASE_ACCURACY:
             accessory_has_effect(otmp);
             u.uhitinc = (schar) bounded_increase((int) u.uhitinc, otmp->spe,
@@ -3209,7 +3216,8 @@ gethungry(void)
     if (accessorytime % 2) { /* odd */
         /* Regeneration uses up food, unless due to an artifact */
         if ((HRegeneration & ~FROMFORM)
-            || (ERegeneration & ~(W_ARTI | W_WEP)))
+            || (ERegeneration & ~(W_ARTI | W_WEP
+                  | (is_art(uarmg, ART_HAND_OF_VECNA) ? W_ARMG : 0L))))
             u.uhunger--;
         if (near_capacity() > SLT_ENCUMBER)
             u.uhunger--;

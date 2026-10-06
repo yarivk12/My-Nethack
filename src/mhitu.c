@@ -1998,8 +1998,21 @@ gazemu(struct monst *mtmp, struct attack *mattk)
 
     switch (mattk->adtyp) {
     case AD_STON:
-        /* note: Medusa is the only monster with stoning gaze, so
-           'is_medusa' will always be True here */
+        if (mtmp->data == &mons[PM_BEHOLDER]) {
+            if (cancelled || !mcanseeu || rn2(3))
+                break;
+            You("meet %s petrifying gaze!", s_suffix(mon_nam(mtmp)));
+            stop_occupation();
+            if (Stone_resistance
+                || (poly_when_stoned(gy.youmonst.data)
+                    && polymon(PM_STONE_GOLEM)))
+                break;
+            if (ublindf && ublindf->oartifact == ART_EYES_OF_THE_OVERWORLD)
+                mdamageu_damage(mtmp, d(4, 6), 0);
+            else if (!Stoned)
+                make_stoned(5L, (char *) 0, KILLED_BY, "the Beholder");
+            break;
+        }
         if (cancelled || !mtmp->mcansee) {
             if (!canseemon(mtmp))
                 break; /* silently */
@@ -2200,13 +2213,13 @@ gazemu(struct monst *mtmp, struct attack *mattk)
         }
         break;
     }
-#ifdef PM_BEHOLDER /* work in progress */
     case AD_SLEE:
         if (mcanseeu && gm.multi >= 0 && !rn2(5) && !Sleep_resistance) {
             if (cancelled) {
                 react = 6;                      /* "tired" */
                 already = (mtmp->mfrozen != 0); /* can't happen... */
-            } else {
+            } else if (!(ublindf
+                         && ublindf->oartifact == ART_EYES_OF_THE_OVERWORLD)) {
                 fall_asleep(-rnd(10), TRUE);
                 pline("%s gaze makes you very sleepy...",
                       s_suffix(Monnam(mtmp)));
@@ -2227,7 +2240,90 @@ gazemu(struct monst *mtmp, struct attack *mattk)
             }
         }
         break;
-#endif /* BEHOLDER */
+    case AD_DISN:
+        if (mcanseeu && gm.multi >= 0 && !rn2(5) && !cancelled) {
+            You("meet %s destructive gaze!", s_suffix(mon_nam(mtmp)));
+            stop_occupation();
+            if (Disint_resistance) {
+                shieldeff(u.ux, u.uy);
+                monstseesu(M_SEEN_DISINT);
+            } else if (ublindf
+                       && ublindf->oartifact == ART_EYES_OF_THE_OVERWORLD) {
+                mdamageu_damage(mtmp, d(8, 8) / 2, 0);
+            } else if (uarms) {
+                (void) disintegrate_arm(uarms);
+            } else if (uarm) {
+                if (uarmc)
+                    (void) disintegrate_arm(uarmc);
+                (void) disintegrate_arm(uarm);
+            } else {
+                if (uarmc)
+                    (void) disintegrate_arm(uarmc);
+                if (uarmu)
+                    (void) disintegrate_arm(uarmu);
+                u.ugrave_arise = -3;
+                svk.killer.format = NO_KILLER_PREFIX;
+                Strcpy(svk.killer.name, "disintegrated by the Beholder");
+                done(DIED);
+            }
+        }
+        break;
+    case AD_CNCL:
+        if (mcanseeu && !rn2(3) && !cancelled) {
+            int dmg;
+            You("meet %s strange gaze!", s_suffix(mon_nam(mtmp)));
+            if (ublindf && ublindf->oartifact == ART_EYES_OF_THE_OVERWORLD) {
+                dmg = d(2, 4);
+            } else {
+                struct obj *source = mksobj(WAN_CANCELLATION, FALSE, FALSE);
+                (void) cancel_monst(&gy.youmonst, source, FALSE, TRUE, FALSE);
+                obfree(source, (struct obj *) 0);
+                dmg = d(4, 4);
+            }
+            mdamageu_damage(mtmp, dmg, 0);
+        }
+        break;
+    case AD_DETH:
+        if (mcanseeu && !cancelled && rn2(4)) {
+            struct permonst *form = gy.youmonst.data;
+            int dmg = d(mattk->damn, mattk->damd), roll, loss, floorhp, *hpmax;
+
+            You("meet %s deadly gaze!", s_suffix(mon_nam(mtmp)));
+            if (dmgtype(form, AD_DETH) || nonliving(form)
+                || form->mlet == S_ANGEL || is_demon(form)
+                || form->msound == MS_LEADER
+                || form == &mons[PM_CELESTIAL_DRAGON]) {
+                shieldeff(u.ux, u.uy);
+                break;
+            }
+            roll = rn2(20);
+            if (roll >= 17 && !Antimagic) {
+                svk.killer.format = KILLED_BY_AN;
+                Strcpy(svk.killer.name, "gaze of death");
+                done(DIED);
+            } else if (roll >= 2) {
+                You_feel("your life force draining away...");
+                loss = rn2(dmg / 2 + 1);
+                if (Upolyd || u.uhpmax > 25 * u.ulevel)
+                    loss = dmg;
+                else if (u.uhpmax > 10 * u.ulevel)
+                    loss += dmg / 2;
+                else if (u.uhpmax > 5 * u.ulevel)
+                    loss += dmg / 4;
+                hpmax = Upolyd ? &u.mhmax : &u.uhpmax;
+                floorhp = Upolyd ? min((int) form->mlevel, u.ulevel)
+                                 : minuhpmax(1);
+                if (*hpmax > floorhp)
+                    *hpmax = max(*hpmax - loss, floorhp);
+                disp.botl = TRUE;
+                mdamageu_damage(mtmp, dmg, 0);
+            } else {
+                if (Antimagic)
+                    shieldeff(u.ux, u.uy);
+                pline("Lucky for you, it didn't work!");
+            }
+        }
+        break;
     default:
         impossible("Gaze attack %d?", mattk->adtyp);
         break;

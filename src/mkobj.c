@@ -951,6 +951,9 @@ mksobj_init(struct obj **obj, boolean artif)
             if (!rn2(3))
                 for (tryct = 200; tryct > 0; --tryct) {
                     mndx = can_be_hatched(rndmonnum());
+                    if (mndx == PM_SHIMMERING_DRAGON
+                        && !step19_generation_ok(PM_BABY_SHIMMERING_DRAGON))
+                        continue;
                     if (mndx != NON_PM && !dead_species(mndx, TRUE)) {
                         otmp->corpsenm = mndx; /* typed egg */
                         break;

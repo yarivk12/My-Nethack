@@ -4437,6 +4437,16 @@ weight_cap(void)
         float_vs_flight();
     }
 
+    /* Apply to finalized native capacity. Signed long arithmetic preserves
+       negative enchantments; the native return boundary still applies. */
+    {
+        int carrying = 0;
+        if (uleft && uleft->otyp == RIN_CARRYING)
+            carrying += uleft->spe;
+        if (uright && uright->otyp == RIN_CARRYING)
+            carrying += uright->spe;
+        carrcap = carrcap * (100L + 5L * carrying) / 100L;
+    }
     return (int) max(carrcap, 1L); /* never return 0 */
 }
 

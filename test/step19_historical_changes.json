@@ -445,6 +445,14 @@
     "baseline_sha256": "cee4acb94dab2fa63ac673509aa8f1bb0894beb557fbcccb280e7017cff682e4",
     "hunks": [
       {
+        "before": "        }\n    }\n\n    /* dragon scales - assumes order of dragons */\n    if (!strcmpi(d->bp, \"scales\") && d->mntmp >= PM_GRAY_DRAGON\n        && d->mntmp <= PM_CAVE_CHROMATIC_DRAGON) {\n        d->typ = GRAY_DRAGON_SCALES + d->mntmp - PM_GRAY_DRAGON;\n        d->mntmp = NON_PM; /* no monster */\n        return 2; /*goto typfnd;*/\n    }\n",
+        "after": "        }\n    }\n\n    /* Custom dragon and armor orderings need not match. */\n    if (!strcmpi(d->bp, \"scales\")\n        && (i = dragon_armor_type(d->mntmp, FALSE)) != STRANGE_OBJECT) {\n        d->typ = i;\n        d->mntmp = NON_PM; /* no monster */\n        return 2; /*goto typfnd;*/\n    }\n"
+      },
+      {
+        "before": "            if (Has_contents(d.otmp) && verysmall(&mons[d.mntmp]))\n                delete_contents(d.otmp); /* no spellbook */\n            break;\n        case SCALE_MAIL:\n            /* Dragon mail - depends on the order of objects & dragons. */\n            if (d.mntmp >= PM_GRAY_DRAGON && d.mntmp <= PM_CAVE_CHROMATIC_DRAGON)\n                d.otmp->otyp = GRAY_DRAGON_SCALE_MAIL\n                              + d.mntmp - PM_GRAY_DRAGON;\n            break;\n        }\n    }\n\n",
+        "after": "            if (Has_contents(d.otmp) && verysmall(&mons[d.mntmp]))\n                delete_contents(d.otmp); /* no spellbook */\n            break;\n        case SCALE_MAIL: {\n            int mail = dragon_armor_type(d.mntmp, TRUE);\n\n            if (mail != STRANGE_OBJECT)\n                d.otmp->otyp = mail;\n            break;\n        }\n        }\n    }\n\n"
+      },
+      {
         "before": "\n    /* more wishing abuse: don't allow wishing for certain artifacts */\n    /* and make them pay; charge them for the wish anyway! */\n    if ((is_quest_artifact(d.otmp)\n         || (d.otmp->oartifact && rn2(nartifact_exist()) > 1)) && !wizard) {\n        artifact_exists(d.otmp, safe_oname(d.otmp), FALSE, ONAME_NO_FLAGS);\n        obfree(d.otmp, (struct obj *) 0);\n",
         "after": "\n    /* more wishing abuse: don't allow wishing for certain artifacts */\n    /* and make them pay; charge them for the wish anyway! */\n    if ((is_art(d.otmp, ART_NIGHTHORN)\n         || is_art(d.otmp, ART_EYE_OF_VECNA)\n         || is_art(d.otmp, ART_HAND_OF_VECNA)\n         || is_quest_artifact(d.otmp)\n         || (d.otmp->oartifact && rn2(nartifact_exist()) > 1)) && !wizard) {\n        artifact_exists(d.otmp, safe_oname(d.otmp), FALSE, ONAME_NO_FLAGS);\n        obfree(d.otmp, (struct obj *) 0);\n"
       }

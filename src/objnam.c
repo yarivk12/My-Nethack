@@ -4608,10 +4608,10 @@ readobjnam_postparse1(struct _readobjnam_data *d)
         }
     }
 
-    /* dragon scales - assumes order of dragons */
-    if (!strcmpi(d->bp, "scales") && d->mntmp >= PM_GRAY_DRAGON
-        && d->mntmp <= PM_CAVE_CHROMATIC_DRAGON) {
-        d->typ = GRAY_DRAGON_SCALES + d->mntmp - PM_GRAY_DRAGON;
+    /* Custom dragon and armor orderings need not match. */
+    if (!strcmpi(d->bp, "scales")
+        && (i = dragon_armor_type(d->mntmp, FALSE)) != STRANGE_OBJECT) {
+        d->typ = i;
         d->mntmp = NON_PM; /* no monster */
         return 2; /*goto typfnd;*/
     }
@@ -5388,12 +5388,13 @@ readobjnam(char *bp, struct obj *no_wish)
             if (Has_contents(d.otmp) && verysmall(&mons[d.mntmp]))
                 delete_contents(d.otmp); /* no spellbook */
             break;
-        case SCALE_MAIL:
-            /* Dragon mail - depends on the order of objects & dragons. */
-            if (d.mntmp >= PM_GRAY_DRAGON && d.mntmp <= PM_CAVE_CHROMATIC_DRAGON)
-                d.otmp->otyp = GRAY_DRAGON_SCALE_MAIL
-                              + d.mntmp - PM_GRAY_DRAGON;
+        case SCALE_MAIL: {
+            int mail = dragon_armor_type(d.mntmp, TRUE);
+
+            if (mail != STRANGE_OBJECT)
+                d.otmp->otyp = mail;
             break;
+        }
         }
     }
 

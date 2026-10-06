@@ -9,6 +9,7 @@
 #include "test_step19_conversion.c"
 #include "test_step19_hand.c"
 #include "test_step19_gaze.c"
+#include "test_step19_wishes.c"
 
 static void
 step19_equipment_tests(void)
@@ -176,6 +177,7 @@ step19_test_main(void)
     boolean saved_bot_disabled = gb.bot_disabled;
     int m;
     gb.bot_disabled = TRUE; /* fixtures have no interactive status window */
+    step19_wish_tests();
     step19_equipment_tests();
     step19_dragon_tests();
     step19_conversion_tests();

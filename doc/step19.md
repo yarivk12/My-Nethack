@@ -150,3 +150,26 @@ Completed validation on 2026-10-06:
   fresh `SymbolsDir` under `_qa/step19-release`; no source workaround was needed.
 - `git diff --check` passed. Existing compiler warnings remain in unrelated
   code; no unresolved Step-19 blocker remains.
+
+### Dragon armor wish parser correction (2026-10-06)
+
+Named dragon armor wishes exposed two legacy monster-to-object offset
+calculations in `readobjnam`: custom monster order differs from armor order.
+The new parser fixture reproduced Glowing scales resolving to Celestial scales
+against the unchanged production code. Both scales and scale-mail parsing now
+use the existing `dragon_armor_type` mapping. Native ordering, Chromatic wish
+restrictions, catalogue identities and `EDITLEVEL` 15 remain unchanged.
+
+`test_step19_wishes.c` exercises the real parser with 72 cases: all ten native
+families, Glowing, Chromatic and the six Step-19 families, each as scales and
+scale mail in ordinary and wizard modes. It asserts exact object identities
+(the existing native fallback range for ordinary Chromatic wishes), blessed
+status and explicit enchantment. Wizard cases use -2, including Shimmering
+scales; ordinary cases use -1 because native wish rules may reduce larger
+enchantment magnitudes randomly.
+
+The matrix and Step-15/19 native fixtures passed, including the runner's
+1,000-level corpus. Five catalogue tests, all historical source guards and
+140 Step-19 mutation rejections passed. Step-17 wish/integration, persistence,
+bones and epoch acceptance/rejection checks also passed. The normal Release/x64
+`NetHack` target built successfully as 5.0.0-15, and `git diff --check` passed.

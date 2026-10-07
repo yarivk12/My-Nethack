@@ -635,7 +635,7 @@ eat_brains(
             pline("%s brain is eaten!", s_suffix(Monnam(mdef)));
     }
 
-    if (flesh_petrifies(pd)) {
+    if (flesh_petrifies(pd) && !step20_noncontact(magr, mdef)) {
         /* mind flayer has attempted to eat the brains of a petrification
            inducing critter (most likely Medusa; attacking a cockatrice via
            tentacle-touch should have been caught before reaching this far) */
@@ -670,7 +670,7 @@ eat_brains(
             pline("%s doesn't notice.", Monnam(mdef));
             /* all done; no extra harm inflicted upon target */
             return M_ATTK_MISS;
-        } else if (is_rider(pd)) {
+        } else if (is_rider(pd) && !step20_noncontact(magr, mdef)) {
             pline("Ingesting that is fatal.");
             Sprintf(svk.killer.name, "unwisely ate the brain of %s",
                     pmname(pd, Mgender(mdef)));
@@ -735,7 +735,7 @@ eat_brains(
             if (visflag && canspotmon(mdef))
                 pline("%s doesn't notice.", Monnam(mdef));
             return M_ATTK_MISS;
-        } else if (is_rider(pd)) {
+        } else if (is_rider(pd) && !step20_noncontact(magr, mdef)) {
             mondied(magr);
             if (DEADMONSTER(magr))
                 result = M_ATTK_AGR_DIED;
@@ -1363,6 +1363,11 @@ corpse_intrinsic(struct permonst *ptr)
     int i;
     int count = 0; /* number of possible intrinsics */
     int prop = 0;   /* which one we will try to give */
+
+    /* Step 20 does not convey permanent intrinsics, including capability-
+     * based teleportation which is independent of the mconveys mask. */
+    if (step20_min_depth(monsndx(ptr)))
+        return 0;
 
     if (conveys_STR) {
         count = 1;

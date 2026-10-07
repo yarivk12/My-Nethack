@@ -119,7 +119,6 @@ step10b_natural_dr(const struct permonst *ptr)
            : ptr == &mons[PM_OREAD] ? 6
            : ptr == &mons[PM_STAR_SPAWN] ? 10
            : ptr == &mons[PM_HUNTING_HORROR] ? 2
-           : ptr == &mons[PM_ALHOON] ? 8
            : ptr == &mons[PM_CENTER_OF_ALL] ? 4
            : ptr == &mons[PM_GREAT_CTHULHU] ? 21 : 0;
 }
@@ -221,8 +220,6 @@ mith_physical_damage(struct monst *def, struct obj *weapon, int aatyp, int damag
                      || ptr == &mons[PM_ARA_KAMEREL]
                      || ptr == &mons[PM_ARGENTUM_GOLEM])
                 resist = SLASH | PIERCE, vulnerable = TRUE;
-            else if (ptr == &mons[PM_ALHOON])
-                resist = PIERCE;
             else if (ptr == &mons[PM_MOTE_OF_LIGHT]
                      || ptr == &mons[PM_WATER_DOLPHIN]
                      || ptr == &mons[PM_SINGING_SAND]

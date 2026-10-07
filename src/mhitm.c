@@ -371,6 +371,18 @@ mattackm(
        tentacle miss) is very verbose and makes the flayer look stupid */
     gs.skipdrin = FALSE;
 
+    if (step20_noncontact(magr, mdef)
+        && !clear_path(magr->mx, magr->my, mdef->mx, mdef->my))
+        return M_ATTK_MISS;
+    if (pa == &mons[PM_DRIDER] && !magr->mcan
+        && distmin(magr->mx, magr->my, mdef->mx, mdef->my) > 1
+        && linedup(mdef->mx, mdef->my, magr->mx, magr->my, 0)) {
+        if (tmp > rnd(20) && !(mith_displaced(mdef) && rn2(2))) {
+            (void) step20_web(mdef);
+            return M_ATTK_HIT;
+        }
+        return M_ATTK_MISS;
+    }
     /* Now perform all attacks for the monster. */
     for (i = 0; i < NATTK; i++) {
         res[i] = M_ATTK_MISS;
@@ -381,6 +393,8 @@ mattackm(
             continue;
 
         mattk = getmattk(magr, mdef, i, res, &alt_attk);
+        if (step20_noncontact(magr, mdef) && mattk->aatyp != AT_REACH2)
+            continue;
         if (mith_offhand_attack(magr->data, i)
             && ((magr->misc_worn_check & W_ARMS)
                 || distmin(magr->mx, magr->my, mdef->mx, mdef->my) > 1))
@@ -1115,7 +1129,8 @@ mdamagem(
     mhm.dieroll = dieroll;
     mhm.done = FALSE;
 
-    if ((touch_petrifies(pd) /* or flesh_petrifies() */
+    if (!step20_noncontact(magr, mdef)
+        && (touch_petrifies(pd) /* or flesh_petrifies() */
          || (mattk->adtyp == AD_DGST && pd == &mons[PM_MEDUSA]))
         && !resists_ston(magr)) {
         long protector = attk_protection((int) mattk->aatyp),
@@ -1144,7 +1159,7 @@ mdamagem(
 
     mhitm_adtyping(magr, mattk, mdef, &mhm);
 
-    if (mhitm_knockback(magr, mdef, mattk, &mhm.hitflags,
+    if (!mhm.fatal && mhitm_knockback(magr, mdef, mattk, &mhm.hitflags,
                         mhm.weapon)
         && ((mhm.hitflags & (M_ATTK_DEF_DIED | M_ATTK_HIT)) != 0
             || mon_offmap(mdef)))
@@ -1163,8 +1178,9 @@ mdamagem(
              && enhancement_elemental_contact(mwep, (struct obj *) 0, ENHANCE_MELEE)))
         return mhm.hitflags;
 
-    if (mattk->adtyp == AD_PHYS || mattk->adtyp == AD_DRLI || mattk->adtyp == AD_VAMP
-        || mith_fey_weapon_attack(magr, mattk))
+    if (!mhm.fatal
+        && (mattk->adtyp == AD_PHYS || mattk->adtyp == AD_DRLI || mattk->adtyp == AD_VAMP
+            || mith_fey_weapon_attack(magr, mattk)))
         mhm.damage = mith_physical_damage(mdef,
                            mattk->aatyp == AT_WEAP ? mwep : (struct obj *) 0,
                            mattk->aatyp, mhm.damage);
@@ -1662,6 +1678,12 @@ int step13_mdamagem(struct monst *a, struct monst *d, struct obj *o)
 #endif
 
 #ifdef STEP15_TEST
+int
+step20_claw_damage(struct monst *a, struct monst *d)
+{
+    return mdamagem(a, d, &a->data->mattk[2], (struct obj *) 0, 1);
+}
+
 int
 step19_gazemm(struct monst *a, struct monst *d, struct attack *attack)
 {

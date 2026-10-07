@@ -1031,6 +1031,14 @@ dochug(struct monst *mtmp)
     /* check distance and scariness of attacks */
     distfleeck(mtmp, &inrange, &nearby, &scared);
 
+    if ((!mtmp->mpeaceful || (Conflict && !resist_conflict(mtmp)))
+        && !scared
+        && ((step20_noncontact(mtmp, &gy.youmonst)
+             && clear_path(mtmp->mx, mtmp->my, u.ux, u.uy))
+            || (mdat == &mons[PM_DRIDER] && !mtmp->mcan && !nearby
+                && lined_up(mtmp))))
+        return mattacku(mtmp);
+
     /* search for and potentially use defensive or miscellaneous items. */
     if (find_defensive(mtmp, FALSE)) {
         if (use_defensive(mtmp) != 0)

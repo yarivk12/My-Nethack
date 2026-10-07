@@ -24,6 +24,12 @@ It preserves the Phase-1 enhancement model, including existing socket and
 affix state across dragon armor conversions. Its persistent catalogue uses
 `EDITLEVEL 15`; the completed Phase-1 milestone used 14.
 
+[Step 20](step20.md) continues Phase 2 with 18 deep-dungeon monsters,
+shared native Web placement, constrained range-2 drain attacks, and existing
+equipment/enhancement integration. Its catalogue uses `EDITLEVEL 16`.
+The [Step 20 manual validation plan](step20-manual-validation.md) separates
+remaining manual acceptance checks from automated validation evidence.
+
 ## Objective
 
 Introduce a unified enhancement framework for weapons and armor, followed by

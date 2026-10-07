@@ -522,6 +522,27 @@ hole_destination(d_level *dst)
     }
 }
 
+/* Shared by Drider ranged actions and the Priestess's successful kick. */
+boolean
+step20_web(struct monst *victim)
+{
+    coordxy x = victim == &gy.youmonst ? u.ux : victim->mx;
+    coordxy y = victim == &gy.youmonst ? u.uy : victim->my;
+    struct trap *web;
+
+    if (!isok(x, y) || t_at(x, y) || stairway_at(x, y)
+        || (levl[x][y].typ != ROOM && levl[x][y].typ != CORR))
+        return FALSE;
+    web = maketrap(x, y, WEB);
+    if (!web)
+        return FALSE;
+    if (victim == &gy.youmonst)
+        dotrap(web, NO_TRAP_FLAGS);
+    else
+        (void) mintrap(victim, NO_TRAP_FLAGS);
+    return TRUE;
+}
+
 struct trap *
 maketrap(coordxy x, coordxy y, int typ)
 {

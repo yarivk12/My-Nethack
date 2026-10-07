@@ -1675,7 +1675,8 @@ artifact_hit_fatal(
                 return TRUE;
             }
         } else if (is_art(otmp, ART_VORPAL_BLADE)
-                   && (dieroll == 1 || mdef->data == &mons[PM_JABBERWOCK])) {
+                   && (dieroll == 1 || (mdef->data == &mons[PM_JABBERWOCK]
+                                     || mdef->data == &mons[PM_VORPAL_JABBERWOCK]))) {
             static const char *const behead_msg[2] = { "%s beheads %s!",
                                                        "%s decapitates %s!" };
 
@@ -1691,7 +1692,7 @@ artifact_hit_fatal(
                     *dmgptr = 0;
                     return (boolean) (youattack || vis);
                 }
-                if (noncorporeal(mdef->data) || amorphous(mdef->data)) {
+                if (!vorpal_target(mdef->data)) {
                     pline("%s slices through %s %s.", wepdesc,
                           s_suffix(mon_nam(mdef)), mbodypart(mdef, NECK));
                     return TRUE;
@@ -1711,8 +1712,7 @@ artifact_hit_fatal(
                     *dmgptr = 0;
                     return TRUE;
                 }
-                if (noncorporeal(gy.youmonst.data)
-                    || amorphous(gy.youmonst.data)) {
+                if (!vorpal_target(gy.youmonst.data)) {
                     pline("%s slices through your %s.", wepdesc,
                           body_part(NECK));
                     return TRUE;

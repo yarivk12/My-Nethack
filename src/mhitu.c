@@ -802,7 +802,16 @@ mattacku(struct monst *mtmp)
     }
 
     /* Unlike defensive stuff, don't let them use item _and_ attack. */
-    if (find_offensive(mtmp)) {
+    if (step20_noncontact(mtmp, &gy.youmonst)
+        && !clear_path(mtmp->mx, mtmp->my, u.ux, u.uy))
+        return 0;
+    if (mdat == &mons[PM_DRIDER] && ranged && !mtmp->mcan
+        && lined_up(mtmp)) {
+        if (foundyou && tmp > rnd(20))
+            (void) step20_web(&gy.youmonst);
+        return 0; /* the attempt, including a miss, consumes this action */
+    }
+    if (!step20_noncontact(mtmp, &gy.youmonst) && find_offensive(mtmp)) {
         int offended = use_offensive(mtmp);
 
         if (offended != 0)
@@ -831,6 +840,9 @@ mattacku(struct monst *mtmp)
         }
         mon_currwep = (struct obj *) 0;
         mattk = getmattk(mtmp, &gy.youmonst, i, sum, &alt_attk);
+        if (step20_noncontact(mtmp, &gy.youmonst)
+            && mattk->aatyp != AT_REACH2)
+            continue;
         if (mith_offhand_attack(mtmp->data, i)
             && (range2 || (mtmp->misc_worn_check & W_ARMS)))
             continue;
@@ -1296,8 +1308,9 @@ hitmu(struct monst *mtmp, struct attack *mattk)
     mhitm_adtyping(mtmp, mattk, &gy.youmonst, &mhm);
 
     if (mhm.done) return mhm.hitflags;
-    (void) mhitm_knockback(mtmp, &gy.youmonst, mattk, &mhm.hitflags,
-                           mhm.weapon);
+    if (!mhm.fatal)
+        (void) mhitm_knockback(mtmp, &gy.youmonst, mattk, &mhm.hitflags,
+                              mhm.weapon);
 
     if (mhm.done)
         return mhm.hitflags;
@@ -1315,7 +1328,7 @@ hitmu(struct monst *mtmp, struct attack *mattk)
     /*  Negative armor class reduces damage done instead of fully protecting
      *  against hits.
      */
-    if (mhm.damage && u.uac < 0) {
+    if (!mhm.fatal && mhm.damage && u.uac < 0) {
         mhm.damage -= rnd(-u.uac);
         if (mhm.damage < 1)
             mhm.damage = 1;
@@ -1325,14 +1338,15 @@ hitmu(struct monst *mtmp, struct attack *mattk)
         || (mattk->aatyp == AT_WEAP
             && enhancement_elemental_contact(mhm.weapon, (struct obj *) 0, ENHANCE_MELEE))) {
         /* [Half_physical_damage isn't applied to mhm.permdmg] */
-        if (Half_physical_damage
+        if (!mhm.fatal && (Half_physical_damage
             /* Mitre of Holiness, even if not currently blessed */
             || (Role_if(PM_CLERIC) && uarmh && is_quest_artifact(uarmh)
-                && mon_hates_blessings(mtmp)))
+                && mon_hates_blessings(mtmp))))
             mhm.damage = (mhm.damage + 1) / 2;
 
-        if (mattk->adtyp == AD_PHYS || mattk->adtyp == AD_DRLI || mattk->adtyp == AD_VAMP
-            || mith_fey_weapon_attack(mtmp, mattk))
+        if (!mhm.fatal
+            && (mattk->adtyp == AD_PHYS || mattk->adtyp == AD_DRLI || mattk->adtyp == AD_VAMP
+                || mith_fey_weapon_attack(mtmp, mattk)))
             mhm.damage = mith_physical_damage(&gy.youmonst,
                               mattk->aatyp == AT_WEAP ? mhm.weapon : (struct obj *) 0,
                               mattk->aatyp, mhm.damage);

@@ -116,7 +116,6 @@ int
 step10b_spell_cooldown(const struct permonst *ptr, int normal)
 {
     return ptr == &mons[PM_AURUMACH_RILMANI] || ptr == &mons[PM_KUKER]
-               || ptr == &mons[PM_ALHOON]
                || ptr == &mons[PM_WITCH_S_FAMILIAR]
                || (ptr >= &mons[PM_APPRENTICE_WITCH]
                    && ptr <= &mons[PM_HMNYW_PHARAOH])
@@ -502,6 +501,7 @@ mith_castmm(struct monst *caster, struct monst *target, struct attack *attack)
     case MCAST_DEATH_TOUCH:
         damage = 0;
         if (!nonliving(target->data) && !is_demon(target->data)
+            && !step20_celestial(target->data)
             && (!(resists_magm(target) || resist(target, 0, 0, FALSE))
                 || rn2(caster->m_lev) > 12))
             damage = target->mhp;
@@ -1002,7 +1002,8 @@ staticfn void
 mcast_death_touch(struct monst *mtmp)
 {
     pline("Oh no, %s's using the touch of death!", mhe(mtmp));
-    if (nonliving(gy.youmonst.data) || is_demon(gy.youmonst.data)) {
+    if (nonliving(gy.youmonst.data) || is_demon(gy.youmonst.data)
+            || step20_celestial(gy.youmonst.data)) {
         You("seem no deader than before.");
     } else if (!Antimagic && rn2(mtmp->m_lev) > 12) {
         if (Hallucination) {

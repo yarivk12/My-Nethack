@@ -27,6 +27,32 @@ step19_min_depth(int mndx)
     case PM_CRYSTAL_GOLEM: return 75;
     case PM_RAZOR_DRAGON: case PM_CELESTIAL_DRAGON: return 80;
     case PM_DIAMOND_GOLEM: return 85;
+    default: return step20_min_depth(mndx);
+    }
+}
+
+int
+step20_min_depth(int mndx)
+{
+    switch (mndx) {
+    case PM_VAMPIRE_MAGE: return 50;
+    case PM_DEEPEST_ONE: return 50;
+    case PM_DRIDER: return 55;
+    case PM_ASTRAL_DEVA: return 60;
+    case PM_SHOGGOTH: return 60;
+    case PM_DEATH_KNIGHT: return 65;
+    case PM_HOUND_OF_TINDALOS: return 70;
+    case PM_PLANETAR: return 70;
+    case PM_VORPAL_JABBERWOCK: return 80;
+    case PM_NEOTHELID: return 80;
+    case PM_GUG: return 85;
+    case PM_GIANT_SHOGGOTH: return 85;
+    case PM_VOID_DRAGON: return 90;
+    case PM_PRIESTESS_OF_GHAUNADAUR: return 95;
+    case PM_ALHOON: return 95;
+    case PM_SOLAR: return 95;
+    case PM_JUGGERNAUT: return 100;
+    case PM_ELDER_BRAIN: return 130;
     default: return 0;
     }
 }
@@ -188,7 +214,7 @@ m_initthrow(struct monst *mtmp, int otyp, int oquan)
 staticfn boolean
 mith_deep_equipment(struct monst *mon)
 {
-    int type = monsndx(mon->data), n, choice, otyp;
+    int type = monsndx(mon->data), n, choice;
     struct obj *otmp;
     static const int armor[] = { JACKET, LEATHER_ARMOR, CHAIN_MAIL };
     static const int weapons[] = {
@@ -208,21 +234,6 @@ mith_deep_equipment(struct monst *mon)
             otmp = mksobj(weapons[rn2(SIZE(weapons))], TRUE, FALSE);
             otmp->oeroded = 3;
             (void) mpickobj(mon, otmp);
-        }
-    } else if (type == PM_DEEPEST_ONE) {
-        choice = rn2(6);
-        n = (choice == 1 || choice == 3) ? 2 : choice == 5 ? 0 : 1;
-        while (n-- > 0) {
-            otyp = choice == 0 ? TWO_HANDED_SWORD
-                   : choice <= 2 ? SCIMITAR
-                   : choice == 3 ? TRIDENT : KNIFE;
-            otmp = mksobj(otyp, TRUE, FALSE);
-            otmp->oerodeproof = 1;
-            otmp->spe = 3;
-            otmp->obranch_size = MZ_HUGE + 1;
-            otmp->owt = weight(otmp);
-            (void) mpickobj(mon, otmp);
-            ++choice; /* donor's scimitar/scimitar and trident/knife pairs */
         }
     } else {
         return FALSE;
@@ -412,6 +423,47 @@ m_initweap(struct monst *mtmp)
 
     if (Is_rogue_level(&u.uz))
         return;
+    if (step20_celestial(ptr)) {
+        otmp = mksobj(LONG_SWORD, FALSE, FALSE);
+        bless(otmp);
+        otmp->oerodeproof = TRUE;
+        otmp->spe = rn2(4);
+        (void) mpickobj(mtmp, otmp);
+        otmp = mksobj(mm != PM_ASTRAL_DEVA || !rn2(4)
+                         ? SHIELD_OF_REFLECTION : LARGE_SHIELD, FALSE, FALSE);
+        otmp->oerodeproof = TRUE;
+        (void) mpickobj(mtmp, otmp);
+        goto offensive_item;
+    }
+    if (mm == PM_DEATH_KNIGHT) {
+        (void) mongets(mtmp, RUNESWORD);
+        (void) mongets(mtmp, PLATE_MAIL);
+        goto offensive_item;
+    }
+    if (mm == PM_ALHOON) {
+        if (!rn2(3)) {
+            otmp = mksobj(rn2(3) ? ATHAME : QUARTERSTAFF, TRUE, FALSE);
+            if (otmp->spe < 2)
+                otmp->spe = rnd(3);
+            if (!rn2(4))
+                otmp->oerodeproof = TRUE;
+            (void) mpickobj(mtmp, otmp);
+        }
+        goto offensive_item;
+    }
+    /* The Drider donor's entire dedicated loadout is excluded drow gear. */
+    if (mm == PM_PRIESTESS_OF_GHAUNADAUR) {
+        int chance = rnd(10);
+        if (chance >= 9)
+            (void) mongets(mtmp, CRYSTAL_PLATE_MAIL);
+        else if (chance >= 6)
+            (void) mongets(mtmp, CLOAK_OF_PROTECTION);
+        /* Only the donor's consort's suit is unsupported. */
+        (void) mongets(mtmp, CRYSTAL_SWORD);
+        goto offensive_item;
+    }
+    if (mm == PM_DRIDER)
+        goto offensive_item;
     if (mith_deep_equipment(mtmp) || mith_fey_equipment(mtmp))
         goto offensive_item;
     if (mm == PM_PLUMACH_RILMANI) {
@@ -1164,20 +1216,7 @@ m_initinv(struct monst *mtmp)
 
     if (Is_rogue_level(&u.uz))
         return;
-    if (ptr == &mons[PM_ALHOON]) {
-        boolean second = exist_artifact(UNIVERSAL_KEY,
-                                        artiname(ART_SECOND_KEY_OF_NEUTRALITY));
-        boolean third = exist_artifact(UNIVERSAL_KEY,
-                                       artiname(ART_THIRD_KEY_OF_NEUTRALITY));
-        int choice = step10b_alhoon_key_choice(second, third);
-
-        if (choice == STEP10B_KEY_SECOND)
-            m_give_step10b_key(mtmp, ART_SECOND_KEY_OF_NEUTRALITY);
-        else if (choice == STEP10B_KEY_THIRD)
-            m_give_step10b_key(mtmp, ART_THIRD_KEY_OF_NEUTRALITY);
-        else
-            (void) mongets(mtmp, UNIVERSAL_KEY);
-    } else if (ptr == &mons[PM_THE_GOOD_NEIGHBOR]) {
+    if (ptr == &mons[PM_THE_GOOD_NEIGHBOR]) {
         (void) mongets(mtmp, LEATHER_ARMOR);
         (void) mongets(mtmp, ROBE);
         (void) mongets(mtmp, HIGH_BOOTS);
@@ -1764,14 +1803,7 @@ mith_entourage(struct monst *mtmp, boolean anymon, mmflags_nht mmflags)
 
     if (!anymon || (mmflags & (MM_EDOG | MM_NOGRP)))
         return;
-    if (type == PM_DEEPEST_ONE) {
-        for (num = rn1(3, 3); num >= 0; --num)
-            (void) makemon(&mons[PM_DEEPER_ONE], mtmp->mx, mtmp->my,
-                           (MM_ADJACENTOK | (mmflags & MM_NATURAL)));
-        for (num = rn1(10, 10); num >= 0; --num)
-            (void) makemon(&mons[PM_DEEP_ONE], mtmp->mx, mtmp->my,
-                           (MM_ADJACENTOK | (mmflags & MM_NATURAL)));
-    } else if (type == PM_DEEPER_ONE) {
+    if (type == PM_DEEPER_ONE) {
         for (num = rn1(10, 3); num >= 0; --num)
             (void) makemon(&mons[PM_DEEP_ONE], mtmp->mx, mtmp->my,
                            (MM_ADJACENTOK | (mmflags & MM_NATURAL)));
@@ -2050,7 +2082,7 @@ makemon(
         mtmp = christen_monst(mtmp, rndghostname());
     } else if (mndx == PM_CROESUS) {
         mitem = TWO_HANDED_SWORD;
-    } else if (ptr->msound == MS_NEMESIS) {
+    } else if (ptr->msound == MS_NEMESIS && mndx != PM_ELDER_BRAIN) {
         mitem = BELL_OF_OPENING;
     } else if (mndx == PM_PESTILENCE) {
         mitem = POT_SICKNESS;
@@ -3132,8 +3164,7 @@ grow_up(struct monst *mtmp, struct monst *victim)
        bee by just killing things, so isn't in the little_to_big list) */
     oldtype = monsndx(ptr);
     deep_soul = (victim == mtmp && (oldtype == PM_DEEP_ONE
-                                   || oldtype == PM_DEEPER_ONE
-                                   || oldtype == PM_DEEPEST_ONE));
+                                   || oldtype == PM_DEEPER_ONE));
     if (deep_soul && mtmp->m_lev > 50)
         return ptr;
     newtype = (oldtype == PM_KILLER_BEE && !victim) ? PM_QUEEN_BEE

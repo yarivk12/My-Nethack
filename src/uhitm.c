@@ -4369,7 +4369,7 @@ mhitm_ad_deth(
     } else if (mdef == &gy.youmonst) {
         /* mhitu */
         pline_mon(magr, "%s reaches out with its deadly touch.", Monnam(magr));
-        if (is_undead(pd)) {
+        if (is_undead(pd) || step20_celestial(pd)) {
             /* still does some damage */
             mhm->damage = (mhm->damage + 1) / 2;
             pline("Was that the touch of death?");
@@ -5336,6 +5336,23 @@ mhitm_adtyping(
         mhitm_ad_phys(magr, mattk, mdef, mhm);
         return;
     }
+    if (magr->data == &mons[PM_PRIESTESS_OF_GHAUNADAUR]
+        && mattk->aatyp == AT_KICK && magr != &gy.youmonst
+        && !magr->mcan)
+        (void) step20_web(mdef);
+    if (magr->data == &mons[PM_VORPAL_JABBERWOCK]
+        && mattk->aatyp == AT_CLAW && !magr->mcan && !rn2(40)
+        && vorpal_target(mdef->data)
+        && !(mdef == &gy.youmonst && is_art(uwep, ART_VORPAL_BLADE))
+        && !(mdef != &gy.youmonst && (gn.notonhead || u.uswallow))) {
+        /* Fatal damage bypasses ordinary mitigation in every caller, while
+         * the normal death path still handles lifesaving. */
+        mhm->damage = mdef == &gy.youmonst
+                          ? (Upolyd ? u.mh : u.uhp) : mdef->mhp;
+        mhm->fatal = TRUE;
+        return;
+    }
+
     switch (mattk->adtyp) {
     case AD_STUN: mhitm_ad_stun(magr, mattk, mdef, mhm); break;
     case AD_LEGS: mhitm_ad_legs(magr, mattk, mdef, mhm); break;
@@ -5585,7 +5602,7 @@ damageum(
     if (mattk->adtyp == AD_PHYS && mattk->aatyp != AT_WEAP
         && mattk->aatyp != AT_EXPL && mattk->aatyp != AT_BOOM)
         mhm.damage += mith_aesh_bonus();
-    if (mattk->adtyp == AD_PHYS && mattk->aatyp != AT_WEAP)
+    if (!mhm.fatal && mattk->adtyp == AD_PHYS && mattk->aatyp != AT_WEAP)
         mhm.damage = mith_physical_damage(mdef, (struct obj *) 0,
                                           mattk->aatyp, mhm.damage);
     mdef->mstrategy &= ~STRAT_WAITFORU; /* in case player is very fast */

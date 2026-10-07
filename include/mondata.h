@@ -92,7 +92,7 @@
 #define telepathic(ptr)                                                \
     ((ptr) == &mons[PM_FLOATING_EYE] || (ptr) == &mons[PM_MIND_FLAYER] \
      || (ptr) == &mons[PM_MASTER_MIND_FLAYER]                          \
-     || (ptr) == &mons[PM_ALHOON] || (ptr) == &mons[PM_GREAT_CTHULHU])
+     || (ptr) == &mons[PM_GREAT_CTHULHU])
 #define is_armed(ptr) attacktype(ptr, AT_WEAP)
 #define acidic(ptr) (((ptr)->mflags1 & M1_ACID) != 0L)
 #define poisonous(ptr) (((ptr)->mflags1 & M1_POIS) != 0L)

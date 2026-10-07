@@ -925,7 +925,6 @@ mith_offhand_attack(const struct permonst *ptr, int slot)
            && (ptr == &mons[PM_COURE_ELADRIN]
                || ptr == &mons[PM_DEEP_ONE]
                || ptr == &mons[PM_DEEPER_ONE]
-               || ptr == &mons[PM_DEEPEST_ONE]
                || ptr == &mons[PM_CUPRILACH_RILMANI]
                || (ptr >= &mons[PM_SMALL_GOAT_SPAWN]
                    && ptr <= &mons[PM_GIANT_GOAT_SPAWN])

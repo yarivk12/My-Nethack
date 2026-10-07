@@ -339,6 +339,21 @@
         14, CLR_RED, CERBERUS),
 
 #endif
+    /* Step 20: dnethack primary donor; see doc/step20.md. */
+    MON(NAM("hound of Tindalos"),
+        S_DOG,
+        LVL(14, 12, 2, 0, 7),
+        (0 | 1),
+        A(ATTK(AT_REACH2, AD_DRLI, 2, 6), ATTK(AT_TENT, AD_PHYS, 4, 4), ATTK(AT_MAGC, AD_SPEL, 0, 6), NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(900, 300, MS_BARK, MZ_HUMAN),
+        MR_POISON,
+        0,
+        M1_BREATHLESS | M1_ANIMAL | M1_CARNIVORE | M1_NOHANDS,
+        M2_HOSTILE | M2_STRONG | M2_NASTY,
+        M3_INFRAVISIBLE,
+        18,
+        CLR_BLUE, HOUND_OF_TINDALOS),
+
     /*
      * eyes
      */
@@ -587,6 +602,51 @@
         M2_DWARF | M2_STRONG | M2_LORD | M2_GREEDY | M2_JEWELS | M2_COLLECT,
         M3_INFRAVISIBLE | M3_INFRAVISION,
         6, CLR_BLUE, DWARF_LEADER),
+    /* Step 20: dnethack primary donor; see doc/step20.md. */
+    MON(NAM("elder brain"),
+        S_HUMANOID,
+        LVL(30, 12, 0, 60, 0),
+        (G_NOCORPSE | 1),
+        A(ATTK(AT_REACH2, AD_DRIN, 1, 4), ATTK(AT_REACH2, AD_DRIN, 1, 4), ATTK(AT_MAGC, AD_SPEL, 0, 6), ATTK(AT_MAGC, AD_CLRC, 2, 8), NO_ATTK, NO_ATTK),
+        SIZ(2250, 2250, MS_SPELL, MZ_GIGANTIC),
+        MR_SLEEP | MR_POISON | MR_STONE,
+        0,
+        M1_FLY | M1_SWIM | M1_AMPHIBIOUS | M1_SEE_INVIS,
+        M2_NOPOLY | M2_COLLECT | M2_HOSTILE | M2_STRONG | M2_NEUTER | M2_PRINCE,
+        M3_STATIONARY | M3_INFRAVISIBLE | M3_INFRAVISION,
+        35,
+        CLR_MAGENTA, ELDER_BRAIN),
+    /* Step 20: evilhack primary donor; see doc/step20.md. */
+    MON(NAM("alhoon"),
+        S_HUMANOID,
+        LVL(26, 9, -6, 90, -15),
+        (G_GENO | G_NOCORPSE | 1),
+        A(ATTK(AT_WEAP, AD_PHYS, 1, 10), ATTK(AT_TUCH, AD_COLD, 5, 6),
+          ATTK(AT_TENT, AD_DRIN, 2, 1), ATTK(AT_TENT, AD_DRIN, 2, 1),
+          ATTK(AT_MAGC, AD_SPEL, 0, 0), NO_ATTK),
+        SIZ(1200, 250, MS_HISS, MZ_HUMAN),
+        MR_FIRE | MR_COLD | MR_SLEEP | MR_ELEC | MR_POISON,
+        0,
+        M1_BREATHLESS | M1_HUMANOID | M1_FLY | M1_SEE_INVIS | M1_POIS | M1_REGEN,
+        M2_NOPOLY | M2_HOSTILE | M2_NASTY | M2_MAGIC | M2_GREEDY | M2_JEWELS | M2_COLLECT | M2_MAGIC | M2_UNDEAD,
+        M3_INFRAVISIBLE | M3_INFRAVISION,
+        30,
+        CLR_GRAY, ALHOON),
+    /* Step 20: slashem primary donor; see doc/step20.md. */
+    MON(NAM("deepest one"),
+        S_HUMANOID,
+        LVL(30, 15, -5, 70, -9),
+        (G_GENO | 1),
+        A(ATTK(AT_CLAW, AD_PHYS, 3, 6), ATTK(AT_CLAW, AD_PHYS, 3, 6),
+	  ATTK(AT_BITE, AD_PHYS, 5, 6), NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(3000, 500, MS_GURGLE, MZ_HUGE),
+        MR_COLD | MR_POISON,
+        0,
+        M1_SWIM | M1_AMPHIBIOUS | M1_HUMANOID | M1_OMNIVORE | M1_POIS | M1_THICK_HIDE,
+        M2_HOSTILE | M2_STALK | M2_GREEDY | M2_JEWELS | M2_COLLECT | M2_PRINCE | M2_STRONG | M2_MAGIC,
+        M3_INFRAVISIBLE | M3_INFRAVISION,
+        33,
+        HI_LORD, DEEPEST_ONE),
     MON(NAMS("dwarf king", "dwarf queen", "dwarf ruler"),
         S_HUMANOID, LVL(6, 6, 10, 20, 6), (G_GENO | 1),
         A(ATTK(AT_WEAP, AD_PHYS, 2, 6), ATTK(AT_WEAP, AD_PHYS, 2, 6),
@@ -992,6 +1052,21 @@
         M1_ANIMAL | M1_THICK_HIDE | M1_NOHANDS | M1_HERBIVORE,
         M2_HOSTILE | M2_STRONG, M3_INFRAVISIBLE,
         22, CLR_BLACK, MASTODON),
+    /* Step 20: slashem primary donor; see doc/step20.md. */
+    MON(NAM("juggernaut"),
+        S_QUADRUPED,
+        LVL(30, 9, 7, 0, 0),
+        (G_GENO | G_NOCORPSE | 1),
+        A(ATTK(AT_BUTT, AD_PHYS, 8, 8), NO_ATTK,
+	  NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(3800, 800, MS_SILENT, MZ_GIGANTIC),
+        0,
+        0,
+        M1_ANIMAL | M1_THICK_HIDE | M1_NOHANDS | M1_HERBIVORE,
+        M2_HOSTILE | M2_STRONG,
+        0,
+        33,
+        CLR_YELLOW, JUGGERNAUT),
     /*
      * rodents
      */
@@ -1088,6 +1163,36 @@
             | M1_CARNIVORE,
         M2_HOSTILE, 0,
         8, CLR_RED, SCORPION),
+    /* Step 20: dnethack primary donor; see doc/step20.md. */
+    MON(NAM("priestess of Ghaunadaur"),
+        S_SPIDER,
+        LVL(18, 15, 2, 10, -15),
+        (0 | 1),
+        A(ATTK(AT_WEAP, AD_PHYS, 1, 10), ATTK(AT_WEAP, AD_PHYS, 1, 10), ATTK(AT_BITE, AD_CORR, 3, 8), ATTK(AT_KICK, AD_PHYS, 1, 1), ATTK(AT_MAGC, AD_CLRC, 0, 8), ATTK(AT_NONE, AD_ACID, 2, 12)),
+        SIZ(3000, 500, MS_HUMANOID, MZ_HUMAN),
+        MR_SLEEP,
+        0,
+        M1_OMNIVORE | M1_HUMANOID | M1_ANIMAL,
+        M2_NOPOLY | M2_HOSTILE | M2_GREEDY | M2_COLLECT | M2_STRONG | M2_FEMALE,
+        M3_INFRAVISIBLE,
+        23,
+        HI_LORD, PRIESTESS_OF_GHAUNADAUR),
+    /* Step 20: evilhack primary donor; see doc/step20.md. */
+    MON(NAM("drider"),
+        S_SPIDER,
+        LVL(14, 15, 2, 15, -15),
+        (G_GENO | 1),
+        A(ATTK(AT_WEAP, AD_PHYS, 2, 8), ATTK(AT_WEAP, AD_PHYS, 2, 4),
+          ATTK(AT_BITE, AD_DRST, 1, 4), NO_ATTK,
+          NO_ATTK, NO_ATTK),
+        SIZ(1500, 300, MS_SILENT, MZ_LARGE),
+        MR_SLEEP | MR_POISON,
+        0,
+        M1_HUMANOID | M1_OMNIVORE | M1_SEE_INVIS | M1_POIS,
+        M2_HOSTILE | M2_NEUTER | M2_NASTY | M2_STRONG | M2_COLLECT,
+        0,
+        16,
+        CLR_BLACK, DRIDER),
     /*
      * trappers, lurkers, &c
      * Note:  prior to 5.0, these were defined to do AD_DGST damage,
@@ -1282,6 +1387,20 @@
         M1_ANIMAL | M1_SLITHY | M1_NOLIMBS | M1_OVIPAROUS | M1_CARNIVORE,
         M2_HOSTILE | M2_STRONG | M2_NASTY, 0,
         17, CLR_MAGENTA, PURPLE_WORM),
+    /* Step 20: evilhack primary donor; see doc/step20.md. */
+    MON(NAM("neothelid"),
+        S_WORM,
+        LVL(32, 12, 2, 60, -8),
+        (1),
+        A(ATTK(AT_BREA, AD_ACID, 6, 6), ATTK(AT_TENT, AD_PHYS, 4, 4), ATTK(AT_TENT, AD_PHYS, 4, 4), ATTK(AT_TENT, AD_DRIN, 2, 4), ATTK(AT_TENT, AD_DRIN, 2, 4), ATTK(AT_ENGL, AD_DGST, 6, 6)),
+        SIZ(3000, 800, MS_SILENT, MZ_GIGANTIC),
+        MR_ACID,
+        0,
+        M1_ANIMAL | M1_SWIM | M1_SLITHY | M1_NOLIMBS | M1_ACID | M1_CARNIVORE,
+        M2_NOPOLY | M2_HOSTILE | M2_STRONG | M2_NASTY | M2_NEUTER,
+        0,
+        37,
+        CLR_BRIGHT_MAGENTA, NEOTHELID),
     /*
      * xan, &c
      */
@@ -1484,6 +1603,53 @@
         M1_BREATHLESS|M1_HUMANOID|M1_REGEN|M1_SEE_INVIS,
         M2_NOPOLY|M2_NEUTER|M2_HOSTILE|M2_MAGIC|M2_NASTY,
         M3_INFRAVISION, 23, CLR_BRIGHT_MAGENTA, WEEPING_ARCHANGEL),
+    /* Step 20: slashem primary donor; see doc/step20.md. */
+    MON(NAM("Solar"),
+        S_ANGEL,
+        LVL(39, 16, -10, 80, 15),
+        (G_NOCORPSE | 1),
+        A(ATTK(AT_WEAP, AD_PHYS, 5, 4), ATTK(AT_WEAP, AD_PHYS, 5, 4),
+	  ATTK(AT_GAZE, AD_BLND, 5, 6), ATTK(AT_CLAW, AD_PHYS, 5, 8),
+	  ATTK(AT_MAGC, AD_SPEL, 5, 6), NO_ATTK),
+        SIZ(WT_HUMAN, 400, MS_CUSS, MZ_LARGE),
+        MR_FIRE | MR_COLD | MR_ELEC | MR_SLEEP | MR_POISON,
+        0,
+        M1_FLY | M1_HUMANOID | M1_SEE_INVIS | M1_REGEN,
+        M2_NOPOLY | M2_MINION | M2_STALK | M2_STRONG | M2_NASTY | M2_LORD | M2_COLLECT | M2_MAGIC,
+        M3_INFRAVISIBLE | M3_INFRAVISION,
+        44,
+        CLR_BROWN, SOLAR),
+    /* Step 20: slashem primary donor; see doc/step20.md. */
+    MON(NAM("Planetar"),
+        S_ANGEL,
+        LVL(29, 16, -10, 80, 15),
+        (G_NOCORPSE | 1),
+        A(ATTK(AT_WEAP, AD_PHYS, 4, 4), ATTK(AT_WEAP, AD_PHYS, 4, 4),
+	  ATTK(AT_GAZE, AD_BLND, 3, 6), ATTK(AT_CLAW, AD_PHYS, 2, 8),
+	  ATTK(AT_MAGC, AD_SPEL, 4, 6), NO_ATTK),
+        SIZ(WT_HUMAN, 400, MS_CUSS, MZ_LARGE),
+        MR_FIRE | MR_COLD | MR_ELEC | MR_SLEEP | MR_POISON,
+        0,
+        M1_FLY | M1_HUMANOID | M1_SEE_INVIS | M1_REGEN,
+        M2_NOPOLY | M2_MINION | M2_STALK | M2_STRONG | M2_NASTY | M2_LORD | M2_COLLECT | M2_MAGIC,
+        M3_INFRAVISIBLE | M3_INFRAVISION,
+        34,
+        CLR_CYAN, PLANETAR),
+    /* Step 20: slashem primary donor; see doc/step20.md. */
+    MON(NAM("astral deva"),
+        S_ANGEL,
+        LVL(18, 18, -6, 90, 15),
+        (G_NOCORPSE | 1),
+        A(ATTK(AT_WEAP, AD_PHYS, 3, 12), ATTK(AT_WEAP, AD_STUN, 1, 4),
+	  ATTK(AT_MAGC, AD_CLRC, 3, 4), NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(WT_HUMAN, 400, MS_CUSS, MZ_HUMAN),
+        0,
+        0,
+        M1_FLY | M1_HUMANOID | M1_SEE_INVIS,
+        M2_NOPOLY | M2_MINION | M2_STALK | M2_STRONG | M2_NASTY,
+        M3_INFRAVISIBLE | M3_INFRAVISION,
+        23,
+        CLR_WHITE, ASTRAL_DEVA),
 
 
 
@@ -1852,6 +2018,20 @@
         M2_NOPOLY|M2_HOSTILE|M2_STALK|M2_STRONG|M2_NASTY|
         M2_GREEDY|M2_JEWELS|M2_MAGIC,
         0, 21, CLR_MAGENTA, CAVE_CHROMATIC_DRAGON),
+    /* Step 20: splicehack primary donor; see doc/step20.md. */
+    MON(NAM("void dragon"),
+        S_DRAGON,
+        LVL(25, 9, -10, 20, 0),
+        (G_NOCORPSE | 1),
+        A(ATTK(AT_BREA, AD_COLD, 4, 6), ATTK(AT_BITE, AD_PHYS, 3, 8), ATTK(AT_CLAW, AD_PHYS, 4, 4), ATTK(AT_CLAW, AD_DISN, 2, 4), NO_ATTK, NO_ATTK),
+        SIZ(WT_DRAGON, 1500, MS_SILENT, MZ_GIGANTIC),
+        MR_DISINT | MR_STONE | MR_COLD,
+        0,
+        M1_FLY | M1_TUNNEL | M1_UNSOLID | M1_THICK_HIDE | M1_NOHANDS | M1_SEE_INVIS | M1_CARNIVORE | M1_BREATHLESS,
+        M2_HOSTILE | M2_STRONG | M2_NASTY | M2_GREEDY | M2_JEWELS | M2_MAGIC | M2_NOPOLY,
+        0,
+        31,
+        HI_LORD, VOID_DRAGON),
     /*
      * Elementals
      */
@@ -2037,16 +2217,7 @@
      * giant Humanoids
      */
     /* plain giant is a placeholder for zombie and mummy corpses */
-    MON(NAM("deepest one"), S_GIANT,
-        LVL(30, 15, -5, 70, 0), (1 | G_NOHELL | G_NOGEN),
-        A(ATTK(AT_WEAP, AD_PHYS, 3, 8), ATTK(AT_WEAP, AD_PHYS, 3, 8),
-          ATTK(AT_KICK, AD_PHYS, 5, 6), ATTK(AT_NONE, AD_SOUL, 0, 0), NO_ATTK, NO_ATTK),
-        SIZ(4500, 1000, MS_HUMANOID, MZ_HUGE), MR_COLD | MR_SLEEP, MR_SLEEP,
-        M1_HUMANOID | M1_THICK_HIDE | M1_AMPHIBIOUS | M1_SWIM | M1_OMNIVORE,
-        M2_HUMAN | M2_GIANT | M2_STRONG | M2_COLLECT | M2_GREEDY
-            | M2_HOSTILE | M2_JEWELS | M2_MAGIC | M2_STALK | M2_PRINCE | M2_NASTY,
-        M3_INFRAVISIBLE | M3_INFRAVISION,
-        36, CLR_BRIGHT_GREEN, DEEPEST_ONE),
+
 
     MON(NAM("giant"), S_GIANT,
         LVL(6, 6, 0, 0, 2), (G_GENO | G_NOGEN | 1),
@@ -2149,16 +2320,24 @@
         M1_ANIMAL | M1_FLY | M1_CARNIVORE,
         M2_HOSTILE | M2_STRONG | M2_NASTY | M2_COLLECT, M3_INFRAVISIBLE,
         18, CLR_ORANGE, JABBERWOCK),
-#if 0 /* DEFERRED */
-    MON(NAM("vorpal jabberwock"), S_JABBERWOCK,
-        LVL(20, 12, -2, 50, 0), (G_GENO | 1),
+    /* Step 20: unnethack primary donor; see doc/step20.md. */
+    MON(NAM("vorpal jabberwock"),
+        S_JABBERWOCK,
+        LVL(20, 12, -2, 50, 0),
+        (G_GENO | 1),
         A(ATTK(AT_BITE, AD_PHYS, 3, 10), ATTK(AT_BITE, AD_PHYS, 3, 10),
           ATTK(AT_CLAW, AD_PHYS, 3, 10), ATTK(AT_CLAW, AD_PHYS, 3, 10),
           NO_ATTK, NO_ATTK),
-        SIZ(1300, 600, MS_BURBLE, MZ_LARGE), 0, 0,
+        SIZ(1300, 600, MS_BURBLE, MZ_LARGE),
+        0,
+        0,
         M1_ANIMAL | M1_FLY | M1_CARNIVORE,
-        M2_HOSTILE | M2_STRONG | M2_NASTY | M2_COLLECT, M3_INFRAVISIBLE,
-        25, HI_LORD, VORPAL_JABBERWOCK),
+        M2_HOSTILE | M2_STRONG | M2_NASTY | M2_COLLECT,
+        M3_INFRAVISIBLE,
+        25,
+        HI_LORD, VORPAL_JABBERWOCK),
+#if 0 /* DEFERRED */
+
 #endif
     /*
      * Kops
@@ -2244,6 +2423,20 @@
         M2_NOPOLY | M2_STALK | M2_HOSTILE | M2_PNAME | M2_STRONG
             | M2_MAGIC | M2_NASTY | M2_PRINCE | M2_MALE,
         M3_WANTSBOOK | M3_WAITFORU | M3_CLOSE | M3_INFRAVISION, 50, CLR_BRIGHT_MAGENTA, VECNA),
+    /* Step 20: dnethack primary donor; see doc/step20.md. */
+    MON(NAM("death knight"),
+        S_LICH,
+        LVL(17, 9, -4, 45, -15),
+        (G_GENO | G_NOCORPSE | 1),
+        A(ATTK(AT_WEAP, AD_PHYS, 3, 8), ATTK(AT_WEAP, AD_PHYS, 3, 8), ATTK(AT_TUCH, AD_COLD, 3, 6), NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(1200, 100, MS_MUMBLE, MZ_HUMAN),
+        MR_FIRE | MR_COLD | MR_SLEEP | MR_POISON,
+        0,
+        M1_BREATHLESS | M1_HUMANOID | M1_POIS | M1_REGEN,
+        M2_UNDEAD | M2_HOSTILE | M2_MAGIC,
+        M3_INFRAVISION,
+        21,
+        CLR_BRIGHT_CYAN, DEATH_KNIGHT),
     /*
      * Mummies
      */
@@ -2521,6 +2714,36 @@
         M1_BREATHLESS|M1_AMORPHOUS|M1_NOEYES|M1_NOLIMBS|M1_NOHEAD|
         M1_MINDLESS|M1_OMNIVORE|M1_ACID|M1_POIS,
         M2_HOSTILE|M2_NEUTER, 0, 12, CLR_BRIGHT_BLUE, BLUE_SLIME),
+    /* Step 20: slashem primary donor; see doc/step20.md. */
+    MON(NAM("giant shoggoth"),
+        S_PUDDING,
+        LVL(36, 20, -10, 50, -10),
+        (G_GENO | 1),
+        A(ATTK(AT_CLAW, AD_PHYS, 5, 10),    ATTK(AT_CLAW, AD_PHYS, 5, 10),
+	  ATTK(AT_TUCH, AD_CORR, 0, 0), ATTK(AT_TUCH, AD_CORR, 0, 0),
+	  ATTK(AT_NONE, AD_CORR, 0, 0),  ATTK(AT_ENGL, AD_ACID, 8, 10) ),
+        SIZ(2500, 500, MS_SILENT, MZ_LARGE),
+        MR_COLD | MR_ELEC | MR_POISON | MR_ACID | MR_STONE,
+        0,
+        M1_BREATHLESS | M1_AMORPHOUS | M1_NOEYES | M1_NOLIMBS | M1_NOHEAD | M1_TPORT | M1_OMNIVORE | M1_ACID | M1_HIDE | M1_REGEN | M1_METALLIVORE | M1_TPORT_CNTRL,
+        M2_HOSTILE | M2_NEUTER | M2_STALK | M2_NASTY | M2_STRONG | M2_COLLECT | M2_MAGIC,
+        M3_INFRAVISION,
+        42,
+        CLR_BLACK, GIANT_SHOGGOTH),
+    /* Step 20: slashem primary donor; see doc/step20.md. */
+    MON(NAM("shoggoth"),
+        S_PUDDING,
+        LVL(18, 15, -5, 25, -5),
+        (G_GENO | 1),
+        A(ATTK(AT_CLAW, AD_PHYS, 4, 8), ATTK(AT_TUCH, AD_CORR, 0, 0), ATTK(AT_ENGL, AD_ACID, 4, 8), ATTK(AT_NONE, AD_CORR, 0, 0), NO_ATTK, NO_ATTK),
+        SIZ(2500, 500, MS_SILENT, MZ_LARGE),
+        MR_COLD | MR_ELEC | MR_POISON | MR_ACID | MR_STONE,
+        0,
+        M1_BREATHLESS | M1_AMORPHOUS | M1_NOEYES | M1_NOLIMBS | M1_NOHEAD | M1_OMNIVORE | M1_ACID | M1_HIDE | M1_REGEN | M1_METALLIVORE,
+        M2_HOSTILE | M2_NEUTER | M2_STALK | M2_NASTY | M2_STRONG | M2_COLLECT | M2_MAGIC,
+        M3_INFRAVISION,
+        23,
+        CLR_BLACK, SHOGGOTH),
 
     MON(NAM("quantum mechanic"), S_QUANTMECH,
         LVL(7, 12, 3, 10, 0), (G_GENO | 3),
@@ -2727,16 +2950,7 @@
         M3_INFRAVISIBLE,
         14, CLR_BLUE, VAMPIRE_LEADER),
 #if 0 /* DEFERRED */
-    MON(NAM("vampire mage"), S_VAMPIRE,
-        LVL(20, 14, -4, 50, -9), (G_GENO | G_NOCORPSE | 1),
-        A(ATTK(AT_CLAW, AD_DRLI, 2, 8), ATTK(AT_BITE, AD_DRLI, 1, 8),
-          ATTK(AT_MAGC, AD_SPEL, 2, 6), NO_ATTK, NO_ATTK, NO_ATTK),
-        SIZ(WT_HUMAN, 400, MS_VAMPIRE, MZ_HUMAN), MR_SLEEP | MR_POISON, 0,
-        M1_FLY | M1_BREATHLESS | M1_HUMANOID | M1_POIS | M1_REGEN,
-        M2_UNDEAD | M2_STALK | M2_HOSTILE | M2_STRONG | M2_NASTY | M2_LORD
-          | M2_MALE | M2_MAGIC | M2_SHAPESHIFTER,
-        M3_INFRAVISIBLE,
-        26, HI_ZAP, VAMPIRE_MAGE),
+
 #endif
     MON(NAM("Vlad the Impaler"), S_VAMPIRE,
         LVL(28, 26, -6, 80, -10), (G_NOGEN | G_NOCORPSE | G_UNIQ),
@@ -2748,6 +2962,21 @@
             | M2_NASTY | M2_PRINCE | M2_MALE | M2_SHAPESHIFTER,
         M3_WAITFORU | M3_WANTSCAND | M3_INFRAVISIBLE,
         32, HI_LORD, VLAD_THE_IMPALER),
+    /* Step 20: slashem primary donor; see doc/step20.md. */
+    MON(NAM("vampire mage"),
+        S_VAMPIRE,
+        LVL(20, 14, -4, 50, -9),
+        (G_GENO | G_NOCORPSE | 1),
+        A(ATTK(AT_CLAW, AD_DRLI, 2, 8), ATTK(AT_BITE, AD_DRLI, 1, 8),
+	  ATTK(AT_MAGC, AD_SPEL, 2, 6), NO_ATTK, NO_ATTK, NO_ATTK),
+        SIZ(WT_HUMAN, 400, MS_VAMPIRE, MZ_HUMAN),
+        MR_SLEEP | MR_POISON,
+        0,
+        M1_FLY | M1_BREATHLESS | M1_HUMANOID | M1_POIS | M1_REGEN | M1_CARNIVORE,
+        M2_UNDEAD | M2_STALK | M2_HOSTILE | M2_STRONG | M2_NASTY | M2_LORD | M2_MALE | M2_MAGIC | M2_SHAPESHIFTER,
+        M3_INFRAVISIBLE,
+        24,
+        HI_ZAP, VAMPIRE_MAGE),
     /*
      * Wraiths
      */
@@ -2843,6 +3072,20 @@
         M1_ANIMAL | M1_HUMANOID | M1_SEE_INVIS | M1_OMNIVORE, M2_STRONG,
         M3_INFRAVISIBLE,
         9, CLR_GRAY, SASQUATCH),
+    /* Step 20: dnethack primary donor; see doc/step20.md. */
+    MON(NAM("gug"),
+        S_YETI,
+        LVL(15, 18, 5, 15, -4),
+        (G_GENO | 1),
+        A(ATTK(AT_WEAP, AD_PHYS, 2, 6), ATTK(AT_CLAW, AD_PHYS, 1, 6), ATTK(AT_CLAW, AD_PHYS, 1, 6), ATTK(AT_HUGS, AD_PHYS, 1, 12), ATTK(AT_BITE, AD_PLYS, 3, 6), ATTK(AT_CLAW, AD_SITM, 1, 6)),
+        SIZ(4800, 1000, MS_SILENT, MZ_HUGE),
+        MR_COLD,
+        0,
+        M1_TUNNEL | M1_NEEDPICK | M1_CARNIVORE | M1_HUMANOID | M1_THICK_HIDE,
+        M2_WANDER | M2_HOSTILE | M2_STALK | M2_COLLECT | M2_MAGIC | M2_STRONG | M2_NASTY,
+        M3_INFRAVISION,
+        21,
+        HI_LORD, GUG),
     /*
      * Zombies
      */
@@ -5037,17 +5280,7 @@
         M1_BREATHLESS | M1_MINDLESS | M1_HUMANOID | M1_POIS,
         M2_WANDER | M2_HOSTILE | M2_UNDEAD | M2_STRONG | M2_NOPOLY,
         M3_INFRAVISION, 16, CLR_BLACK, GNOLL_GHOUL),
-    MON(NAM("gug"), S_YETI,
-        LVL(15, 18, 5, 15, -4), (G_GENO | G_SGROUP | 1),
-        A(ATTK(AT_WEAP, AD_PHYS, 2, 6), ATTK(AT_CLAW, AD_PHYS, 1, 6),
-          ATTK(AT_CLAW, AD_PHYS, 1, 6), ATTK(AT_HUGS, AD_PHYS, 1, 12),
-          ATTK(AT_BITE, AD_PLYS, 3, 6), ATTK(AT_CLAW, AD_SITM, 1, 6)),
-        SIZ(4500, 1000, MS_ROAR, MZ_HUGE), MR_COLD, 0,
-        M1_TUNNEL | M1_NEEDPICK | M1_CARNIVORE | M1_HUMANOID
-            | M1_THICK_HIDE,
-        M2_WANDER | M2_HOSTILE | M2_STALK | M2_COLLECT | M2_MAGIC
-            | M2_STRONG | M2_NASTY | M2_GIANT,
-        M3_INFRAVISION, 23, HI_LORD, GUG),
+
     MON(NAM("Illurien of the Myriad Glimpses"), S_HUMAN,
         LVL(25, 12, -4, 100, 0), (G_UNIQ | G_NOGEN | G_NOCORPSE),
         A(ATTK(AT_ENGL, AD_ILUR, 2, 12), ATTK(AT_CLAW, AD_STCK, 1, 4),
@@ -5099,18 +5332,7 @@
         M2_DEMON | M2_HOSTILE | M2_COLLECT | M2_MAGIC | M2_PRINCE
             | M2_NASTY | M2_NOPOLY, M3_STATIONARY,
         31, CLR_WHITE, PRIEST_OF_AN_UNKNOWN_GOD),
-    MON(NAM("shoggoth"), S_BLOB,
-        LVL(20, 15, 10, 0, -5), (G_GENO | G_HELL | 2),
-        A(ATTK(AT_TUCH, AD_ACID, 1, 12), ATTK(AT_TUCH, AD_STCK, 1, 12),
-          ATTK(AT_HUGS, AD_PHYS, 2, 12), ATTK(AT_NONE, AD_ACID, 2, 12),
-          NO_ATTK, NO_ATTK),
-        SIZ(4500, 1000, MS_GURGLE, MZ_HUGE),
-        MR_COLD | MR_ELEC | MR_POISON | MR_ACID | MR_STONE,
-        MR_COLD | MR_ELEC | MR_POISON,
-        M1_SWIM | M1_AMPHIBIOUS | M1_AMORPHOUS | M1_NOHEAD | M1_NOLIMBS
-            | M1_ACID | M1_OMNIVORE,
-        M2_HOSTILE | M2_COLLECT | M2_MAGIC | M2_NEUTER | M2_NASTY,
-        0, 25, CLR_BRIGHT_GREEN, SHOGGOTH),
+
     MON(NAM("star spawn"), S_HUMANOID,
         LVL(26, 12, -5, 90, 0), G_NOGEN,
         A(ATTK(AT_WEAP, AD_PHYS, 4, 4), ATTK(AT_WEAP, AD_PHYS, 4, 4),
@@ -5165,17 +5387,7 @@
         97, CLR_BRIGHT_MAGENTA, BLASPHEMOUS_LURKER),
 
     /* Step 10B2-4: five authorized late-game monsters. */
-    MON(NAM("alhoon"), S_LICH,
-        LVL(17, 9, -14, 90, 0), (G_NOGEN | G_NOCORPSE),
-        A(ATTK(AT_TUCH, AD_COLD, 3, 6), ATTK(AT_TENT, AD_DRIN, 1, 4),
-          ATTK(AT_TENT, AD_DRLI, 1, 2), ATTK(AT_TENT, AD_DRLI, 1, 2),
-          ATTK(AT_MAGC, AD_SPEL, 0, 0), NO_ATTK),
-        SIZ(1200, 100, MS_HISS, MZ_HUMAN),
-        MR_FIRE | MR_COLD | MR_SLEEP | MR_POISON | MR_STONE, 0,
-        M1_BREATHLESS | M1_FLY | M1_HUMANOID | M1_POIS | M1_REGEN
-            | M1_SEE_INVIS,
-        M2_UNDEAD | M2_HOSTILE | M2_MAGIC,
-        M3_WAITFORU | M3_INFRAVISION, 21, CLR_GRAY, ALHOON),
+
     MON(NAM("Center of All"), S_DEMON,
         LVL(18, 15, -5, 100, 0), (G_NOCORPSE | G_UNIQ | G_NOGEN),
         A(ATTK(AT_WEAP, AD_PHYS, 2, 8), ATTK(AT_WEAP, AD_PHYS, 2, 8),

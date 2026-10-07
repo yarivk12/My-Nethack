@@ -445,7 +445,8 @@ find_defensive(struct monst *mtmp, boolean tryescape)
     int fraction;
     coordxy x = mtmp->mx, y = mtmp->my;
     boolean stuck = (mtmp == u.ustuck),
-            immobile = (mtmp->data->mmove == 0);
+            immobile = (mtmp->data->mmove == 0
+                        || mtmp->data == &mons[PM_ELDER_BRAIN]);
     stairway *stway;
 
     gm.m.defensive = (struct obj *) 0;
@@ -662,7 +663,7 @@ find_defensive(struct monst *mtmp, boolean tryescape)
         /* nomore(MUSE_WAN_DIGGING); */
         if (gm.m.has_defense == MUSE_WAN_DIGGING)
             break;
-        if (obj->otyp == WAN_DIGGING && obj->spe > 0 && !stuck && !t
+        if (obj->otyp == WAN_DIGGING && obj->spe > 0 && !immobile && !stuck && !t
             && !mtmp->isshk && !mtmp->isgd && !mtmp->ispriest
             && !is_floater(mtmp->data)
             /* monsters digging in Sokoban can ruin things */
@@ -677,7 +678,8 @@ find_defensive(struct monst *mtmp, boolean tryescape)
         }
         nomore(MUSE_WAN_TELEPORTATION_SELF);
         nomore(MUSE_WAN_TELEPORTATION);
-        if (obj->otyp == WAN_TELEPORTATION && obj->spe > 0) {
+        if (obj->otyp == WAN_TELEPORTATION && obj->spe > 0
+            && mtmp->data != &mons[PM_ELDER_BRAIN]) {
             /* use the TELEP_TRAP bit to determine if they know
              * about noteleport on this level or not.  Avoids
              * ineffective re-use of teleportation.  This does
@@ -693,7 +695,8 @@ find_defensive(struct monst *mtmp, boolean tryescape)
             }
         }
         nomore(MUSE_SCR_TELEPORTATION);
-        if (obj->otyp == SCR_TELEPORTATION && mtmp->mcansee
+        if (obj->otyp == SCR_TELEPORTATION
+            && mtmp->data != &mons[PM_ELDER_BRAIN] && mtmp->mcansee
             && haseyes(mtmp->data) && !is_weeping(mtmp->data)
             && (!obj->cursed || (!(mtmp->isshk && inhishop(mtmp))
                                  && !mtmp->isgd && !mtmp->ispriest))) {
@@ -2101,7 +2104,7 @@ find_misc(struct monst *mtmp)
     struct trap *t;
     coordxy xx, yy;
     int pmidx = NON_PM;
-    boolean immobile = (mdat->mmove == 0);
+    boolean immobile = (mdat->mmove == 0 || mdat == &mons[PM_ELDER_BRAIN]);
     boolean stuck = (mtmp == u.ustuck);
 
     gm.m.misc = (struct obj *) 0;
@@ -2171,6 +2174,7 @@ find_misc(struct monst *mtmp)
         /* Monsters shouldn't recognize cursed items; this kludge is
            necessary to prevent serious problems though... */
         if (obj->otyp == POT_GAIN_LEVEL
+            && !(obj->cursed && mdat == &mons[PM_ELDER_BRAIN])
             && (!obj->cursed
                 || (!mtmp->isgd && !mtmp->isshk && !mtmp->ispriest))) {
             gm.m.misc = obj;

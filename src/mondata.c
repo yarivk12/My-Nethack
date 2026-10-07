@@ -267,6 +267,39 @@ Resists_Elem(struct monst *mon, int propindx)
 }
 
 /* returns True if monster is drain-life resistant */
+
+/* Step 20 reaches reuse AT_REACH2, but only their designated distance-two
+ * slots form the entire action. Adjacent attacks retain native semantics. */
+boolean
+step20_reacher(const struct permonst *ptr)
+{
+    return ptr == &mons[PM_HOUND_OF_TINDALOS]
+           || ptr == &mons[PM_ELDER_BRAIN];
+}
+
+boolean
+step20_noncontact(struct monst *magr, struct monst *mdef)
+{
+    return magr != &gy.youmonst && step20_reacher(magr->data)
+           && distmin(magr->mx, magr->my,
+                      mdef == &gy.youmonst ? u.ux : mdef->mx,
+                      mdef == &gy.youmonst ? u.uy : mdef->my) == 2;
+}
+
+boolean
+step20_celestial(const struct permonst *ptr)
+{
+    return ptr == &mons[PM_ASTRAL_DEVA] || ptr == &mons[PM_PLANETAR]
+           || ptr == &mons[PM_SOLAR];
+}
+
+/* This is the existing Vorpal Blade body applicability, shared with claws. */
+boolean
+vorpal_target(const struct permonst *ptr)
+{
+    return has_head(ptr) && !noncorporeal(ptr) && !amorphous(ptr);
+}
+
 boolean
 resists_drli(struct monst *mon)
 {
@@ -339,15 +372,12 @@ step10b_eldritch_presence_kind(const struct permonst *ptr)
         || ptr == &mons[PM_BYAKHEE]
         || ptr == &mons[PM_DARK_YOUNG]
         || ptr == &mons[PM_DEEP_DWELLER]
-        || ptr == &mons[PM_GUG]
         || ptr == &mons[PM_ILLURIEN_OF_THE_MYRIAD_GLIMPSES]
         || ptr == &mons[PM_NIGHTGAUNT]
         || ptr == &mons[PM_PRIEST_OF_AN_UNKNOWN_GOD]
-        || ptr == &mons[PM_SHOGGOTH]
         || ptr == &mons[PM_STAR_SPAWN]
         || ptr == &mons[PM_HUNTING_HORROR]
         || ptr == &mons[PM_BLASPHEMOUS_LURKER]
-        || ptr == &mons[PM_ALHOON]
         || ptr == &mons[PM_FATHER_DAGON]
         || ptr == &mons[PM_MOTHER_HYDRA]
         || ptr == &mons[PM_GREAT_CTHULHU])
@@ -1417,7 +1447,6 @@ static const short grownups[][2] = {
     { PM_URUK_HAI, PM_ORC_CAPTAIN },
     { PM_SEWER_RAT, PM_GIANT_RAT },
     { PM_DEEP_ONE, PM_DEEPER_ONE },
-    { PM_DEEPER_ONE, PM_DEEPEST_ONE },
     { PM_ALABASTER_ELF, PM_ALABASTER_ELF_ELDER },
     { PM_CAVE_SPIDER, PM_GIANT_SPIDER },
     { PM_OGRE, PM_OGRE_LEADER },

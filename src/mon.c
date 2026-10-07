@@ -3444,14 +3444,13 @@ mith_deep_soul(const struct permonst *dead)
     struct monst *mon;
     int gain = dead == &mons[PM_DEEP_ONE] ? 2
                : dead == &mons[PM_DEEPER_ONE] ? 4
-               : dead == &mons[PM_DEEPEST_ONE] ? 8
                : (dead == &mons[PM_FATHER_DAGON]
                   || dead == &mons[PM_MOTHER_HYDRA]) ? 8 : 0;
     if (!gain) return;
     for (mon = fmon; mon; mon = mon->nmon) {
         if (!DEADMONSTER(mon) && (mon->data == &mons[PM_DEEP_ONE]
                                  || mon->data == &mons[PM_DEEPER_ONE]
-                                 || mon->data == &mons[PM_DEEPEST_ONE])) {
+)) {
             int increase = mon->mhpmax < 300 ? gain - 1 : 1;
             mon->mhpmax += min(increase, LARGEST_INT - mon->mhpmax);
             mon->mhp += min(increase, LARGEST_INT - mon->mhp);
@@ -5331,6 +5330,7 @@ pickvampshape(struct monst *mon)
         wolfchance = 3;
         FALLTHROUGH;
     /*FALLTHRU*/
+    case PM_VAMPIRE_MAGE:
     case PM_VAMPIRE_LEADER: /* vampire lord or Vlad can become wolf */
         if (!rn2(wolfchance) && !uppercase_only
             /* don't pick a walking form if that would lead to immediate
@@ -5569,6 +5569,7 @@ select_newcham_form(struct monst *mon)
         break;
     case PM_VLAD_THE_IMPALER:
     case PM_VAMPIRE_LEADER:
+    case PM_VAMPIRE_MAGE:
     case PM_VAMPIRE:
         mndx = pickvampshape(mon);
         break;

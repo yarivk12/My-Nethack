@@ -17,4 +17,11 @@ class Step20(unittest.TestCase):
     def test_no_new_attack_enums(self):
         source = (R/'include/monattk.h').read_text()
         self.assertNotRegex(source, r'#define (?:AT|AD)_WEB')
+    def test_neothelid_stored_difficulty(self):
+        source = (R/'include/monsters.h').read_text()
+        definition = source.split('MON(NAM("neothelid"),', 1)[1].split(
+            'NEOTHELID),', 1)[0]
+        # Pinned EvilHack stores 36. Local mstrength is diagnostic and does
+        # not rewrite this donor-authored generation threshold.
+        self.assertRegex(definition, r'\n\s*36,\s*\n\s*CLR_BRIGHT_MAGENTA,\s*$')
 if __name__ == '__main__': unittest.main()

@@ -27,8 +27,12 @@ affix state across dragon armor conversions. Its persistent catalogue uses
 [Step 20](step20.md) continues Phase 2 with 18 deep-dungeon monsters,
 shared native Web placement, constrained range-2 drain attacks, and existing
 equipment/enhancement integration. Its catalogue uses `EDITLEVEL 16`.
-The [Step 20 manual validation plan](step20-manual-validation.md) separates
-remaining manual acceptance checks from automated validation evidence.
+The [Step 20 validation plan](step20-manual-validation.md) records completed
+continuation acceptance: 68 parent/admin cases and 10 bounded subcases passed,
+using production gameplay, controlled native fixtures and source evidence.
+Historical compatibility gates and authoritative Release x64 passed; Step 20
+qualifies for full validation sign-off on the current uncommitted working tree.
+The implementation record links exact evidence and preserved earlier failures.
 
 ## Objective
 

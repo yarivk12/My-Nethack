@@ -1,9 +1,10 @@
 # Step 20 manual test and validation plan
 
 Scope: the complete Deep-Dungeon Monster Expansion, including the Vorpal
-fatal-damage and Priestess crystal-sword corrections. This is an execution
-plan, not a record that the following manual cases have passed. Record results
-against the final local working tree and final Release x64 executable.
+fatal-damage and Priestess crystal-sword corrections. The instructions below
+remain the reproducible execution plan. The continuation execution record at
+the end distinguishes production gameplay, controlled native diagnostics and
+source evidence against the final working tree and Release x64 executable.
 
 ## Preparation and evidence
 
@@ -303,3 +304,52 @@ MR or a few resisted random rolls.
    with reason. Only mark Step 20 complete when the required automated gates,
    generation sampling, documentation, and authoritative Release x64 build
    pass, or the specification's genuine external build blocker is documented.
+
+
+## Continuation execution record, 2026-10-07
+
+The plan is completed to its required evidence level: **78 PASS, 0 FAIL,
+0 BLOCKED, 0 NOT RUN**, comprising 68 parent/admin cases and 10 preserved
+bounded subcases. These totals are not a claim that every check was ordinary
+manual gameplay. Exact branching, slot counts, RNG and internal state use
+controlled native fixtures, as permitted in Preparation item 5.
+
+The final working tree remains on HEAD
+`2f067f4094eba86e520dd07b7e35a6eff1fcd6ad`; continuation corrections are
+uncommitted. Detailed case evidence, seeds, fixture inputs, executable hashes,
+commands and limitations are in
+`_qa/step20-continuation-20261007/final-matrix.json`, `final-provenance.json`,
+and `validation-report.md`. Original fields/statuses remain in `matrix.json`
+and in the final matrix's preserved prior fields. Earlier failed logs were
+not overwritten or relabeled as passing.
+
+| Cases | Executed evidence |
+|---|---|
+| PREP, CATALOGUE, DRIDER-DIFFICULTY | Exact provenance, authenticated five donor pins, 247 semantic comparisons and native definitions/difficulty assertions |
+| G01-G07 | Native predicates, ordinary selection and actual creation/genocide/polymorph paths, 60,000 selections and 1,000-level corpus |
+| R01-R07 | Full signed range-2 geometry, hero/MM hit/miss, real scheduling/debit, obstruction, defenses, adjacency/contact controls and target edge cases |
+| W01-W06 | Native hero/MM Web actions and shared placement/caller branches; production trapping, struggle, escape and save/restore |
+| V01-V07 | Full native fatal/ordinary damage, physically mitigated targets, actual lifesaving, cancellation, body applicability, carried/wielded Blade, helmets and native Blade offense |
+| M01-M13, CELESTIAL-DEATH | Native retained attacks, defenses and applicable effects; production scheduled combat; static exclusions traced separately |
+| S01-S05 | Ordinary scheduled stationarity and Speed12, adjacent/ranged actions, items/traps/stairs/spells, forced external relocation and unchanged native controls |
+| E01-E06 | Exact supported armor/shield/sword/weapon branches, one constructor/enhancement hook, actual shared wielded-object dispatch |
+| C01-C02 | Actual native death/corpse paths and complete eating/tinning for permitted corpses, nutrition/temporary harms and permanent-intrinsic exclusions |
+| D01-D05 | Actual layered disintegration, movement/defenses, repeated kills, all native/Step19 dragon mappings and probability branches, preserved Step19 boss/reward fixtures |
+| I01-I06 | Corrected historical/runtime gates, source hygiene, fresh persistence/recovery/transition checks, authoritative Release x64 and generated resource verification, documentation and Git integrity |
+
+The fresh controlled executable is diagnostic only; its final result is
+`controlled/run7/runtimefinal.log: QA20 COMPLETE failures=0`. Production
+evidence is under `production/`, including fresh `normal-runassetsfinal` and
+`recovery-runassetsfinal`. Native MM Elder caster dispatch retains native
+eligibility misses and is not asserted to produce successful MM spell effects.
+No small sample is used to establish an exact probability.
+
+The authoritative `NetHack` and GUI `NetHackW` Release/x64 builds passed after
+resource regeneration. Seven resource checks prove full catalogue ordering,
+conditional slots, dragon armor mapping, glyph bounds and exact source-to-bitmap
+pixels; the GUI embeds the exact bitmap. This is internal resource proof,
+not an interactive GUI visual inspection. The two stale ancillary Step9A/10B
+checker failures remain explicitly preserved and are explained in the report.
+
+No unresolved confirmed gameplay defect or required testing blocker remains.
+`git diff --check` passed. No commit, tag or push was performed.

@@ -575,10 +575,12 @@ version_gate(void)
     f=get_freeing_nhfile();file_mode(f,READING,open("step13-version.tmp",O_RDONLY|O_BINARY));
     assert(read(f->fd,header,2)==2);assert(header[0]=='h');
     lseek(f->fd,2+header[1],SEEK_SET);Sfi_version_info(f,&v,"version_info");
-    assert((v.incarnation&255)==15);assert(check_version(&v,NULL,FALSE,0));
-    v.incarnation=(v.incarnation&~255UL)|14;
+    assert((v.incarnation&255)==EDITLEVEL);assert(check_version(&v,NULL,FALSE,0));
+    /* Runtime fixtures use the compiled catalogue; the preceding epoch must
+       remain incompatible rather than imply a backward-save migration. */
+    v.incarnation=(v.incarnation&~255UL)|(EDITLEVEL-1);
     assert(!check_version(&v,NULL,FALSE,0));close_nhfile(f);
-    puts("PASS native critical sizes/epoch-15 header and controlled epoch-14 check_version rejection");
+    printf("PASS native critical sizes/epoch-%d header and controlled epoch-%d check_version rejection\n", EDITLEVEL, EDITLEVEL-1);
 }
 
 static int

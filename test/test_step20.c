@@ -292,9 +292,75 @@ step20_equipment_tests(void)
 }
 
 static void
+step20_corpse_tests(void)
+{
+    struct monst *mon;
+    struct obj *obj;
+    coordxy x, y;
+    schar terrain;
+    int i, trial, corpses, pm, corpse_pm;
+    unsigned saved_mvflags;
+    boolean no_corpse;
+
+    /* Exercise mondied -> corpse_chance -> make_corpse, including the
+     * explicit species switch used by the project's post-release build. */
+    for (x = 2; x < COLNO - 1; ++x) {
+        for (y = 1; y < ROWNO - 1; ++y)
+            if (!MON_AT(x, y) && !svl.level.objects[x][y]
+                && !u_at(x, y) && !t_at(x, y))
+                break;
+        if (y < ROWNO - 1) break;
+    }
+    assert(x < COLNO - 1);
+    terrain = levl[x][y].typ;
+    levl[x][y].typ = ROOM;
+    for (i = 0; i < SIZE(step20_roster); ++i) {
+        pm = step20_roster[i].pm;
+        corpse_pm = pm == PM_VAMPIRE_MAGE ? PM_HUMAN : pm;
+        /* The diagnostic entry skips allmain's initialization of native
+         * no-corpse policy in mvitals; reproduce that initialization. */
+        saved_mvflags = svm.mvitals[pm].mvflags;
+        svm.mvitals[pm].mvflags |= mons[pm].geno & G_NOCORPSE;
+        no_corpse = pm != PM_VAMPIRE_MAGE
+                    && ((mons[pm].geno & G_NOCORPSE) != 0
+                        || mons[pm].mlet == S_LICH);
+        corpses = 0;
+        init_isaac64(202060UL + i, rn2);
+        for (trial = 0; trial < 32; ++trial) {
+            mon = makemon(&mons[pm], x, y,
+                          NO_MINVENT | MM_NOGRP | MM_NOCOUNTBIRTH);
+            assert(mon);
+            /* Native vampire creation can select a shifted form. Retain
+             * its underlying species and return it before the death test. */
+            if (mon->data != &mons[pm])
+                (void) newcham(mon, &mons[pm], NO_NC_FLAGS);
+            assert(mon->data == &mons[pm]);
+            mondied(mon);
+            obj = sobj_at(CORPSE, x, y);
+            if (no_corpse) {
+                assert(!obj);
+            } else if (obj) {
+                assert(obj->corpsenm == corpse_pm);
+                if (pm == PM_VAMPIRE_MAGE)
+                    assert(obj->age == max(svm.moves, 1L)
+                                       - (TAINT_AGE + 1));
+                ++corpses;
+            }
+            while (svl.level.objects[x][y])
+                delobj_core(svl.level.objects[x][y], TRUE);
+        }
+        assert(no_corpse || corpses > 0);
+        svm.mvitals[pm].mvflags = saved_mvflags;
+    }
+    levl[x][y].typ = terrain;
+    puts("PASS Step 20 full native death/corpse dispatch and no-corpse policies");
+}
+
+static void
 step20_test_main(void)
 {
     step20_generation_tests();
     step20_combat_tests();
     step20_equipment_tests();
+    step20_corpse_tests();
 }

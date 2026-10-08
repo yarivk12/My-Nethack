@@ -158,36 +158,79 @@ precedence therefore selects 16, with a native runtime assertion protecting it.
 
 ## Validation
 
-Native fixtures live in `test/test_step20.c`, included by the Step 15 runner.
-They cover definitions/eligibility, depth boundaries, six deterministic
-10,000-selection samples, range-2 obstruction and contact exclusion, Web
-placement, direct stationary movement, Vorpal dispatch, full damage/death/
-lifesaving and cancelled-claw paths, and Priestess equipment branches.
-The fatal-mitigation regression was verified to fail with its guard removed;
-the Priestess test failed before the sword was restored.
+The continuation validation on 2026-10-07 completed the plan using actual
+production wizard gameplay, controlled native fixtures, authenticated donor
+comparisons, and source guards. The final matrix records 78 PASS, zero FAIL,
+zero BLOCKED, and zero NOT RUN: 68 parent/admin cases and 10 separately bounded
+subcases. A subcase never substitutes for its parent. Step 20 qualifies for
+full validation sign-off against the current uncommitted working tree at
+HEAD `2f067f4094eba86e520dd07b7e35a6eff1fcd6ad`.
 
-Run `py -3 -B test/test_step20_source.py` and
-`py -3 -B test/run_step15.py --out _qa/step20-step15`.
-The runner includes directly affected Step 19 fixtures and a 1,000-level
-generation corpus. Logs remain under the named output directory.
+Detailed commands, hashes, case evidence, limitations, and final Git state are
+in `_qa/step20-continuation-20261007/validation-report.md`, `final-matrix.json`,
+and `final-provenance.json`. Previous independent evidence under
+`_qa/step20-independent-20261007` remains unchanged. No commit, tag, or push
+was performed during this continuation.
 
-The [manual validation plan](step20-manual-validation.md) covers all 18
-monsters, scheduled actions, item/spell relocation, corpse effects,
-equipment, generation, Step 19 compatibility and Release acceptance.
-It records planned checks, not claims that those manual checks have run.
+### Confirmed validation corrections
 
-### Automated results, 2026-10-07
+The post-release native `make_corpse` switch omitted the newly active species.
+Eligible monsters could die without ever reaching ordinary corpse creation.
+Explicit dispatch cases now preserve native probability and `G_NOCORPSE`
+handling. Vampire Mage instead follows native vampire undead conversion and
+produces an old HUMAN corpse when the native corpse chance succeeds. Lich
+handling and intentional no-corpse species remain intact. The tracked native
+regression exercises 32 seeded actual deaths for each species, with native
+corpse-policy initialization. Controlled consumption covers complete raw meals
+and actual tinning/opening, normal nutrition rounding, poison/acid/temporary
+harms, undead taint, and absence of added permanent intrinsics or Gug Strength.
 
-- Three Step 20 source tests passed.
-- Step 15/19/20 native fixtures passed, including the new full damage-path
-  beheading and Priestess equipment regressions.
-- The separately built Step 13 focused combat runner passed its affected
-  native hero/monster melee, enhancement, mitigation and knowledge fixtures.
-- The 1,000-level corpus produced 140 selections, 138 placements, two
-  no-candidate cases, zero invalid placements and zero multiple placements.
-- Seeded generation retained ordinary native monsters at every sampled
-  depth. Samples use seed `202000 + depth` and player level 30. Difficulty
-  filtering can exclude an otherwise depth-eligible monster at high depths.
+Neothelid stored difficulty is **36**, matching pinned EvilHack. The former
+literal 37 had no documented override or local derivation; local `mstrength`
+is 39 for the explicitly adapted attack array. The attacks remain unchanged.
+Drider remains **16**, with local diagnostic heuristic 18 as explained above.
+
+Tile resource order omitted active Step 19/20 entries, so enum insertion could
+display unrelated artwork. `win/share/monsters.txt` and `objects.txt` now
+follow current native catalogue order and conditional reservations, retaining
+all original pixel bodies and palettes. Missing entries use exact existing
+art, not new graphics. Focused checks cover both sexes of all 531 monsters,
+all 568 objects, all 36 dragon armor mappings, all 13,069 glyphs, and every
+423,680 source RGB pixel in the regenerated bitmap. The GUI executable embeds
+that exact bitmap. No object definitions or gameplay identities were added.
+
+The Step 19 epoch test retains historical 15 after reversing only exact
+reviewed Step 20 deltas; current Step 20 independently requires 16. The source
+projection is anchored to immutable accepted commits, preserves all earlier
+guards, and rejects unreviewed edits. The Step 17 native persistence assertion
+uses compiled `EDITLEVEL` and rejects the preceding epoch, preserving native
+incompatibility without adding old-save migration.
+
+The disposable runner copies required ignored icon/record resources and uses
+isolated build directories. Diagnostic crashes were traced to uninitialized
+TTY callbacks and stale monster-grid pointers during fixture cleanup. Native
+cleanup and initialized callbacks fixed the harness; production breath and
+combat paths were not bypassed. Earlier failed logs remain preserved.
+
+### Executed results
+
+- Step 19 source tests: 5 passed; Step 20 source tests: 4 passed.
+- Historical source runner: passed exact follow-up, Step 20, Step 19, Step 18B,
+  Step 17 and Step 13 through 16C guards, including mutation rejection.
+- Step 17 native runtime/persistence suite: passed, including epoch 16 header,
+  epoch 15 rejection, restore/recovery/bones and enhancement paths.
+- Step 15/19/20 native suite: passed, including fatal Vorpal mitigation,
+  native lifesaving, ordinary cancelled claws, Priestess equipment, corpse
+  dispatch, and Step 19 bosses/rewards/dragon mappings.
+- Fresh isolated controlled build and runtime: exit 0,
+  `QA20 COMPLETE failures=0`; full geometry, scheduling, Web, Vorpal,
+  retained abilities, stationarity, equipment, consumption and dragon cases.
+- All five donor pins authenticated; 247 semantic and 7 integration checks
+  passed. Native Elder Brain MM caster dispatch retains native eligibility
+  misses; this is not a claim of successful MM spell effects.
+- 60,000 seeded ordinary-generation selections passed. The 1,000-level corpus
+  produced 137 selections, 135 placements, two no-candidate cases, zero invalid
+  placements and zero multiple placements.
 
 | DoD DL | Samples | Non-Step-20 selections | No selection |
 |---:|---:|---:|---:|
@@ -198,13 +241,24 @@ It records planned checks, not claims that those manual checks have run.
 | 150 | 10000 | 4438 | 0 |
 | 199 | 10000 | 2214 | 0 |
 
-Detailed species counts are in `_qa/step20-step15/runtime.log`; focused
-combat logs are in `_qa/step20-combat`. The manual plan remains unexecuted.
+Sampling uses seed `202000 + depth`, player level 30; native stored-difficulty
+filtering remains active. Additional controlled player-level 1/30 tests check
+each selection against native difficulty bounds at depths 60/150/199.
 
-The authoritative `NetHack` target of `sys/windows/vs/NetHack.sln` built
-successfully with Release/x64 and regenerated `binary/Release/x64/nhdat500`.
-The executable is `binary/Release/x64/NetHack.exe`; the build log is
-`_qa/step20-release/build.log`. The initial sandbox attempt could not update
-existing dependency build-state files; the authorized external-sandbox rerun
-succeeded. Existing unrelated `mkmap.c` uninitialized-variable warnings remain.
-`git diff --check` passed.
+The authoritative `sys/windows/vs/NetHack.sln` target `NetHack` built with
+Release/x64 after the gameplay corrections and again after final resource
+regeneration. `NetHackW`, `recover`, `tilemap`, and `tile2bmp` also built.
+Final production normal startup, checkpoint/recovery/restore and DoD level
+transitions passed. Actual production gameplay additionally covers creation,
+combat, Web struggle/escape, corpses, eating/tinning, swimming and door flow.
+GUI resource correctness is proven by mappings, exact pixels and embedded DIB,
+not a claim of an executed interactive GUI session.
+
+Seven current resource tests passed. Two older ancillary checker failures are
+preserved separately: Step 9A rejects pre-existing Essence artwork and Step
+10B uses a stale glyph-count formula predating Forge. Neither is claimed to
+pass; current resource proof uses native enum counts, complete bounds and exact
+pixels. Existing unrelated `mkmap.c` warnings remain. `git diff --check` passed.
+
+The [validation plan](step20-manual-validation.md) retains its reproducible
+case instructions and records the executed evidence layers and final totals.

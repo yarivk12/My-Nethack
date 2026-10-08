@@ -446,9 +446,7 @@ undead_to_corpse(int mndx)
         break;
     case PM_VAMPIRE:
     case PM_VAMPIRE_LEADER:
-#if 0 /* DEFERRED */
     case PM_VAMPIRE_MAGE:
-#endif
     case PM_HUMAN_ZOMBIE:
     case PM_HUMAN_MUMMY:
         mndx = PM_HUMAN;
@@ -651,6 +649,7 @@ make_corpse(struct monst *mtmp, unsigned int corpseflags)
         goto default_1;
     case PM_VAMPIRE:
     case PM_VAMPIRE_LEADER:
+    case PM_VAMPIRE_MAGE:
         /* include mtmp in the mkcorpstat() call */
         num = undead_to_corpse(mndx);
         corpstatflags |= CORPSTAT_INIT;
@@ -801,6 +800,14 @@ make_corpse(struct monst *mtmp, unsigned int corpseflags)
     case PM_WATER_DOLPHIN: case PM_SINGING_SAND: case PM_LIVING_MIRAGE:
     case PM_WRAITHWORM: case PM_FIRST_WRAITHWORM: case PM_ALABASTER_ELF:
     case PM_ALABASTER_ELF_ELDER: case PM_ASPECT_OF_THE_SILENCE:
+
+    /* Step 20 uses native corpse flags and the existing undead policy. */
+    case PM_DRIDER: case PM_ASTRAL_DEVA:
+    case PM_SHOGGOTH: case PM_DEATH_KNIGHT: case PM_HOUND_OF_TINDALOS:
+    case PM_PLANETAR: case PM_VORPAL_JABBERWOCK: case PM_NEOTHELID:
+    case PM_GUG: case PM_GIANT_SHOGGOTH: case PM_VOID_DRAGON:
+    case PM_PRIESTESS_OF_GHAUNADAUR: case PM_ALHOON: case PM_SOLAR:
+    case PM_JUGGERNAUT: case PM_ELDER_BRAIN:
 
     case PM_GIANT_ANT: case PM_KILLER_BEE: case PM_SOLDIER_ANT:
     case PM_FIRE_ANT: case PM_GIANT_BEETLE: case PM_QUEEN_BEE:

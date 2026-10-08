@@ -1399,7 +1399,7 @@
         M1_ANIMAL | M1_SWIM | M1_SLITHY | M1_NOLIMBS | M1_ACID | M1_CARNIVORE,
         M2_NOPOLY | M2_HOSTILE | M2_STRONG | M2_NASTY | M2_NEUTER,
         0,
-        37,
+        36,
         CLR_BRIGHT_MAGENTA, NEOTHELID),
     /*
      * xan, &c

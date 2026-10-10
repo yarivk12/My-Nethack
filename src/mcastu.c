@@ -671,7 +671,8 @@ mcast_monster_effect(struct monst *caster, struct monst *target, int spell,
     }
     if (damage > 0 && !DEADMONSTER(target)) {
         enhancement_mon_damage(target, caster, damage,
-                               spell == MCAST_GEYSER ? damage : 0);
+                               spell == MCAST_DEATH_TOUCH ? ENH_FATAL
+                               : spell == MCAST_GEYSER ? damage : 0);
         if (target->mhp <= 0)
             monkilled(target, "", AD_SPEL);
     }
@@ -681,6 +682,13 @@ mcast_monster_effect(struct monst *caster, struct monst *target, int spell,
         result |= M_ATTK_AGR_DIED;
     return result;
 }
+
+#ifdef STEP15_TEST
+int step21_test_reflected_spell(struct monst *caster, int spell, int damage)
+{
+    return mcast_monster_effect(caster, caster, spell, damage);
+}
+#endif
 
 staticfn int
 choose_monster_spell(struct monst *mtmp, int adtyp)

@@ -4348,6 +4348,17 @@ staticfn int
 readobjnam_postparse1(struct _readobjnam_data *d)
 {
     int i;
+    short artifact_type;
+    const char *artifact;
+
+    /* Preserve complete artifact names before class parsing strips prefixes
+       such as "ring of". All native wish/history restrictions still run. */
+    artifact = artifact_name(d->bp, &artifact_type, FALSE);
+    if (artifact) {
+        d->name = artifact;
+        d->typ = artifact_type;
+        return 2; /* goto typfnd */
+    }
 
     /* now we have the actual name, as delivered by xname, say
      *  green potions called whisky

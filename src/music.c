@@ -404,6 +404,10 @@ do_earthquake(int force)
         *   move the pit code to after the switch.
         */
 
+            /* Preserve terrain explicitly protected by level construction.
+             * Waking monsters above still occurs on protected squares. */
+            if (!may_dig(x, y))
+                continue;
             switch (levl[x][y].typ) {
             case FOUNTAIN: /* make the fountain disappear */
                 if (cansee(x, y))

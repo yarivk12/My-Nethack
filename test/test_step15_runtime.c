@@ -782,6 +782,9 @@ int step15_test_main(void) {
     authored_trap_rejection();
     provenance_tests();
     step21_native_acquisition_tests();
+    step21_forge_guard_tests();
+    step21_all_inspect_tests();
+    step21_ordinary_base_tests();
     step21_native_invocation_tests();
     step21_utility_tests();
     step21_read_and_supply_tests();
@@ -789,11 +792,30 @@ int step15_test_main(void) {
     step21_light_tests();
     step21_lantern_vision_tests();
     step21_elven_ring_tests();
-    step21_gravity_spoon_tests();
-    step21_saddle_tests();
     step21_book_tests();
+    windowprocs.win_delay_output = step21_no_animation_delay;
+    step21_saddle_tests();
+    step21_gravity_spoon_tests();
     step21_mirror_tests();
     step21_mask_combat_tests();
+    step21_mask_ray_tests();
+    step21_reflected_death_tests();
+    step21_consumption_tests();
+    step21_summon_heal_charge_tests();
+    step21_shirt_conditions_tests();
+    step21_water_and_oilskin_tests();
+    step21_source_water_regen_tests();
+    step21_combined_source_tests();
+    step21_base_command_tests();
+    step21_crystal_apply_tests();
+    step21_pick_command_tests();
+    step21_card_cloak_tests();
+    step21_quake_protection_tests();
+    step21_phasing_expiry_tests();
     step21_persistence_tests();
+    if (getenv("STEP21_TRANSITIONS")) {
+        step21_progression_tests();
+        step21_transition_tests();
+    }
     puts("PASS Step 15 native runtime fixtures");return 0;
 }

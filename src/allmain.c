@@ -734,6 +734,15 @@ regen_hp(int wtcap)
 
 #undef U_CAN_REGEN
 
+#ifdef STEP15_TEST
+/* Exercise the same per-turn recovery handlers without running a UI loop. */
+void step21_test_regeneration(int wtcap)
+{
+    regen_pw(wtcap);
+    regen_hp(wtcap);
+}
+#endif
+
 void
 stop_occupation(void)
 {

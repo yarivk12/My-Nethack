@@ -4921,6 +4921,9 @@ buzz(int type, int nd, coordxy sx, coordxy sy, int dx, int dy)
  * type == -30 to -39 : monster zapping a wand
  * called with dx = dy = 0 for vertical bolts
  */
+#ifdef STEP15_TEST
+int step21_ray_checks, step21_ray_redirects, step21_ray_contacts;
+#endif
 void
 dobuzz(
     int type,               /* 0..29 (by hero) or -39..-10 (by monster) */
@@ -4941,6 +4944,9 @@ dobuzz(
     struct obj *otmp;
     int spell_type;
     int hdmgtype = Hallucination ? rn2(6) : damgtype;
+#ifdef STEP15_TEST
+    step21_ray_checks = step21_ray_redirects = step21_ray_contacts = 0;
+#endif
 
     /* if it's a hero spell then get its SPE_TYPE */
     spell_type = is_hero_spell(type) ? SPE_MAGIC_MISSILE + damgtype : 0;
@@ -5103,6 +5109,9 @@ dobuzz(
                     miss(flash_str(fltyp, FALSE), mon);
             }
         } else if (u_at(sx, sy) && range >= 0) {
+#ifdef STEP15_TEST
+            ++step21_ray_contacts;
+#endif
             nomul(0);
             if (u.usteed && !rn2(3) && !mon_reflects(u.usteed, (char *) 0)) {
                 mon = u.usteed;
@@ -5118,7 +5127,13 @@ dobuzz(
                     && type <= -10 && type >= -19 && gb.buzzer
                     && !DEADMONSTER(gb.buzzer) && !gb.buzzer->mpeaceful
                     && ublindf && ublindf->oartifact == ART_MIRRORED_MASK
+#ifdef STEP15_TEST
+                    && (++step21_ray_checks)
+#endif
                     && (mask_checked = TRUE) && !rn2(2)) {
+#ifdef STEP15_TEST
+                    ++step21_ray_redirects;
+#endif
                     pline("Your mask turns the spell back upon its caster!");
                     if (!mon_reflects(gb.buzzer, NULL)) {
                         (void) zhitm(gb.buzzer, type, nd, &otmp);

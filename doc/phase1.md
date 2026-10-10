@@ -34,6 +34,17 @@ Historical compatibility gates and authoritative Release x64 passed; Step 20
 qualifies for full validation sign-off on the current uncommitted working tree.
 The implementation record links exact evidence and preserved earlier failures.
 
+[Step 21](step21.md) completes the Artifact Expansion in Phase 2 under the
+[locked implementation scope](Step21_Artifact_Expansion_FINAL_Implementation_Scope.md).
+It preserves the Silver Key and adds 22 artifacts, native property and command
+integration, persistent Book/Saddle state, and identification-aware cooldown
+inspection. The current save epoch is `EDITLEVEL 17`; older development saves
+are intentionally incompatible. All applicable artifact-matrix checks,
+native gameplay and save/reload fixtures, historical regression gates,
+tile resources and Release x64 console/GUI builds pass. The Step 21 record
+contains donor provenance, local adaptations, acquisition paths and closeout
+evidence. No Step 21 implementation blockers remain.
+
 ## Objective
 
 Introduce a unified enhancement framework for weapons and armor, followed by

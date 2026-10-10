@@ -31,6 +31,26 @@ static int kill_beam_target,kill_beam_caster;
 static struct obj *test_armor;
 static int armor_resist,quest_armor,removed,curses,summons,deaths,lifesave;
 static struct monst *real_caster;
+/* New shared resolver dependencies. The historical cases below must not
+ * enter these new spell branches. */
+int enhancement_mon_damage(struct monst *m, struct monst *a, int damage, int physical)
+{ (void) a; (void) physical; m->mhp -= damage; return m->mhp; }
+void paralyze_monst(struct monst *m, int turns)
+{ (void) m; (void) turns; assert(0); }
+boolean mon_reflects(struct monst *m, const char *s)
+{ (void) m; (void) s; assert(0); return FALSE; }
+boolean burnarmor(struct monst *m)
+{ (void) m; assert(0); return FALSE; }
+void ignite_items(struct obj *o) { (void) o; assert(0); }
+void mon_spell_hits_spot(struct monst *m, int typ, coordxy x, coordxy y)
+{ (void) m; (void) typ; (void) x; (void) y; assert(0); }
+int destroy_items(struct monst *m, int cls, int typ)
+{ (void) m; (void) cls; (void) typ; assert(0); return 0; }
+int sleep_monst(struct monst *m, int turns, int how)
+{ (void) m; (void) turns; (void) how; assert(0); return 0; }
+void slept_monst(struct monst *m) { (void) m; assert(0); }
+boolean step20_celestial(const struct permonst *pm)
+{ assert(pm == &mons[PM_ORC]); return FALSE; }
 int rn2(int n) { assert(n>0);return fumble ? 0 : n-1; }
 int rnd(int n) { return rn2(n)+1; }
 int d(int n, int s) { return n * s; }

@@ -17,11 +17,20 @@ main(void)
 
     objects_globals_init();
 
+#ifdef STEP21_CATALOG
+    /* Explicit current catalogue contract. Preserve the historical gate below. */
+    assert(NUMMONS == 531);
+    assert(NUM_OBJECTS == 569);
+    assert(AFTER_LAST_ARTIFACT == 72);
+    assert(NROFARTIFACTS == 71);
+    assert(MAX_GLYPH == 13071);
+#else
     assert(NUMMONS == 503);
     assert(NUM_OBJECTS == 547);
     assert(AFTER_LAST_ARTIFACT == 47);
     assert(NROFARTIFACTS == 46);
     assert(MAX_GLYPH == 12410);
+#endif
     assert(ART_NECRONOMICON == 45);
     assert(ART_SILVER_KEY == 46);
     assert(NROFARTIFACTS <= 127);

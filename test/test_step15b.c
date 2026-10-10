@@ -726,3 +726,26 @@ step15b_test_main(void)
     step15d_forge_tests();
     step15d_continuation_tests();
 }
+
+void step21_forge_guard_tests(void)
+{
+    struct obj *obj, *target;
+    int art;
+    short typ;
+    for (art = ART_HOLOGRAPHIC_VOID_LILY; art <= ART_MIRRORED_MASK; ++art) {
+        forge_test_clear();
+        typ = 0; assert(artifact_name(artiname(art), &typ, FALSE));
+        obj = forge_test_item(typ, 1);
+        artifact_exists(obj, artiname(art), TRUE, ONAME_WISH);
+        obj->dknown = 1; objects[typ].oc_name_known = 1;
+        assert(forge_reason(obj, NULL) == FORGE_PROTECTED);
+        assert(!affix_target(obj, NULL));
+        assert(!forge_affix_target(obj, NULL, TRUE));
+        assert(!forge_affix_target(obj, NULL, FALSE));
+        target = forge_test_item(LONG_SWORD, 1);
+        assert(!affix_gem(obj, target, 0));
+        assert(obj->where == OBJ_INVENT && obj->quan == 1 && obj->oartifact == art);
+    }
+    forge_test_clear();
+    puts("PASS Step 21 all22 native Forge recipe-input/socket-input/affix-target/salvage guards preserve unique artifacts");
+}

@@ -873,7 +873,9 @@ nh_timeout(void)
                 break;
             case PASSES_WALLS:
                 if (!Passes_walls) {
-                    if (stuck_in_wall()) {
+                    if (IS_OBSTRUCTED(levl[u.ux][u.uy].typ)
+                    || (closed_door(u.ux, u.uy)
+                        && !amorphous(gy.youmonst.data)) || stuck_in_wall()) {
                         if (!safe_phase_exit()) {
                             /* Never strand the hero when no valid landing
                              * square currently exists; retry next turn. */

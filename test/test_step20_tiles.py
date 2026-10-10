@@ -9,6 +9,11 @@ import re
 import struct
 import subprocess
 import unittest
+import sys
+
+STEP21 = '--step21' in sys.argv
+if STEP21:
+    sys.argv.remove('--step21')
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE = '2f067f4094eba86e520dd07b7e35a6eff1fcd6ad'
@@ -47,6 +52,8 @@ OBJECT_REUSE = {
     'slate / passwall': 'dusty / magic mapping',
     'stitched / repair armor': 'plain / blank paper',
 }
+if STEP21:
+    OBJECT_REUSE['aquamarine / water walking'] = 'sapphire / aggravate monster'
 for new, reused in [('shimmering', 'shimmering'), ('deep', 'black'),
                     ('razor', 'white'), ('filth', 'green'),
                     ('shadow', 'black'), ('celestial', 'gold')]:
@@ -155,7 +162,7 @@ class Step20Tiles(unittest.TestCase):
             ['git', 'show', BASE + ':win/share/objects.txt'], cwd=ROOT, text=True)
         self.assertEqual(tile_header(current_text), tile_header(old_text))
         old, current = tiles(old_text), tiles(current_text)
-        self.assertEqual([i for i, _, _ in current], list(range(570)))
+        self.assertEqual([i for i, _, _ in current], list(range(571 if STEP21 else 570)))
         self.assertTrue(all(len(pixels) == 256 for _, _, pixels in current))
         expected = Counter((label, pixels) for _, label, pixels in old)
         art = {label: pixels for _, label, pixels in old}
@@ -168,7 +175,7 @@ class Step20Tiles(unittest.TestCase):
         labels = {index: label for index, label, _ in
                   tiles((ROOT / 'win/share/objects.txt').read_text())}
         refs = object_refs(source)
-        self.assertEqual(set(refs), set(range(568)))
+        self.assertEqual(set(refs), set(range(569 if STEP21 else 568)))
         for onum, (index, name) in refs.items():
             self.assertEqual(labels[index], name, (onum, index, 'wrong object tile'))
         dump = subprocess.check_output(

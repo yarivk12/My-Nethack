@@ -2270,6 +2270,10 @@ mbirth_limit(int mndx)
 
 /* used for wand/scroll/spell of create monster */
 /* returns TRUE iff you know monsters have been created */
+#ifdef STEP15_TEST
+int step21_create_count;
+boolean step21_create_neverask;
+#endif
 boolean
 create_critters(
     int cnt,
@@ -2281,6 +2285,10 @@ create_critters(
     struct monst *mon;
     boolean known = FALSE;
     boolean ask = (wizard && !neverask);
+#ifdef STEP15_TEST
+    step21_create_count = cnt;
+    step21_create_neverask = neverask;
+#endif
 
     while (cnt--) {
         if (ask) {

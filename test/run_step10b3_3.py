@@ -41,6 +41,8 @@ compile_args = [
     "/I" + str(out), "/Fe:" + str(out / "step10b3_3.exe"),
     str(out / "test_step10b3_3.c"), str(repo / "src/objects.c")
 ]
+if '--step21' in sys.argv[2:]:
+    compile_args.insert(1, '/DSTEP21_CATALOG')
 if shutil.which("cl"):
     subprocess.run(compile_args, cwd=out, check=True)
 else:

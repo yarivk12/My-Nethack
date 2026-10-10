@@ -1316,7 +1316,7 @@ use_crystal_ball(struct obj **optr)
 
         if (!charged) {
             pline("All you see is funky %s haze.", hcolor((char *) 0));
-            if (obj->spe < 0)
+            if (obj->spe < 0 && obj->oartifact != ART_EARTH_CRYSTAL)
                 goto implode; /* destroy it when it has been cancelled */
         } else {
             switch (rnd(6)) {
@@ -1370,7 +1370,8 @@ use_crystal_ball(struct obj **optr)
     if (!charged) {
         pline_The("vision is unclear.");
 
-        if (obj->spe < 0) { /* destroy ball if used after being cancelled */
+        if (obj->spe < 0 && obj->oartifact != ART_EARTH_CRYSTAL) {
+            /* The Earth Crystal keeps its identity after ordinary depletion. */
  implode:   /* no damage to hero but 'multi' has a small negative value */
             pline("%s!", Tobjnam(obj, "implode"));
             useup(obj);

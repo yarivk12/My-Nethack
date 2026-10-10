@@ -49,10 +49,10 @@ boolean linedup(coordxy ax,coordxy ay,coordxy bx,coordxy by,int boulders) {
     assert(boulders==0);gt.tbx=(schar)(ax-bx);gt.tby=(schar)(ay-by);return (boolean)aligned;
 }
 void dobuzz(int type,int dice,coordxy x,coordxy y,int dx,int dy,
-            boolean hero_target,boolean tell,boolean inside) {
+            boolean hero_target,boolean tell,boolean inside,boolean aimed_hero) {
     assert(type==BZ_M_SPELL(BZ_OFS_AD(AD_SLEE)) && dice==4);
     assert(x==10 && y==3 && dx==1 && dy==0 && gb.buzzer);
-    assert(!hero_target && !tell && !inside);
+    assert(!hero_target && !tell && !inside && !aimed_hero);
     ++beam_calls;
     if(kill_beam_caster) gb.buzzer->mhp=0;
     if(kill_beam_target) beam_victim->mhp=0;

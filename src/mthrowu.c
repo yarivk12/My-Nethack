@@ -123,6 +123,18 @@ thitu_enhanced(
             You("are almost hit by %s.", onm);
         return 0;
     } else {
+        /* Deflect before damage, poison, or other hit-dependent contact.
+         * Returning a native miss leaves flight/disposition to the caller. */
+        struct obj *relic;
+        if (obj && (obj->oclass == WEAPON_CLASS || is_weptool(obj)
+                    || obj->oclass == GEM_CLASS || obj->otyp == BOULDER
+                    || obj->oclass == BALL_CLASS || obj->oclass == CHAIN_CLASS))
+            for (relic = gi.invent; relic; relic = relic->nobj)
+                if (relic->oartifact == ART_LODESTONE_OF_GRAVITY) {
+                    ++gm.mesg_given;
+                    pline("%s veers harmlessly away from you.", The(name));
+                    return 0;
+                }
         if (Blind || !flags.verbose)
             You("are hit%s", exclam(dam));
         else
@@ -1215,7 +1227,7 @@ breamm(struct monst *mtmp, struct attack *mattk, struct monst *mtarg)
                 gb.buzzer = mtmp;
                 dobuzz(BZ_M_BREATH(BZ_OFS_AD(typ)), (int) mattk->damn,
                        mtmp->mx, mtmp->my, sgn(gt.tbx), sgn(gt.tby),
-                       utarget, utarget, FALSE);
+                       utarget, utarget, FALSE, FALSE);
                 gb.buzzer = 0;
                 nomul(0);
                 /* breath runs out sometimes. Also, give monster some

@@ -897,6 +897,10 @@ RING("see invisible", "engagement",
 RING("protection from shape changers", "shiny",
      PROT_FROM_SHAPE_CHANGERS, 100, 1, 0,  5, IRON, CLR_BRIGHT_CYAN,
                                                RIN_PROTECTION_FROM_SHAPE_CHAN),
+/* Minimal compatible shell for Nenya; no unrelated inherited powers. */
+RING("water walking", "aquamarine",
+     WWALKING,                 200, 1, 0, 7, GEMSTONE, CLR_CYAN,
+                                                        RIN_WATER_WALKING),
 #undef RING
 
 /* amulets ... - THE Amulet comes last because it is special */

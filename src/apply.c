@@ -15,7 +15,6 @@ staticfn void magic_whistled(struct obj *);
 staticfn int use_leash(struct obj *);
 staticfn void use_leash_core(struct obj *, struct monst *, coord *, int);
 staticfn boolean mleashed_next2u(struct monst *);
-staticfn int use_mirror(struct obj *);
 staticfn void use_bell(struct obj **);
 staticfn void use_candelabrum(struct obj *);
 staticfn void use_candle(struct obj **);
@@ -1024,7 +1023,7 @@ beautiful(void)
 
 static const char look_str[] = "look %s.";
 
-staticfn int
+int
 use_mirror(struct obj *obj)
 {
     const char *mirror, *uvisage;
@@ -1050,7 +1049,14 @@ use_mirror(struct obj *obj)
         if (!useeit) {
             You_cant("see your %s %s.", uvisage, body_part(FACE));
         } else {
-            if (u.umonnum == PM_FLOATING_EYE) {
+            if (obj->oartifact == ART_HAND_MIRROR_OF_CTHYLLA
+                && obj->age <= svm.moves && !is_vampire(gy.youmonst.data)
+                && !is_vampshifter(&gy.youmonst)) {
+                /* Donor gaze damage, not physical contact or spell damage. */
+                obj->age = svm.moves + rnz(100);
+                pline("An incomprehensible sight meets your eyes!");
+                losehp(d(15, 15), "looking into Cthylla's hand-mirror", KILLED_BY);
+            } else if (u.umonnum == PM_FLOATING_EYE) {
                 if (Free_action) {
                     You("stiffen momentarily under your gaze.");
                 } else {
@@ -1139,6 +1145,16 @@ use_mirror(struct obj *obj)
     } else if (mlet == S_VAMPIRE || mlet == S_GHOST || is_vampshifter(mtmp)) {
         if (vis)
             pline("%s doesn't have a reflection.", Monnam(mtmp));
+    } else if (obj->oartifact == ART_HAND_MIRROR_OF_CTHYLLA
+               && obj->age <= svm.moves
+               && (!mtmp->minvis || perceives(mtmp->data))) {
+        obj->age = svm.moves + rnz(100);
+        if (vis)
+            pline("%s is blasted by its reflection.", Monnam(mtmp));
+        monflee(mtmp, d(2, 4), FALSE, FALSE);
+        enhancement_mon_damage(mtmp, &gy.youmonst, d(15, 15), 0);
+        if (mtmp->mhp <= 0)
+            killed(mtmp);
     } else if (monable && mtmp->data == &mons[PM_MEDUSA]) {
         if (mon_reflects(mtmp, "The gaze is reflected away by %s %s!"))
             return ECMD_TIME;

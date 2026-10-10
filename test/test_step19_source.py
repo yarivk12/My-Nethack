@@ -3,6 +3,7 @@ from pathlib import Path
 import re
 import unittest
 from step20_source_projection import project as project_step20
+from step21_source_projection import project as project_step21
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -47,7 +48,8 @@ class Catalogue(unittest.TestCase):
         patchlevel = (ROOT / 'include/patchlevel.h').read_text()
         # Keep Step 19's exact epoch after reversing only the reviewed successor
         # delta. The current epoch is separately pinned by Step 20's source gate.
-        patchlevel = project_step20('include/patchlevel.h', patchlevel)
+        patchlevel = project_step20('include/patchlevel.h',
+                                   project_step21('include/patchlevel.h', patchlevel))
         self.assertEqual(re.findall(r'^#define EDITLEVEL (\d+)$', patchlevel, re.M), ['15'])
 
 if __name__ == '__main__':

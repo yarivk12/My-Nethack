@@ -112,6 +112,7 @@ extern long timet_delta(time_t, time_t);
 
 extern void do_blinding_ray(struct obj *) NONNULLPTRS;
 extern int doapply(void);
+extern int use_mirror(struct obj *);
 extern int forge_interact(struct obj *);
 extern boolean forge_in_shop(coordxy, coordxy);
 extern void forge_check_shops(void);
@@ -185,6 +186,10 @@ extern void artifact_detect_pets(void);
 extern boolean artifact_permanent_light(const struct obj *);
 extern boolean artifact_lantern_reveals(coordxy, coordxy);
 extern void artifact_lantern_detect(void);
+extern boolean safe_phase_exit(void);
+extern boolean artifact_saddle_defends(const struct monst *);
+extern boolean artifact_saddle_invisibility(void);
+extern int artifact_book_cast(int);
 extern int disp_artifact_discoveries(winid);
 extern void dump_artifact_info(winid);
 extern boolean artifact_hit(struct monst *, struct monst *, struct obj *,
@@ -4127,7 +4132,7 @@ extern int burn_floor_objects(coordxy, coordxy, boolean, boolean);
 extern void ubuzz(int, int);
 extern void buzz(int, int, coordxy, coordxy, int, int);
 extern void dobuzz(int, int, coordxy, coordxy, int, int,
-                   boolean, boolean, boolean);
+                   boolean, boolean, boolean, boolean);
 extern void melt_ice(coordxy, coordxy, const char *) NO_NNARGS;
 extern void start_melt_ice_timeout(coordxy, coordxy, long);
 extern void melt_ice_away(union any *, long) NONNULLARG1;

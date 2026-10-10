@@ -42,12 +42,14 @@ staticfn void sortspells(void);
 staticfn boolean spellsortmenu(void);
 staticfn boolean dospellmenu(const char *, int, int *);
 staticfn int percent_success(int);
+staticfn int percent_success_type(int, int);
+staticfn int spelleffects_internal(int, boolean, boolean, boolean);
 staticfn char *spellretention(int, char *);
 staticfn int throwspell(void);
 staticfn void cast_protection(void);
 staticfn void cast_chain_lightning(void);
 staticfn void spell_backfire(int);
-staticfn boolean spelleffects_check(int, int *, int *);
+staticfn boolean spelleffects_check(int, int *, int *, boolean);
 staticfn const char *spelltypemnemonic(int);
 staticfn boolean can_center_spell_location(coordxy, coordxy);
 staticfn void display_spell_target_positions(boolean);
@@ -153,7 +155,8 @@ staticfn boolean
 cursed_book(struct obj *bp)
 {
     boolean was_in_use;
-    int lev = objects[bp->otyp].oc_level;
+    int lev = objects[bp->oartifact == ART_BOOK_OF_INFINITE_SPELLS
+                      ? bp->oartifact_state : bp->otyp].oc_level;
     int dmg = 0;
 
     switch (rn2(lev)) {
@@ -213,7 +216,8 @@ confused_book(struct obj *spellbook)
 {
     boolean gone = FALSE;
 
-    if (!rn2(3) && spellbook->otyp != SPE_BOOK_OF_THE_DEAD) {
+    if (!rn2(3) && spellbook->otyp != SPE_BOOK_OF_THE_DEAD
+        && spellbook->oartifact != ART_BOOK_OF_INFINITE_SPELLS) {
         spellbook->in_use = TRUE; /* in case called from learn() */
         pline(
          "Being confused you have difficulties in controlling your actions.");
@@ -404,7 +408,8 @@ learn(void)
         return 1; /* still busy */
     }
     exercise(A_WIS, TRUE); /* you're studying. */
-    booktype = book->otyp;
+    booktype = book->oartifact == ART_BOOK_OF_INFINITE_SPELLS
+               ? book->oartifact_state : book->otyp;
     if (booktype == SPE_BOOK_OF_THE_DEAD) {
         deadbook(book);
         return 0;
@@ -430,7 +435,8 @@ learn(void)
         impossible("Too many spells memorized!");
     } else if (spellid(i) == booktype) {
         /* normal book can be read and re-read a total of 4 times */
-        if (book->spestudied > MAX_SPELL_STUDY) {
+        if (book->spestudied > MAX_SPELL_STUDY
+            && book->oartifact != ART_BOOK_OF_INFINITE_SPELLS) {
             pline("This spellbook is too faint to be read any more.");
             book->otyp = booktype = SPE_BLANK_PAPER;
             faded_to_blank = TRUE;
@@ -440,14 +446,15 @@ learn(void)
             Your("knowledge of %s is %s.", splname,
                  spellknow(i) ? "keener" : "restored");
             incrnknow(i, 1);
-            book->spestudied++;
+            if (book->oartifact != ART_BOOK_OF_INFINITE_SPELLS) book->spestudied++;
             exercise(A_WIS, TRUE); /* extra study */
         }
     } else { /* (spellid(i) == NO_SPELL) */
         /* for a normal book, spestudied will be zero, but for
            a polymorphed one, spestudied will be non-zero and
            one less reading is available than when re-learning */
-        if (book->spestudied >= MAX_SPELL_STUDY) {
+        if (book->spestudied >= MAX_SPELL_STUDY
+            && book->oartifact != ART_BOOK_OF_INFINITE_SPELLS) {
             /* pre-used due to being the product of polymorph */
             pline("This spellbook is too faint to read even once.");
             book->otyp = booktype = SPE_BLANK_PAPER;
@@ -458,7 +465,7 @@ learn(void)
             svs.spl_book[i].sp_id = booktype;
             svs.spl_book[i].sp_lev = objects[booktype].oc_level;
             incrnknow(i, 1);
-            book->spestudied++;
+            if (book->oartifact != ART_BOOK_OF_INFINITE_SPELLS) book->spestudied++;
             if (!i)
                 /* first is always 'a', so no need to mention the letter */
                 You("learn %s.", splname);
@@ -480,7 +487,7 @@ learn(void)
     }
 
     if (book->cursed) { /* maybe a demon cursed it */
-        if (cursed_book(book)) {
+        if (cursed_book(book) && book->oartifact != ART_BOOK_OF_INFINITE_SPELLS) {
             useup(book);
             svc.context.spbook.book = 0;
             svc.context.spbook.o_id = 0;
@@ -499,7 +506,8 @@ RESTORE_WARNING_FORMAT_NONLITERAL
 int
 study_book(struct obj *spellbook)
 {
-    int booktype = spellbook->otyp, i;
+    int booktype = spellbook->oartifact == ART_BOOK_OF_INFINITE_SPELLS
+                   ? spellbook->oartifact_state : spellbook->otyp, i;
     boolean confused = (Confusion != 0);
     boolean too_hard = FALSE;
 
@@ -605,7 +613,7 @@ study_book(struct obj *spellbook)
         }
 
         /* Books are often wiser than their readers (Rus.) */
-        spellbook->in_use = TRUE;
+        spellbook->in_use = spellbook->oartifact != ART_BOOK_OF_INFINITE_SPELLS;
         if (!spellbook->blessed && spellbook->otyp != SPE_BOOK_OF_THE_DEAD) {
             if (spellbook->cursed) {
                 too_hard = TRUE;
@@ -641,7 +649,8 @@ study_book(struct obj *spellbook)
             gm.multi_reason = "reading a book";
             gn.nomovemsg = 0;
             svc.context.spbook.delay = 0;
-            if (gone || !rn2(3)) {
+            if ((gone || !rn2(3))
+                && spellbook->oartifact != ART_BOOK_OF_INFINITE_SPELLS) {
                 if (!gone)
                     pline_The("spellbook crumbles to dust!");
                 trycall(spellbook);
@@ -1326,9 +1335,11 @@ spell_backfire(int spell)
 }
 
 staticfn boolean
-spelleffects_check(int spell, int *res, int *energy)
+spelleffects_check(int spell, int *res, int *energy, boolean bookcast)
 {
     int chance;
+    int otyp = bookcast ? spell : (spell == UNKNOWN_SPELL ? NO_SPELL : spellid(spell));
+    int level = otyp ? objects[otyp].oc_level : 0;
     boolean confused = (Confusion != 0);
 
     *energy = 0;
@@ -1351,12 +1362,13 @@ spelleffects_check(int spell, int *res, int *energy)
      *  Note: dotele() also calculates energy use and checks nutrition
      *  and strength requirements; if any of these change, update it too.
      */
-    *energy = SPELL_LEV_PW(spellev(spell)); /* 5 <= energy <= 35 */
+    *energy = SPELL_LEV_PW(level); /* 5 <= energy <= 35 */
 
     /*
      * Spell casting no longer affects knowledge of the spell. A
      * decrement of spell knowledge is done every turn.
      */
+    if (!bookcast) {
     if (spellknow(spell) <= 0) {
         Your("knowledge of this spell is twisted.");
         pline("It invokes nightmarish images in your mind...");
@@ -1376,12 +1388,13 @@ spelleffects_check(int spell, int *res, int *energy)
     } else if (spellknow(spell) <= KEEN / 10) { /* 2000 turns left */
         Your("recall of this spell is gradually fading.");
     }
+    }
 
-    if (u.uhunger <= 10 && spellid(spell) != SPE_DETECT_FOOD) {
+    if (u.uhunger <= 10 && otyp != SPE_DETECT_FOOD) {
         You("are too hungry to cast that spell.");
         *res = ECMD_OK;
         return TRUE;
-    } else if (ACURR(A_STR) < 4 && spellid(spell) != SPE_RESTORE_ABILITY) {
+    } else if (ACURR(A_STR) < 4 && otyp != SPE_RESTORE_ABILITY) {
         You("lack the strength to cast spells.");
         *res = ECMD_OK;
         return TRUE;
@@ -1396,7 +1409,7 @@ spelleffects_check(int spell, int *res, int *energy)
        in and no turn will be consumed; however, when it does kick in,
        the attempt may fail due to lack of energy after the draining, in
        which case a turn will be used up in addition to the energy loss */
-    if (u.uhave.amulet && u.uen >= *energy) {
+    if (!bookcast && u.uhave.amulet && u.uen >= *energy) {
         You_feel("the amulet draining your energy away.");
         /* this used to be 'energy += rnd(2 * energy)' (without 'res'),
            so if amulet-induced cost was more than u.uen, nothing
@@ -1411,7 +1424,7 @@ spelleffects_check(int spell, int *res, int *energy)
         *res = ECMD_TIME; /* time is used even if spell doesn't get cast */
     }
 
-    if (*energy > u.uen) {
+    if (!bookcast && *energy > u.uen) {
         /*
          * Hero has insufficient energy/power to cast the spell.
          * Augment the message when current energy is at maximum.
@@ -1427,7 +1440,7 @@ spelleffects_check(int spell, int *res, int *energy)
               : " anymore"); /* once had enough but have lost some since */
         return TRUE;
     } else {
-        if (spellid(spell) != SPE_DETECT_FOOD) {
+        if (otyp != SPE_DETECT_FOOD) {
             int hungr = *energy * 2;
 
             /* If hero is a wizard, their current intelligence
@@ -1477,7 +1490,8 @@ spelleffects_check(int spell, int *res, int *energy)
         }
     }
 
-    chance = percent_success(spell);
+    if (bookcast) *energy = 0;
+    chance = percent_success_type(otyp, level);
     if (confused || (rnd(100) > chance)) {
         You("fail to cast the spell correctly.");
         u.uen -= *energy / 2;
@@ -1493,21 +1507,35 @@ spelleffects_check(int spell, int *res, int *energy)
 int
 spelleffects(int spell_otyp, boolean atme, boolean force)
 {
-    int spell = force ? spell_otyp : spell_idx(spell_otyp);
+    return spelleffects_internal(spell_otyp, atme, force, FALSE);
+}
+
+int
+artifact_book_cast(int spell_otyp)
+{
+    if (spell_otyp < SPE_DIG || spell_otyp >= SPE_BLANK_PAPER)
+        return ECMD_OK;
+    return spelleffects_internal(spell_otyp, FALSE, FALSE, TRUE);
+}
+
+staticfn int
+spelleffects_internal(int spell_otyp, boolean atme, boolean force, boolean bookcast)
+{
+    int spell = (force || bookcast) ? spell_otyp : spell_idx(spell_otyp);
     int energy = 0, damage, n;
     int otyp, skill, role_skill, res = ECMD_OK;
     boolean physical_damage = FALSE;
     struct obj *pseudo;
     coord cc;
 
-    if (!force && spelleffects_check(spell, &res, &energy))
+    if (!force && spelleffects_check(spell, &res, &energy, bookcast))
         return res;
 
     u.uen -= energy;
     disp.botl = TRUE;
     exercise(A_WIS, TRUE);
     /* pseudo is a temporary "false" object containing the spell stats */
-    pseudo = mksobj(force ? spell : spellid(spell), FALSE, FALSE);
+    pseudo = mksobj((force || bookcast) ? spell : spellid(spell), FALSE, FALSE);
     pseudo->blessed = pseudo->cursed = 0;
     pseudo->quan = 20L; /* do not let useup get it */
     /*
@@ -1712,7 +1740,7 @@ spelleffects(int spell_otyp, boolean atme, boolean force)
 
     /* gain skill for successful cast */
     if (!force)
-        use_skill(skill, spellev(spell));
+        use_skill(skill, objects[otyp].oc_level);
 
     obfree(pseudo, (struct obj *) 0); /* now, get rid of it */
     return ECMD_TIME;
@@ -2298,12 +2326,18 @@ armor_spell_penalty(const struct obj *obj)
 staticfn int
 percent_success(int spell)
 {
+    return percent_success_type(spellid(spell), spellev(spell));
+}
+
+staticfn int
+percent_success_type(int otyp, int level)
+{
     /* Intrinsic and learned ability are combined to calculate
      * the probability of player's success at casting a given spell.
      */
     int chance, splcaster, special, statused;
     int difficulty;
-    int skill, skilltype = spell_skilltype(spellid(spell));
+    int skill, skilltype = spell_skilltype(otyp);
     /* Knights don't get metal armor penalty for clerical spells */
     boolean paladin_bonus = (Role_if(PM_KNIGHT)
                              && skilltype == P_CLERIC_SPELL);
@@ -2335,15 +2369,15 @@ percent_success(int spell)
             splcaster += enhancement_casting_penalty(uarmf, uarmfbon);
     }
 
-    if (spellid(spell) == gu.urole.spelspec)
+    if (otyp == gu.urole.spelspec)
         splcaster += gu.urole.spelsbon;
 
     /* `healing spell' bonus */
-    if (spellid(spell) == SPE_HEALING || spellid(spell) == SPE_EXTRA_HEALING
-        || spellid(spell) == SPE_CURE_BLINDNESS
-        || spellid(spell) == SPE_CURE_SICKNESS
-        || spellid(spell) == SPE_RESTORE_ABILITY
-        || spellid(spell) == SPE_REMOVE_CURSE)
+    if (otyp == SPE_HEALING || otyp == SPE_EXTRA_HEALING
+        || otyp == SPE_CURE_BLINDNESS
+        || otyp == SPE_CURE_SICKNESS
+        || otyp == SPE_RESTORE_ABILITY
+        || otyp == SPE_REMOVE_CURSE)
         splcaster += special;
 
     if (splcaster > 20)
@@ -2364,7 +2398,7 @@ percent_success(int spell)
     skill = P_SKILL(skilltype);
     skill = max(skill, P_UNSKILLED) - 1; /* unskilled => 0 */
     difficulty =
-        (spellev(spell) - 1) * 4 - ((skill * 6) + (u.ulevel / 3) + 1);
+        (level - 1) * 4 - ((skill * 6) + (u.ulevel / 3) + 1);
 
     if (difficulty > 0) {
         /* Player is too low level or unskilled. */
@@ -2375,7 +2409,7 @@ percent_success(int spell)
          * low-level spells.  That is, a player quickly gains
          * no advantage for raising level.
          */
-        int learning = 15 * -difficulty / spellev(spell);
+        int learning = 15 * -difficulty / level;
         chance += learning > 20 ? 20 : learning;
     }
 
@@ -2394,7 +2428,7 @@ percent_success(int spell)
      * player's role-specific spell.
      */
     if (uarms && weight(uarms) > (int) objects[SMALL_SHIELD].oc_weight) {
-        int remaining = chance / (spellid(spell) == gu.urole.spelspec ? 2 : 4);
+        int remaining = chance / (otyp == gu.urole.spelspec ? 2 : 4);
         chance -= enhancement_casting_penalty(uarms, chance - remaining);
     }
 
@@ -2425,7 +2459,7 @@ percent_success(int spell)
 
     /* Step 10C-D supplies the real production level identity. */
     chance = step10b_hero_spell_chance(step10c_level_context(&u.uz), chance,
-                                      spellev(spell));
+                                      level);
 
     /* Clamp to percentile */
     if (chance > 100)

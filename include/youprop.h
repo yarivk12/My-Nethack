@@ -54,7 +54,7 @@
 /* Hxxx due to FROMFORM only */
 #define HAntimagic u.uprops[ANTIMAGIC].intrinsic
 #define EAntimagic u.uprops[ANTIMAGIC].extrinsic
-#define Antimagic (HAntimagic || EAntimagic)
+#define Antimagic (HAntimagic || EAntimagic || artifact_saddle_defends(&gy.youmonst))
 
 #define HAcid_resistance u.uprops[ACID_RES].intrinsic
 #define EAcid_resistance u.uprops[ACID_RES].extrinsic
@@ -195,7 +195,7 @@
 #define HInvis u.uprops[INVIS].intrinsic
 #define EInvis u.uprops[INVIS].extrinsic
 #define BInvis u.uprops[INVIS].blocked
-#define Invis ((HInvis || EInvis) && !BInvis)
+#define Invis ((HInvis || EInvis || artifact_saddle_invisibility()) && !BInvis)
 #define Invisible (Invis && !See_invisible)
 /* Note: invisibility also hides inventory and steed */
 
@@ -390,7 +390,7 @@
 
 #define HReflecting u.uprops[REFLECTING].intrinsic
 #define EReflecting u.uprops[REFLECTING].extrinsic
-#define Reflecting (HReflecting || EReflecting)
+#define Reflecting (HReflecting || EReflecting || artifact_saddle_defends(&gy.youmonst))
 
 #define Free_action u.uprops[FREE_ACTION].extrinsic /* [Tom] */
 

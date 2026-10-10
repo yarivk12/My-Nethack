@@ -58,6 +58,7 @@ staticfn void mcast_confuse_you(struct monst *);
 staticfn void mcast_spell(struct monst *, int, int);
 staticfn boolean is_undirected_spell(int);
 staticfn boolean spell_would_be_useless(struct monst *, int);
+staticfn int mcast_monster_effect(struct monst *, struct monst *, int, int);
 
 /* feedback when frustrated monster couldn't cast a spell */
 staticfn void
@@ -347,8 +348,6 @@ mith_castmm(struct monst *caster, struct monst *target, struct attack *attack)
     int syllable = mith_mon_syllable(caster);
     boolean lake = caster->data >= &mons[PM_FLASHING_LAKE]
                    && caster->data <= &mons[PM_SPARKLING_LAKE];
-    struct monst *other;
-    struct obj *armor;
 
     /* Native combat has no elemental castmm path.  The four lakes use their
        declared AT_MAGC attack against monsters with the same level-scaled
@@ -424,7 +423,20 @@ mith_castmm(struct monst *caster, struct monst *target, struct attack *attack)
         pline_mon(caster, "%s casts a spell!", Monnam(caster));
     /* Donor castmm rolls its basic spell dice even for a support spell. */
     damage = mith_spell_damage(caster, attack);
+    return mcast_monster_effect(caster, target, spell, damage);
+}
+
+/* Resolve an already selected spell, with no casting or targeting recursion. */
+staticfn int
+mcast_monster_effect(struct monst *caster, struct monst *target, int spell,
+                     int damage)
+{
+    int result = M_ATTK_HIT;
+    struct monst *other;
+    struct obj *armor;
+
     switch (spell) {
+    case MCAST_OPEN_WOUNDS:
     case MCAST_PSI_BOLT:
         if (canseemon(target))
             pline_mon(target, "A psychic bolt strikes %s!", mon_nam(target));
@@ -530,11 +542,15 @@ mith_castmm(struct monst *caster, struct monst *target, struct attack *attack)
         damage = 0;
         break;
     case MCAST_MITH_SLEEP:
-        if (linedup(target->mx, target->my, caster->mx, caster->my, 0)) {
+        if (target == caster) {
+            if (!mon_reflects(target, NULL)
+                && sleep_monst(target, d(min(10, caster->m_lev / 3 + 1), 25), 0))
+                slept_monst(target);
+        } else if (linedup(target->mx, target->my, caster->mx, caster->my, 0)) {
             gb.buzzer = caster;
             dobuzz(BZ_M_SPELL(BZ_OFS_AD(AD_SLEE)), min(10, caster->m_lev / 3 + 1),
                    caster->mx, caster->my, sgn(gt.tbx), sgn(gt.tby),
-                   FALSE, FALSE, FALSE);
+                   FALSE, FALSE, FALSE, FALSE);
             gb.buzzer = 0;
         }
         damage = 0;
@@ -616,9 +632,46 @@ mith_castmm(struct monst *caster, struct monst *target, struct attack *attack)
         default: if (resists_magm(target)) damage = 0; break;
         }
         break;
+    case MCAST_PARALYZE:
+        if (!resists_magm(target) && !resist(target, 0, 0, FALSE))
+            paralyze_monst(target, 4 + caster->m_lev);
+        damage = 0;
+        break;
+    case MCAST_LIGHTNING:
+        if (mon_reflects(target, NULL)) {
+            damage = 0;
+            break;
+        }
+        damage = d(8, 6);
+        (void) destroy_items(target, AD_ELEC, damage);
+        if (resists_elec(target)) damage = 0;
+        if (!resists_blnd(target)) {
+            target->mcansee = 0;
+            target->mblinded = min(127, target->mblinded + rnd(100));
+        }
+        mon_spell_hits_spot(caster, AD_ELEC, target->mx, target->my);
+        break;
+    case MCAST_FIRE_PILLAR:
+        damage = d(8, 6);
+        (void) burnarmor(target);
+        (void) destroy_items(target, AD_FIRE, damage);
+        ignite_items(target->minvent);
+        if (resists_fire(target)) damage = 0;
+        mon_spell_hits_spot(caster, AD_FIRE, target->mx, target->my);
+        break;
+    case MCAST_GEYSER:
+        damage = d(8, 6);
+        break;
+    case MCAST_PUNISHMENT:
+        /* Monsters have no ball-and-chain movement state. The burden uses
+           their native slowing effect and cannot create hero punishment. */
+        mon_adjust_speed(target, -1, NULL);
+        damage = 0;
+        break;
     }
     if (damage > 0 && !DEADMONSTER(target)) {
-        enhancement_mon_damage(target, caster, damage, 0);
+        enhancement_mon_damage(target, caster, damage,
+                               spell == MCAST_GEYSER ? damage : 0);
         if (target->mhp <= 0)
             monkilled(target, "", AD_SPEL);
     }
@@ -847,6 +900,31 @@ castmu(
         dmg = d((int) ((ml / 2) + mattk->damn), (int) mattk->damd);
     else
         dmg = d((int) ((ml / 2) + 1), 6);
+    /* The mask's targeted counterattack precedes ordinary reflection and
+       hero damage mitigation. Area clouds and indirect effects are excluded. */
+    if (foundyou && !mtmp->mpeaceful && ublindf
+        && ublindf->oartifact == ART_MIRRORED_MASK
+        && (mattk->adtyp == AD_SPEL || mattk->adtyp == AD_CLRC
+            || mattk->adtyp == AD_PSON || mattk->adtyp == AD_PUNI)
+        && !is_undirected_spell(spellnum)
+        && spellnum != MCAST_RILMANI_POISON_GAS
+        && spellnum != MCAST_MITH_SLEEP && !rn2(2)) {
+        pline("Your mask turns the spell back upon its caster!");
+        ret = mcast_monster_effect(mtmp, mtmp, spellnum, dmg);
+        return M_ATTK_HIT | (ret & M_ATTK_AGR_DIED);
+    }
+    if (foundyou && !mtmp->mpeaceful && ublindf
+        && ublindf->oartifact == ART_MIRRORED_MASK
+        && (mattk->adtyp == AD_FIRE || mattk->adtyp == AD_COLD
+            || mattk->adtyp == AD_MAGM) && !rn2(2)) {
+        boolean resisted = mattk->adtyp == AD_FIRE ? resists_fire(mtmp)
+                           : mattk->adtyp == AD_COLD ? resists_cold(mtmp)
+                                                   : resists_magm(mtmp);
+        pline("Your mask turns the spell back upon its caster!");
+        if (!resisted && enhancement_mon_damage(mtmp, mtmp, dmg, 0) <= 0)
+            monkilled(mtmp, "", mattk->adtyp);
+        return M_ATTK_HIT | (DEADMONSTER(mtmp) ? M_ATTK_AGR_DIED : 0);
+    }
     if (Half_spell_damage)
         dmg = (dmg + 1) / 2;
     if (u.mith_timers[MITH_VAUL])
@@ -896,6 +974,8 @@ castmu(
             dmg = 0;
         } else {
             dmg = d((int) mtmp->m_lev / 2 + 1, 6);
+            if (Half_spell_damage)
+                dmg = (dmg + 1) / 2;
             if (u.mith_timers[MITH_VAUL])
                 dmg = (dmg + 1) / 2;
             monstunseesu(M_SEEN_MAGR);
@@ -1495,8 +1575,9 @@ mcast_spell(struct monst *mtmp, int dmg, int spellnum)
     case MCAST_MITH_SLEEP:
         if (lined_up(mtmp)) {
             gb.buzzer = mtmp;
-            buzz(BZ_M_SPELL(BZ_OFS_AD(AD_SLEE)), min(10, mtmp->m_lev / 3 + 1),
-                 mtmp->mx, mtmp->my, sgn(gt.tbx), sgn(gt.tby));
+            dobuzz(BZ_M_SPELL(BZ_OFS_AD(AD_SLEE)), min(10, mtmp->m_lev / 3 + 1),
+                   mtmp->mx, mtmp->my, sgn(gt.tbx), sgn(gt.tby),
+                   TRUE, FALSE, FALSE, TRUE);
             gb.buzzer = 0;
         }
         stop_occupation();
@@ -1732,8 +1813,9 @@ buzzmu(struct monst *mtmp, struct attack *mattk)
             pline_mon(mtmp, "%s zaps you with a %s!", Monnam(mtmp),
                   flash_str(BZ_OFS_AD(mattk->adtyp), FALSE));
         gb.buzzer = mtmp;
-        buzz(BZ_M_SPELL(BZ_OFS_AD(mattk->adtyp)), (int) mattk->damn,
-             mtmp->mx, mtmp->my, sgn(gt.tbx), sgn(gt.tby));
+        dobuzz(BZ_M_SPELL(BZ_OFS_AD(mattk->adtyp)), (int) mattk->damn,
+               mtmp->mx, mtmp->my, sgn(gt.tbx), sgn(gt.tby),
+               TRUE, FALSE, FALSE, TRUE);
         gb.buzzer = 0;
         return M_ATTK_HIT;
     }

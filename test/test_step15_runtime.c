@@ -788,5 +788,12 @@ int step15_test_main(void) {
     step21_pet_tests();
     step21_light_tests();
     step21_lantern_vision_tests();
+    step21_elven_ring_tests();
+    step21_gravity_spoon_tests();
+    step21_saddle_tests();
+    step21_book_tests();
+    step21_mirror_tests();
+    step21_mask_combat_tests();
+    step21_persistence_tests();
     puts("PASS Step 15 native runtime fixtures");return 0;
 }

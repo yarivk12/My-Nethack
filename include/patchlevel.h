@@ -18,7 +18,7 @@
  * and save files.
  */
 /* Step 19 expands persistent object, monster, and artifact catalogues. */
-#define EDITLEVEL 16
+#define EDITLEVEL 17
 
 /*
  * Development status possibilities.

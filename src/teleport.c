@@ -9,6 +9,24 @@
 staticfn boolean goodpos_onscary(coordxy, coordxy, struct permonst *);
 staticfn boolean tele_jump_ok(coordxy, coordxy, coordxy, coordxy);
 staticfn boolean teleok(coordxy, coordxy, boolean);
+
+/* Nearest safe landing when temporary phasing expires inside rock. Reuse
+ * hero teleport destination restrictions, including regions and traps. */
+boolean
+safe_phase_exit(void)
+{
+    int radius;
+    coordxy x, y;
+    for (radius = 1; radius < max(COLNO, ROWNO); ++radius)
+        for (x = max(1, u.ux - radius); x <= min(COLNO - 1, u.ux + radius); ++x)
+            for (y = max(0, u.uy - radius); y <= min(ROWNO - 1, u.uy + radius); ++y)
+                if (distmin(x, y, u.ux, u.uy) == radius && teleok(x, y, FALSE)) {
+                    You("emerge from the stone as your phasing ends.");
+                    teleds(x, y, FALSE);
+                    return TRUE;
+                }
+    return FALSE;
+}
 staticfn void vault_tele(void);
 staticfn boolean rloc_pos_ok(coordxy, coordxy, struct monst *);
 staticfn void rloc_to_core(struct monst *, coordxy, coordxy, unsigned);

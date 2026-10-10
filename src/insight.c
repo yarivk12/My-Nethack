@@ -1662,7 +1662,7 @@ attributes_enlightenment(
         you_are("invisible to others", from_what(INVIS));
     /* ordinarily "visible" is redundant; this is a special case for
        the situation when invisibility would be an expected attribute */
-    else if ((HInvis || EInvis) && BInvis)
+    else if ((HInvis || EInvis || artifact_saddle_invisibility()) && BInvis)
         you_are("visible", from_what(-INVIS));
     if (Displaced)
         you_are("displaced", from_what(DISPLACED));

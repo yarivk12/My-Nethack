@@ -346,7 +346,7 @@ Cloak_on(void)
         break;
     case MUMMY_WRAPPING:
         /* Note: it's already being worn, so we have to cheat here. */
-        if ((HInvis || EInvis) && !Blind) {
+        if ((HInvis || EInvis || artifact_saddle_invisibility()) && !Blind) {
             newsym(u.ux, u.uy);
             You("can %s!", See_invisible ? "no longer see through yourself"
                                          : see_yourself);

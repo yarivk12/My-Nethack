@@ -1819,7 +1819,7 @@ mbhit(
 staticfn void
 buzz_force_miss(int type, int nd, coordxy sx, coordxy sy, int dx, int dy)
 {
-    dobuzz(type, nd, sx, sy, dx, dy, TRUE, FALSE, TRUE);
+    dobuzz(type, nd, sx, sy, dx, dy, TRUE, FALSE, TRUE, FALSE);
 }
 
 /* Perform an offensive action for a monster.  Must be called immediately
@@ -2816,6 +2816,11 @@ mon_reflects(struct monst *mon, const char *str)
 {
     struct obj *orefl = which_armor(mon, W_ARMS);
 
+    if (artifact_saddle_defends(mon)) {
+        if (str) pline(str, s_suffix(mon_nam(mon)), "saddle");
+        return TRUE;
+    }
+
     if (enhancement_mon_confers(mon, REFLECTING)) {
         if (str)
             pline(str, s_suffix(mon_nam(mon)), "armor");
@@ -2877,6 +2882,10 @@ mon_reflects(struct monst *mon, const char *str)
 boolean
 ureflects(const char *fmt, const char *str)
 {
+    if (artifact_saddle_defends(&gy.youmonst)) {
+        if (fmt) pline(fmt, str, "saddle");
+        return TRUE;
+    }
     if (fmt && str && EReflecting)
         enhancement_observe_worn(REFLECTING);
     /* Check from outermost to innermost objects */
@@ -2891,6 +2900,10 @@ ureflects(const char *fmt, const char *str)
         /* Due to wielded artifact weapon */
         if (fmt && str)
             pline(fmt, str, "weapon");
+        return TRUE;
+    } else if (EReflecting & W_TOOL) {
+        if (fmt && str)
+            pline(fmt, str, "mask");
         return TRUE;
     } else if (EReflecting & W_AMUL) {
         if (fmt && str) {

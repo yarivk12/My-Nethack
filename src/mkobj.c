@@ -463,6 +463,8 @@ splitobj(struct obj *obj, long num)
 {
     struct obj *otmp;
 
+    if (obj->oartifact)
+        panic("splitobj: artifact cannot be split");
     if (enhancement_slot_count(obj) || socket_count(obj))
         panic("splitobj: corrupt enhanced stack");
     /* can't split containers */
@@ -2067,6 +2069,8 @@ int
 weight(struct obj *obj)
 {
     int wt = (int) objects[obj->otyp].oc_weight; /* weight of 1 'otyp' */
+    if (obj->oartifact == ART_LODESTONE_OF_GRAVITY)
+        wt = objects[LOADSTONE].oc_weight;
     if (obj->otyp == GENERIC_ESSENCE) {
         essence_normalize(obj);
         return (int) min(obj->quan, LARGEST_INT);

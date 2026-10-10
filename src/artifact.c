@@ -45,6 +45,7 @@ staticfn int invoke_altmode(struct obj *) NONNULLARG1;
 staticfn int arti_invoke_cost_pw(struct obj *) NONNULLARG1;
 staticfn boolean arti_invoke_cost(struct obj *) NONNULLARG1;
 staticfn int arti_invoke(struct obj *);
+staticfn struct obj *hellrider_saddle(void);
 staticfn boolean Mb_hit(struct monst * magr, struct monst *mdef,
                       struct obj *, int *, int, boolean, char *);
 staticfn unsigned long abil_to_spfx(long *) NONNULLARG1;
@@ -384,6 +385,17 @@ artifact_exists(
             if (a->otyp == otmp->otyp && !strcmp(a->name, name)) {
                 int m = (int) (a - artilist);
 
+                if (mod && otmp->quan > 1L) {
+                    /* Conversion of an owned stack leaves its ordinary
+                       remainder with the same owner. Fresh generation and
+                       wishes request one unique artifact, not a stack. */
+                    if (otmp->where != OBJ_FREE && otmp->where != OBJ_LUAFREE) {
+                        struct obj *remainder = splitobj(otmp, otmp->quan - 1L);
+                        free_oname(remainder);
+                    } else {
+                        otmp->quan = 1L;
+                    }
+                }
                 /* Stop a former fuel timer before converting a lit lamp. */
                 if (otmp->lamplit && !artifact_permanent_light(otmp))
                     end_burn(otmp, TRUE);
@@ -392,8 +404,12 @@ artifact_exists(
                     otmp->lamplit = 0;
                 }
                 otmp->oartifact = (char) (mod ? m : 0);
+                otmp->owt = weight(otmp);
                 enhancement_strip_for_artifact(otmp);
                 otmp->age = 0;
+                if (mod && m == ART_BOOK_OF_INFINITE_SPELLS
+                    && !otmp->oartifact_state)
+                    otmp->oartifact_state = SPE_DIG + rn2(SPE_BLANK_PAPER - SPE_DIG);
                 if (otmp->otyp == RIN_INCREASE_DAMAGE)
                     otmp->spe = 0;
                 switch (m) {
@@ -781,6 +797,16 @@ artifact_extra_property(const struct obj *obj, int prop, long slot)
         return (slot & W_AMUL) && prop == REFLECTING;
     case ART_TALISMAN_OF_BUER:
         return (slot & W_AMUL) && (prop == REGENERATION || prop == FIXED_ABIL);
+    case ART_NENYA:
+        return (slot & W_RING)
+               && (prop == DETECT_MONSTERS || prop == ENERGY_REGENERATION);
+    case ART_VILYA:
+        return (slot & W_RING) && (prop == SHOCK_RES || prop == WARNING
+                                   || prop == STEALTH || prop == MAGICAL_BREATHING);
+    case ART_IRON_SPOON_OF_LIBERATION:
+        return slot == W_ART && prop == FREE_ACTION;
+    case ART_MIRRORED_MASK:
+        return (slot & W_TOOL) && (prop == REFLECTING || prop == HALF_SPDAM);
     default:
         return FALSE;
     }
@@ -789,7 +815,39 @@ artifact_extra_property(const struct obj *obj, int prop, long slot)
 boolean
 artifact_waterproof(void)
 {
-    return ublindf && ublindf->oartifact == ART_MASK_OF_TLALOC;
+    return (ublindf && ublindf->oartifact == ART_MASK_OF_TLALOC)
+           || (uleft && uleft->oartifact == ART_NENYA)
+           || (uright && uright->oartifact == ART_NENYA);
+}
+
+staticfn struct obj *
+hellrider_saddle(void)
+{
+    struct obj *obj;
+    if (!u.usteed || DEADMONSTER(u.usteed)) return (struct obj *) 0;
+    obj = which_armor(u.usteed, W_SADDLE);
+    return obj && obj->oartifact == ART_HELLRIDER_S_SADDLE
+           && obj->where == OBJ_MINVENT && obj->ocarry == u.usteed
+           ? obj : (struct obj *) 0;
+}
+
+boolean
+artifact_saddle_defends(const struct monst *mon)
+{
+    return (mon == &gy.youmonst || mon == u.usteed) && hellrider_saddle() != 0;
+}
+
+/* Invocation state belongs to the object. Its contribution is computed from
+ * current accessibility, never left behind in the hero's shared bitfield. */
+boolean
+artifact_saddle_invisibility(void)
+{
+    struct obj *obj = hellrider_saddle();
+    if (obj && obj->oartifact_state) return TRUE;
+    for (obj = gi.invent; obj; obj = obj->nobj)
+        if (obj->oartifact == ART_HELLRIDER_S_SADDLE && obj->oartifact_state)
+            return TRUE;
+    return FALSE;
 }
 
 void
@@ -807,6 +865,9 @@ set_artifact_intrinsic(
 
     if (oart == &artilist[ART_NONARTIFACT])
         return;
+
+    if (otmp->oartifact == ART_HELLRIDER_S_SADDLE && wp_mask == W_ART)
+        newsym(u.ux, u.uy);
 
     for (prop = 1; prop <= LAST_PROP; ++prop) {
         boolean retained = FALSE;
@@ -1875,7 +1936,7 @@ staticfn int
 invoke_ok(struct obj *obj)
 {
     if (!obj)
-        return GETOBJ_EXCLUDE;
+        return hellrider_saddle() ? GETOBJ_SUGGEST : GETOBJ_EXCLUDE;
 
     /* artifacts and other special items */
     if (obj->oartifact || objects[obj->otyp].oc_unique
@@ -1898,9 +1959,17 @@ doinvoke(void)
 {
     struct obj *obj;
 
+    if (hellrider_saddle())
+        pline("Use '-' to select your steed's saddle.");
     obj = getobj("invoke", invoke_ok, GETOBJ_PROMPT);
     if (!obj)
         return ECMD_CANCEL;
+    if (obj == &hands_obj) {
+        obj = hellrider_saddle();
+        if (!obj) return ECMD_CANCEL;
+        if (!touch_artifact(obj, &gy.youmonst)) return ECMD_TIME;
+        return arti_invoke(obj);
+    }
     if (!retouch_object(&obj, FALSE))
         return ECMD_TIME;
     return arti_invoke(obj);
@@ -2449,6 +2518,26 @@ arti_invoke(struct obj *obj)
     }
     if (is_art(obj, ART_SILVER_KEY))
         return invoke_silver_key_portal(obj);
+    if (is_art(obj, ART_HAND_MIRROR_OF_CTHYLLA))
+        return use_mirror(obj);
+    if (is_art(obj, ART_HELLRIDER_S_SADDLE)) {
+        if (obj->oartifact_state) {
+            obj->oartifact_state = 0;
+            obj->age = svm.moves + rnz(100);
+        } else if (obj->age > svm.moves) {
+            You_feel("that the saddle is ignoring you.");
+            obj->age += d(3, 10);
+        } else {
+            obj->oartifact_state = 1;
+        }
+        newsym(u.ux, u.uy);
+        You_feel(Invis ? "hidden from sight." : "visible again.");
+        return ECMD_TIME;
+    }
+    if (is_art(obj, ART_IRON_SPOON_OF_LIBERATION) && Passes_walls) {
+        nothing_special(obj);
+        return ECMD_TIME;
+    }
 
     /* It's a special power, not "just" a property */
     if (oart->inv_prop > LAST_PROP) {
@@ -2456,6 +2545,47 @@ arti_invoke(struct obj *obj)
             return ECMD_TIME;
 
         switch (oart->inv_prop) {
+        case INFINITE_SPELLS: {
+            winid win = create_nhwindow(NHW_MENU);
+            menu_item *selected = (menu_item *) 0;
+            anything any = cg.zeroany;
+            int n, choice = 0;
+            char label[BUFSZ];
+            start_menu(win, MENU_BEHAVE_STANDARD);
+            any.a_int = 1;
+            add_menu(win, &nul_glyphinfo, &any, 't', 0, ATR_NONE, NO_COLOR,
+                     "Turn page", MENU_ITEMFLAGS_NONE);
+            any.a_int = 2;
+            Sprintf(label, "Cast %s", OBJ_NAME(objects[obj->oartifact_state]));
+            add_menu(win, &nul_glyphinfo, &any, 'c', 0, ATR_NONE, NO_COLOR,
+                     label, MENU_ITEMFLAGS_NONE);
+            end_menu(win, "Use the Book of Infinite Spells how?");
+            n = select_menu(win, PICK_ONE, &selected);
+            destroy_nhwindow(win);
+            if (n > 0) choice = selected[0].item.a_int;
+            if (selected) free((genericptr_t) selected);
+            if (choice == 1) {
+                book_disappears(obj); /* an interrupted reading cannot follow another page */
+                obj->oartifact_state = SPE_DIG + rn2(SPE_BLANK_PAPER - SPE_DIG);
+                pline("The pages settle on %s.", OBJ_NAME(objects[obj->oartifact_state]));
+                res = ECMD_TIME;
+            } else if (choice == 2) {
+                res = artifact_book_cast(obj->oartifact_state);
+                if (!(res & ECMD_TIME)) obj->age = 0;
+            } else {
+                obj->age = 0;
+                res = ECMD_CANCEL;
+            }
+            break;
+        }
+        case SPOON_PHASING: {
+            long duration = 50L + rnd(100);
+            incr_itimeout(&HPasses_walls, duration);
+            obj->age += duration;
+            You_feel("able to pass through stone.");
+            res = ECMD_TIME;
+            break;
+        }
         case DEATH_MAGIC: {
             struct monst *mon, *next;
             if (is_art(obj, ART_HAND_OF_VECNA) && obj != uarmg) {

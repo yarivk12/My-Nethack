@@ -331,6 +331,12 @@ setworn(struct obj *obj, long mask)
     boolean seen = !!See_invisible, tele = !!Unblind_telepat;
     boolean changed_flight = enhancement_confers(obj, FLYING);
     boolean changed_breathing = enhancement_confers(obj, MAGICAL_BREATHING);
+    boolean waterwalk = !!Wwalking, detecting = !!Detect_monsters;
+    boolean warning = !!Warning;
+    boolean changed_waterwalk = obj && obj->otyp == RIN_WATER_WALKING
+                                && (mask & W_RING);
+
+    changed_breathing |= artifact_extra_property(obj, MAGICAL_BREATHING, mask);
 
     if ((mask & (W_ARM | I_SPECIAL)) == (W_ARM | I_SPECIAL)) {
         /* restoring saved game; no properties are conferred via skin */
@@ -343,8 +349,11 @@ setworn(struct obj *obj, long mask)
                 if (oobj && !(oobj->owornmask & wp->w_mask))
                     impossible("Setworn: mask=0x%08lx.", wp->w_mask);
                 if (oobj) {
+                    changed_waterwalk |= oobj->otyp == RIN_WATER_WALKING
+                                         && (wp->w_mask & W_RING);
                     changed_flight |= enhancement_confers(oobj, FLYING);
                     changed_breathing |= enhancement_confers(oobj, MAGICAL_BREATHING);
+                    changed_breathing |= artifact_extra_property(oobj, MAGICAL_BREATHING, wp->w_mask);
                     if (u.twoweap && (oobj->owornmask & (W_WEP | W_SWAPWEP)))
                         set_twoweap(FALSE); /* u.twoweap = FALSE */
                     enhancement_worn_off(oobj, &gy.youmonst);
@@ -404,6 +413,11 @@ setworn(struct obj *obj, long mask)
     recalc_telepat_range();
     equipment_refresh();
     socket_worn_transition(flight, breathing, seen, tele, changed_flight, changed_breathing);
+    if (!program_state.restoring) {
+        if (detecting != !!Detect_monsters || warning != !!Warning) see_monsters();
+        if (changed_waterwalk && waterwalk != !!Wwalking)
+            spoteffects(TRUE);
+    }
 }
 
 /* called e.g. when obj is destroyed */
@@ -418,9 +432,14 @@ setnotworn(struct obj *obj)
     boolean seen = !!See_invisible, tele = !!Unblind_telepat;
     boolean changed_flight = enhancement_confers(obj, FLYING);
     boolean changed_breathing = enhancement_confers(obj, MAGICAL_BREATHING);
+    boolean waterwalk = !!Wwalking, detecting = !!Detect_monsters;
+    boolean warning = !!Warning;
+    boolean changed_waterwalk = obj && obj->otyp == RIN_WATER_WALKING
+                                && (obj->owornmask & W_RING);
 
     if (!obj)
         return;
+    changed_breathing |= artifact_extra_property(obj, MAGICAL_BREATHING, obj->owornmask);
     if (u.twoweap && (obj == uwep || obj == uswapwep))
         set_twoweap(FALSE); /* u.twoweap = FALSE */
     for (wp = worn; wp->w_mask; wp++)
@@ -450,6 +469,11 @@ setnotworn(struct obj *obj)
     recalc_telepat_range();
     equipment_refresh();
     socket_worn_transition(flight, breathing, seen, tele, changed_flight, changed_breathing);
+    if (!program_state.restoring) {
+        if (detecting != !!Detect_monsters || warning != !!Warning) see_monsters();
+        if (changed_waterwalk && waterwalk != !!Wwalking)
+            spoteffects(TRUE);
+    }
 }
 
 /* called when saving with FREEING flag set has just discarded inventory */

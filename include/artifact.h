@@ -108,7 +108,11 @@ enum invoke_prop_types {
     SUMMON_AIR_ELEMENTAL,
     SUMMON_WATER_ELEMENTAL,
     PETMASTER,
-    SUMMON_FIRE_ELEMENTAL
+    SUMMON_FIRE_ELEMENTAL,
+    SPOON_PHASING,
+    HELLRIDER_INVIS,
+    INFINITE_SPELLS,
+    CTHYLLA_REFLECTION
 };
 
 /* artifact tracking; gift and wish imply found; it also gets set for items

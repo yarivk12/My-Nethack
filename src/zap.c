@@ -4903,13 +4903,13 @@ disintegrate_mon(
 void
 ubuzz(int type, int nd)
 {
-    dobuzz(type, nd, u.ux, u.uy, u.dx, u.dy, TRUE, FALSE, FALSE);
+    dobuzz(type, nd, u.ux, u.uy, u.dx, u.dy, TRUE, FALSE, FALSE, FALSE);
 }
 
 void
 buzz(int type, int nd, coordxy sx, coordxy sy, int dx, int dy)
 {
-    dobuzz(type, nd, sx, sy, dx, dy, TRUE, FALSE, FALSE);
+    dobuzz(type, nd, sx, sy, dx, dy, TRUE, FALSE, FALSE, FALSE);
 }
 
 /*
@@ -4928,13 +4928,14 @@ dobuzz(
     coordxy sx, coordxy sy, /* starting point */
     int dx, int dy,         /* direction delta */
     boolean sayhit, boolean saymiss, /* report out of sight hit/miss events */
-    boolean forcemiss)
+    boolean forcemiss,
+    boolean targets_hero) /* aimed monster spell, not incidental ray crossing */
 {
     int range, fltyp = zaptype(type), damgtype = fltyp % 10;
     coordxy lsx, lsy;
     struct monst *mon;
     coord save_bhitpos;
-    boolean shopdamage = FALSE,
+    boolean mask_checked = FALSE, shopdamage = FALSE,
             fireball = (type == ZT_SPELL(ZT_FIRE)), /* set once */
             gas_hit = FALSE; /* will be set during each iteration */
     struct obj *otmp;
@@ -5110,7 +5111,24 @@ dobuzz(
                 range -= 2;
                 pline_dir(xytodir(-dx, -dy), "%s hits you!",
                           The(flash_str(fltyp, FALSE)));
-                if (Reflecting) {
+                /* Only an aimed monster spell can trigger the Mask. Resolve
+                   once at the caster, before ordinary hero reflection; wand,
+                   breath, environment and area attacks never enter here. */
+                if (targets_hero && !mask_checked
+                    && type <= -10 && type >= -19 && gb.buzzer
+                    && !DEADMONSTER(gb.buzzer) && !gb.buzzer->mpeaceful
+                    && ublindf && ublindf->oartifact == ART_MIRRORED_MASK
+                    && (mask_checked = TRUE) && !rn2(2)) {
+                    pline("Your mask turns the spell back upon its caster!");
+                    if (!mon_reflects(gb.buzzer, NULL)) {
+                        (void) zhitm(gb.buzzer, type, nd, &otmp);
+                        if (DEADMONSTER(gb.buzzer))
+                            monkilled(gb.buzzer, "", AD_SPEL);
+                        else if (damgtype == ZT_SLEEP && !gb.buzzer->mcanmove)
+                            slept_monst(gb.buzzer);
+                    }
+                    break; /* no ray continues, flashes, or reflects again */
+                } else if (Reflecting) {
                     if (!Blind) {
                         (void) ureflects("But %s reflects from your %s!",
                                          "it");

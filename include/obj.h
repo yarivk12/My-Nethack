@@ -171,6 +171,7 @@ struct obj {
                                * boulders, 0 for first (top of pile),
                                * 1 for others (format as "next boulder") */
     int usecount;           /* overloaded for various things that tally */
+    int oartifact_state;    /* stored Book spell or Saddle invocation switch */
     /* Only imported branch equipment uses these overrides. Zero retains
        native object behavior; size is donor size + 1, zero means native. */
     unsigned long obranch_props;

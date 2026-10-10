@@ -60,7 +60,8 @@ cost(struct obj *otmp)
 staticfn int
 write_ok(struct obj *obj)
 {
-    if (!obj || (obj->oclass != SCROLL_CLASS && obj->oclass != SPBOOK_CLASS))
+    if (!obj || obj->oartifact
+        || (obj->oclass != SCROLL_CLASS && obj->oclass != SPBOOK_CLASS))
         return GETOBJ_EXCLUDE;
 
     if (obj->otyp == SCR_BLANK_PAPER || obj->otyp == SPE_BLANK_PAPER)
@@ -98,6 +99,10 @@ dowrite(struct obj *pen)
     paper = getobj("write on", write_ok, GETOBJ_NOFLAGS);
     if (!paper)
         return ECMD_CANCEL;
+    if (paper->oartifact) {
+        You_cant("overwrite an artifact.");
+        return ECMD_OK;
+    }
     /* can't write on a novel (unless/until it's been converted into a blank
        spellbook), but we want messages saying so to avoid "spellbook" */
     typeword = (paper->otyp == SPE_NOVEL) ? "book"

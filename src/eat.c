@@ -92,7 +92,9 @@ is_edible(struct obj *obj)
 {
     /* protect invocation tools but not Rider corpses (handled elsewhere)*/
     /* if (obj->oclass != FOOD_CLASS && obj_resists(obj, 0, 0)) */
-    if (objects[obj->otyp].oc_unique)
+    if (objects[obj->otyp].oc_unique
+        || (obj->oartifact >= ART_HOLOGRAPHIC_VOID_LILY
+            && obj->oartifact <= ART_MIRRORED_MASK))
         return FALSE;
     /* above also prevents the Amulet from being eaten, so we must never
        allow fake amulets to be eaten either [which is already the case] */

@@ -759,7 +759,8 @@ doread(void)
     /* Actions required to win the game aren't counted towards conduct */
     /* Novel conduct is handled in read_tribute so exclude it too */
     if (otyp != SPE_BOOK_OF_THE_DEAD && otyp != SPE_NOVEL
-        && otyp != SPE_BLANK_PAPER && otyp != SCR_BLANK_PAPER)
+        && (otyp != SPE_BLANK_PAPER || scroll->oartifact == ART_BOOK_OF_INFINITE_SPELLS)
+        && otyp != SCR_BLANK_PAPER)
         if (!u.uconduct.literate++)
             livelog_printf(LL_CONDUCT, "became literate by reading %s",
                            (scroll->oclass == SPBOOK_CLASS) ? "a book"

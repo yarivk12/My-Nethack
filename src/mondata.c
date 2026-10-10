@@ -412,6 +412,8 @@ resists_magm(struct monst *mon)
     long slotmask;
     struct obj *o;
 
+    if (artifact_saddle_defends(mon)) return TRUE;
+
     /* as of 3.2.0:  gray dragons, Angels, Oracle, Yeenoghu */
     if (dmgtype(ptr, AD_MAGM) || ptr == &mons[PM_BABY_GRAY_DRAGON]
         || step10b_innate_magic(ptr)

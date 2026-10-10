@@ -1027,6 +1027,9 @@ addinv_core1(struct obj *obj)
 void
 addinv_core2(struct obj *obj)
 {
+    /* The dynamic source can only see this saddle after inventory insertion. */
+    if (obj->oartifact == ART_HELLRIDER_S_SADDLE && obj->oartifact_state)
+        newsym(u.ux, u.uy);
     if (confers_luck(obj)) {
         /* new luckstone must be in inventory by this point
            for correct calculation */
@@ -4445,7 +4448,7 @@ mergable(
 
     /* fail if already the same object, if different types, if either is
        explicitly marked to prevent merge, or if not mergable in general */
-    if (obj == otmp || obj->otyp != otmp->otyp
+    if (obj == otmp || obj->oartifact || otmp->oartifact || obj->otyp != otmp->otyp
         || obj->nomerge || otmp->nomerge || !objects[obj->otyp].oc_merge)
         return FALSE;
 

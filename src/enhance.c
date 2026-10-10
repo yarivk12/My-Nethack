@@ -1820,6 +1820,91 @@ inspect_item_cooldowns(winid win, const struct obj *obj)
             }
 }
 
+/* Explicit command contracts complement the native property display. Hidden
+   artifact identity must not reveal either passives or activation rules. */
+staticfn void
+inspect_artifact_powers(winid win, const struct obj *obj)
+{
+    const char *powers = NULL, *active = NULL;
+    char buf[BUFSZ];
+    if (!obj->oartifact || !obj->known || !obj->dknown
+        || undiscovered_artifact(obj->oartifact)) return;
+    switch (obj->oartifact) {
+    case ART_SILVER_KEY:
+        powers = "Carried: energy regeneration, teleport control, polymorph control.";
+        active = "Invoke: open the established R'lyeh portal where permitted."; break;
+    case ART_BRASS_LANTERN_OF_ZORK:
+        powers = "Permanent light: radius 4, subject to native container occlusion.";
+        active = "Reveals visible illuminated secret doors, traps and invisible monsters."; break;
+    case ART_BOOK_OF_INFINITE_SPELLS:
+        powers = "Read: learn the stored spell normally without consuming the Book.";
+        active = "Invoke: turn the page or cast its spell without Pw; one shared cooldown.";
+        Snprintf(buf, sizeof buf, "Stored spell: %s", OBJ_NAME(objects[obj->oartifact_state]));
+        putstr(win, ATR_NONE, buf); break;
+    case ART_LODESTONE_OF_GRAVITY:
+        powers = "Carried: deflect physical missiles before contact, including their poison.";
+        active = "Does not deflect rays, venom or explosions."; break;
+    case ART_HELLRIDER_S_SADDLE:
+        powers = "Mounted: magic resistance and reflection for rider and steed independently.";
+        active = "Invoke while carried or ridden: toggle invisibility. Use '-' for the ridden saddle.";
+        if (obj->oartifact_state) putstr(win, ATR_NONE, "Invisibility toggle: active while accessible."); break;
+    case ART_MIRRORED_MASK:
+        powers = "Worn on face: reflection, half spell damage, 50% targeted spell redirection.";
+        active = "Redirected spells resolve once against their caster with normal defenses."; break;
+    case ART_TIE_DYE_SHIRT_OF_SHAMBHALA:
+        powers = "Worn: carrying capacity 150% blessed, 125% uncursed, 75% cursed.";
+        active = "Read when accessible: donor ailment effects. Invoke: enlightenment."; break;
+    case ART_BEASTMASTER_S_DUSTER:
+        powers = "Invoke: choose one pet supply matching the Duster's beatitude,";
+        active = "or detect current-level pets and increase visible pets' tameness by one (maximum 20)."; break;
+    case ART_CLOAK_OF_THE_UNHELD_ONE:
+        powers = "Carried: sleep resistance. Worn: free action, magic resistance, MC3, oilskin protection.";
+        active = "Invoke while carried or worn: native hero teleportation."; break;
+    case ART_IRON_SPOON_OF_LIBERATION:
+        powers = "Carried: searching, free action, luckstone luck. Apply: dig. Engrave: pick tool.";
+        active = "Invoke: phase through permitted walls for 50+1d100 turns; cooldown follows expiry."; break;
+    case ART_CANDLE_OF_ETERNAL_FLAME:
+        powers = "Permanent radius-3 light. Carried: warning and cold resistance.";
+        active = "Invoke: summon one tame fire elemental."; break;
+    case ART_RING_OF_P_HUL:
+        powers = "Carried: sickness resistance. Worn: free action and magic resistance."; break;
+    case ART_NENYA:
+        powers = "Worn: monster detection, inventory water protection, water walking, energy regeneration."; break;
+    case ART_VILYA:
+        powers = "Worn: shock resistance, warning, stealth, magical breathing, HP regeneration."; break;
+    case ART_EHECAILACOCOZCATL:
+        powers = "Worn: reflection and magical breathing.";
+        active = "Invoke: summon one tame air elemental."; break;
+    case ART_TALISMAN_OF_BUER:
+        powers = "Worn: life saving, regeneration, sustain ability. Consumed by life saving.";
+        active = "Invoke: heal half missing HP and cure sickness, slime and curable blindness."; break;
+    case ART_HOLOGRAPHIC_VOID_LILY:
+        powers = "Carried: reflection, half spell damage, enhanced energy regeneration.";
+        active = "Invoke: native creation of 1d10 monsters, without forced tameness. Apply: unlock."; break;
+    case ART_MASK_OF_TLALOC:
+        powers = "Carried: cold resistance, shock resistance, magic resistance.";
+        active = "Worn on face: native inventory water protection."; break;
+    case ART_HAND_MIRROR_OF_CTHYLLA:
+        powers = "Carried: searching, teleport control, magic resistance.";
+        active = "Apply or invoke: 15d15 reflected damage, including self, on one shared cooldown.";
+        putstr(win, ATR_NONE, "During cooldown: ordinary mirror behavior."); break;
+    case ART_EARTH_CRYSTAL:
+        powers = "Carried: half physical damage.";
+        active = "Invoke: one native earthquake at native level-scaled strength."; break;
+    case ART_GLITTERSTONE:
+        powers = "Permanent radius-2 light. Carried: energy regeneration.";
+        active = "Invoke: native recharging based on beatitude, without a race restriction."; break;
+    case ART_STORM_WHISTLE:
+        powers = "Carried: teleport control and fire resistance. Apply: native pet recall.";
+        active = "Invoke: summon one tame water elemental."; break;
+    case ART_LYRE_OF_ORPHEUS:
+        powers = "Carried: eligible pets follow level transitions regardless of proximity.";
+        active = "Apply: ordinary magic harp. Other native pet-following restrictions still apply."; break;
+    }
+    if (powers) putstr(win, ATR_NONE, powers);
+    if (active) putstr(win, ATR_NONE, active);
+}
+
 int
 doinspect(void)
 {
@@ -1852,6 +1937,7 @@ doinspect(void)
     }
     putstr(win, ATR_NONE, "");
     inspect_item_cooldowns(win, obj);
+    inspect_artifact_powers(win, obj);
     if (obj->otyp == GENERIC_ESSENCE) {
         putstr(win, ATR_NONE, "Essence: a neutral, stackable Forge crafting material.");
         putstr(win, ATR_NONE, "Weight: 1 per unit. Obtained primarily through Salvage.");

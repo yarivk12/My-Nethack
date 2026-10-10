@@ -1,10 +1,12 @@
 """Step 20 contracts which are not exercised by ordinary catalogue generation."""
 from pathlib import Path
 import unittest, re
+from step21_source_projection import project as project_step21
 R = Path(__file__).resolve().parents[1]
 class Step20(unittest.TestCase):
     def test_epoch(self):
-        self.assertRegex((R/'include/patchlevel.h').read_text(), r'#define EDITLEVEL 16\b')
+        self.assertRegex(project_step21('include/patchlevel.h',
+                         (R/'include/patchlevel.h').read_text()), r'#define EDITLEVEL 16\b')
     def test_roster_and_generation(self):
         source = (R/'src/makemon.c').read_text()
         for name, depth in [('VAMPIRE_MAGE',50),('DEEPEST_ONE',50),('DRIDER',55),

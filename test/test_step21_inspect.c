@@ -78,23 +78,33 @@ static void
 step21_native_acquisition_tests(void)
 {
     struct obj *obj, *duplicate;
-    int i;
-    const int types[] = { CREDIT_CARD, CRYSTAL_BALL, OILSKIN_CLOAK,
-        RIN_FREE_ACTION, MASK, AMULET_OF_MAGICAL_BREATHING, MAGIC_WHISTLE };
-    const int ids[] = { ART_HOLOGRAPHIC_VOID_LILY, ART_EARTH_CRYSTAL,
-        ART_CLOAK_OF_THE_UNHELD_ONE, ART_RING_OF_P_HUL, ART_MASK_OF_TLALOC,
-        ART_EHECAILACOCOZCATL, ART_STORM_WHISTLE };
-    init_artifacts();
-    for (i = 0; i < SIZE(types); ++i) {
-        obj = mk_artifact(mksobj(types[i], FALSE, FALSE), A_NONE, 99, FALSE);
-        assert(obj && obj->oartifact == ids[i]);
-        duplicate = mk_artifact(mksobj(types[i], FALSE, FALSE), A_NONE, 99, FALSE);
-        assert(duplicate && duplicate->oartifact != ids[i]);
+    int i, j;
+    short typ, other;
+    assert(ART_MIRRORED_MASK - ART_HOLOGRAPHIC_VOID_LILY + 1 == 22);
+    for (i = ART_HOLOGRAPHIC_VOID_LILY; i <= ART_MIRRORED_MASK; ++i) {
+        init_artifacts();
+        typ = 0;
+        assert(artifact_name(artiname(i), &typ, FALSE));
+        /* Native history excludes competing identities, so the test does
+           not depend on winning a rare roll among multiple MASK artifacts. */
+        for (j = 1; j <= ART_MIRRORED_MASK; ++j) {
+            if (j == i) continue;
+            other = 0;
+            assert(artifact_name(artiname(j), &other, FALSE));
+            duplicate = mksobj(other, FALSE, FALSE);
+            artifact_exists(duplicate, artiname(j), TRUE, ONAME_WISH);
+            obfree(duplicate, NULL);
+        }
+        obj = mk_artifact(mksobj(typ, FALSE, FALSE), A_NONE, 99, FALSE);
+        assert(obj && obj->oartifact == i);
+        assert(!enhancement_eligible(obj) && !socket_capacity(obj));
+        duplicate = mk_artifact(mksobj(typ, FALSE, FALSE), A_NONE, 99, FALSE);
+        assert(duplicate && duplicate->oartifact != i && !mergable(obj, duplicate));
         obfree(duplicate, (struct obj *) 0);
         obfree(obj, (struct obj *) 0);
-        assert(exist_artifact(types[i], artiname(ids[i])));
+        assert(exist_artifact(typ, artiname(i)));
     }
-    puts("PASS Step 21 native random artifact acquisition and retained uniqueness after destruction");
+    puts("PASS Step 21 all 22 native artifact acquisitions, Forge eligibility exclusion and retained uniqueness after destruction");
 }
 
 static void
@@ -476,4 +486,323 @@ step21_lantern_vision_tests(void)
     memcpy(u.uprops, saved, sizeof saved);
     gi.in_mklev = oldmk;
     puts("PASS Step 21 Lantern native lit-room visibility enter/exit, container occlusion, blindness, source destruction and camera null-source control");
+}
+
+static void
+step21_elven_ring_tests(void)
+{
+    short typ = 0;
+    struct obj *obj;
+    assert(artifact_name("Nenya", &typ, FALSE));
+    obj = inspect_item(typ);
+    artifact_exists(obj, "Nenya", TRUE, ONAME_WISH);
+    assert(obj->oartifact && !EDetect_monsters && !EWwalking && !EEnergy_regeneration);
+    setworn(obj, W_RINGL);
+    assert((EDetect_monsters & W_RINGL) && (EWwalking & W_RINGL)
+           && (EEnergy_regeneration & W_RINGL) && artifact_waterproof());
+    setworn((struct obj *) 0, W_RINGL);
+    assert(!EDetect_monsters && !EWwalking && !EEnergy_regeneration
+           && !artifact_waterproof());
+    inspect_discard(obj);
+    assert(artifact_name("Vilya", &typ, FALSE));
+    obj = inspect_item(typ);
+    artifact_exists(obj, "Vilya", TRUE, ONAME_WISH);
+    assert(obj->oartifact && !ERegeneration && !EShock_resistance);
+    setworn(obj, W_RINGR);
+    assert((ERegeneration & W_RINGR) && (EShock_resistance & W_RINGR)
+           && (EWarning & W_RINGR) && (EStealth & W_RINGR)
+           && (u.uprops[MAGICAL_BREATHING].extrinsic & W_RINGR));
+    setworn((struct obj *) 0, W_RINGR);
+    assert(!ERegeneration && !EShock_resistance && !EWarning && !EStealth
+           && !u.uprops[MAGICAL_BREATHING].extrinsic);
+    inspect_discard(obj);
+    puts("PASS Step 21 Nenya/Vilya carried controls, worn properties and removal");
+}
+
+static void
+step21_gravity_spoon_tests(void)
+{
+    short typ = 0;
+    struct obj *obj, *missile;
+    int hp, i;
+    assert(artifact_name("The Lodestone of Gravity", &typ, FALSE));
+    obj = inspect_item(typ);
+    artifact_exists(obj, "The Lodestone of Gravity", TRUE, ONAME_WISH);
+    missile = mksobj(DART, FALSE, FALSE);
+    missile->opoisoned = 1;
+    hp = u.uhp;
+    for (i = 0; i < 100; ++i)
+        assert(!thitu(1000, 20, &missile, (const char *) 0));
+    assert(u.uhp == hp && missile && missile->opoisoned);
+    obfree(missile, NULL);
+    inspect_discard(obj);
+    assert(artifact_name("The Iron Spoon of Liberation", &typ, FALSE));
+    obj = inspect_item(typ);
+    artifact_exists(obj, "The Iron Spoon of Liberation", TRUE, ONAME_WISH);
+    set_artifact_intrinsic(obj, TRUE, W_ART);
+    assert(is_pick(obj) && confers_luck(obj) && (ESearching & W_ART)
+           && (u.uprops[FREE_ACTION].extrinsic & W_ART));
+    obj->age = 0;
+    cmdq_add_key(CQ_CANNED, obj->invlet);
+    assert(doinvoke() == ECMD_TIME);
+    assert((HPasses_walls & TIMEOUT) >= 51 && (HPasses_walls & TIMEOUT) <= 150);
+    assert(obj->age > svm.moves + (HPasses_walls & TIMEOUT));
+    HPasses_walls = 0;
+    inspect_discard(obj);
+    assert(!ESearching && !u.uprops[FREE_ACTION].extrinsic);
+    puts("PASS Step 21 100 poisoned missile deflections and Spoon carry/dig/luck/phasing duration/cooldown/removal");
+}
+
+static void
+step21_saddle_tests(void)
+{
+    short typ = 0;
+    struct obj *obj;
+    struct monst *steed;
+    assert(artifact_name("The Hellrider's Saddle", &typ, FALSE));
+    obj = inspect_item(typ);
+    artifact_exists(obj, "The Hellrider's Saddle", TRUE, ONAME_WISH);
+    assert(obj->oartifact && !Antimagic && !Reflecting);
+    obj->age = 0;
+    cmdq_add_key(CQ_CANNED, obj->invlet);
+    assert(doinvoke() == ECMD_TIME && Invis);
+    freeinv(obj);
+    assert(!Invis);
+    steed = makemon(&mons[PM_PONY], u.ux, u.uy, MM_EDOG | MM_ADJACENTOK);
+    assert(steed);
+    initedog(steed, FALSE);
+    (void) mpickobj(steed, obj);
+    obj->owornmask = W_SADDLE;
+    steed->misc_worn_check |= W_SADDLE;
+    u.usteed = steed;
+    assert(Antimagic && Reflecting && Invis);
+    assert(resists_magm(steed) && mon_reflects(steed, NULL)
+           && resists_magm(&gy.youmonst) && ureflects(NULL, NULL));
+    cmdq_add_key(CQ_CANNED, '-');
+    assert(doinvoke() == ECMD_TIME && !Invis && obj->age > svm.moves);
+    u.usteed = NULL;
+    assert(!Antimagic && !Reflecting && !resists_magm(steed)
+           && !mon_reflects(steed, NULL));
+    obj->owornmask = 0;
+    steed->misc_worn_check &= ~W_SADDLE;
+    obj_extract_self(obj);
+    obj = addinv(obj);
+    inspect_discard(obj);
+    puts("PASS Step 21 Saddle dynamic rider/steed defenses, independent accessible invisibility and mounted invoke selector");
+}
+
+static void
+step21_mirror_tests(void)
+{
+    short typ = 0;
+    struct obj *obj;
+    int hp = u.uhp;
+    long cooldown;
+    aligntyp oldalign = u.ualign.type;
+    assert(artifact_name("The Mirrored Mask", &typ, FALSE));
+    obj = inspect_item(typ);
+    artifact_exists(obj, "The Mirrored Mask", TRUE, ONAME_WISH);
+    assert(!Reflecting && !Half_spell_damage);
+    setworn(obj, W_TOOL);
+    assert(Reflecting && Half_spell_damage && ureflects(NULL, NULL));
+    setnotworn(obj);
+    assert(!Reflecting && !Half_spell_damage);
+    inspect_discard(obj);
+    assert(artifact_name("The Hand-Mirror of Cthylla", &typ, FALSE));
+    u.ualign.type = A_CHAOTIC;
+    obj = inspect_item(typ);
+    artifact_exists(obj, "The Hand-Mirror of Cthylla", TRUE, ONAME_WISH);
+    set_artifact_intrinsic(obj, TRUE, W_ART);
+    assert(Antimagic && Teleport_control && Searching);
+    u.uhp = 1000;
+    obj->age = 0;
+    cmdq_add_key(CQ_CANNED, '.');
+    assert(use_mirror(obj) == ECMD_TIME);
+    assert(u.uhp <= 985 && u.uhp >= 775 && obj->age > svm.moves);
+    cooldown = obj->age;
+    u.uhp = 1000;
+    cmdq_add_key(CQ_CANNED, obj->invlet);
+    cmdq_add_key(CQ_CANNED, '.');
+    assert(doinvoke() == ECMD_TIME && u.uhp == 1000 && obj->age == cooldown);
+    obj->age = 0;
+    cmdq_add_key(CQ_CANNED, obj->invlet);
+    cmdq_add_key(CQ_CANNED, '.');
+    assert(doinvoke() == ECMD_TIME && u.uhp <= 985 && obj->age > svm.moves);
+    u.uhp = hp;
+    u.ualign.type = oldalign;
+    inspect_discard(obj);
+    assert(!Antimagic && !Teleport_control && !Searching);
+    puts("PASS Step 21 worn Mask source lifecycle and Mirror dual-command self damage/shared cooldown");
+}
+
+static void step21_status_init(void) { }
+static void step21_status_field(int field, const char *name, const char *fmt, boolean on)
+{ (void) field; (void) name; (void) fmt; (void) on; }
+static void step21_status_update(int field, genericptr_t ptr, int chg,
+                                 int percent, int color, unsigned long *mask)
+{ (void) field; (void) ptr; (void) chg; (void) percent; (void) color; (void) mask; }
+
+static void
+step21_book_tests(void)
+{
+    short typ = 0;
+    struct obj *obj;
+    int page, i, oldpw = u.uen, oldhp = u.uhp, oldhunger = u.uhunger;
+    struct spell known[MAXSPELL];
+    windowprocs.win_status_init = step21_status_init;
+    windowprocs.win_status_enablefield = step21_status_field;
+    windowprocs.win_status_update = step21_status_update;
+    if (!gb.blinit) status_initialize(FALSE);
+    assert(artifact_name("The Book of Infinite Spells", &typ, FALSE));
+    obj = inspect_item(typ);
+    artifact_exists(obj, "The Book of Infinite Spells", TRUE, ONAME_WISH);
+    assert(obj->oartifact_state >= SPE_DIG && obj->oartifact_state < SPE_BLANK_PAPER);
+    page = obj->oartifact_state;
+    fully_identify_obj(obj);
+    inspect_run(obj);
+    assert(obj->oartifact_state == page);
+    inspect_window_setup();
+    windowprocs.win_select_menu = step21_select;
+    obj->age = 0; step21_menu_choice = 1;
+    cmdq_add_key(CQ_CANNED, obj->invlet);
+    assert(doinvoke() == ECMD_TIME && obj->age > svm.moves);
+    assert(obj->oartifact_state >= SPE_DIG && obj->oartifact_state < SPE_BLANK_PAPER);
+    obj->oartifact_state = SPE_HEALING; /* deterministic supported-page fixture */
+    memcpy(known, svs.spl_book, sizeof known);
+    memset(svs.spl_book, 0, sizeof known);
+    u.uen = 0; u.uhunger = 1000; u.uhp = u.uhpmax - 100;
+    u.mith_timers[MITH_NAEN] = 1; /* native guaranteed casting chance */
+    obj->age = 0; step21_menu_choice = 2;
+    cmdq_add_key(CQ_CANNED, obj->invlet);
+    cmdq_add_key(CQ_CANNED, '.');
+    assert(doinvoke() == ECMD_TIME);
+    assert(u.uen == 0 && u.uhp > u.uhpmax - 100);
+    assert(obj->oartifact_state == SPE_HEALING && obj->age > svm.moves);
+    for (i = 0; i < MAXSPELL; ++i) assert(!svs.spl_book[i].sp_id);
+    obj->blessed = 1;
+    obj->spestudied = 20; /* beyond ordinary book depletion */
+    assert(study_book(obj) && go.occupation);
+    for (i = 0; i < 1000 && (*go.occupation)(); ++i) ;
+    assert(i < 1000 && svs.spl_book[0].sp_id == SPE_HEALING);
+    assert(obj->otyp == SPE_BLANK_PAPER && obj->oartifact_state == SPE_HEALING
+           && obj->spestudied == 20 && obj->where == OBJ_INVENT);
+    go.occupation = NULL;
+    HStun = 10;
+    obj->age = 0;
+    cmdq_add_key(CQ_CANNED, obj->invlet);
+    assert(!(doinvoke() & ECMD_TIME) && obj->age == 0);
+    HStun = 0;
+    memcpy(svs.spl_book, known, sizeof known);
+    u.uen = oldpw; u.uhp = oldhp; u.uhunger = oldhunger;
+    u.mith_timers[MITH_NAEN] = 0;
+    inspect_discard(obj);
+    step15b_window_setup();
+    puts("PASS Step 21 Book supported initial/random pages, inspect stability, zero-Pw unmemorized native casting and shared cooldown");
+}
+
+static void
+step21_mask_combat_tests(void)
+{
+    struct obj *mask, *lily;
+    struct monst *caster;
+    struct attack attack = { AT_MAGC, AD_FIRE, 1, 6 };
+    int i, reflected = 0, hit = 0, hp = u.uhp, hpmax = u.uhpmax;
+    struct prop saved_props[LAST_PROP + 1];
+    memcpy(saved_props, u.uprops, sizeof saved_props);
+    memset(u.uprops, 0, sizeof saved_props);
+    u.uhpmax = 10000;
+    inspect_window_setup();
+    mask = inspect_item(MASK);
+    artifact_exists(mask, "The Mirrored Mask", TRUE, ONAME_WISH);
+    setworn(mask, W_TOOL);
+    lily = mksobj(CREDIT_CARD, FALSE, FALSE);
+    artifact_exists(lily, "The Holographic Void Lily", TRUE, ONAME_WISH);
+    lily = addinv(lily);
+    assert((EReflecting & (W_ART | W_TOOL)) == (W_ART | W_TOOL));
+    assert((EHalf_spell_damage & (W_ART | W_TOOL)) == (W_ART | W_TOOL));
+    caster = makemon(&mons[PM_GOBLIN], u.ux + 1, u.uy, MM_ADJACENTOK);
+    assert(caster);
+    caster->m_lev = 20; caster->mpeaceful = 0; caster->msleeping = 0;
+    caster->mux = u.ux; caster->muy = u.uy;
+    for (i = 0; i < 400; ++i) {
+        int before;
+        caster->mhp = caster->mhpmax = 10000; caster->mspec_used = 0;
+        u.uhp = 10000;
+        before = castmu(caster, &attack, TRUE, TRUE);
+        if (before == M_ATTK_MISS) continue;
+        if (caster->mhp < 10000) {
+            ++reflected;
+            assert(u.uhp == 10000); /* no duplicate hit */
+        } else {
+            ++hit;
+            assert(u.uhp < 10000 && u.uhp >= 9967); /* 11d6, halved once */
+        }
+    }
+    assert(reflected > 120 && reflected < 250 && hit > 120);
+    setnotworn(mask);
+    assert(Reflecting && Half_spell_damage);
+    setworn(mask, W_TOOL);
+    freeinv(lily); obfree(lily, NULL);
+    assert(Reflecting && Half_spell_damage);
+    setnotworn(mask);
+    assert(!Reflecting && !Half_spell_damage);
+    inspect_discard(mask);
+    u.uhp = hp;
+    memcpy(u.uprops, saved_props, sizeof saved_props);
+    u.uhpmax = hpmax;
+    mongone(caster);
+    puts("PASS Step 21 Mask 400 native cast attempts, independent Lily source, single damage resolution and both removal orders");
+}
+
+static void
+step21_persistence_tests(void)
+{
+    NHFILE *f;
+    struct obj *obj;
+    unsigned ids[22];
+    int i, seen[22] = { 0 }, lights[22] = { 0 };
+    short typ;
+    light_source *ls;
+    assert(!gi.invent);
+    for (i = 0; i < 22; ++i) {
+        typ = 0;
+        assert(artifact_name(artiname(ART_HOLOGRAPHIC_VOID_LILY + i), &typ, FALSE));
+        obj = mksobj(typ, TRUE, FALSE);
+        artifact_exists(obj, artiname(ART_HOLOGRAPHIC_VOID_LILY + i), TRUE, ONAME_WISH);
+        assert(obj->quan == 1);
+        obj->age = svm.moves + 77;
+        if (obj->oartifact == ART_BOOK_OF_INFINITE_SPELLS) obj->oartifact_state = SPE_HEALING;
+        if (obj->oartifact == ART_HELLRIDER_S_SADDLE) obj->oartifact_state = 1;
+        ids[i] = obj->o_id;
+        place_object(obj, u.ux, u.uy);
+    }
+    f = get_freeing_nhfile();
+    file_mode(f, WRITING | FREEING, open("step21-level.tmp", O_CREAT | O_TRUNC | O_WRONLY | O_BINARY, _S_IREAD | _S_IWRITE));
+    savelev(f, ledger_no(&u.uz)); close_nhfile(f);
+    f = get_freeing_nhfile();
+    file_mode(f, READING, open("step21-level.tmp", O_RDONLY | O_BINARY));
+    getlev(f, 0, ledger_no(&u.uz)); close_nhfile(f);
+    for (obj = fobj; obj; obj = obj->nobj) {
+        for (i = 0; i < 22; ++i) if (obj->o_id == ids[i]) {
+            ++seen[i];
+            assert(obj->oartifact == ART_HOLOGRAPHIC_VOID_LILY + i && obj->quan == 1);
+            assert(obj->age == svm.moves + 77 && obj->where == OBJ_FLOOR);
+            if (obj->oartifact == ART_BOOK_OF_INFINITE_SPELLS) assert(obj->oartifact_state == SPE_HEALING);
+            if (obj->oartifact == ART_HELLRIDER_S_SADDLE) assert(obj->oartifact_state == 1);
+            if (artifact_permanent_light(obj)) assert(obj->lamplit && !obj->timed);
+        }
+    }
+    for (ls = gl.light_base; ls; ls = ls->next) if (ls->type == LS_OBJECT) {
+        for (i = 0; i < 22; ++i) if (ls->id.a_obj && ls->id.a_obj->o_id == ids[i]) {
+            ++lights[i];
+            assert(ls->range == arti_light_radius(ls->id.a_obj));
+        }
+    }
+    for (i = 0; i < 22; ++i) {
+        assert(seen[i] == 1);
+        assert(lights[i] == (ART_HOLOGRAPHIC_VOID_LILY + i == ART_BRASS_LANTERN_OF_ZORK
+                             || ART_HOLOGRAPHIC_VOID_LILY + i == ART_CANDLE_OF_ETERNAL_FLAME
+                             || ART_HOLOGRAPHIC_VOID_LILY + i == ART_GLITTERSTONE));
+    }
+    puts("PASS Step 21 native level unload/reload all22 identities, singleton quantities, ages, Book page, Saddle toggle and exact light-source relinking");
 }

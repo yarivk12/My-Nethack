@@ -161,3 +161,54 @@ invisible-monster entry/exit, container occlusion, blindness, destruction and
 camera null-source control. Full light save/restore, trap/door and opaque-wall
 matrices still need execution. Fourteen new artifacts now have implementations;
 the original Silver Key remains preserved, and Step 21 remains incomplete.
+
+## Remaining artifact implementations and current validation
+
+All 22 additions now have gameplay implementations. Nenya uses a minimal
+water-walking ring base; Vilya retains native regeneration. The Book's stored
+spell and the Saddle's invisibility toggle use one saved per-object state
+field, with EDITLEVEL 17 invalidating older development saves. Native level
+save/load tests preserve all 22 identities, quantities and invocation ages,
+the Book's page, the Saddle's toggle, and exactly one correctly sized source
+for each permanent light.
+
+The Book reuses native study and spell effect handlers. Reading never depletes
+it, casting requires neither memorization nor Pw, and ordinary casting
+restrictions still apply. Only deliberate page turning changes the spell.
+The Saddle uses actual direct inventory or the currently ridden steed's
+equipped saddle, with dynamic defenses for each actor. Its toggle grants
+invisibility only while that source is accessible. Pickup, removal and mummy
+wrapping update the hero display without disturbing another invisibility source.
+
+The Lodestone intercepts eligible successful physical missile hits before
+poison/contact. Its heavy flint base avoids loadstone curse restrictions.
+The Spoon uses native pickaxe digging, engraving, luckstone semantics and
+51-150 turns of phasing. Expiry uses the native teleport-placement checks to
+reach a safe nearby square without bypassing protected regions.
+
+The Mirrored Mask supplies face-slot reflection and half spell damage. Direct
+targeted spell effects share the existing monster-target resolver. Aimed spell
+rays carry explicit hero-target context and receive at most one special
+interception decision per ray, before normal Reflection. Area clouds and
+indirect spells are excluded. Monster punishment has no native ball-and-chain
+state; its monster-target analogue applies native slowing. The Hand-Mirror
+shares native apply/invoke reflection validity and one cooldown, including
+self damage. Its donor 15d15 gaze is nonphysical damage, routed through normal
+damage mitigation for both actors.
+
+The new artifacts are protected from magic-marker rewriting and ordinary
+polymorph-form eating. Artifact creation guarantees one unique object;
+converting an owned ordinary stack preserves the remaining ordinary items.
+Artifacts cannot merge or split. Existing Forge target/input guards remain.
+
+`coverage-runtime.log` currently passes the expanded native suite: all 22
+deterministic acquisitions, source/slot checks, Book learning past normal
+depletion and casting restrictions, Hand-Mirror dual command cooldown and
+self damage, 400 native Mask spell attempts with an independent Void Lily,
+and native level unload/reload. Identified artifact inspection now describes
+all 23 approved designs and commands without revealing hidden powers.
+
+Step 21 is still in validation. Full game save/reload, remaining command and
+terrain/transition matrices, final production packaging and closeout remain
+NOT RUN until their dedicated checks execute. Existing compile warnings in
+map generation and older fixtures are unchanged.

@@ -873,9 +873,13 @@ nh_timeout(void)
                 break;
             case PASSES_WALLS:
                 if (!Passes_walls) {
-                    if (stuck_in_wall())
-                        You_feel("hemmed in again.");
-                    else
+                    if (stuck_in_wall()) {
+                        if (!safe_phase_exit()) {
+                            /* Never strand the hero when no valid landing
+                             * square currently exists; retry next turn. */
+                            incr_itimeout(&HPasses_walls, 1L);
+                        }
+                    } else
                         pline("You're back to your %s self again.",
                               !Upolyd ? "normal" : "unusual");
                 }

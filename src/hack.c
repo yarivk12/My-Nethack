@@ -4447,6 +4447,9 @@ weight_cap(void)
             carrying += uright->spe;
         carrcap = carrcap * (100L + 5L * carrying) / 100L;
     }
+    if (uarmu && uarmu->oartifact == ART_TIE_DYE_SHIRT_OF_SHAMBHALA)
+        carrcap = carrcap * (uarmu->blessed ? 150L : uarmu->cursed ? 75L : 125L)
+                  / 100L;
     return (int) max(carrcap, 1L); /* never return 0 */
 }
 

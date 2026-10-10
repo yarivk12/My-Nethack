@@ -384,6 +384,13 @@ artifact_exists(
             if (a->otyp == otmp->otyp && !strcmp(a->name, name)) {
                 int m = (int) (a - artilist);
 
+                /* Stop a former fuel timer before converting a lit lamp. */
+                if (otmp->lamplit && !artifact_permanent_light(otmp))
+                    end_burn(otmp, TRUE);
+                if (!mod && artifact_permanent_light(otmp) && otmp->lamplit) {
+                    del_light_source(LS_OBJECT, obj_to_any(otmp));
+                    otmp->lamplit = 0;
+                }
                 otmp->oartifact = (char) (mod ? m : 0);
                 enhancement_strip_for_artifact(otmp);
                 otmp->age = 0;
@@ -415,6 +422,8 @@ artifact_exists(
                        there's no ONAME_ flag) and flgs might also contain
                        the know_arti bit (hero knows that artifact exists) */
                     artifact_origin(otmp, flgs);
+                    if (artifact_permanent_light(otmp) && !otmp->lamplit)
+                        begin_burn(otmp, FALSE);
                 } else { /* uncreate */
                     /* clear all the flag bits */
                     artiexist[m] = zero_artiexist;
@@ -770,6 +779,8 @@ artifact_extra_property(const struct obj *obj, int prop, long slot)
         return slot == W_ART && (prop == COLD_RES || prop == SHOCK_RES);
     case ART_EHECAILACOCOZCATL:
         return (slot & W_AMUL) && prop == REFLECTING;
+    case ART_TALISMAN_OF_BUER:
+        return (slot & W_AMUL) && (prop == REGENERATION || prop == FIXED_ABIL);
     default:
         return FALSE;
     }
@@ -2502,15 +2513,60 @@ arti_invoke(struct obj *obj)
             res = ECMD_TIME;
             break;
         }
+        case PETMASTER: {
+            static const short supplies[] = {
+                MAGIC_WHISTLE, LEASH, SADDLE, TRIPE_RATION, APPLE, BANANA
+            };
+            static const char *const labels[] = {
+                "Magic whistle", "Leash", "Saddle", "Tripe ration",
+                "Apple", "Banana", "Locate pets and improve tameness"
+            };
+            winid win = create_nhwindow(NHW_MENU);
+            menu_item *selected = (menu_item *) 0;
+            anything any;
+            int i, n;
+            start_menu(win, MENU_BEHAVE_STANDARD);
+            for (i = 0; i < SIZE(labels); ++i) {
+                any = cg.zeroany;
+                any.a_int = i + 1;
+                add_menu(win, &nul_glyphinfo, &any, 0, 0, ATR_NONE,
+                         NO_COLOR, labels[i], MENU_ITEMFLAGS_NONE);
+            }
+            end_menu(win, "Reach into the Duster for what?");
+            n = select_menu(win, PICK_ONE, &selected);
+            destroy_nhwindow(win);
+            if (n > 0) {
+                i = selected[0].item.a_int - 1;
+                if (i == SIZE(supplies)) {
+                    artifact_detect_pets();
+                } else if (i >= 0 && i < SIZE(supplies)) {
+                    struct obj *supply = mksobj(supplies[i], TRUE, FALSE);
+                    supply->quan = 1L;
+                    supply->owt = weight(supply);
+                    supply->blessed = obj->blessed;
+                    supply->cursed = obj->cursed;
+                    supply->bknown = obj->bknown;
+                    (void) hold_another_object(supply, "You drop %s.",
+                                              doname(supply), (const char *) 0);
+                }
+            } else {
+                obj->age = 0L;
+            }
+            if (selected) free((genericptr_t) selected);
+            res = ECMD_TIME;
+            break;
+        }
         case TAMING: res = invoke_taming(obj); break;
         case HERO_TELEPORT:
             tele();
             res = ECMD_TIME;
             break;
         case SUMMON_AIR_ELEMENTAL:
+        case SUMMON_FIRE_ELEMENTAL:
         case SUMMON_WATER_ELEMENTAL: {
             int pm = oart->inv_prop == SUMMON_AIR_ELEMENTAL
-                ? PM_AIR_ELEMENTAL : PM_WATER_ELEMENTAL;
+                ? PM_AIR_ELEMENTAL : oart->inv_prop == SUMMON_FIRE_ELEMENTAL
+                    ? PM_FIRE_ELEMENTAL : PM_WATER_ELEMENTAL;
             struct monst *pet = makemon(&mons[pm], u.ux, u.uy,
                                        MM_EDOG | MM_ADJACENTOK);
             if (pet) initedog(pet, FALSE);
@@ -2683,8 +2739,17 @@ finesse_ahriman(struct obj *obj)
 
 /* WAC return TRUE if artifact is always lit */
 boolean
+artifact_permanent_light(const struct obj *obj)
+{
+    return obj && (obj->oartifact == ART_BRASS_LANTERN_OF_ZORK
+                   || obj->oartifact == ART_CANDLE_OF_ETERNAL_FLAME
+                   || obj->oartifact == ART_GLITTERSTONE);
+}
+
+boolean
 artifact_light(struct obj *obj)
 {
+    if (artifact_permanent_light(obj)) return TRUE;
     /* not artifacts but treat them as if they were because they emit
        light without burning */
     if (obj && (obj->otyp == GOLD_DRAGON_SCALE_MAIL

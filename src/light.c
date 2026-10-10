@@ -771,6 +771,29 @@ snuff_light_source(coordxy x, coordxy y)
 }
 
 /* Return TRUE if object sheds any light at all. */
+/* Match the native circle and source-to-square ray test. Observation still
+ * requires the hero's current vision, including blindness and darkness. */
+boolean
+artifact_lantern_reveals(coordxy x, coordxy y)
+{
+    light_source *ls;
+    coordxy lx, ly;
+    if (Blind || u.uswallow || !isok(x, y) || !cansee(x, y)) return FALSE;
+    for (ls = gl.light_base; ls; ls = ls->next) {
+        if (ls->type != LS_OBJECT
+            || (ls->flags & LSF_NEEDS_FIXUP)
+            || !ls->id.a_obj
+            || ls->id.a_obj->oartifact != ART_BRASS_LANTERN_OF_ZORK
+            || !ls->id.a_obj->lamplit
+            || !get_obj_location(ls->id.a_obj, &lx, &ly, 0)) continue;
+        if (abs(y - ly) <= 4 && abs(x - lx) <= circle_ptr(4)[abs(y - ly)]
+            && (u_at(lx, ly) ? couldsee(x, y)
+                            : ((lx == x && ly == y) || clear_path(lx, ly, x, y))))
+            return TRUE;
+    }
+    return FALSE;
+}
+
 boolean
 obj_sheds_light(struct obj *obj)
 {
@@ -904,6 +927,9 @@ arti_light_radius(struct obj *obj)
     /* sanity check [simplifies usage by bless()/curse()/&c] */
     if (!obj->lamplit || !artifact_light(obj))
         return 0;
+    if (obj->oartifact == ART_BRASS_LANTERN_OF_ZORK) return 4;
+    if (obj->oartifact == ART_CANDLE_OF_ETERNAL_FLAME) return 3;
+    if (obj->oartifact == ART_GLITTERSTONE) return 2;
 
     /* cursed radius of 1 is not noticeable for an item that's
        carried by the hero but is if it's carried by a monster

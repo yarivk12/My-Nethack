@@ -86,13 +86,15 @@
 #if 0
 #define _mon_visible(mon) \
     (/* The hero can see the monster IF the monster                     */ \
-     (!mon->minvis || See_invisible)  /*     1. is not invisible        */ \
+     (!mon->minvis || See_invisible \
+      || artifact_lantern_reveals(mon->mx, mon->my)) \
      && !mon->mundetected             /* AND 2. not an undetected hider */ \
      && !(mon->mburied || u.uburied)) /* AND 3. neither you nor it buried */
 #else   /* without 'mburied' and 'uburied' */
 #define _mon_visible(mon) \
     (/* The hero can see the monster IF the monster                     */ \
-     (!mon->minvis || See_invisible)  /*     1. is not invisible        */ \
+     (!mon->minvis || See_invisible \
+      || artifact_lantern_reveals(mon->mx, mon->my)) \
      && !mon->mundetected)            /* AND 2. not an undetected hider */
 #endif
 

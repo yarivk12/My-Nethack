@@ -101,6 +101,59 @@ map_redisplay(void)
         under_ground(2);
 }
 
+/* Measure visibility before temporarily exposing the detection map. */
+void
+artifact_lantern_detect(void)
+{
+    coordxy x, y;
+    struct trap *trap;
+    struct monst *mon;
+    for (x = 1; x < COLNO; ++x)
+        for (y = 0; y < ROWNO; ++y) {
+            if (!artifact_lantern_reveals(x, y)) continue;
+            if (levl[x][y].typ == SDOOR) {
+                cvt_sdoor_to_door(&levl[x][y]);
+                recalc_block_point(x, y);
+                newsym(x, y);
+            }
+            trap = t_at(x, y);
+            if (trap && !trap->tseen) {
+                trap->tseen = 1;
+                newsym(x, y);
+            }
+        }
+    /* Lit rooms can keep identical vision bits when the Lantern moves.
+     * Refresh invisible monsters even after the last Lantern disappears. */
+    for (mon = fmon; mon; mon = mon->nmon)
+        if (!DEADMONSTER(mon) && !PARKEDMONSTER(mon) && mon->minvis)
+            newsym(mon->mx, mon->my);
+}
+
+void
+artifact_detect_pets(void)
+{
+    struct monst *mon;
+    boolean found = FALSE;
+    for (mon = fmon; mon; mon = mon->nmon)
+        if (!DEADMONSTER(mon) && !PARKEDMONSTER(mon) && mon->mtame) {
+            found = TRUE;
+            if (canseemon(mon) && mon->mtame < 20) ++mon->mtame;
+        }
+    if (!found) {
+        You_feel("lonely.");
+        return;
+    }
+    cls();
+    (void) unconstrain_map();
+    for (mon = fmon; mon; mon = mon->nmon)
+        if (!DEADMONSTER(mon) && !PARKEDMONSTER(mon) && mon->mtame)
+            map_monst(mon, TRUE);
+    display_self();
+    You("sense your companions.");
+    display_nhwindow(WIN_MAP, TRUE);
+    map_redisplay();
+}
+
 /* use getpos()'s 'autodescribe' to view whatever is currently shown on map */
 staticfn void
 browse_map(unsigned ter_typ, const char *ter_explain)

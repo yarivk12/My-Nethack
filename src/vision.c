@@ -855,6 +855,8 @@ vision_recalc(int control)
     gv.viz_rmin = next_rmin;
     gv.viz_rmax = next_rmax;
 
+    if (!control && !program_state.panicking)
+        artifact_lantern_detect();
     notice_all_mons(TRUE);
 }
 

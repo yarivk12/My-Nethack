@@ -783,5 +783,10 @@ int step15_test_main(void) {
     provenance_tests();
     step21_native_acquisition_tests();
     step21_native_invocation_tests();
+    step21_utility_tests();
+    step21_read_and_supply_tests();
+    step21_pet_tests();
+    step21_light_tests();
+    step21_lantern_vision_tests();
     puts("PASS Step 15 native runtime fixtures");return 0;
 }

@@ -106,7 +106,9 @@ enum invoke_prop_types {
     EARTH_CRYSTAL_QUAKE,
     HERO_TELEPORT,
     SUMMON_AIR_ELEMENTAL,
-    SUMMON_WATER_ELEMENTAL
+    SUMMON_WATER_ELEMENTAL,
+    PETMASTER,
+    SUMMON_FIRE_ELEMENTAL
 };
 
 /* artifact tracking; gift and wish imply found; it also gets set for items

@@ -519,6 +519,17 @@ doread(void)
                                "became literate by reading a fortune cookie");
         useup(scroll);
         return ECMD_TIME;
+    } else if (scroll->oartifact == ART_TIE_DYE_SHIRT_OF_SHAMBHALA) {
+        if (scroll == uarmu && uarm && uarm->otyp != CRYSTAL_PLATE_MAIL) {
+            Your("shirt is covered by your armor.");
+            return ECMD_OK;
+        }
+        if (!u.uconduct.literate++)
+            livelog_printf(LL_CONDUCT, "became literate by reading a sacred shirt");
+        You(Blind ? "trace the sacred pattern by touch."
+                  : "contemplate the sacred pattern.");
+        use_unicorn_horn(&scroll);
+        return ECMD_TIME;
     } else if (otyp == T_SHIRT || otyp == ALCHEMY_SMOCK
                || otyp == HAWAIIAN_SHIRT) {
         char buf[BUFSZ], *mesg;

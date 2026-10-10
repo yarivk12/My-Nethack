@@ -1415,6 +1415,10 @@ use_candle(struct obj **optr)
     char qbuf[QBUFSZ], qsfx[QBUFSZ], *q;
     boolean was_lamplit;
 
+    if (artifact_permanent_light(obj)) {
+        use_lamp(obj);
+        return;
+    }
     if (u.uswallow) {
         You(no_elbow_room);
         return;
@@ -1504,6 +1508,8 @@ snuff_candle(struct obj *otmp)
 {
     boolean candle = Is_candle(otmp);
 
+    if (artifact_permanent_light(otmp)) return FALSE;
+
     if ((candle || otmp->otyp == CANDELABRUM_OF_INVOCATION)
         && otmp->lamplit) {
         char buf[BUFSZ];
@@ -1528,6 +1534,8 @@ boolean
 snuff_lit(struct obj *obj)
 {
     coordxy x, y;
+
+    if (artifact_permanent_light(obj)) return FALSE;
 
     if (obj->lamplit) {
         if (obj->otyp == OIL_LAMP || obj->otyp == MAGIC_LAMP
@@ -1665,6 +1673,10 @@ use_lamp(struct obj *obj)
                           : Is_torch(obj) ? "torch"
                           : NULL;
 
+    if (artifact_permanent_light(obj)) {
+        pline("%s shines without ceasing.", The(xname(obj)));
+        return;
+    }
     /*
      * When blind, lamps' and candles' on/off state can be distinguished
      * by heat.  For brass lantern assume that there is an on/off switch
@@ -2455,9 +2467,13 @@ use_unicorn_horn(struct obj **optr)
     }
 
     if (obj && obj->cursed) {
-        long lcount = (long) rn1(90, 10);
+        boolean shirt = is_art(obj, ART_TIE_DYE_SHIRT_OF_SHAMBHALA);
+        long lcount = (long) (shirt ? rnd(100) : rn1(90, 10));
+        int trouble = shirt ? rn2(5) : rn2(13) / 2;
 
-        switch (rn2(13) / 2) { /* case 6 is half as likely as the others */
+        /* Donor cursed Shirt induces five ailments, excluding vomiting. */
+        if (shirt && trouble == 4) trouble = 5;
+        switch (trouble) {
         case 0:
             make_sick((Sick & TIMEOUT) ? (Sick & TIMEOUT) / 3L + 1L
                                        : (long) rn1(ACURR(A_CON), 20),
@@ -2514,7 +2530,8 @@ use_unicorn_horn(struct obj **optr)
         prop_trouble(CONFUSION);
     if (TimedTrouble(HStun))
         prop_trouble(STUNNED);
-    if (TimedTrouble(HDeaf))
+    if (TimedTrouble(HDeaf)
+        && !is_art(obj, ART_TIE_DYE_SHIRT_OF_SHAMBHALA))
         prop_trouble(DEAF);
 
     if (trouble_count == 0) {

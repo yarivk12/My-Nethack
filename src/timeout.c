@@ -1748,7 +1748,11 @@ begin_burn(struct obj *obj, boolean already_lit)
         && obj->otyp != MAGIC_CANDLE && !artifact_light(obj))
         return;
 
-    switch (obj->otyp) {
+    if (artifact_permanent_light(obj)) {
+        obj->lamplit = 1;
+        radius = arti_light_radius(obj);
+        do_timer = FALSE;
+    } else switch (obj->otyp) {
     case MAGIC_CANDLE:
         obj->age = 300L; /* donor nominal age; no fuel timer */
         FALLTHROUGH;
@@ -1835,6 +1839,8 @@ begin_burn(struct obj *obj, boolean already_lit)
 
         if (get_obj_location(obj, &x, &y, CONTAINED_TOO | BURIED_TOO))
             new_light_source(x, y, radius, LS_OBJECT, obj_to_any(obj));
+        else if (artifact_permanent_light(obj) && obj->where == OBJ_FREE)
+            new_light_source(0, 0, radius, LS_OBJECT, obj_to_any(obj));
         else
             impossible("begin_burn: can't get obj position");
     }
@@ -1847,6 +1853,8 @@ begin_burn(struct obj *obj, boolean already_lit)
 void
 end_burn(struct obj *obj, boolean timer_attached)
 {
+    /* The object destructor explicitly releases permanent light sources. */
+    if (artifact_permanent_light(obj)) return;
     if (!obj->lamplit) {
         impossible("end_burn: obj %s not lit", xname(obj));
         return;

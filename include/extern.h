@@ -181,6 +181,10 @@ extern boolean artifact_invocation_cooldown(const struct obj *);
 extern void do_earthquake(int);
 extern boolean artifact_extra_property(const struct obj *, int, long);
 extern boolean artifact_waterproof(void);
+extern void artifact_detect_pets(void);
+extern boolean artifact_permanent_light(const struct obj *);
+extern boolean artifact_lantern_reveals(coordxy, coordxy);
+extern void artifact_lantern_detect(void);
 extern int disp_artifact_discoveries(winid);
 extern void dump_artifact_info(winid);
 extern boolean artifact_hit(struct monst *, struct monst *, struct obj *,

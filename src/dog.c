@@ -805,6 +805,14 @@ keepdogs(
     boolean pets_only) /* true for ascension or final escape */
 {
     struct monst *mtmp, *mtmp2;
+    struct obj *otmp;
+    boolean remote_pets = FALSE;
+
+    for (otmp = gi.invent; otmp; otmp = otmp->nobj)
+        if (otmp->oartifact == ART_LYRE_OF_ORPHEUS) {
+            remote_pets = TRUE;
+            break;
+        }
 
     for (mtmp = fmon; mtmp; mtmp = mtmp2) {
         mtmp2 = mtmp->nmon;
@@ -823,7 +831,8 @@ keepdogs(
             mtmp->mfrozen = 0;
             mtmp->mcanmove = 1;
         }
-        if (((monnear(mtmp, u.ux, u.uy) && levl_follower(mtmp))
+        if ((((monnear(mtmp, u.ux, u.uy) || (remote_pets && mtmp->mtame))
+              && levl_follower(mtmp))
              /* the wiz will level t-port from anywhere to chase
                 the amulet; if you don't have it, will chase you
                 only if in range. -3. */

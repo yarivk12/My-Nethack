@@ -2895,7 +2895,8 @@ ureflects(const char *fmt, const char *str)
     } else if (EReflecting & W_AMUL) {
         if (fmt && str) {
             pline(fmt, str, "medallion");
-            makeknown(AMULET_OF_REFLECTION);
+            if (uamul && uamul->otyp == AMULET_OF_REFLECTION)
+                makeknown(AMULET_OF_REFLECTION);
         }
         return TRUE;
     } else if (EReflecting & W_ARM) {
@@ -2905,6 +2906,10 @@ ureflects(const char *fmt, const char *str)
     } else if (EReflecting & W_ARMOR) {
         if (fmt && str)
             pline(fmt, str, "armor");
+        return TRUE;
+    } else if (EReflecting & W_ART) {
+        if (fmt && str)
+            pline(fmt, str, "carried artifact");
         return TRUE;
     } else if (gy.youmonst.data == &mons[PM_SILVER_DRAGON]
                || gy.youmonst.data == &mons[PM_CAVE_CHROMATIC_DRAGON]) {

@@ -772,7 +772,7 @@ int step15_test_main(void) {
     if (getenv("STEP15_CORPUS")) {corpus();return 0;}
     eligible_tests();candidates();reservoir_tests();scripted_room();
     free_level();u.uz.dnum=medusa_level.dnum;u.uz.dlevel=40;gi.in_mklev=TRUE;step15_generate();
-    step15b_window_setup();overview_tests();inspect_tests();step21_inspect_tests();terrain_activation();
+    step15b_window_setup();overview_tests();inspect_tests();step21_inspect_tests();step21_carried_artifact_tests();step21_equipment_tests();terrain_activation();
     step15_forge_result=-99;level_finalize_topology();assert(step15_forge_result==-99);
     puts("PASS standalone Lua topology finalization performs no forge selection");
     persistence();
@@ -781,5 +781,7 @@ int step15_test_main(void) {
     terrain_mutators();
     authored_trap_rejection();
     provenance_tests();
+    step21_native_acquisition_tests();
+    step21_native_invocation_tests();
     puts("PASS Step 15 native runtime fixtures");return 0;
 }

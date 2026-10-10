@@ -5063,6 +5063,8 @@ water_damage(
 
     if (!obj)
         return ER_NOTHING;
+    if (in_invent && artifact_waterproof())
+        return ER_NOTHING;
 
     if (splash_lit(obj))
         return ER_DAMAGED;

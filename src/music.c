@@ -35,7 +35,6 @@ staticfn void charm_snakes(int);
 staticfn void calm_nymphs(int);
 staticfn void charm_monsters(int);
 staticfn void do_pit(coordxy, coordxy, unsigned);
-staticfn void do_earthquake(int);
 staticfn const char *generic_lvl_desc(void);
 staticfn int do_improvisation(struct obj *);
 staticfn char *improvised_notes(boolean *);
@@ -340,7 +339,7 @@ do_pit(coordxy x, coordxy y, unsigned tu_pit)
 /* Generate earthquake :-) of desired force.
  * That is:  create random chasms (pits).
  */
-staticfn void
+void
 do_earthquake(int force)
 {
     static const char into_a_chasm[] = " into a chasm";
@@ -477,6 +476,8 @@ do_earthquake(int force)
                 break;
             }
         }
+    /* Both the drum and artifact invocation retain the native distant wakeup. */
+    awaken_monsters(ROWNO * COLNO);
 }
 
 staticfn const char *
@@ -701,8 +702,6 @@ do_improvisation(struct obj *instr)
         Hero_playnotes(obj_to_instr(&itmp), "C", 100);
         pline_The("entire %s is shaking around you!", generic_lvl_desc());
         do_earthquake((u.ulevel - 1) / 3 + 1);
-        /* shake up monsters in a much larger radius... */
-        awaken_monsters(ROWNO * COLNO);
         makeknown(DRUM_OF_EARTHQUAKE);
         break;
     case LEATHER_DRUM: /* Awaken monsters */

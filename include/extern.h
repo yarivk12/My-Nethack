@@ -178,6 +178,9 @@ extern int spec_dbon(struct obj *, struct monst *, int) NONNULLARG2;
 extern void discover_artifact(xint16);
 extern boolean undiscovered_artifact(xint16);
 extern boolean artifact_invocation_cooldown(const struct obj *);
+extern void do_earthquake(int);
+extern boolean artifact_extra_property(const struct obj *, int, long);
+extern boolean artifact_waterproof(void);
 extern int disp_artifact_discoveries(winid);
 extern void dump_artifact_info(winid);
 extern boolean artifact_hit(struct monst *, struct monst *, struct obj *,

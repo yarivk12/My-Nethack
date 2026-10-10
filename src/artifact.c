@@ -16,7 +16,7 @@
  *        the contents, just the total size.
  */
 
-staticfn struct artifact *get_artifact(struct obj *) NONNULL;
+staticfn struct artifact *get_artifact(const struct obj *) NONNULL;
 
 /* #define get_artifact(o) \
     (((o) && ((o)->artifact > 0 && (o)->artifact < AFTER_LAST_ARTIFACT)) \
@@ -727,6 +727,9 @@ defends_when_carried(int adtyp, struct obj *otmp)
 {
     const struct artifact *weap;
 
+    if (is_art(otmp, ART_MASK_OF_TLALOC)
+        && (adtyp == AD_COLD || adtyp == AD_ELEC))
+        return TRUE;
     if ((weap = get_artifact(otmp)) != &artilist[ART_NONARTIFACT])
         return (boolean) (weap->cary.adtyp == adtyp);
     return FALSE;
@@ -751,6 +754,33 @@ protects(struct obj *otmp, boolean being_worn)
  * a potential artifact has just been worn/wielded/picked-up or
  * unworn/unwielded/dropped.  Pickup/drop only set/reset the W_ART mask.
  */
+/* A grant predicate, deliberately independent of ownership: pickup calls the
+ * setter before inventory insertion. Consumers which query live sources must
+ * supply the object's actual equipment mask or iterate direct inventory. */
+boolean
+artifact_extra_property(const struct obj *obj, int prop, long slot)
+{
+    if (!obj) return FALSE;
+    switch (obj->oartifact) {
+    case ART_CLOAK_OF_THE_UNHELD_ONE:
+        return (slot & W_ARMC) && (prop == ANTIMAGIC || prop == FREE_ACTION);
+    case ART_RING_OF_P_HUL:
+        return (slot & W_RING) && prop == ANTIMAGIC;
+    case ART_MASK_OF_TLALOC:
+        return slot == W_ART && (prop == COLD_RES || prop == SHOCK_RES);
+    case ART_EHECAILACOCOZCATL:
+        return (slot & W_AMUL) && prop == REFLECTING;
+    default:
+        return FALSE;
+    }
+}
+
+boolean
+artifact_waterproof(void)
+{
+    return ublindf && ublindf->oartifact == ART_MASK_OF_TLALOC;
+}
+
 void
 set_artifact_intrinsic(
     struct obj *otmp,
@@ -762,9 +792,26 @@ set_artifact_intrinsic(
     struct obj *obj;
     uchar dtyp;
     long spfx;
+    int prop;
 
     if (oart == &artilist[ART_NONARTIFACT])
         return;
+
+    for (prop = 1; prop <= LAST_PROP; ++prop) {
+        boolean retained = FALSE;
+        if (!artifact_extra_property(otmp, prop, wp_mask)) continue;
+        if (!on && wp_mask == W_ART)
+            for (obj = gi.invent; obj; obj = obj->nobj)
+                if (obj != otmp
+                    && (artifact_extra_property(obj, prop, W_ART)
+                        || (prop == COLD_RES && defends_when_carried(AD_COLD, obj))
+                        || (prop == SHOCK_RES && defends_when_carried(AD_ELEC, obj)))) {
+                    retained = TRUE;
+                    break;
+                }
+        if (on) u.uprops[prop].extrinsic |= wp_mask;
+        else if (!retained) u.uprops[prop].extrinsic &= ~wp_mask;
+    }
 
     /* Rebuilding worn artifact properties on restore bypasses Gloves_on(). */
     if (is_art(otmp, ART_HAND_OF_VECNA) && (wp_mask & W_ARMG)) {
@@ -791,6 +838,10 @@ set_artifact_intrinsic(
         mask = &EPoison_resistance;
     else if (dtyp == AD_DRLI)
         mask = &EDrain_resistance;
+    else if (dtyp == AD_SLEE)
+        mask = &ESleep_resistance;
+    else if (dtyp == AD_DISE)
+        mask = &ESick_resistance;
 
     if (mask && wp_mask == W_ART && !on) {
         /* find out if some other artifact also confers this intrinsic;
@@ -799,7 +850,7 @@ set_artifact_intrinsic(
             if (obj != otmp && obj->oartifact) {
                 art = get_artifact(obj);
                 if (art != &artilist[ART_NONARTIFACT]
-                        && art->cary.adtyp == dtyp) {
+                        && defends_when_carried(dtyp, obj)) {
                     mask = (long *) 0;
                     break;
                 }
@@ -917,7 +968,7 @@ set_artifact_intrinsic(
             u.xray_range = -1;
         gv.vision_full_recalc = 1;
     }
-    if ((spfx & SPFX_REFLECT) && (wp_mask & (W_WEP | W_ARMOR))) {
+    if ((spfx & SPFX_REFLECT) && (wp_mask & (W_WEP | W_ARMOR | W_ART))) {
         if (on)
             EReflecting |= wp_mask;
         else
@@ -2357,7 +2408,7 @@ artifact_invocation_cooldown(const struct obj *obj)
 {
     const struct artifact *art = get_artifact(obj);
     return art != &artilist[ART_NONARTIFACT] && art->inv_prop
-        && !is_art(obj, ART_SILVER_KEY) && !is_art(obj, ART_NECRONOMICON);
+        && obj->oartifact != ART_SILVER_KEY && obj->oartifact != ART_NECRONOMICON;
 }
 
 staticfn int
@@ -2452,6 +2503,29 @@ arti_invoke(struct obj *obj)
             break;
         }
         case TAMING: res = invoke_taming(obj); break;
+        case HERO_TELEPORT:
+            tele();
+            res = ECMD_TIME;
+            break;
+        case SUMMON_AIR_ELEMENTAL:
+        case SUMMON_WATER_ELEMENTAL: {
+            int pm = oart->inv_prop == SUMMON_AIR_ELEMENTAL
+                ? PM_AIR_ELEMENTAL : PM_WATER_ELEMENTAL;
+            struct monst *pet = makemon(&mons[pm], u.ux, u.uy,
+                                       MM_EDOG | MM_ADJACENTOK);
+            if (pet) initedog(pet, FALSE);
+            else nothing_special(obj);
+            res = ECMD_TIME;
+            break;
+        }
+        case VOID_LILY_SUMMON:
+            (void) create_critters(rnd(10), (struct permonst *) 0, TRUE);
+            res = ECMD_TIME;
+            break;
+        case EARTH_CRYSTAL_QUAKE:
+            do_earthquake((u.ulevel - 1) / 3 + 1);
+            res = ECMD_TIME;
+            break;
         case HEALING: res = invoke_healing(obj); break;
         case ENERGY_BOOST: res = invoke_energy_boost(obj); break;
         case UNTRAP: res = invoke_untrap(obj); break;
@@ -3169,7 +3243,7 @@ is_art(struct obj *obj, int art)
                              : &artilist[ART_NONARTIFACT]) */
 
 staticfn struct artifact *
-get_artifact(struct obj *obj)
+get_artifact(const struct obj *obj)
 {
     if (obj) {
         int artidx = (int) obj->oartifact;

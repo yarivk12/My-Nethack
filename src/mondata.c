@@ -433,6 +433,7 @@ resists_magm(struct monst *mon)
         if (((o->owornmask & slotmask) != 0L
              && (objects[o->otyp].oc_oprop == ANTIMAGIC
                  || enhancement_confers(o, ANTIMAGIC)
+                 || artifact_extra_property(o, ANTIMAGIC, o->owornmask)
                  || Is_chromatic_armor(o)))
             || (o->oartifact && defends_when_carried(AD_MAGM, o)))
             return TRUE;

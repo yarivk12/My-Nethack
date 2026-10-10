@@ -1217,6 +1217,9 @@ magic_negation(struct monst *mon)
         /* a_can field is only applicable for armor (which must be worn) */
         if ((o->owornmask & W_ARMOR) != 0L) {
             armpro = objects[o->otyp].a_can;
+            if ((o->owornmask & W_ARMC)
+                && o->oartifact == ART_CLOAK_OF_THE_UNHELD_ONE)
+                armpro = 3;
             if (armpro > mc)
                 mc = armpro;
         } else if ((o->owornmask & W_AMUL) != 0L) {

@@ -101,7 +101,12 @@ enum invoke_prop_types {
     ALTMODE,
     /* readable artifact; #invoke safely directs the hero to read it */
     NECRONOMICON,
-    DEATH_MAGIC
+    DEATH_MAGIC,
+    VOID_LILY_SUMMON,
+    EARTH_CRYSTAL_QUAKE,
+    HERO_TELEPORT,
+    SUMMON_AIR_ELEMENTAL,
+    SUMMON_WATER_ELEMENTAL
 };
 
 /* artifact tracking; gift and wish imply found; it also gets set for items

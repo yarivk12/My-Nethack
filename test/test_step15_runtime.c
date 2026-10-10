@@ -719,6 +719,7 @@ static void inspect_tests(void) {
     step15b_window_setup();
     puts("PASS #inspect layout, impacts, certainty, values, sockets, naming and nonmutation cases");
 }
+#include "test_step21_inspect.c"
 static void corpus(void) {
     int i, dl, selected=0, placed=0, failed=0, count, x,y, invalid=0, multiple=0;
     /* Fix the deferred Ludios junction outside the corpus depth range, so
@@ -771,7 +772,7 @@ int step15_test_main(void) {
     if (getenv("STEP15_CORPUS")) {corpus();return 0;}
     eligible_tests();candidates();reservoir_tests();scripted_room();
     free_level();u.uz.dnum=medusa_level.dnum;u.uz.dlevel=40;gi.in_mklev=TRUE;step15_generate();
-    step15b_window_setup();overview_tests();inspect_tests();terrain_activation();
+    step15b_window_setup();overview_tests();inspect_tests();step21_inspect_tests();terrain_activation();
     step15_forge_result=-99;level_finalize_topology();assert(step15_forge_result==-99);
     puts("PASS standalone Lua topology finalization performs no forge selection");
     persistence();

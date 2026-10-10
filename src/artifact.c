@@ -2350,6 +2350,16 @@ arti_invoke_cost(struct obj *obj)
     return TRUE;
 }
 
+/* Only invocation handlers which actually use age as a deadline qualify.
+ * Silver Key travel and Necronomicon reading bypass that mechanism. */
+boolean
+artifact_invocation_cooldown(const struct obj *obj)
+{
+    const struct artifact *art = get_artifact(obj);
+    return art != &artilist[ART_NONARTIFACT] && art->inv_prop
+        && !is_art(obj, ART_SILVER_KEY) && !is_art(obj, ART_NECRONOMICON);
+}
+
 staticfn int
 arti_invoke(struct obj *obj)
 {

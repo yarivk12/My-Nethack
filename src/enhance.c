@@ -1785,6 +1785,41 @@ equipment_refresh(void)
     disp.botl = TRUE;
 }
 
+staticfn void
+inspect_cooldown(winid win, const char *name, long remaining)
+{
+    char buf[BUFSZ];
+    if (remaining > 0)
+        Snprintf(buf, sizeof buf, "%sCooldown: %ld turns remaining", name, remaining);
+    else
+        Snprintf(buf, sizeof buf, "%sCooldown: Ready", name);
+    putstr(win, ATR_NONE, buf);
+}
+
+/* Identification belongs to each power, not merely to the object's base type.
+ * These are views of the existing clocks; inspection never advances them. */
+staticfn void
+inspect_item_cooldowns(winid win, const struct obj *obj)
+{
+    int prop;
+    if (obj->known && obj->dknown && artifact_invocation_cooldown(obj)
+        && !undiscovered_artifact(obj->oartifact))
+        inspect_cooldown(win, "", obj->age > svm.moves ? obj->age - svm.moves : 0L);
+    for (prop = EP_STONING_I; prop <= EP_STONING_IV; ++prop)
+        if (enhancement_has(obj, prop)
+            && enhancement_mask_has(enhancement_known(obj), prop)) {
+            inspect_cooldown(win, "Stoning ", (long) obj->o_stoning_remaining);
+            break;
+        }
+    if (utility_purification_interval(obj))
+        for (prop = EP_PURIFICATION_I; prop <= EP_PURIFICATION_IV; ++prop)
+            if (enhancement_has(obj, prop)
+                && enhancement_mask_has(enhancement_known(obj), prop)) {
+                inspect_cooldown(win, "Purifying ", (long) obj->o_purification_remaining);
+                break;
+            }
+}
+
 int
 doinspect(void)
 {
@@ -1816,6 +1851,7 @@ doinspect(void)
         putstr(win, ATR_NONE, buf);
     }
     putstr(win, ATR_NONE, "");
+    inspect_item_cooldowns(win, obj);
     if (obj->otyp == GENERIC_ESSENCE) {
         putstr(win, ATR_NONE, "Essence: a neutral, stackable Forge crafting material.");
         putstr(win, ATR_NONE, "Weight: 1 per unit. Obtained primarily through Salvage.");

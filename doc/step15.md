@@ -1,3 +1,9 @@
+My-NetHack modification notice, added 2026-10-15.
+Local project integration/modifications; original authorship is retained.
+Recorded project change dates (Git author dates): 2026-09-19, 2026-09-24.
+See doc/license-compliance.md and doc/my-nethack-modifications.json.
+Existing copyright, attribution, license and warranty notices still apply.
+
 # Phase 1 Step 15 â€” forge foundation, recipes, inheritance and gemstone affixing
 
 Step 15A implements forge terrain, natural placement, and war-hammer activation.

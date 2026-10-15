@@ -1,3 +1,8 @@
+-- My-NetHack modification notice, added 2026-10-15.
+-- Local project integration/modifications; original authorship is retained.
+-- Recorded project change dates (Git author dates): 2026-09-07.
+-- See doc/license-compliance.md and doc/my-nethack-modifications.json.
+-- Existing copyright, attribution, license and warranty notices still apply.
 -- Step 6B runtime checks, 2026-09-06. Load with #wizloadlua on generated
 -- DoD floors or inside the Temple of Moloch. Uses existing wizard/Lua APIs;
 -- no production test hooks. Population details can be checked separately

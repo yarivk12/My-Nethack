@@ -1,3 +1,8 @@
+# My-NetHack modification notice, added 2026-10-15.
+# Local project integration/modifications; original authorship is retained.
+# Recorded project change dates (Git author dates): 2026-09-09.
+# See doc/license-compliance.md and doc/my-nethack-modifications.json.
+# Existing copyright, attribution, license and warranty notices still apply.
 """Pinned map geometry and actual Lua content decisions across controlled seeds.
 
 Usage: DONOR_CLONE LUA_EXE OUTPUT_DIRECTORY. Native map/RNG side effects are

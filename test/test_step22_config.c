@@ -1,3 +1,9 @@
+/* My-NetHack modification notice, added 2026-10-15.
+ * Local project integration/modifications; original authorship is retained.
+ * Recorded project change dates (Git author dates): 2026-10-15.
+ * See doc/license-compliance.md and doc/my-nethack-modifications.json.
+ * Existing copyright, attribution, license and warranty notices still apply.
+ */
 static void
 step22_native_config_registry_tests(void)
 {

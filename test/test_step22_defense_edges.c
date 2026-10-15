@@ -1,3 +1,9 @@
+/* My-NetHack modification notice, added 2026-10-15.
+ * Local project integration/modifications; original authorship is retained.
+ * Recorded project change dates (Git author dates): 2026-10-15.
+ * See doc/license-compliance.md and doc/my-nethack-modifications.json.
+ * Existing copyright, attribution, license and warranty notices still apply.
+ */
 /* Native D1 hand/interruption, D2 active-pool, and D4 beam/Mask contracts. */
 extern int step21_ray_checks, step21_ray_redirects, step21_ray_contacts;
 static int step22_edge_positions;

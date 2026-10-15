@@ -1,3 +1,9 @@
+/* My-NetHack modification notice, added 2026-10-15.
+ * Local project integration/modifications; original authorship is retained.
+ * Recorded project change dates (Git author dates): 2026-09-26.
+ * See doc/license-compliance.md and doc/my-nethack-modifications.json.
+ * Existing copyright, attribution, license and warranty notices still apply.
+ */
 /* Included by the native enhancement harness. */
 static struct obj *step16c_loop_target;
 static int step16c_loop_calls;

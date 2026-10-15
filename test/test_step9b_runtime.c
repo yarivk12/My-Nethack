@@ -1,3 +1,9 @@
+/* My-NetHack modification notice, added 2026-10-15.
+ * Local project integration/modifications; original authorship is retained.
+ * Recorded project change dates (Git author dates): 2026-09-09.
+ * See doc/license-compliance.md and doc/my-nethack-modifications.json.
+ * Existing copyright, attribution, license and warranty notices still apply.
+ */
 /* Actual production function bodies, with rendering-only fixture adapters. */
 #define STEP9A_MAIN step9a_main
 #include "test_step9a_runtime.c"

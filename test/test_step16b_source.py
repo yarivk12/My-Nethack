@@ -1,3 +1,8 @@
+# My-NetHack modification notice, added 2026-10-15.
+# Local project integration/modifications; original authorship is retained.
+# Recorded project change dates (Git author dates): 2026-09-25, 2026-09-26.
+# See doc/license-compliance.md and doc/my-nethack-modifications.json.
+# Existing copyright, attribution, license and warranty notices still apply.
 """Step 16B catalogue and damage integration guards."""
 from pathlib import Path
 R = Path(__file__).resolve().parents[1]

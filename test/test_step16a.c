@@ -1,3 +1,10 @@
+/* My-NetHack modification notice, added 2026-10-15.
+ * Local project integration/modifications; original authorship is retained.
+ * Recorded project change dates (Git author dates): 2026-09-25, 2026-09-26,
+ * 2026-09-27.
+ * See doc/license-compliance.md and doc/my-nethack-modifications.json.
+ * Existing copyright, attribution, license and warranty notices still apply.
+ */
 /* Native Step 16A contracts; expectations are independent of the catalogue. */
 extern int step13_hitmu(struct monst *, struct obj *);
 extern int step13_mdamagem(struct monst *, struct monst *, struct obj *);

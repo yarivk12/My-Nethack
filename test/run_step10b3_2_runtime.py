@@ -1,3 +1,8 @@
+# My-NetHack modification notice, added 2026-10-15.
+# Local project integration/modifications; original authorship is retained.
+# Recorded project change dates (Git author dates): 2026-09-15.
+# See doc/license-compliance.md and doc/my-nethack-modifications.json.
+# Existing copyright, attribution, license and warranty notices still apply.
 """Exercise the eight B3-2 artifacts and the live Neutrality-key births."""
 import json
 import re

@@ -1,3 +1,9 @@
+/* My-NetHack modification notice, added 2026-10-15.
+ * Local project integration/modifications; original authorship is retained.
+ * Recorded project change dates (Git author dates): 2026-09-18.
+ * See doc/license-compliance.md and doc/my-nethack-modifications.json.
+ * Existing copyright, attribution, license and warranty notices still apply.
+ */
 /* Included only by mkroom.c in the existing STEP11_TEST diagnostic build.
  * Scripts affect Library decisions only; native object/monster RNG is real. */
 #ifdef NDEBUG

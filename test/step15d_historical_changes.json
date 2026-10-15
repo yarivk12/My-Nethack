@@ -1,6 +1,7 @@
 {
   "include/enhance.h": [
     {
+      "_modification_notice": "My-NetHack modification notice, added 2026-10-15. Local project integration/modifications; original authorship is retained. Recorded project change dates (Git author dates): 2026-09-24. See doc/license-compliance.md and doc/my-nethack-modifications.json. Existing copyright, attribution, license and warranty notices still apply.",
       "before": "",
       "after": "void enhancement_quality_impact(const struct obj *, char *, size_t);\nvoid enhancement_property_impact(const struct obj *, int, int, char *, size_t);\n"
     },

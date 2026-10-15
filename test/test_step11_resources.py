@@ -1,3 +1,8 @@
+# My-NetHack modification notice, added 2026-10-15.
+# Local project integration/modifications; original authorship is retained.
+# Recorded project change dates (Git author dates): 2026-09-16, 2026-09-18.
+# See doc/license-compliance.md and doc/my-nethack-modifications.json.
+# Existing copyright, attribution, license and warranty notices still apply.
 """Pinned donor, protected source and actual DLB/ZIP freshness checks.
 
 python test/test_step11_resources.py DONOR_THEMERMS RELEASE_DIR [PACKAGE_ZIP]

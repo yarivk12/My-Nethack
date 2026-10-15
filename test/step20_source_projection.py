@@ -1,3 +1,8 @@
+# My-NetHack modification notice, added 2026-10-15.
+# Local project integration/modifications; original authorship is retained.
+# Recorded project change dates (Git author dates): 2026-10-08.
+# See doc/license-compliance.md and doc/my-nethack-modifications.json.
+# Existing copyright, attribution, license and warranty notices still apply.
 """Reverse exact reviewed Step 20 deltas for historical source gates.
 
 The frozen manifest is anchored to the committed Step 20 change and its parent.

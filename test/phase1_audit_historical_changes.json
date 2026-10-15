@@ -1,6 +1,7 @@
 {
   "include/extern.h": [
     {
+      "_modification_notice": "My-NetHack modification notice, added 2026-10-15. Local project integration/modifications; original authorship is retained. Recorded project change dates (Git author dates): 2026-09-19. See doc/license-compliance.md and doc/my-nethack-modifications.json. Existing copyright, attribution, license and warranty notices still apply.",
       "before": "extern void do_blinding_ray(struct obj *) NONNULLPTRS;\nextern int doapply(void);\nextern int forge_interact(struct obj *);\nextern boolean forge_eligible(void);\nextern void forge_exclude_area(coordxy, coordxy, coordxy, coordxy);\nextern boolean forge_candidate(coordxy, coordxy);\n",
       "after": "extern void do_blinding_ray(struct obj *) NONNULLPTRS;\nextern int doapply(void);\nextern int forge_interact(struct obj *);\nextern boolean forge_in_shop(coordxy, coordxy);\nextern void forge_check_shops(void);\nextern boolean forge_eligible(void);\nextern void forge_exclude_area(coordxy, coordxy, coordxy, coordxy);\nextern boolean forge_candidate(coordxy, coordxy);\n"
     }

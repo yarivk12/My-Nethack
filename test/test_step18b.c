@@ -1,3 +1,9 @@
+/* My-NetHack modification notice, added 2026-10-15.
+ * Local project integration/modifications; original authorship is retained.
+ * Recorded project change dates (Git author dates): 2026-10-04.
+ * See doc/license-compliance.md and doc/my-nethack-modifications.json.
+ * Existing copyright, attribution, license and warranty notices still apply.
+ */
 /* Native Step 18B transactions, using the existing Forge fixture helpers. */
 static const struct forge_recipe step18b_expected[] = {
     { HELM_OF_BRILLIANCE, { { HELMET, 1 }, { POT_GAIN_ABILITY, 1 } } },

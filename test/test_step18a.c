@@ -1,3 +1,9 @@
+/* My-NetHack modification notice, added 2026-10-15.
+ * Local project integration/modifications; original authorship is retained.
+ * Recorded project change dates (Git author dates): 2026-10-03, 2026-10-04.
+ * See doc/license-compliance.md and doc/my-nethack-modifications.json.
+ * Existing copyright, attribution, license and warranty notices still apply.
+ */
 /* Step 18A integration tests share apply.c's private Forge implementation. */
 static const struct forge_recipe step18a_expected[] = {
     { KATANA, { { LONG_SWORD, 1 }, { LONG_SWORD, 1 } } },

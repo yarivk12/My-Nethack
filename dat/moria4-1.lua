@@ -1,3 +1,8 @@
+-- My-NetHack modification notice, added 2026-10-15.
+-- Local project integration/modifications; original authorship is retained.
+-- Recorded project change dates (Git author dates): 2026-09-07.
+-- See doc/license-compliance.md and doc/my-nethack-modifications.json.
+-- Existing copyright, attribution, license and warranty notices still apply.
 -- Ruins of the Dwarrowdelf, by Guest41. NetHack license.
 -- UnNetHack 439b8d63d3d1ca78fb08588dd43f61874114b21a:dat/moria.des (moria4-1).
 -- Step 8A Lua port; runtime dependencies documented in doc/step8a.md.

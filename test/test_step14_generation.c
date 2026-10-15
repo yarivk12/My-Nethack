@@ -1,3 +1,10 @@
+/* My-NetHack modification notice, added 2026-10-15.
+ * Local project integration/modifications; original authorship is retained.
+ * Recorded project change dates (Git author dates): 2026-09-18, 2026-09-19,
+ * 2026-09-24, 2026-09-25, 2026-09-27.
+ * See doc/license-compliance.md and doc/my-nethack-modifications.json.
+ * Existing copyright, attribution, license and warranty notices still apply.
+ */
 /* Included in the established linked native diagnostic executable. */
 extern void step14_fill_empty_maze(void);
 static void free_level(void);

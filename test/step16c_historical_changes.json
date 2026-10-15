@@ -1,6 +1,7 @@
 {
   "include/context.h": [
     {
+      "_modification_notice": "My-NetHack modification notice, added 2026-10-15. Local project integration/modifications; original authorship is retained. Recorded project change dates (Git author dates): 2026-09-26. See doc/license-compliance.md and doc/my-nethack-modifications.json. Existing copyright, attribution, license and warranty notices still apply.",
       "before": "    int warnlevel;          /* threshold (digit) to warn about unseen mons */\n    long next_attrib_check; /* next attribute check */\n    long seer_turn;         /* when random clairvoyance will next kick in */\n    long snickersnee_turn;  /* Snickersnee last used to distance attack */\n    long stethoscope_seq;   /* when a stethoscope was last used; first use\n                             * during a move takes no time, second uses move */\n",
       "after": "    int warnlevel;          /* threshold (digit) to warn about unseen mons */\n    long next_attrib_check; /* next attribute check */\n    long seer_turn;         /* when random clairvoyance will next kick in */\n    long purification_snapshot_turn; /* moves + 1, even when no sources */\n    long snickersnee_turn;  /* Snickersnee last used to distance attack */\n    long stethoscope_seq;   /* when a stethoscope was last used; first use\n                             * during a move takes no time, second uses move */\n"
     }

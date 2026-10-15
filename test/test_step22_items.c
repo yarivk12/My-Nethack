@@ -1,3 +1,9 @@
+/* My-NetHack modification notice, added 2026-10-15.
+ * Local project integration/modifications; original authorship is retained.
+ * Recorded project change dates (Git author dates): 2026-10-15.
+ * See doc/license-compliance.md and doc/my-nethack-modifications.json.
+ * Existing copyright, attribution, license and warranty notices still apply.
+ */
 /* Included by the native runtime harness. Exercises native commands and
  * native storage/timers, not a second implementation of the property rules. */
 extern int step22_test_icebox_insert(struct obj *, struct obj *);

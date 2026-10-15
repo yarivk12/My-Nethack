@@ -1,3 +1,9 @@
+# My-NetHack modification notice, added 2026-10-15.
+# Local project integration/modifications; original authorship is retained.
+# Recorded project change dates (Git author dates): 2026-09-07, 2026-09-09,
+# 2026-09-10, 2026-09-15.
+# See doc/license-compliance.md and doc/my-nethack-modifications.json.
+# Existing copyright, attribution, license and warranty notices still apply.
 """Run from a VS developer shell: python test/run_step7.py OUTPUT_DIRECTORY.
 
 Compiles current production scheduler/light bodies with fixture adapters and

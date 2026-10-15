@@ -1,3 +1,8 @@
+-- My-NetHack modification notice, added 2026-10-15.
+-- Local project integration/modifications; original authorship is retained.
+-- Recorded project change dates (Git author dates): 2026-09-07.
+-- See doc/license-compliance.md and doc/my-nethack-modifications.json.
+-- Existing copyright, attribution, license and warranty notices still apply.
 -- lua test_step8a_content.lua PINNED_MORIA_DES DAT_DIRECTORY [SEEDS]
 -- Independent donor geometry + executable content contracts for all ten maps.
 local f=assert(io.open(assert(arg[1]),"rb")); local donor=f:read("*a"); f:close()

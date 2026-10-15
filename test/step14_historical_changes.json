@@ -1,6 +1,7 @@
 {
   "include/hack.h": [
     {
+      "_modification_notice": "My-NetHack modification notice, added 2026-10-15. Local project integration/modifications; original authorship is retained. Recorded project change dates (Git author dates): 2026-09-18. See doc/license-compliance.md and doc/my-nethack-modifications.json. Existing copyright, attribution, license and warranty notices still apply.",
       "before": "                                     * mesg for ^G */\n#define MM_IGNORELAVA   0x00080000L /* ignore lava when positioning */\n#define MM_MINVIS       0x00100000L /* for ^G/create_particular */\n/* if more MM_ flag masks are added, skip or renumber the GP_ one(s) */\n#define GP_ALLOW_XY     0x00200000L /* [actually used by enexto() to decide\n                                     * whether to make an extra call to\n",
       "after": "                                     * mesg for ^G */\n#define MM_IGNORELAVA   0x00080000L /* ignore lava when positioning */\n#define MM_MINVIS       0x00100000L /* for ^G/create_particular */\n#define MM_NATURAL      0x00200000L /* opt in original natural equipment */\n/* if more MM_ flag masks are added, skip or renumber the GP_ one(s) */\n#define GP_ALLOW_XY     0x00200000L /* [actually used by enexto() to decide\n                                     * whether to make an extra call to\n"
     }

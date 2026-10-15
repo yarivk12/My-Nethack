@@ -1,6 +1,7 @@
 {
   "include/you.h": [
     {
+      "_modification_notice": "My-NetHack modification notice, added 2026-10-15. Local project integration/modifications; original authorship is retained. Recorded project change dates (Git author dates): 2026-09-18. See doc/license-compliance.md and doc/my-nethack-modifications.json. Existing copyright, attribution, license and warranty notices still apply.",
       "before": " */\nstruct _hitmon_data {\n    int dmg;  /* damage */\n    int thrown;\n",
       "after": " */\nstruct _hitmon_data {\n    struct obj *enhance_obj; /* cleared if an eligible object breaks */\n    int dmg;  /* damage */\n    int thrown;\n"
     }

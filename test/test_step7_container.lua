@@ -1,3 +1,8 @@
+-- My-NetHack modification notice, added 2026-10-15.
+-- Local project integration/modifications; original authorship is retained.
+-- Recorded project change dates (Git author dates): 2026-09-07.
+-- See doc/license-compliance.md and doc/my-nethack-modifications.json.
+-- Existing copyright, attribution, license and warranty notices still apply.
 -- #wizloadlua after putting a lit Magic Candle into a carried sack.
 local o, found = u.inventory, false;
 while not o:isnull() do

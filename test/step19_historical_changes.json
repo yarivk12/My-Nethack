@@ -1,4 +1,5 @@
 {
+  "_modification_notice": "My-NetHack modification notice, added 2026-10-15. Local project integration/modifications; original authorship is retained. Recorded project change dates (Git author dates): 2026-10-06. See doc/license-compliance.md and doc/my-nethack-modifications.json. Existing copyright, attribution, license and warranty notices still apply.",
   "include/artifact.h": {
     "baseline_sha256": "af26170f0c981ef5542a3ff0746fecb7fb0c26d93d16e23ac19712c7c6ab0082",
     "hunks": [

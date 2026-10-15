@@ -1,3 +1,11 @@
+-- My-NetHack modification notice, added 2026-10-15.
+-- Local project integration/modifications; original authorship is retained.
+-- Recorded project change dates (Git author dates): 2026-09-09.
+-- See doc/license-compliance.md and doc/my-nethack-modifications.json.
+-- Existing copyright, attribution, license and warranty notices still apply.
+-- Restored donor notices from dNetHack 17bc64f77ac566e7b90c0c6c6652e2a5f3a995c0
+-- Source: dnethack-3.4.3/dat/chaos2.des
+-- NetHack may be freely redistributed.  See license for details.
 -- NetHack 5.0 Lua conversion; see doc/step9c.md.
 -- dNetHack 17bc64f77ac566e7b90c0c6c6652e2a5f3a995c0:dnethack-3.4.3/dat/chaos2.des
 des.level_init({style="solidfill",fg=" "})

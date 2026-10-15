@@ -1,3 +1,10 @@
+/* My-NetHack modification notice, added 2026-10-15.
+ * Local project integration/modifications; original authorship is retained.
+ * Recorded project change dates (Git author dates): 2026-09-18, 2026-09-19,
+ * 2026-09-25, 2026-09-27.
+ * See doc/license-compliance.md and doc/my-nethack-modifications.json.
+ * Existing copyright, attribution, license and warranty notices still apply.
+ */
 /* Included by test_step13_runtime.c after item() and combat-path declarations.
  * Expectations below are specification data, independent of the catalog. */
 static const struct {

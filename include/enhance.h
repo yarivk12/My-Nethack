@@ -1,3 +1,10 @@
+/* My-NetHack modification notice, added 2026-10-15.
+ * Local project integration/modifications; original authorship is retained.
+ * Recorded project change dates (Git author dates): 2026-09-18, 2026-09-24,
+ * 2026-09-25, 2026-09-26, 2026-09-27.
+ * See doc/license-compliance.md and doc/my-nethack-modifications.json.
+ * Existing copyright, attribution, license and warranty notices still apply.
+ */
 /* Shared equipment enhancement engine and opt-in natural acquisition. */
 #ifndef ENHANCE_H
 #define ENHANCE_H

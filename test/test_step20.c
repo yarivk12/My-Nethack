@@ -1,3 +1,9 @@
+/* My-NetHack modification notice, added 2026-10-15.
+ * Local project integration/modifications; original authorship is retained.
+ * Recorded project change dates (Git author dates): 2026-10-07, 2026-10-08.
+ * See doc/license-compliance.md and doc/my-nethack-modifications.json.
+ * Existing copyright, attribution, license and warranty notices still apply.
+ */
 /* Runs in the real engine, after the existing Step 19 regression fixtures. */
 extern int step20_claw_damage(struct monst *, struct monst *);
 static const struct {

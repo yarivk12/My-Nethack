@@ -1,3 +1,8 @@
+# My-NetHack modification notice, added 2026-10-15.
+# Local project integration/modifications; original authorship is retained.
+# Recorded project change dates (Git author dates): 2026-09-24, 2026-09-25.
+# See doc/license-compliance.md and doc/my-nethack-modifications.json.
+# Existing copyright, attribution, license and warranty notices still apply.
 """Reverse frozen Step 15D hunks; old source contracts retain exact byte gates."""
 from step16a_source_projection import project as step16a_project
 import json

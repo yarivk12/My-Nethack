@@ -1,3 +1,8 @@
+# My-NetHack modification notice, added 2026-10-15.
+# Local project integration/modifications; original authorship is retained.
+# Recorded project change dates (Git author dates): 2026-10-08, 2026-10-10.
+# See doc/license-compliance.md and doc/my-nethack-modifications.json.
+# Existing copyright, attribution, license and warranty notices still apply.
 """Check catalogue tile order, exact reused art, and generated glyph mappings.
 
 Run after the native tilemap/tile2bmp Release build, like test_step9a_tiles.py.

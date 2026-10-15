@@ -1,3 +1,9 @@
+/* My-NetHack modification notice, added 2026-10-15.
+ * Local project integration/modifications; original authorship is retained.
+ * Recorded project change dates (Git author dates): 2026-09-09.
+ * See doc/license-compliance.md and doc/my-nethack-modifications.json.
+ * Existing copyright, attribution, license and warranty notices still apply.
+ */
 /* Exact production/donor generator comparison. The runner compiles this once
  * per generator with the same deterministic RNG, map storage and wallifier.
  * Actual wall topology and travel are checked separately in packaged games. */

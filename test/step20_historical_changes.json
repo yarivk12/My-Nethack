@@ -1,4 +1,5 @@
 {
+  "_modification_notice": "My-NetHack modification notice, added 2026-10-15. Local project integration/modifications; original authorship is retained. Recorded project change dates (Git author dates): 2026-10-08. See doc/license-compliance.md and doc/my-nethack-modifications.json. Existing copyright, attribution, license and warranty notices still apply.",
   "baseline_commit": "052e5f9855540c9990b633074ef619c1fb7f5c66",
   "accepted_commit": "2f067f4094eba86e520dd07b7e35a6eff1fcd6ad",
   "files": {

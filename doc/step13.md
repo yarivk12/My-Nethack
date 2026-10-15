@@ -1,3 +1,10 @@
+My-NetHack modification notice, added 2026-10-15.
+Local project integration/modifications; original authorship is retained.
+Recorded project change dates (Git author dates): 2026-09-18, 2026-09-19,
+2026-09-24.
+See doc/license-compliance.md and doc/my-nethack-modifications.json.
+Existing copyright, attribution, license and warranty notices still apply.
+
 # Step 13 — Unified Equipment Enhancement Engine (finalized by Step 14)
 
 This document describes the current shared engine. Step 14 supersedes the

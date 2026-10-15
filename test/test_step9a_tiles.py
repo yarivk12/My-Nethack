@@ -1,3 +1,9 @@
+# My-NetHack modification notice, added 2026-10-15.
+# Local project integration/modifications; original authorship is retained.
+# Recorded project change dates (Git author dates): 2026-09-09, 2026-09-15,
+# 2026-09-19.
+# See doc/license-compliance.md and doc/my-nethack-modifications.json.
+# Existing copyright, attribution, license and warranty notices still apply.
 """Check generated glyph references against tile text and name reused art.
 
 Run after a Windows Release build; reads generated files without changing them.

@@ -1,3 +1,10 @@
+/* My-NetHack modification notice, added 2026-10-15.
+ * Local project integration/modifications; original authorship is retained.
+ * Recorded project change dates (Git author dates): 2026-09-06, 2026-09-07,
+ * 2026-09-09, 2026-09-15.
+ * See doc/public-source-compliance.md and doc/public-main-modifications.json.
+ * Existing copyright, attribution, license and warranty notices still apply.
+ */
 /* Step 4.5: production function bodies, synthetic topology and file fixtures.
  * Run with run_ledger_runtime.ps1 from a Visual Studio developer shell.
  * Recovery payloads are opaque test bytes, not playable game saves.

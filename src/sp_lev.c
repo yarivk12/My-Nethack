@@ -1,3 +1,9 @@
+/* My-NetHack modification notice, added 2026-10-15.
+ * Local project integration/modifications; original authorship is retained.
+ * Recorded project change dates (Git author dates): 2026-09-09, 2026-09-15.
+ * See doc/public-source-compliance.md and doc/public-main-modifications.json.
+ * Existing copyright, attribution, license and warranty notices still apply.
+ */
 /* NetHack 5.0	sp_lev.c	$NHDT-Date: 1778778225 2026/05/14 17:03:45 $  $NHDT-Branch: NetHack-5.0 $:$NHDT-Revision: 1.387 $ */
 /*      Copyright (c) 1989 by Jean-Christophe Collet */
 /* NetHack may be freely redistributed.  See license for details. */

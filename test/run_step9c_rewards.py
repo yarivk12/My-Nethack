@@ -1,3 +1,8 @@
+# My-NetHack modification notice, added 2026-10-15.
+# Local project integration/modifications; original authorship is retained.
+# Recorded project change dates (Git author dates): 2026-09-09.
+# See doc/public-source-compliance.md and doc/public-main-modifications.json.
+# Existing copyright, attribution, license and warranty notices still apply.
 """Wizard syllable identification, timed/permanent AC, masks and save/reload.
 
 This focused check does not claim active Word or full Mithardir validation.

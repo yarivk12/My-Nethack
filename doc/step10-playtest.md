@@ -1,3 +1,9 @@
+My-NetHack modification notice, added 2026-10-15.
+Local project integration/modifications; original authorship is retained.
+Recorded project change dates (Git author dates): 2026-09-15.
+See doc/public-source-compliance.md and doc/public-main-modifications.json.
+Existing copyright, attribution, license and warranty notices still apply.
+
 # Step 10D user manual validation guide
 
 This is the user-executable handoff for the Step 10 Neutral Quest, Lost

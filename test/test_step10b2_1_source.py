@@ -1,3 +1,8 @@
+# My-NetHack modification notice, added 2026-10-15.
+# Local project integration/modifications; original authorship is retained.
+# Recorded project change dates (Git author dates): 2026-09-15.
+# See doc/public-source-compliance.md and doc/public-main-modifications.json.
+# Existing copyright, attribution, license and warranty notices still apply.
 """Narrow source contract for Step 10B2-1 mechanics and non-activation."""
 from pathlib import Path
 

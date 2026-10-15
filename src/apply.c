@@ -1,3 +1,10 @@
+/* My-NetHack modification notice, added 2026-10-15.
+ * Local project integration/modifications; original authorship is retained.
+ * Recorded project change dates (Git author dates): 2026-09-07, 2026-09-09,
+ * 2026-09-15.
+ * See doc/public-source-compliance.md and doc/public-main-modifications.json.
+ * Existing copyright, attribution, license and warranty notices still apply.
+ */
 /* NetHack 5.0	apply.c	$NHDT-Date: 1781973040 2026/06/20 16:30:40 $  $NHDT-Branch: NetHack-5.0 $:$NHDT-Revision: 1.482 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Robert Patrick Rankin, 2012. */

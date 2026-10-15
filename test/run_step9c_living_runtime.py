@@ -1,3 +1,8 @@
+# My-NetHack modification notice, added 2026-10-15.
+# Local project integration/modifications; original authorship is retained.
+# Recorded project change dates (Git author dates): 2026-09-09.
+# See doc/public-source-compliance.md and doc/public-main-modifications.json.
+# Existing copyright, attribution, license and warranty notices still apply.
 """Actual worn living/barnacle armor tentacles before and after save/restore."""
 import re,sys
 from run_step8a_runtime import Game as BaseGame

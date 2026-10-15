@@ -1,3 +1,10 @@
+/* My-NetHack modification notice, added 2026-10-15.
+ * Local project integration/modifications; original authorship is retained.
+ * Recorded project change dates (Git author dates): 2026-09-07, 2026-09-09,
+ * 2026-09-15.
+ * See doc/public-source-compliance.md and doc/public-main-modifications.json.
+ * Existing copyright, attribution, license and warranty notices still apply.
+ */
 /* NetHack 5.0	objects.h	$NHDT-Date: 1781973085 2026/06/20 16:31:25 $  $NHDT-Branch: NetHack-5.0 $:$NHDT-Revision: 1.39 $ */
 /* Copyright (c) Mike Threepoint, 1989.                           */
 /* NetHack may be freely redistributed.  See license for details. */

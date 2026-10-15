@@ -1,3 +1,9 @@
+/* My-NetHack modification notice, added 2026-10-15.
+ * Local project integration/modifications; original authorship is retained.
+ * Recorded project change dates (Git author dates): 2026-09-15.
+ * See doc/public-source-compliance.md and doc/public-main-modifications.json.
+ * Existing copyright, attribution, license and warranty notices still apply.
+ */
 /* Real enum declarations, historical save codecs, and version rejection.
  * Fixture IO only: no production hooks, maps, or branch registration. */
 #include "hack.h"

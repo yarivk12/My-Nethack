@@ -1,3 +1,8 @@
+-- My-NetHack modification notice, added 2026-10-15.
+-- Local project integration/modifications; original authorship is retained.
+-- Recorded project change dates (Git author dates): 2026-09-09.
+-- See doc/public-source-compliance.md and doc/public-main-modifications.json.
+-- Existing copyright, attribution, license and warranty notices still apply.
 -- Executable map conversion checks against the pinned Dragon Caves resource.
 local f=assert(io.open(assert(arg[1]),"rb"))
 local donor=f:read("*a"):gsub("\r\n","\n");f:close()

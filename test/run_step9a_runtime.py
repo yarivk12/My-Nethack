@@ -1,3 +1,8 @@
+# My-NetHack modification notice, added 2026-10-15.
+# Local project integration/modifications; original authorship is retained.
+# Recorded project change dates (Git author dates): 2026-09-09, 2026-09-10.
+# See doc/public-source-compliance.md and doc/public-main-modifications.json.
+# Existing copyright, attribution, license and warranty notices still apply.
 """Traverse the packaged Sheol branch in wizard mode, preserving save state.
 
 All generated games and logs are written to a new external output directory.

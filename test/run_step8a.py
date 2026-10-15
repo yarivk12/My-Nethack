@@ -1,3 +1,8 @@
+# My-NetHack modification notice, added 2026-10-15.
+# Local project integration/modifications; original authorship is retained.
+# Recorded project change dates (Git author dates): 2026-09-07.
+# See doc/public-source-compliance.md and doc/public-main-modifications.json.
+# Existing copyright, attribution, license and warranty notices still apply.
 """VS developer shell: python test/run_step8a.py OUTPUT_DIRECTORY.
 
 Compile production function bodies and real databases, then execute contracts.

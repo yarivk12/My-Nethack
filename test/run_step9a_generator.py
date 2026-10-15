@@ -1,3 +1,8 @@
+# My-NetHack modification notice, added 2026-10-15.
+# Local project integration/modifications; original authorship is retained.
+# Recorded project change dates (Git author dates): 2026-09-09.
+# See doc/public-source-compliance.md and doc/public-main-modifications.json.
+# Existing copyright, attribution, license and warranty notices still apply.
 """VS shell: run_step9a_generator.py PINNED_UNNETHACK_CLONE NEW_OUTPUT_DIR.
 
 Read the immutable revision with git show; compile and compare donor and actual

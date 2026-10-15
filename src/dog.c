@@ -465,6 +465,11 @@ mon_arrive(struct monst *mtmp, int when)
     restore_cham(mtmp);
 
     if (mtmp == u.usteed) {
+        /* Mounted monsters share the hero's legal square, without being
+         * inserted in the map's monster grid. Native steed death handles
+         * dismounting, but still needs valid coordinates for inventory. */
+        mtmp->mx = u.ux; mtmp->my = u.uy;
+        (void) ex_guardian_expire(mtmp);
         mtmp->mstate &= ~MON_STILL_ARRIVING;
         return; /* don't place steed on the map */
     }
@@ -479,6 +484,8 @@ mon_arrive(struct monst *mtmp, int when)
             rloc_to(mtmp, u.ux, u.uy);
         else
             mnexto(mtmp, RLOC_NOMSG);
+        if (isok(mtmp->mx, mtmp->my) && m_at(mtmp->mx, mtmp->my) == mtmp)
+            (void) ex_guardian_expire(mtmp);
         mtmp->mstate &= ~MON_STILL_ARRIVING;
         return;
     } else if (when == Wiz_arrive) {
@@ -615,7 +622,9 @@ mon_arrive(struct monst *mtmp, int when)
     else
         failed_to_place = !rloc(mtmp, RLOC_NOMSG);
 
-    if (failed_to_place) {
+    if (!failed_to_place) {
+        (void) ex_guardian_expire(mtmp);
+    } else {
         if (when != Wiz_arrive)
             /* losedogs() will deal with this */
             relmon(mtmp, &failed_arrivals);
@@ -662,6 +671,12 @@ mon_catchup_elapsed_time(
     long nmv) /* number of moves */
 {
     int imv = 0; /* avoid zillions of casts and lint warnings */
+    long regen_start, regen_end, regen_ticks;
+
+    if (!(mtmp->mstate & (MON_MIGRATING | MON_LIMBO | MON_STILL_ARRIVING))
+        && isok(mtmp->mx, mtmp->my)
+        && (m_at(mtmp->mx, mtmp->my) == mtmp || mtmp == u.usteed)
+        && ex_guardian_expire(mtmp)) return;
 
 #if defined(DEBUG) || (NH_DEVEL_STATUS != NH_STATUS_RELEASED)
 
@@ -730,10 +745,32 @@ mon_catchup_elapsed_time(
         m_unleash(mtmp, FALSE);
     }
 
-    /* recover lost hit points */
-    if (!regenerates(mtmp->data))
-        imv /= 20;
-    healmon(mtmp, imv, 0);
+    /* Without suppression overlapping this interval retain native catch-up
+     * exactly, including its established rounding after the effect expires. */
+    if (!mtmp->ex_regen_until || mtmp->ex_regen_until <= mtmp->mlstmv) {
+        if (!regenerates(mtmp->data)) imv /= 20;
+        if (!(mtmp->ex_guardian_until && svm.moves >= mtmp->ex_guardian_until))
+            healmon(mtmp, imv, 0);
+        set_mon_lastmove(mtmp);
+        return;
+    }
+
+    /* Recovery covers the actual unsuppressed world-turn interval only.
+     * Suppression expires at its saved absolute deadline, not on arrival. */
+    regen_end = mtmp->mlstmv + nmv;
+    regen_start = max(mtmp->mlstmv, mtmp->ex_regen_until - 1);
+    regen_start = min(regen_start, regen_end);
+    regen_ticks = max(0L, regen_end - regen_start);
+    if (mtmp->data->mflags3 & M3_NOREGEN)
+        regen_ticks = 0;
+    else if (!(regenerates(mtmp->data)
+               || enhancement_mon_confers(mtmp, REGENERATION)
+               || ((mtmp->data->mflags3 & M3_BLINKER) && !mtmp->mflee)))
+        regen_ticks = regen_end / 20 - regen_start / 20;
+    if (mith_mon_syllable(mtmp) == MITH_HOON)
+        regen_ticks += 10 * max(0L, regen_end - regen_start);
+    if (!(mtmp->ex_guardian_until && svm.moves >= mtmp->ex_guardian_until))
+        healmon(mtmp, (int) min(regen_ticks, (long) LARGEST_INT), 0);
 
     set_mon_lastmove(mtmp);
 }

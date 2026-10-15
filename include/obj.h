@@ -6,6 +6,7 @@
 #ifndef OBJ_H
 #define OBJ_H
 #include "affix.h"
+#include "exotic.h"
 
 /* #define obj obj_nh */ /* uncomment for SCO UNIX, which has a conflicting
                           * typedef for "obj" in <sys/types.h> */
@@ -191,6 +192,7 @@ struct obj {
     uint8 o_enh_values[8];  /* acquired STR I-IV, DEX I-IV magnitudes */
     uint8 o_socket_capacity; /* actual capacity, independent of base maximum */
     struct item_socket o_sockets[2];
+    struct ex_object_state exotic;
 #define OBP_ANARCHIC 0x0001UL
 #define OBP_ACID     0x0002UL
 #define OBP_SLEEP    0x0004UL

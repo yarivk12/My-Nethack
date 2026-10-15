@@ -4,6 +4,7 @@
 /* NetHack may be freely redistributed.  See license for details. */
 
 #include "hack.h"
+#include "exotic_combat.h"
 #include "mfndpos.h"
 
 staticfn void pet_sanity_check(struct monst *, const char *);
@@ -78,6 +79,7 @@ sanity_check_single_mon(
 {
     struct permonst *mptr = mtmp->data;
     coordxy mx = mtmp->mx, my = mtmp->my;
+
 
     if (!mptr || mptr < &mons[LOW_PM] || mptr > &mons[HIGH_PM]) {
         /* most sanity checks issue warnings if they detect a problem,
@@ -1095,7 +1097,8 @@ minliquid_core(struct monst *mtmp)
         if (!is_clinger(mtmp->data) && !likes_lava(mtmp->data)) {
             /* not fair...?  hero doesn't automatically teleport away
                from lava, just from water */
-            if (can_teleport(mtmp->data) && !tele_restrict(mtmp)) {
+            if (can_teleport(mtmp->data) && !tele_restrict(mtmp)
+                && !ex_innate_muted(mtmp, EX_INNATE_TELEPORT)) {
                 if (rloc(mtmp, RLOC_MSG))
                     return 0;
             }
@@ -1153,7 +1156,8 @@ minliquid_core(struct monst *mtmp)
             && !cant_drown(mtmp->data)) {
             /* like hero with teleport intrinsic or spell, teleport away
                if possible */
-            if (can_teleport(mtmp->data) && !tele_restrict(mtmp)) {
+            if (can_teleport(mtmp->data) && !tele_restrict(mtmp)
+                && !ex_innate_muted(mtmp, EX_INNATE_TELEPORT)) {
                 if (rloc(mtmp, RLOC_MSG))
                     return 0;
             }
@@ -1260,6 +1264,7 @@ mcalcdistress(void)
 staticfn void
 m_calcdistress(struct monst *mtmp)
 {
+    if (ex_guardian_expire(mtmp)) return;
     /* must check non-moving monsters once/turn in case they managed
        to end up in water or lava; note: when not in liquid they regen,
        shape-shift, timeout temporary maladies just like other monsters */
@@ -1272,12 +1277,14 @@ m_calcdistress(struct monst *mtmp)
 
     /* regenerate hit points */
     mon_regen(mtmp, FALSE);
-    mith_worm_wind(mtmp);
+    if (!ex_innate_muted(mtmp, EX_INNATE_WIND)) mith_worm_wind(mtmp);
 
     /* possibly polymorph shapechangers and lycanthropes */
-    if (ismnum(mtmp->cham))
+    if (ismnum(mtmp->cham)
+        && !ex_innate_muted(mtmp, EX_INNATE_TRANSFORM))
         decide_to_shapeshift(mtmp);
-    were_change(mtmp);
+    if (!ex_innate_muted(mtmp, EX_INNATE_TRANSFORM))
+        were_change(mtmp);
 
     /* gradually time out temporary problems */
     if (mtmp->mblinded && !--mtmp->mblinded)
@@ -1292,9 +1299,13 @@ m_calcdistress(struct monst *mtmp)
 
 /* perform movement for a single monster.
    meant to be used with iter_mons_safe. */
+#ifdef STEP15_TEST
+void step22_test_mon_distress(struct monst *m) { m_calcdistress(m); }
+#endif
 boolean
 movemon_singlemon(struct monst *mtmp)
 {
+    if (ex_guardian_expire(mtmp)) return FALSE;
     /* end monster movement early if hero is flagged to leave the level */
     if (u.utotype
 #ifdef SAFERHANGUP
@@ -2853,6 +2864,8 @@ m_detach(
     boolean due_to_death)
 {
     coordxy mx = mtmp->mx, my = mtmp->my;
+
+    ex_guardian_detach(mtmp);
 
     if (mtmp->mleashed)
         m_unleash(mtmp, FALSE);
@@ -4505,12 +4518,14 @@ mith_worm_wind(struct monst *mtmp)
 void
 m_respond(struct monst *mtmp)
 {
-    if (mtmp->data->msound == MS_SHRIEK && !um_dist(mtmp->mx, mtmp->my, 1))
+    if (mtmp->data->msound == MS_SHRIEK && !um_dist(mtmp->mx, mtmp->my, 1)
+        && !ex_innate_muted(mtmp, EX_INNATE_SHRIEK))
         m_respond_shrieker(mtmp);
     if (mtmp->data == &mons[PM_MEDUSA] && couldsee(mtmp->mx, mtmp->my))
         m_respond_medusa(mtmp);
     /* Erinyes will inform surrounding monsters of your crimes */
-    if (mtmp->data == &mons[PM_ERINYS] && !mtmp->mpeaceful && m_canseeu(mtmp))
+    if (mtmp->data == &mons[PM_ERINYS] && !mtmp->mpeaceful && m_canseeu(mtmp)
+        && !ex_innate_muted(mtmp, EX_INNATE_SHRIEK))
         aggravate();
 }
 
@@ -5260,6 +5275,8 @@ decide_to_shapeshift(struct monst *mon)
     unsigned was_female = mon->female;
     boolean dochng = FALSE;
 
+    if (ex_innate_muted(mon, EX_INNATE_TRANSFORM)) return;
+
     if (!is_vampshifter(mon)) {
         /* regular shapeshifter; 'ptr' is Null */
         if (!mon->mspec_used && !rn2(6)) {
@@ -5727,6 +5744,10 @@ newcham(
 
     if (mdat == olddata)
         return 0; /* still the same monster */
+
+    mtmp->ex_mute_ability = 0;
+    mtmp->ex_mute_until = 0;
+    mtmp->ex_mute_species = monsndx(mdat);
 
     mgender_from_permonst(mtmp, mdat);
     /* Endgame mplayers start out as "Foo the Bar", but some of the

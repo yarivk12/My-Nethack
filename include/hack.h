@@ -41,6 +41,7 @@
 #include "winprocs.h"
 #include "vision.h"
 #include "you.h"
+#include "exotic_combat.h"
 
 #define TELL 1
 #define NOTELL 0

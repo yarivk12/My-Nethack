@@ -1327,6 +1327,8 @@ useupall(struct obj *obj)
 void
 useup(struct obj *obj)
 {
+    if (ex_consumption_retain(obj))
+        return;
     /* Note:  This works correctly for containers because they (containers)
        don't merge. */
     if (obj->quan > 1L) {
@@ -4450,6 +4452,12 @@ mergable(
        explicitly marked to prevent merge, or if not mergable in general */
     if (obj == otmp || obj->oartifact || otmp->oartifact || obj->otyp != otmp->otyp
         || obj->nomerge || otmp->nomerge || !objects[obj->otyp].oc_merge)
+        return FALSE;
+
+    /* Never average away a preserved corpse's fractional effective age,
+       captured rank, or one-time lock. Keeping them separate is lossless. */
+    if (obj->otyp == CORPSE
+        && (obj->exotic.preserved || otmp->exotic.preserved))
         return FALSE;
 
     if (enhancement_slot_count(obj) || enhancement_slot_count(otmp)

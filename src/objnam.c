@@ -1973,6 +1973,8 @@ corpse_xname(
        to precede capitalized unique monsters (pnames are handled above) */
     if (the_prefix)
         Strcat(nambuf, "the ");
+    if (otmp->otyp == CORPSE && otmp->exotic.preserved)
+        Strcat(nambuf, "preserved ");
     /* note: over time, various instances of the(mon_name()) have crept
        into the code, so the() has been modified to deal with capitalized
        monster names; we could switch to using it below like an() */

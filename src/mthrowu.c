@@ -4,6 +4,7 @@
 /* NetHack may be freely redistributed.  See license for details. */
 
 #include "hack.h"
+#include "exotic_combat.h"
 
 staticfn int thitu_enhanced(int, int, struct obj **, const char *,
                             struct obj *, enum enhance_use, struct monst *);
@@ -375,6 +376,8 @@ mith_internal_projectile(struct monst *magr, struct monst *mdef,
 {
     struct monst *oldtarget;
     struct obj *stone;
+
+    if (ex_muted(magr, mattk->aatyp, mattk->adtyp)) return M_ATTK_MISS;
 
     if (mattk->adtyp == AD_SLVR)
         return mith_silver_arrow(magr, mdef);
@@ -1118,6 +1121,8 @@ spitmm(struct monst *mtmp, struct attack *mattk, struct monst *mtarg)
 {
     struct obj *otmp;
 
+    if (ex_muted(mtmp, mattk->aatyp, mattk->adtyp)) return M_ATTK_MISS;
+
     if (mtmp->mcan) {
         if (!Deaf && mdistu(mtmp) < BOLT_LIM * BOLT_LIM) {
             if (canspotmon(mtmp)) {
@@ -1199,6 +1204,8 @@ breamm(struct monst *mtmp, struct attack *mattk, struct monst *mtarg)
 {
     int typ = cave_breath_type(mtmp->data, mattk->adtyp);
     boolean utarget = (mtarg == &gy.youmonst);
+
+    if (ex_muted(mtmp, mattk->aatyp, mattk->adtyp)) return M_ATTK_MISS;
 
     if (m_lined_up(mtarg, mtmp)) {
         if (mtmp->mcan) {

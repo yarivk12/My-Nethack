@@ -4,6 +4,7 @@
 /* NetHack may be freely redistributed.  See license for details. */
 
 #include "hack.h"
+#include "exotic_combat.h"
 
 /* The selected Mithardir forms share the donor's transformation behavior,
    but are not lycanthropes and must not acquire lycanthropy/summoning rules. */
@@ -67,6 +68,9 @@ mith_fey_shift(struct monst *mon, int target)
         pline("%s changes into %s.", Monnam(mon),
               an(pmname(&mons[target], Mgender(mon))));
     set_mon_data(mon, &mons[target]);
+    mon->ex_mute_until = 0;
+    mon->ex_mute_ability = 0;
+    mon->ex_mute_species = target;
     mon->msleeping = mon->mfrozen = 0;
     mon->mcanmove = 1;
     healmon(mon, (mon->mhpmax - mon->mhp) / 4, 0);
@@ -109,6 +113,8 @@ void
 were_change(struct monst *mon)
 {
     int other = mith_fey_counter(monsndx(mon->data));
+
+    if (ex_innate_muted(mon, EX_INNATE_TRANSFORM)) return;
 
     if (other != NON_PM) {
         if (mith_fey_change_ready(mon))
@@ -204,6 +210,8 @@ new_were(struct monst *mon)
 {
     int pm;
 
+    if (ex_innate_muted(mon, EX_INNATE_TRANSFORM)) return;
+
     /* neither hero nor werecreature can change from human form to
        critter form if hero has Protection_from_shape_changers extrinsic;
        if already in critter form, always change to human form for that */
@@ -224,6 +232,9 @@ new_were(struct monst *mon)
                                   : pmname(&mons[pm], Mgender(mon)) + 4);
 
     set_mon_data(mon, &mons[pm]);
+    mon->ex_mute_until = 0;
+    mon->ex_mute_ability = 0;
+    mon->ex_mute_species = pm;
     if (helpless(mon)) {
         /* transformation wakens and/or revitalizes */
         mon->msleeping = 0;

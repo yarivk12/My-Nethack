@@ -2358,9 +2358,18 @@ revive_mon(anything *arg, long timeout UNUSED)
             if (!obj_has_timer(body, ROT_CORPSE))
                 You_feel("%sless hassled.", is_rider(mptr) ? "much " : "");
             action = ROT_CORPSE;
-            when = (long) d(5, 50) - (svm.moves - body->age);
+            when = (long) d(5, 50)
+                - (body->exotic.preserved ? ex_corpse_age(body)
+                   : (svm.moves - body->age));
             if (when < 1L)
                 when = 1L;
+            if (body->exotic.preserved) {
+                long rate = body->exotic.multiplier
+                    * ((body->exotic.frozen & 1) ? 2L : 1L);
+                long units = when * 120L - body->exotic.age_units % 120L;
+                body->exotic.decay_units = body->exotic.age_units + units;
+                when = max(1L, (units * rate + 119L) / 120L);
+            }
         }
         if (!obj_has_timer(body, action))
             (void) start_timer(when, TIMER_OBJECT, action, arg);

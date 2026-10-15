@@ -6176,6 +6176,17 @@ help_monster_out(
 staticfn void
 disarm_box(struct obj *box, boolean force, boolean confused)
 {
+    if (box->otrapped && ex_has(EX_UNTRAP)) {
+        if (ex_protected_object(box)) {
+            You("cannot disarm that protected container.");
+        } else if (ex_untrap_attempt()) {
+            box->otrapped = box->tknown = 0;
+            You("disarm it!");
+        } else {
+            Your("artifact fails to disarm it safely.");
+        }
+        return;
+    }
     if (box->otrapped) {
         int ch = ACURR(A_DEX) + u.ulevel;
 
@@ -6259,6 +6270,11 @@ untrap(
     } else {
         /* autounlock's untrap; skip most prompting */
         if (container) {
+            if (container->tknown && container->dknown
+                && ex_has(EX_UNTRAP) && ex_protected_object(container)) {
+                You("cannot disarm that protected container.");
+                return 0;
+            }
             untrap_box(container, force, confused);
             return 1;
         }
@@ -6308,7 +6324,7 @@ untrap(
         if (ttmp) {
             Strcpy(the_trap, the(trapdescr));
             if (boxcnt) {
-                if (is_pit(ttmp->ttyp)) {
+                if (is_pit(ttmp->ttyp) && !ex_has(EX_UNTRAP)) {
                     You_cant("do much about %s%s.", the_trap,
                              u.utrap ? " that you're stuck in"
                                      : " while standing on the edge of it");
@@ -6335,6 +6351,8 @@ untrap(
             }
             if (deal_with_floor_trap) {
                 if (u.utrap) {
+                    if (ex_has(EX_UNTRAP))
+                        return ex_untrap_floor(ttmp);
                     You("cannot deal with %s while trapped%s!", the_trap,
                         u_at(x, y) ? " in it" : "");
                     return 1;
@@ -6345,6 +6363,8 @@ untrap(
                     stumble_onto_mimic(mtmp);
                     return 1;
                 }
+                if (ex_has(EX_UNTRAP))
+                    return ex_untrap_floor(ttmp);
                 switch (ttmp->ttyp) {
                 case BEAR_TRAP:
                 case WEB:
@@ -6395,6 +6415,12 @@ untrap(
                     case 'q':
                         return 0;
                     case 'y':
+                        if (otmp->tknown && otmp->dknown
+                            && ex_has(EX_UNTRAP)
+                            && ex_protected_object(otmp)) {
+                            You("cannot disarm that protected container.");
+                            return 0;
+                        }
                         if (otmp->tknown && otmp->dknown)
                             disarm_box(otmp, force, confused);
                         else
@@ -6451,6 +6477,17 @@ untrap(
         if (ynq("Disarm it?") != 'y')
             return 1;
         if (levl[x][y].doormask & D_TRAPPED) {
+            if (ex_has(EX_UNTRAP)) {
+                if (ex_protected_tile(x, y)) {
+                    You("cannot disarm that protected door.");
+                } else if (ex_untrap_attempt()) {
+                    levl[x][y].doormask &= ~D_TRAPPED;
+                    You("disarm it!");
+                } else {
+                    Your("artifact fails to disarm it safely.");
+                }
+                return 1;
+            }
             ch = 15 + (Role_if(PM_ROGUE) ? u.ulevel * 3 : u.ulevel);
             exercise(A_DEX, TRUE);
             if (!force && (confused || Fumbling

@@ -9,6 +9,7 @@
  *      code for monsters.
  */
 #include "hack.h"
+#include "exotic_combat.h"
 
 staticfn void give_may_advance_msg(int);
 staticfn void finish_towel_change(struct obj *obj, int) NONNULLARG1;
@@ -347,6 +348,12 @@ mith_weapon_dice(struct obj *otmp, boolean large)
 int
 dmgval(struct obj *otmp, struct monst *mon)
 {
+    return ex_dmgval(otmp, mon, otmp == uwep && !u.twoweap);
+}
+
+int
+ex_dmgval(struct obj *otmp, struct monst *mon, int main_hand)
+{
     int tmp = 0, otyp = otmp->otyp;
     struct permonst *ptr = mon->data;
     boolean Is_weapon = (otmp->oclass == WEAPON_CLASS || is_weptool(otmp));
@@ -436,7 +443,7 @@ dmgval(struct obj *otmp, struct monst *mon)
     if (Is_weapon) {
         tmp += otmp->spe;
         if (otyp == RAKUYO
-            && ((otmp == uwep && !u.twoweap)
+            && (main_hand
                 || (otmp->where == OBJ_MINVENT
                     && (otmp->owornmask & W_WEP)))) {
             tmp += rnd(bigmonst(ptr) ? 3 : 4) + otmp->spe;
@@ -1950,12 +1957,20 @@ weapon_hit_bonus(struct obj *weapon)
 int
 weapon_dam_bonus(struct obj *weapon)
 {
+    return ex_weapon_dam_bonus(weapon, u.twoweap && (weapon == uwep || weapon == uswapwep));
+}
+
+/* A snapshotted secondary physical tick retains the original hand's skill
+ * attribution even if that object was consumed by the original contact. */
+int
+ex_weapon_dam_bonus(struct obj *weapon, int two_weapon)
+{
     int type, wep_type, skill, bonus = 0;
 
     wep_type = weapon_type(weapon);
     /* use two weapon skill only if attacking with one of the wielded weapons
      */
-    type = (u.twoweap && (weapon == uwep || weapon == uswapwep))
+    type = two_weapon
                ? P_TWO_WEAPON_COMBAT
                : wep_type;
     if (type == P_NONE) {

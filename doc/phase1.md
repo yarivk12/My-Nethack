@@ -38,12 +38,25 @@ The implementation record links exact evidence and preserved earlier failures.
 [locked implementation scope](Step21_Artifact_Expansion_FINAL_Implementation_Scope.md).
 It preserves the Silver Key and adds 22 artifacts, native property and command
 integration, persistent Book/Saddle state, and identification-aware cooldown
-inspection. The current save epoch is `EDITLEVEL 17`; older development saves
+inspection. That milestone used save epoch `EDITLEVEL 17`; older development saves
 are intentionally incompatible. All applicable artifact-matrix checks,
 native gameplay and save/reload fixtures, historical regression gates,
 tile resources and Release x64 console/GUI builds pass. The Step 21 record
 contains donor provenance, local adaptations, acquisition paths and closeout
 evidence. No Step 21 implementation blockers remain.
+
+[Step 22](step22_implementation.md) implements the exotic artifact property
+engine on the verified local Step 21 commit `e61a290de`. All 18 property
+implementations and T1-T8 technical resolutions are integrated into native
+combat, spells, utility actions and lifecycle handling. Its record contains the
+scenario matrix, native validation results, historical gates and build evidence.
+The current save epoch is `EDITLEVEL 18`, requiring a new game because saved
+object, hero and monster state changed. Production artifact binding,
+acquisition and distribution are explicitly deferred to a separate approved
+catalogue. The 23 Step 21 artifact definitions remain unchanged. The local
+milestone is identified by annotated tag `step22-exotic-artifact-engine-complete`
+on a new commit directly after Step 21, on the existing development branch.
+No GitHub synchronization is required or performed.
 
 ## Objective
 

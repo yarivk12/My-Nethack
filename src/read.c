@@ -794,6 +794,7 @@ doread(void)
                       silently ? "misunderstand" : "mispronounce");
         }
     }
+    ex_consumption_begin(scroll);
     if (!seffects(scroll)) {
         if (!objects[otyp].oc_name_known) {
             if (gk.known)
@@ -805,6 +806,7 @@ doread(void)
         if (otyp != SCR_BLANK_PAPER)
             useup(scroll);
     }
+    ex_consumption_end();
     return ECMD_TIME;
 }
 

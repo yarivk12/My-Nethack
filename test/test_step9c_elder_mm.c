@@ -31,6 +31,13 @@ static int kill_beam_target,kill_beam_caster;
 static struct obj *test_armor;
 static int armor_resist,quest_armor,removed,curses,summons,deaths,lifesave;
 static struct monst *real_caster;
+/* Historical spells have no test artifact grants. Keep their native
+ * expectations while satisfying the new engine's no-grant hooks. */
+int ex_muted(struct monst *m, int delivery, int effect)
+{ (void) m; (void) delivery; (void) effect; return 0; }
+void ex_area_spell_begin(struct monst *m, int level)
+{ (void) m; (void) level; }
+void ex_area_spell_end(void) { }
 /* New shared resolver dependencies. The historical cases below must not
  * enter these new spell branches. */
 int enhancement_mon_damage(struct monst *m, struct monst *a, int damage, int physical)

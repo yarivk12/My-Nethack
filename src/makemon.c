@@ -1595,6 +1595,7 @@ clone_mon(
     set_malign(m2);
     newsym(m2->mx, m2->my); /* display the new monster */
 
+    ex_guardian_clone(m2);
     return m2;
 }
 

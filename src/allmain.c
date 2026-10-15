@@ -267,6 +267,7 @@ moveloop_core(void)
 
                 enhancement_tick();
                 svm.moves++;
+                ex_world_turn();
                 utility_turn_tick();
                 utility_elapsed = TRUE;
                 /*
@@ -730,6 +731,7 @@ regen_hp(int wtcap)
         enhancement_observe_worn(REGENERATION);
     if (reached_full)
         interrupt_multi("You are in full health.");
+    ex_health_changed();
 }
 
 #undef U_CAN_REGEN
@@ -1135,7 +1137,8 @@ mith_syllable_turn(void)
     }
     if (u.mith_words & MITH_NURTURING)
         for (mon = fmon; mon; mon = mon->nmon)
-            if (mon->mtame && !DEADMONSTER(mon) && mon->mhp < mon->mhpmax)
+            if (mon->mtame && !DEADMONSTER(mon) && mon->mhp < mon->mhpmax
+                && mon->ex_regen_until <= svm.moves)
                 ++mon->mhp;
     for (i = 0; i < 6; ++i)
         if (u.mith_timers[i] > 0 && !--u.mith_timers[i]) {

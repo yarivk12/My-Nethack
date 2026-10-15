@@ -5,8 +5,8 @@
 This repository is a private NetHack 5.0 expansion based on the upstream
 NetHack 5.0 source. Development is staged as small, reviewable milestones.
 The historical Phase 0 branch is `phase0/dod-length`; active development is on
-`phase1/equipment-enhancement`. The GitHub-visible README is kept current with
-every project commit.
+`phase1/equipment-enhancement`. Local development may be ahead of GitHub;
+the local checkout and milestone validation records define the current baseline.
 
 ## Current state
 
@@ -14,8 +14,15 @@ Phase 0 — Dungeons of Doom Expansion is complete and frozen through Step 12 at
 commit `216bf60903cbde8b3ef1de33aeb7368a09ba6719`, tagged
 `phase0-dod-expansion-complete`. The historical `phase0/dod-length` branch is
 preserved at that baseline. Phase 1 — Equipment Enhancement is active on
-`phase1/equipment-enhancement`. Steps 13 through 17.5 and Step 18A are complete;
-the active roadmap is maintained in [doc/phase1.md](doc/phase1.md).
+`phase1/equipment-enhancement`. Steps 13 through 21 are complete. Step 22
+implements the 18-property exotic artifact engine on the verified local Step 21
+baseline. Its validation matrix and delivery status are in the
+[Step 22 implementation record](doc/step22_implementation.md); the active
+roadmap is maintained in [doc/phase1.md](doc/phase1.md).
+
+The current save epoch is **EDITLEVEL 18**, requiring a new game. Step 22
+production artifact assignments and distribution remain deferred to separate
+gameplay approval. The existing 23 Step 21 artifact definitions are preserved.
 
 The frozen Phase 0 includes the 200-level dungeon, Step 5 shops, Step 6/7
 NerfHack enrichment, Moria, Sheol, Dragon Caves, Mithardir, Neutral Quest / Lost

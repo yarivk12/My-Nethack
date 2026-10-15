@@ -864,8 +864,8 @@ tele(void)
 }
 
 /* teleport the hero; usually discover scroll of teleportation if via scroll */
-void
-scrolltele(struct obj *scroll)
+static int
+ex_scrolltele_result(struct obj *scroll)
 {
     coord cc;
 
@@ -874,7 +874,7 @@ scrolltele(struct obj *scroll)
         pline("A mysterious force prevents you from teleporting!");
         if (scroll)
             learnscroll(scroll); /* this is obviously a teleport scroll */
-        return;
+        return 0;
     }
 
     /* don't show trap if "Sorry..." */
@@ -886,7 +886,7 @@ scrolltele(struct obj *scroll)
         /* don't discover the scroll [at least not yet for wizard override];
            disorientation doesn't reveal that this is a teleport attempt */
         if (!wizard || y_n("Override?") != 'y')
-            return;
+            return 0;
     }
     if (((Teleport_control || (scroll && scroll->blessed)) && !Stunned)
         || wizard) {
@@ -909,7 +909,7 @@ scrolltele(struct obj *scroll)
                 cc = iflags.travelcc;
             }
             if (getpos(&cc, TRUE, "the desired position") < 0)
-                return; /* abort */
+                return 0; /* abort */
             /* possible extensions: introduce a small error if
                magic power is low; allow transfer to solid rock */
             if (teleok(cc.x, cc.y, FALSE)) {
@@ -917,7 +917,7 @@ scrolltele(struct obj *scroll)
                 teleds(cc.x, cc.y, TELEDS_TELEPORT);
                 if (u_at(iflags.travelcc.x, iflags.travelcc.y))
                     iflags.travelcc.x = iflags.travelcc.y = 0;
-                return;
+                return 1;
             }
             pline("Sorry...");
         }
@@ -930,7 +930,19 @@ scrolltele(struct obj *scroll)
     if (scroll)
         learnscroll(scroll);
 
-    (void) safe_teleds(TELEDS_TELEPORT);
+    return safe_teleds(TELEDS_TELEPORT);
+}
+
+void
+scrolltele(struct obj *scroll)
+{
+    (void) ex_scrolltele_result(scroll);
+}
+
+int
+ex_reactive_teleport(void)
+{
+    return ex_scrolltele_result((struct obj *) 0);
 }
 
 /* the #teleport command; 'm ^T' == choose among several teleport modes */

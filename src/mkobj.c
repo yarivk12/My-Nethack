@@ -1516,7 +1516,8 @@ start_corpse_timeout(struct obj *body)
 
     action = ROT_CORPSE;               /* default action: rot away */
     rot_adjust = gi.in_mklev ? 25 : 10; /* give some variation */
-    age = max(svm.moves, 1) - body->age;
+    age = body->exotic.preserved ? ex_corpse_age(body)
+        : max(svm.moves, 1) - body->age;
     if (age > ROT_AGE)
         when = rot_adjust;
     else
@@ -1539,6 +1540,14 @@ start_corpse_timeout(struct obj *body)
         when = rn1(15, 5); /* 5..19 */
     }
 
+    if (body->exotic.preserved && action == ROT_CORPSE) {
+        long fraction = body->exotic.age_units % 120L;
+        long rate = body->exotic.multiplier
+            * ((body->exotic.frozen & 1) ? 2L : 1L);
+        body->exotic.decay_units = body->exotic.age_units
+            + when * 120L - fraction;
+        when = max(1L, ((when * 120L - fraction) * rate + 119L) / 120L);
+    }
     (void) start_timer(when, TIMER_OBJECT, action, obj_to_any(body));
 }
 
@@ -2631,6 +2640,9 @@ peek_at_iced_corpse_age(struct obj *otmp)
 {
     long age, retval = otmp->age;
 
+    if (otmp->otyp == CORPSE && otmp->exotic.preserved)
+        return svm.moves - ex_corpse_age(otmp);
+
     if (otmp->otyp == CORPSE && otmp->on_ice) {
         /* Adjust the age; must be same as obj_timer_checks() for off ice*/
         age = svm.moves - otmp->age;
@@ -2654,6 +2666,10 @@ obj_timer_checks(
     boolean restart_timer = FALSE;
     boolean on_floor = (otmp->where == OBJ_FLOOR);
     boolean buried = (otmp->where == OBJ_BURIED);
+
+    ex_corpse_transition(otmp,
+                        force < 0 ? 0 : ((on_floor || buried) && is_ice(x, y)),
+                        (otmp->exotic.frozen & 2) != 0);
 
     /* Check for corpses just placed on or in ice */
     if (otmp->otyp == CORPSE && (on_floor || buried) && is_ice(x, y)) {
@@ -2696,7 +2712,11 @@ obj_timer_checks(
             debugpline3("%s is no longer on ice at <%d,%d>.",
                         The(xname(otmp)), x, y);
             /* Adjust the remaining time */
-            tleft /= ROT_ICE_ADJUSTMENT;
+            if (otmp->exotic.preserved && action == ROT_CORPSE)
+                tleft = (tleft + ROT_ICE_ADJUSTMENT - 1)
+                        / ROT_ICE_ADJUSTMENT;
+            else
+                tleft /= ROT_ICE_ADJUSTMENT;
             restart_timer = TRUE;
             /* Adjust the age */
             age = svm.moves - otmp->age;
@@ -2707,6 +2727,21 @@ obj_timer_checks(
     /* now re-start the timer with the appropriate modifications */
     if (restart_timer)
         (void) start_timer(tleft, TIMER_OBJECT, action, obj_to_any(otmp));
+
+    /* The age threshold is fixed, not a repeatedly rounded countdown.
+       Repeated pickup, ice placement and thaw cannot bank decay time. */
+    if (otmp->otyp == CORPSE && otmp->exotic.preserved
+        && otmp->exotic.decay_units
+        && obj_has_timer(otmp, ROT_CORPSE)) {
+        long units, rate, when;
+        (void) ex_corpse_age(otmp);
+        units = max(0L, otmp->exotic.decay_units - otmp->exotic.age_units);
+        rate = otmp->exotic.multiplier
+            * ((otmp->exotic.frozen & 1) ? 2L : 1L);
+        when = (units * rate + 119L) / 120L;
+        (void) stop_timer(ROT_CORPSE, obj_to_any(otmp));
+        (void) start_timer(when, TIMER_OBJECT, ROT_CORPSE, obj_to_any(otmp));
+    }
 }
 
 #undef ROT_ICE_ADJUSTMENT
@@ -2772,6 +2807,8 @@ obj_extract_self(struct obj *obj)
         remove_object(obj);
         break;
     case OBJ_CONTAINED:
+        if (obj->ocontainer->otyp == ICE_BOX)
+            ex_corpse_transition(obj, 0, 0);
         extract_nobj(obj, &obj->ocontainer->cobj);
         container_weight(obj->ocontainer);
         obj->ocontainer = (struct obj *) 0; /* clear stale back-link */
@@ -2883,6 +2920,9 @@ struct obj *
 add_to_container(struct obj *container, struct obj *obj)
 {
     struct obj *otmp;
+
+    if (container->otyp == ICE_BOX)
+        ex_corpse_transition(obj, 0, 1);
 
     if (obj->where != OBJ_FREE)
         panic("add_to_container: obj where=%d, not free", obj->where);

@@ -2680,6 +2680,7 @@ in_container(struct obj *obj)
         }
     }
     if (Icebox && !age_is_relative(obj)) {
+        ex_corpse_transition(obj, 0, 1);
         obj->age = svm.moves - obj->age; /* actual age */
         /* stop any corpse timeouts when frozen */
         if (obj->otyp == CORPSE) {
@@ -2814,11 +2815,25 @@ out_container(struct obj *obj)
     return 1;
 }
 
+#ifdef STEP15_TEST
+int
+step22_test_icebox_insert(struct obj *obj, struct obj *box)
+{
+    struct obj *saved = gc.current_container;
+    int result;
+    gc.current_container = box;
+    result = in_container(obj);
+    gc.current_container = saved;
+    return result;
+}
+#endif
+
 /* taking a corpse out of an ice box needs a couple of adjustments */
 void
 removed_from_icebox(struct obj *obj)
 {
     if (!age_is_relative(obj)) {
+        ex_corpse_transition(obj, 0, 0);
         obj->age = svm.moves - obj->age; /* actual age */
         if (obj->otyp == CORPSE) {
             struct monst *m = get_mtraits(obj, FALSE);

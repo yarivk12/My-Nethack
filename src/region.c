@@ -1317,6 +1317,9 @@ create_gas_cloud(
     /* We have now either filled up xcoord and ycoord entirely or run out
        of space.  In either case, newidx is the correct total number of
        coordinates inserted. */
+    for (i = 0; i < newidx; ++i)
+        if (ex_area_spell_square(xcoords[i], ycoords[i]))
+            return NULL; /* committed spell canceled before region effects */
     cloud = create_region((NhRect *) 0, 0);
     for (i = 0; i < newidx; ++i) {
         tmprect.lx = tmprect.hx = xcoords[i];

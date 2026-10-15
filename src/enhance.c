@@ -1938,6 +1938,7 @@ doinspect(void)
     putstr(win, ATR_NONE, "");
     inspect_item_cooldowns(win, obj);
     inspect_artifact_powers(win, obj);
+    ex_inspect(obj, win);
     if (obj->otyp == GENERIC_ESSENCE) {
         putstr(win, ATR_NONE, "Essence: a neutral, stackable Forge crafting material.");
         putstr(win, ATR_NONE, "Weight: 1 per unit. Obtained primarily through Salvage.");

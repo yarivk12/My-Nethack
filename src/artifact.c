@@ -4,6 +4,7 @@
 /* NetHack may be freely redistributed.  See license for details. */
 
 #include "hack.h"
+#include "exotic_combat.h"
 #include "artifact.h"
 #include "artilist.h"
 
@@ -1655,6 +1656,9 @@ artifact_hit_fatal(
     static const char you[] = "you";
     char hittee[BUFSZ];
 
+    if (youattack && ex_defer_element(otmp, mdef, original_damage, dieroll))
+        return FALSE;
+
     Strcpy(hittee, youdefend ? you : mon_nam(mdef));
 
     /* The following takes care of most of the damage, but not all--
@@ -2502,6 +2506,8 @@ arti_invoke(struct obj *obj)
         return ECMD_OK;
     }
     oart = get_artifact(obj);
+    res = ex_invoke(obj, oart != &artilist[ART_NONARTIFACT] && oart->inv_prop != 0);
+    if (res >= 0) return res ? ECMD_TIME : ECMD_OK;
     if (oart == &artilist[ART_NONARTIFACT] || !oart->inv_prop) {
         if (obj->otyp == CRYSTAL_BALL)
             use_crystal_ball(&obj);

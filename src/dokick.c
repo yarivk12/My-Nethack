@@ -3,6 +3,7 @@
 /* NetHack may be freely redistributed.  See license for details. */
 
 #include "hack.h"
+#include "exotic_combat.h"
 
 #define is_bigfoot(x) ((x) == &mons[PM_SASQUATCH])
 #define martial()                                 \
@@ -43,6 +44,12 @@ kickdmg(struct monst *mon, boolean clumsy)
     int dmg = (ACURRSTR + ACURR(A_DEX) + ACURR(A_CON)) / 15;
     int specialdmg, kick_skill = P_NONE;
     boolean trapkilled = FALSE;
+    struct ex_hit_context exotic_hit;
+    struct attack exotic_attack = { AT_KICK, AD_PHYS, 1, 2 };
+    int oldhp = mon->mhp;
+
+    ex_hit_begin(&exotic_hit, mon, (struct obj *) 0, &exotic_attack);
+    exotic_hit.clumsy = clumsy;
 
     if (uarmf && uarmf->otyp == KICKING_BOOTS)
         dmg += 5;
@@ -99,8 +106,14 @@ kickdmg(struct monst *mon, boolean clumsy)
     dmg += u.udaminc; /* add ring(s) of increase damage */
     dmg += mith_aesh_bonus();
     dmg = mith_physical_damage(mon, uarmf, AT_KICK, dmg);
+    exotic_hit.actual_damage = mon->mhp;
     if (dmg > 0)
         enhancement_mon_damage(mon, &gy.youmonst, dmg, -1);
+    exotic_hit.actual_damage = max(0, exotic_hit.actual_damage - mon->mhp);
+    if (!DEADMONSTER(mon)) {
+        (void) ex_hit_frenzy(&exotic_hit, mon, dmg);
+        if (exotic_hit.death_processed && DEADMONSTER(mon)) trapkilled = TRUE;
+    }
     if (!DEADMONSTER(mon) && martial() && !bigmonst(mon->data) && !rn2(3)
         && mon->mcanmove && mon != u.ustuck && !mon->mtrapped) {
         /* see if the monster has a place to move into */
@@ -124,6 +137,8 @@ kickdmg(struct monst *mon, boolean clumsy)
     (void) passive(mon, uarmf, TRUE, !DEADMONSTER(mon), AT_KICK, FALSE);
     if (DEADMONSTER(mon) && !trapkilled)
         killed(mon);
+    ex_hit_finish(&exotic_hit, mon,
+                  max(exotic_hit.actual_damage, max(0, oldhp - mon->mhp)));
 
     /* may bring up a dialog, so put this after all messages */
     if (kick_skill != P_NONE) /* exercise proficiency */

@@ -349,6 +349,7 @@ mith_castmm(struct monst *caster, struct monst *target, struct attack *attack)
     boolean lake = caster->data >= &mons[PM_FLASHING_LAKE]
                    && caster->data <= &mons[PM_SPARKLING_LAKE];
 
+    if (ex_muted(caster, AT_MAGC, attack->adtyp)) return M_ATTK_MISS;
     /* Native combat has no elemental castmm path.  The four lakes use their
        declared AT_MAGC attack against monsters with the same level-scaled
        dice and full resistance handling used against the hero. */
@@ -594,7 +595,9 @@ mcast_monster_effect(struct monst *caster, struct monst *target, int spell,
         damage = 0;
         break;
     case MCAST_RILMANI_POISON_GAS:
+        ex_area_spell_begin(caster, mcast_data[spell].level);
         (void) create_gas_cloud(target->mx, target->my, rnd(3), rnd(3) + 1);
+        ex_area_spell_end();
         damage = 0;
         break;
     case MCAST_RILMANI_MAKE_VISIBLE:
@@ -747,6 +750,17 @@ choose_monster_spell(struct monst *mtmp, int adtyp)
     return list[0];
 }
 
+/* A single cast-commitment decision shared by native and selected-spell
+ * fixtures. Metadata level zero is distinct from an unlisted channel. */
+static int
+ex_spell_absorb(struct monst *caster, int channel, int spell, int directed)
+{
+    int named = channel == AD_SPEL || channel == AD_CLRC
+                || channel == AD_PSON || channel == AD_PUNI;
+    if (!directed || (named && is_undirected_spell(spell))) return 0;
+    return ex_absorb(caster,named,named ? mcast_data[spell].level : 0);
+}
+
 /* return values:
  * 1: successful spell
  * 0: unsuccessful spell
@@ -761,6 +775,10 @@ castmu(
     int dmg, ml = mtmp->m_lev;
     int ret;
     int spellnum = 0;
+    boolean deferred_miss;
+
+    if (ex_muted(mtmp, AT_MAGC, mattk->adtyp)) return M_ATTK_MISS;
+    deferred_miss = ex_has(EX_ABSORB);
 
     /* Three cases:
      * -- monster is attacking you.  Search for a useful spell.
@@ -830,7 +848,7 @@ castmu(
      *  even when the caster has targeted the wrong spot?  Likewise
      *  for fire mis-aimed at ice.
      */
-    if (!foundyou && thinks_it_foundyou
+    if (!deferred_miss && !foundyou && thinks_it_foundyou
         && !is_undirected_spell(spellnum)) {
         pline_mon(mtmp, "%s casts a spell at %s!",
                  canseemon(mtmp) ? Monnam(mtmp) : "Something",
@@ -865,6 +883,13 @@ castmu(
             return M_ATTK_MISS;
         }
     }
+    /* Cast commitment precedes targeting misses, hazards and Step 21 defenses.
+     * A deferred displaced-target miss still represents a hero-directed cast. */
+    if (ex_spell_absorb(mtmp,mattk->adtyp,spellnum,thinks_it_foundyou))
+        return M_ATTK_HIT;
+    if (deferred_miss && !foundyou && thinks_it_foundyou
+        && !is_undirected_spell(spellnum)) return M_ATTK_MISS;
+
     if (canspotmon(mtmp) || !is_undirected_spell(spellnum)) {
         pline_mon(mtmp, "%s casts a spell%s!",
                  canspotmon(mtmp) ? Monnam(mtmp) : "Something",
@@ -1811,11 +1836,13 @@ buzzmu(struct monst *mtmp, struct attack *mattk)
     if (!BZ_VALID_ADTYP(mattk->adtyp))
         return M_ATTK_MISS;
 
-    if (mtmp->mcan || m_seenres(mtmp, cvt_adtyp_to_mseenres(mattk->adtyp))) {
+    if (mtmp->mcan || ex_muted(mtmp, AT_MAGC, mattk->adtyp)
+        || m_seenres(mtmp, cvt_adtyp_to_mseenres(mattk->adtyp))) {
         cursetxt(mtmp, FALSE);
         return M_ATTK_MISS;
     }
     if (lined_up(mtmp) && rn2(3)) {
+        if (ex_absorb(mtmp, FALSE, 0)) return M_ATTK_HIT;
         nomul(0);
         if (canseemon(mtmp))
             pline_mon(mtmp, "%s zaps you with a %s!", Monnam(mtmp),
@@ -1829,5 +1856,15 @@ buzzmu(struct monst *mtmp, struct attack *mattk)
     }
     return M_ATTK_MISS;
 }
+
+#ifdef STEP15_TEST
+int
+step22_test_committed_spell(struct monst *caster, int spell, int damage)
+{
+    if (ex_spell_absorb(caster,AD_SPEL,spell,TRUE)) return 1;
+    mcast_spell(caster,damage,spell);
+    return 0;
+}
+#endif
 
 /*mcastu.c*/

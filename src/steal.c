@@ -99,6 +99,8 @@ stealgold(struct monst *mtmp)
     } else if (ygold) {
         const int gold_price = objects[GOLD_PIECE].oc_cost;
 
+        if (ex_theft_ward())
+            return;
         tmp = (somegold(money_cnt(gi.invent)) + gold_price - 1) / gold_price;
         tmp = min(tmp, ygold->quan);
         if (tmp < ygold->quan)
@@ -168,6 +170,8 @@ stealarm(void)
     struct obj *otmp, *nextobj;
 
     if (!gs.stealoid || !gs.stealmid)
+        goto botm;
+    if (ex_theft_ward())
         goto botm;
 
     for (otmp = gi.invent; otmp; otmp = nextobj) {
@@ -356,6 +360,8 @@ steal(struct monst *mtmp, char *objnambuf)
         *objnambuf = '\0';
     /* the following is true if successful on first of two attacks. */
     if (!monnear(mtmp, u.ux, u.uy))
+        return 0;
+    if (ex_theft_ward())
         return 0;
 
     /* stealing a worn item might drop hero into water or lava where
@@ -696,6 +702,10 @@ stealamulet(struct monst *mtmp)
     struct obj *otmp = 0, *obj = 0;
     int real = 0, fake = 0, n;
 
+    /* AD_SAMU is an ordinary optional monster theft attack, including
+     * the Wizard's attacks. It is not a mandatory scripted transfer. */
+    if (ex_theft_ward())
+        return;
     /* target every quest artifact, not just current role's;
        if hero has more than one, choose randomly so that player
        can't use inventory ordering to influence the theft */

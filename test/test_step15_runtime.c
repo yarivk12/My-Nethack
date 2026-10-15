@@ -720,6 +720,17 @@ static void inspect_tests(void) {
     puts("PASS #inspect layout, impacts, certainty, values, sockets, naming and nonmutation cases");
 }
 #include "test_step21_inspect.c"
+#include "test_step22_combat.c"
+#include "test_step22_utility.c"
+#include "test_step22_items.c"
+#include "test_step22_defense.c"
+#include "test_step22_lifecycle.c"
+#include "test_step22_sources.c"
+#include "test_step22_terrain_save.c"
+#include "test_step22_registry.c"
+#include "test_step22_corpse_stress.c"
+#include "test_step22_defense_order.c"
+#include "test_step22_status_combat.c"
 static void corpus(void) {
     int i, dl, selected=0, placed=0, failed=0, count, x,y, invalid=0, multiple=0;
     /* Fix the deferred Ludios junction outside the corpus depth range, so
@@ -769,6 +780,30 @@ int step15_test_main(void) {
     svc.context.current_fruit=fruitadd("slime mold",NULL);u.ulevel=10;u.uhp=u.uhpmax=1000;u.ux=20;u.uy=10;svm.moves=1;
     l_nhcore_init();vision_init();flags.bones=FALSE;gy.youmonst.data=&mons[PM_HUMAN];u.umonnum=u.umonster=PM_HUMAN;
     for(i=0;i<A_MAX;++i)ABASE(i)=AMAX(i)=18;
+    if (getenv("STEP22_FOCUS")) {
+        const char *which = getenv("STEP22_FOCUS");
+        int x,y;
+        if (!svc.context.ident) svc.context.ident=2;
+        free_level();
+        u.uz.dnum=medusa_level.dnum;u.uz.dlevel=40;
+        for(x=1;x<COLNO;++x)for(y=0;y<ROWNO;++y){levl[x][y].typ=ROOM;levl[x][y].lit=1;}
+        vision_recalc(0);step15b_window_setup();
+        if (!gb.blinit) status_initialize(FALSE);
+        windowprocs.win_delay_output=step21_no_animation_delay;
+        windowprocs.win_print_glyph=step21_glyph;
+        if (!strcmp(which,"sources") || !strcmp(which,"all")) step22_source_tests();
+        if (!strcmp(which,"utility") || !strcmp(which,"all")) step22_utility_tests();
+        if (!strcmp(which,"items") || !strcmp(which,"all")) step22_items_tests();
+        if (!strcmp(which,"defense") || !strcmp(which,"all")) step22_defense_tests();
+        if (!strcmp(which,"defense-order") || !strcmp(which,"all")) step22_defense_order_tests();
+        if (!strcmp(which,"lifecycle") || !strcmp(which,"all")) step22_lifecycle_tests();
+        if (!strcmp(which,"terrain") || !strcmp(which,"all")) step22_terrain_save_tests();
+        if (!strcmp(which,"registry") || !strcmp(which,"all")) step22_registry_tests();
+        if (!strcmp(which,"status-combat") || !strcmp(which,"all")) step22_status_combat_tests();
+        if (!strcmp(which,"corpse-stress") || !strcmp(which,"all")) step22_corpse_stress_tests();
+        if (!strcmp(which,"combat") || !strcmp(which,"all")) step22_combat_tests();
+        puts("PASS Step 15 native runtime fixtures");return 0;
+    }
     if (getenv("STEP15_CORPUS")) {corpus();return 0;}
     eligible_tests();candidates();reservoir_tests();scripted_room();
     free_level();u.uz.dnum=medusa_level.dnum;u.uz.dlevel=40;gi.in_mklev=TRUE;step15_generate();
@@ -817,5 +852,22 @@ int step15_test_main(void) {
         step21_progression_tests();
         step21_transition_tests();
     }
+    /* The transition regression leaves an authored level. These independent
+     * engine scenarios require an open, deterministic melee/terrain arena. */
+    free_level();
+    u.uz.dnum=medusa_level.dnum;u.uz.dlevel=40;u.ux=20;u.uy=10;
+    for(i=1;i<COLNO;++i){int y;for(y=0;y<ROWNO;++y){levl[i][y].typ=ROOM;levl[i][y].lit=1;}}
+    vision_recalc(0);gm.multi=0;
+    step22_source_tests();
+    step22_combat_tests();
+    step22_utility_tests();
+    step22_items_tests();
+    step22_defense_tests();
+    step22_defense_order_tests();
+    step22_lifecycle_tests();
+    step22_terrain_save_tests();
+    step22_registry_tests();
+    step22_status_combat_tests();
+    step22_corpse_stress_tests();
     puts("PASS Step 15 native runtime fixtures");return 0;
 }

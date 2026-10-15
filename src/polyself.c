@@ -224,6 +224,7 @@ polyman(const char *fmt, const char *arg)
 
     u.mh = u.mhmax = 0;
     u.equipment_mh = 0;
+    ex_health_changed();
     u.mtimedone = 0;
     skinback(FALSE);
     u.uundetected = 0;
@@ -1088,6 +1089,7 @@ polymon(int mntmp)
             pline(use_thec, "sit",
                   eggs_in_water(uptr) ? "spawn in the water" : "lay an egg");
     }
+    ex_health_changed();
     return 1;
 }
 

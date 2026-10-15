@@ -526,6 +526,7 @@ int
 dodrink(void)
 {
     struct obj *otmp;
+    int result;
 
     if (Strangled) {
         pline("If you can't breathe air, how can you drink liquid?");
@@ -597,21 +598,26 @@ dodrink(void)
         }
     }
     otmp->in_use = TRUE; /* you've opened the stopper */
+    ex_consumption_begin(otmp);
 
     if (objdescr_is(otmp, "milky")
         && !(svm.mvitals[PM_GHOST].mvflags & G_GONE)
         && !rn2(POTION_OCCUPANT_CHANCE(svm.mvitals[PM_GHOST].born))) {
         ghost_from_bottle();
         useup(otmp);
+        ex_consumption_end();
         return ECMD_TIME;
     } else if (objdescr_is(otmp, "smoky")
                && !(svm.mvitals[PM_DJINNI].mvflags & G_GONE)
                && !rn2(POTION_OCCUPANT_CHANCE(svm.mvitals[PM_DJINNI].born))) {
         djinni_from_bottle(otmp);
         useup(otmp);
+        ex_consumption_end();
         return ECMD_TIME;
     }
-    return dopotion(otmp);
+    result = dopotion(otmp);
+    ex_consumption_end();
+    return result;
 }
 
 int
@@ -1493,6 +1499,7 @@ healup(int nhp, int nxtra, boolean curesick, boolean cureblind)
         make_vomiting(0L, TRUE);
         make_sick(0L, (char *) 0, TRUE, SICK_ALL);
     }
+    ex_health_changed();
     disp.botl = TRUE;
     return;
 }

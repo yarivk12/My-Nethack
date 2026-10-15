@@ -4,6 +4,7 @@
 /* NetHack may be freely redistributed.  See license for details. */
 
 #include "hack.h"
+#include "exotic_combat.h"
 #include "artifact.h"
 
 static const char brief_feeling[] =
@@ -375,6 +376,7 @@ mattackm(
         && !clear_path(magr->mx, magr->my, mdef->mx, mdef->my))
         return M_ATTK_MISS;
     if (pa == &mons[PM_DRIDER] && !magr->mcan
+        && !ex_innate_muted(magr, EX_INNATE_WEB)
         && distmin(magr->mx, magr->my, mdef->mx, mdef->my) > 1
         && linedup(mdef->mx, mdef->my, magr->mx, magr->my, 0)) {
         if (tmp > rnd(20) && !(mith_displaced(mdef) && rn2(2))) {
@@ -805,6 +807,8 @@ gazemm(struct monst *magr, struct monst *mdef, struct attack *mattk)
                       && mattk->adtyp == AD_BLND),
             altmesg = (archon && !magr->mcansee);
 
+    if (ex_muted(magr, mattk->aatyp, mattk->adtyp)) return M_ATTK_MISS;
+
     /* bring target out of hiding even if hero doesn't see it happen (this
        is already done in pre_mm_attack() and shouldn't be needed here) */
     if (mdef->data->mlet == S_MIMIC && M_AP_TYPE(mdef) != M_AP_NOTHING)
@@ -1069,6 +1073,8 @@ explmm(struct monst *magr, struct monst *mdef, struct attack *mattk)
 {
     int result;
 
+    if (ex_muted(magr, mattk->aatyp, mattk->adtyp)) return M_ATTK_MISS;
+
     if (magr->mcan)
         return M_ATTK_MISS;
 
@@ -1130,7 +1136,7 @@ mdamagem(
     mhm.done = FALSE;
 
     if (!step20_noncontact(magr, mdef)
-        && (touch_petrifies(pd) /* or flesh_petrifies() */
+        && ((touch_petrifies(pd) && !ex_muted(mdef, AT_NONE, AD_STON))
          || (mattk->adtyp == AD_DGST && pd == &mons[PM_MEDUSA]))
         && !resists_ston(magr)) {
         long protector = attk_protection((int) mattk->aatyp),
@@ -1332,7 +1338,8 @@ mon_poly(struct monst *magr, struct monst *mdef, int dmg)
             if (can_teleport(magr->data)) {
                 if (magr == &gy.youmonst)
                     tele();
-                else if (!tele_restrict(magr))
+                else if (!tele_restrict(magr)
+                         && !ex_innate_muted(magr, EX_INNATE_TELEPORT))
                     (void) rloc(magr, RLOC_MSG);
             }
         } else {
@@ -1463,6 +1470,8 @@ passivemm(
         if (mddat->mattk[i].aatyp == AT_NONE)
             break;
     }
+    if (ex_muted(mdef, AT_NONE, mddat->mattk[i].adtyp))
+        return (mdead | mhit);
     if (mddat->mattk[i].damn)
         tmp = d((int) mddat->mattk[i].damn, (int) mddat->mattk[i].damd);
     else if (mddat->mattk[i].damd)

@@ -4,6 +4,8 @@
 /* NetHack may be freely redistributed.  See license for details. */
 
 #include "hack.h"
+#include "exotic_combat.h"
+static long ex_next_natural_mask = -1L;
 
 static const char brief_feeling[] =
     "have a %s feeling for a moment, then it passes.";
@@ -37,7 +39,7 @@ staticfn void hmon_hitmon_misc_obj(struct _hitmon_data *, struct monst *,
                              struct obj *) NONNULLARG123;
 staticfn void hmon_hitmon_do_hit(struct _hitmon_data *, struct monst *,
                              struct obj *) NONNULLARG12;
-staticfn void hmon_hitmon_dmg_recalc(struct _hitmon_data *, struct obj *);
+staticfn void hmon_hitmon_dmg_recalc(struct _hitmon_data *, struct obj *, const struct ex_hit_context *);
 staticfn void hmon_hitmon_poison(struct _hitmon_data *, struct monst *,
                              struct obj *) NONNULLARG123;
 staticfn void hmon_hitmon_jousting(struct _hitmon_data *, struct monst *,
@@ -808,6 +810,38 @@ double_punch(void)
     return FALSE;
 }
 
+/* A single native retaliation, attributed to the actual granting weapon.
+ * The caller marks this secondary, so no exotic primary procs can recurse. */
+int
+ex_counterattack(struct monst *mon, struct obj *weapon)
+{
+    struct attack attack = { AT_WEAP, AD_PHYS, 1, 2 };
+    struct ex_hit_context contact;
+    struct obj *surviving_weapon;
+    unsigned weapon_id;
+    int attknum = 0, armorpenalty, roll, needed, hit, alive;
+    int oldtwohits = gt.twohits;
+    coord oldpos = gb.bhitpos;
+    if (!weapon || (weapon != uwep && weapon != uswapwep)
+        || DEADMONSTER(mon) || !monnear(mon, u.ux, u.uy)) return 0;
+    weapon_id = weapon->o_id;
+    gt.twohits = weapon == uswapwep ? 2 : 0;
+    gb.bhitpos.x = mon->mx; gb.bhitpos.y = mon->my;
+    ex_hit_begin(&contact, mon, weapon, &attack);
+    needed = find_roll_to_hit(mon, AT_WEAP, weapon, &attknum, &armorpenalty);
+    roll = rnd(20);
+    hit = needed > roll;
+    alive = known_hitum(mon, weapon, &hit, needed, armorpenalty, &attack, roll);
+    for (surviving_weapon = gi.invent; surviving_weapon;
+         surviving_weapon = surviving_weapon->nobj)
+        if (surviving_weapon->o_id == weapon_id) break;
+    (void) passive(mon, surviving_weapon, hit, alive,
+                   AT_WEAP, !surviving_weapon);
+    gt.twohits = oldtwohits;
+    gb.bhitpos = oldpos;
+    return hit;
+}
+
 /* hit target monster; returns TRUE if it still lives */
 staticfn boolean
 hitum(struct monst *mon, struct attack *uattk)
@@ -1513,7 +1547,8 @@ hmon_hitmon_do_hit(
 }
 
 staticfn void
-hmon_hitmon_dmg_recalc(struct _hitmon_data *hmd, struct obj *obj)
+hmon_hitmon_dmg_recalc(struct _hitmon_data *hmd, struct obj *obj,
+                      const struct ex_hit_context *exotic)
 {
     int dmgbonus = 0, strbonus, absbonus;
 
@@ -1544,7 +1579,8 @@ hmon_hitmon_dmg_recalc(struct _hitmon_data *hmd, struct obj *obj)
             absbonus = abs(strbonus);
             if (hmd->twohits)
                 strbonus = ((3 * absbonus + 2) / 4) * sgn(strbonus);
-            else if (hmd->thrown == HMON_MELEE && uwep && bimanual(uwep))
+            else if (hmd->thrown == HMON_MELEE
+                     && (exotic ? (obj && bimanual(obj)) : (uwep && bimanual(uwep))))
                 strbonus = ((3 * absbonus + 1) / 2) * sgn(strbonus);
             dmgbonus += strbonus;
         }
@@ -1566,7 +1602,8 @@ hmon_hitmon_dmg_recalc(struct _hitmon_data *hmd, struct obj *obj)
 
         if (PROJECTILE(obj) && ammo_and_launcher(obj, uwep))
             skillwep = uwep;
-        dmgbonus += weapon_dam_bonus(skillwep);
+        dmgbonus += exotic ? ex_weapon_dam_bonus(skillwep, exotic->two_weapon)
+                           : weapon_dam_bonus(skillwep);
 
         /* hit for more than minimal damage (before being adjusted
            for damage or skill bonus) trains the skill toward future
@@ -1584,6 +1621,97 @@ hmon_hitmon_dmg_recalc(struct _hitmon_data *hmd, struct obj *obj)
     /* don't let penalty, if bonus is negative, turn a hit into a miss */
     if (hmd->dmg < 1)
         hmd->dmg = 1;
+}
+
+/* Roll only the ordinary physical calculation for an already landed event.
+ * Reuse native bonus and natural-attack helpers, but never contact, skill
+ * training, object consumption, artifact riders or special attack dispatch. */
+int
+ex_native_physical_roll(const struct ex_hit_context *ctx, struct monst *mon)
+{
+    struct _hitmon_data hmd;
+    struct obj strike = ctx->strike, *obj = ctx->has_strike ? &strike : NULL;
+    int dmg;
+    memset(&hmd, 0, sizeof hmd);
+    hmd.mdat = mon->data;
+    hmd.twohits = ctx->twohits;
+    hmd.thrown = ctx->thrown;
+    hmd.hand_to_hand = TRUE;
+    hmd.get_dmg_bonus = ctx->native_bonus;
+    hmd.use_weapon_skill = ctx->native_skill;
+    if (!obj && ctx->attack.aatyp == AT_KICK && !Upolyd) {
+        int potential = (ACURRSTR + ACURR(A_DEX) + ACURR(A_CON)) / 15;
+        if (uarmf && uarmf->otyp == KICKING_BOOTS) potential += 5;
+        if (ctx->clumsy) potential /= 2;
+        dmg = !thick_skinned(mon->data) && !shadelike(mon->data) && potential > 0
+                  ? rnd(potential) : 0;
+        if (dmg > 0 && (martial_bonus() || gy.youmonst.data == &mons[PM_SASQUATCH]
+                       || (uarmf && uarmf->otyp == KICKING_BOOTS)))
+            dmg += rn2(ACURR(A_DEX) / 2 + 1);
+        dmg += special_dmgval(&gy.youmonst, mon, W_ARMF, NULL)
+               + (uarmf ? uarmf->spe : 0) + u.udaminc + mith_aesh_bonus();
+        return mith_physical_damage(mon, uarmf, AT_KICK, max(0, dmg));
+    }
+    if (!obj && Upolyd && ctx->attack.aatyp != AT_WEAP) {
+        struct mhitm_data mhm = { 0 };
+        struct attack physical = ctx->attack;
+        physical.adtyp = AD_PHYS;
+        mhm.damage = d(physical.damn, physical.damd);
+        mhm.specialdmg = special_dmgval(&gy.youmonst, mon, ctx->contact_mask, NULL);
+        mhitm_ad_phys(&gy.youmonst, &physical, mon, &mhm);
+        if (ctx->attack.adtyp == AD_PHYS) mhm.damage += mith_aesh_bonus();
+        return mith_physical_damage(mon, NULL, physical.aatyp, max(0, mhm.damage));
+    }
+    if (!obj) {
+        hmon_hitmon_barehands(&hmd, mon);
+        hmd.train_weapon_skill = FALSE;
+    } else if (obj->oclass == WEAPON_CLASS || is_weptool(obj) || obj->oclass == GEM_CLASS) {
+        if (is_launcher(obj) || (!ctx->thrown && (is_missile(obj) || is_ammo(obj)))
+            || (!ctx->thrown && !u.usteed && is_pole(obj)
+                && !is_art(obj, ART_SNICKERSNEE))) {
+            hmd.dmg = shadelike(mon->data) && !shade_glare(obj) ? 0 : rnd(2);
+            if (hmd.dmg > 0)
+                hmd.dmg += enhancement_damage_bonus(obj, NULL, mon, ENHANCE_MELEE);
+            hmd.dmg += mith_iron_damage(mon, obj_material(obj));
+            if (obj_material(obj) == SILVER && mon_hates_silver(mon)) hmd.dmg += rnd(20);
+            if (obj->blessed && mon_hates_blessings(mon)) hmd.dmg += rnd(4);
+            hmd.use_weapon_skill = FALSE;
+        } else {
+            hmd.dmg = ex_dmgval(obj, mon, ctx->main_hand);
+            if (Role_if(PM_HEALER) && obj->oclass == WEAPON_CLASS
+                && objects[obj->otyp].oc_skill == P_KNIFE)
+                hmd.dmg += min(3, svm.mvitals[monsndx(mon->data)].died / 6);
+            if (hmd.dmg > 1 && Role_if(PM_ROGUE) && !Upolyd && !ctx->two_weapon
+                && mon != u.ustuck && !is_art(obj, ART_CLEAVER)
+                && backstabbable(mon)) hmd.dmg += rnd(u.ulevel);
+        }
+    } else {
+        switch (obj->otyp) {
+        case BOULDER: case HEAVY_IRON_BALL: case IRON_CHAIN:
+            hmd.dmg = ex_dmgval(obj, mon, ctx->main_hand); break;
+        case CORPSE: hmd.dmg = ismnum(obj->corpsenm) ? mons[obj->corpsenm].msize + 1 : 1; break;
+        case MIRROR: case CLOVE_OF_GARLIC: case EGG:
+            hmd.dmg = 1; break;
+        default:
+            if (obj->oclass == POTION_CLASS) { hmd.dmg = 1; break; }
+            if ((obj_material(obj) == VEGGY || obj_material(obj) == PAPER)
+                && obj->oclass != SPBOOK_CLASS) {
+                hmd.dmg = 0; hmd.get_dmg_bonus = FALSE; break;
+            }
+            dmg = (obj->owt + 99) / 100;
+            hmd.dmg = min(6, dmg <= 1 ? 1 : rnd(dmg));
+            if (is_wet_towel(obj))
+                hmd.dmg = rnd(hmd.dmg + obj->spe * (mon->data == &mons[PM_IRON_GOLEM] ? 2 : 1));
+            hmd.dmg += mith_iron_damage(mon, obj_material(obj));
+            if (obj_material(obj) == SILVER && mon_hates_silver(mon)) hmd.dmg += rnd(20);
+            if (obj->blessed && mon_hates_blessings(mon)) hmd.dmg += rnd(4);
+            break;
+        }
+    }
+    if (hmd.dmg > 0) hmon_hitmon_dmg_recalc(&hmd, obj, ctx);
+    dmg = hmd.dmg > 0 ? mith_physical_damage(mon, obj, ctx->attack.aatyp, hmd.dmg) : 0;
+    if (dmg < 1 && hmd.get_dmg_bonus && !shadelike(mon->data)) dmg = 1;
+    return max(0, dmg);
 }
 
 staticfn void
@@ -1846,6 +1974,13 @@ hmon_hitmon(
                                   : enh_launcher ? ENHANCE_AMMO : ENHANCE_THROWN;
     boolean maybe_knockback = FALSE;
     int enh_physical = 0, enh_before_joust, before_mitigation;
+    struct ex_hit_context exotic_hit;
+    struct attack exotic_attack = { AT_WEAP, AD_PHYS, 1, 2 };
+
+    memset(&exotic_hit, 0, sizeof exotic_hit);
+    if (thrown == HMON_MELEE || thrown == HMON_APPLIED)
+        ex_hit_begin(&exotic_hit, mon, obj, &exotic_attack);
+    exotic_hit.thrown = thrown;
 
     hmd.enhance_obj = enhancement_eligible(obj) ? obj : (struct obj *) 0;
     if (thrown == HMON_MELEE)
@@ -1885,8 +2020,12 @@ hmon_hitmon(
     hmd.saved_oname[0] = '\0';
 
     hmon_hitmon_do_hit(&hmd, mon, obj);
-    if (hmd.doreturn)
+    exotic_hit.native_bonus = hmd.get_dmg_bonus;
+    exotic_hit.native_skill = hmd.use_weapon_skill;
+    if (hmd.doreturn) {
+        ex_hit_finish(&exotic_hit, mon, max(0, exotic_hit.oldhp - mon->mhp));
         return hmd.retval;
+    }
 
     /*
      ***** NOTE: perhaps obj is undefined! (if !thrown && BOOMERANG)
@@ -1896,7 +2035,7 @@ hmon_hitmon(
      */
 
     if (hmd.dmg > 0)
-        hmon_hitmon_dmg_recalc(&hmd, obj);
+        hmon_hitmon_dmg_recalc(&hmd, obj, NULL);
 
     if (!hmd.already_killed)
         hmd.dmg += enhancement_alignment_damage(&enhancement_snapshot, enh_launcher,
@@ -1942,6 +2081,7 @@ hmon_hitmon(
     }
 
     if (is_art(uarmg, ART_HAND_OF_VECNA) && hmd.hand_to_hand
+        && !exotic_hit.defer_primary
         && !hmd.destroyed) {
         if (resists_cold(mon) || defended(mon, AD_COLD)) {
             shieldeff(mon->mx, mon->my);
@@ -1975,8 +2115,10 @@ hmon_hitmon(
          * can activate, but there is no surviving cooldown owner to update. */
         if (enhancement_stoning(hmd.enhance_obj && hmd.jousting >= 0
                                    ? hmd.enhance_obj : &enhancement_snapshot,
-                               enh_launcher, &gy.youmonst, mon, enh_use))
+                               enh_launcher, &gy.youmonst, mon, enh_use)) {
+            ex_hit_finish(&exotic_hit, mon, max(0, exotic_hit.oldhp - mon->mhp));
             return FALSE;
+        }
         if (projectile_in_flight && !gt.thrownobj) {
             /* A life-saved engulfer can absorb and merge the projectile
              * during xkilled(). Finish damage and feedback using a value
@@ -1997,8 +2139,28 @@ hmon_hitmon(
                so we test for 1; 0 shouldn't be able to happen here... */
             && hmd.dmg > 0 && u.uconduct.weaphit <= 1)
             first_weapon_hit(obj);
+        exotic_hit.actual_damage = mon->mhp;
         enhancement_mon_damage(mon, &gy.youmonst, hmd.dmg, hmd.fatal ? ENH_FATAL
             : max(0, enh_physical - hmd.artifact_nonphysical));
+        exotic_hit.actual_damage = max(0, exotic_hit.actual_damage - mon->mhp);
+        if (!DEADMONSTER(mon)) {
+            (void) ex_hit_frenzy(&exotic_hit, mon, enh_physical);
+            if (exotic_hit.death_processed && DEADMONSTER(mon))
+                hmd.already_killed = TRUE;
+        }
+        if (exotic_hit.defer_primary && !DEADMONSTER(mon)
+            && is_art(uarmg, ART_HAND_OF_VECNA) && hmd.hand_to_hand) {
+            int before_element = mon->mhp;
+            if (resists_cold(mon) || defended(mon, AD_COLD)) {
+                shieldeff(mon->mx, mon->my);
+                golemeffects(mon, AD_COLD, hmd.dmg);
+            } else {
+                (void) destroy_items(mon, AD_COLD, hmd.dmg);
+                enhancement_mon_damage(mon, &gy.youmonst, rnd(5) + 7, 0);
+            }
+            exotic_hit.actual_damage += max(0, before_element - mon->mhp);
+        }
+        (void) ex_resolve_element(&exotic_hit, mon);
     }
     /* adjustments might have made tmp become less than what
        a level-draining artifact has already done to max HP */
@@ -2089,6 +2251,9 @@ hmon_hitmon(
         Your("%s %s no longer poisoned.", hmd.saved_oname,
              vtense(hmd.saved_oname, "are"));
 
+    ex_hit_finish(&exotic_hit, mon, exotic_hit.actual_damage);
+    if (DEADMONSTER(mon))
+        hmd.destroyed = TRUE;
     if (!hmd.destroyed && !hmd.offmap) {
         int hitflags = M_ATTK_HIT;
 
@@ -3323,7 +3488,7 @@ mhitm_ad_sgld(
         if (gv.vis && canseemon(mdef)) {
             pline("%s steals some gold from %s.", buf, mon_nam(mdef));
         }
-        if (!tele_restrict(magr)) {
+        if (!tele_restrict(magr) && !ex_innate_muted(magr, EX_INNATE_TELEPORT)) {
             boolean couldspot = canspotmon(magr);
 
             mhm->hitflags = M_ATTK_AGR_DONE;
@@ -4889,7 +5054,7 @@ mhitm_ad_heal(
                 mhm->hitflags = M_ATTK_DEF_DIED; /* return 2??? */
                 return;
             } else if (!rn2(33)) {
-                if (!tele_restrict(magr))
+                if (!tele_restrict(magr) && !ex_innate_muted(magr, EX_INNATE_TELEPORT))
                     (void) rloc(magr, RLOC_MSG);
                 monflee(magr, d(3, 6), TRUE, FALSE);
                 mhm->done = TRUE;
@@ -5182,7 +5347,7 @@ mhitm_ad_sedu(
                   : magr->minvent
                     ? "brags about the goods some dungeon explorer provided"
                   : "makes some remarks about how difficult theft is lately");
-            if (!tele_restrict(magr))
+            if (!tele_restrict(magr) && !ex_innate_muted(magr, EX_INNATE_TELEPORT))
                 (void) rloc(magr, RLOC_MSG);
             mhm->hitflags = M_ATTK_AGR_DONE; /* return 3??? */
             mhm->done = TRUE;
@@ -5194,7 +5359,7 @@ mhitm_ad_sedu(
                       flags.female ? "charm" : "seduce",
                       flags.female ? "unaffected" : "uninterested");
             if (rn2(3)) {
-                if (!tele_restrict(magr))
+                if (!tele_restrict(magr) && !ex_innate_muted(magr, EX_INNATE_TELEPORT))
                     (void) rloc(magr, RLOC_MSG);
                 mhm->hitflags = M_ATTK_AGR_DONE; /* return 3??? */
                 mhm->done = TRUE;
@@ -5211,7 +5376,8 @@ mhitm_ad_sedu(
         case 0:
             return;
         default:
-            if (!is_animal(magr->data) && !tele_restrict(magr))
+            if (!is_animal(magr->data) && !tele_restrict(magr)
+                && !ex_innate_muted(magr, EX_INNATE_TELEPORT))
                 (void) rloc(magr, RLOC_MSG);
             if (is_animal(magr->data) && *buf) {
                 if (canseemon(magr))
@@ -5266,7 +5432,8 @@ mhitm_ad_sedu(
                 mhm->done = TRUE;
                 return;
             }
-            if (pa->mlet == S_NYMPH && !tele_restrict(magr)) {
+            if (pa->mlet == S_NYMPH && !tele_restrict(magr)
+                && !ex_innate_muted(magr, EX_INNATE_TELEPORT)) {
                 boolean couldspot = canspotmon(magr);
 
                 mhm->hitflags = M_ATTK_AGR_DONE;
@@ -5316,6 +5483,20 @@ mhitm_adtyping(
     struct monst *magr, struct attack *mattk,
     struct monst *mdef, struct mhitm_data *mhm)
 {
+    struct attack muted_attack;
+    if (ex_muted(magr, mattk->aatyp, mattk->adtyp)) {
+        if (mattk->aatyp == AT_GAZE || mattk->aatyp == AT_BREA
+            || mattk->aatyp == AT_SPIT || mattk->aatyp == AT_MAGC
+            || mattk->aatyp == AT_NONE || mattk->aatyp == AT_EXPL) {
+            mhm->damage = 0;
+            mhm->done = TRUE;
+            return;
+        }
+        muted_attack = *mattk;
+        muted_attack.adtyp = AD_PHYS;
+        mhitm_ad_phys(magr, &muted_attack, mdef, mhm);
+        return;
+    }
     mhm->damage += mith_cuprilach_backstab(magr, mdef, mattk);
     if (mith_fey_weapon_attack(magr, mattk)) {
         int physical = mhm->damage;
@@ -5338,7 +5519,7 @@ mhitm_adtyping(
     }
     if (magr->data == &mons[PM_PRIESTESS_OF_GHAUNADAUR]
         && mattk->aatyp == AT_KICK && magr != &gy.youmonst
-        && !magr->mcan)
+        && !magr->mcan && !ex_innate_muted(magr, EX_INNATE_WEB))
         (void) step20_web(mdef);
     if (magr->data == &mons[PM_VORPAL_JABBERWOCK]
         && mattk->aatyp == AT_CLAW && !magr->mcan && !rn2(40)
@@ -5553,6 +5734,7 @@ mith_coure_sleep(struct monst *magr, struct monst *mdef)
     boolean hero = mdef == &gy.youmonst;
 
     if (magr->data != &mons[PM_COURE_ELADRIN] || DEADMONSTER(magr)
+        || ex_muted(magr, AT_WEAP, AD_SLEE)
         || (!hero && DEADMONSTER(mdef))
         || mhitm_mgc_atk_negated(magr, mdef, FALSE)
         || (hero ? (Sleep_resistance || gm.multi < 0)
@@ -5580,6 +5762,25 @@ damageum(
     int specialdmg) /* blessed and/or silver bonus against various things */
 {
     struct mhitm_data mhm = { 0 };
+    struct ex_hit_context exotic_hit;
+    int oldhp = mdef->mhp;
+    if (mattk->aatyp == AT_WEAP) {
+        /* hmonas already resolved this weapon's one primary contact through
+         * known_hitum. This call supplies only its native special rider. */
+        memset(&exotic_hit, 0, sizeof exotic_hit);
+    } else {
+        ex_hit_begin(&exotic_hit, mdef, (struct obj *) 0, mattk);
+        exotic_hit.contact_mask = ex_next_natural_mask >= 0 ? ex_next_natural_mask
+            : mattk->aatyp == AT_KICK ? W_ARMF
+            : mattk->aatyp == AT_BUTT ? W_ARMH
+            : (mattk->aatyp == AT_CLAW || mattk->aatyp == AT_TUCH)
+                  ? (W_ARMG | W_RINGL | W_RINGR)
+            : mattk->aatyp == AT_HUGS
+                  ? (hug_throttles(gy.youmonst.data) ? W_ARMG | W_RINGL | W_RINGR
+                                                   : W_ARMC | W_ARM | W_ARMU)
+            : 0L;
+    }
+    ex_next_natural_mask = -1L;
     mhm.weapon = uwep;
 
     mhm.damage = d((int) mattk->damn, (int) mattk->damd);
@@ -5591,13 +5792,16 @@ damageum(
     if (is_demon(gy.youmonst.data) && !rn2(13) && !uwep
         && u.umonnum != PM_AMOROUS_DEMON && u.umonnum != PM_BALROG) {
         demonpet();
+        ex_cancel_element();
         return M_ATTK_MISS;
     }
 
     mhitm_adtyping(&gy.youmonst, mattk, mdef, &mhm);
 
-    if (mhm.done)
+    if (mhm.done) {
+        ex_hit_finish(&exotic_hit, mdef, max(0, oldhp - mdef->mhp));
         return mhm.hitflags;
+    }
 
     if (mattk->adtyp == AD_PHYS && mattk->aatyp != AT_WEAP
         && mattk->aatyp != AT_EXPL && mattk->aatyp != AT_BOOM)
@@ -5606,9 +5810,17 @@ damageum(
         mhm.damage = mith_physical_damage(mdef, (struct obj *) 0,
                                           mattk->aatyp, mhm.damage);
     mdef->mstrategy &= ~STRAT_WAITFORU; /* in case player is very fast */
+    exotic_hit.actual_damage = mdef->mhp;
     enhancement_mon_damage(mdef, &gy.youmonst, mhm.damage,
         mhm.fatal ? ENH_FATAL : enhancement_physical_type(mattk->adtyp)
             ? mhm.damage - mhm.nonphysical_damage : 0);
+    exotic_hit.actual_damage = max(0, exotic_hit.actual_damage - mdef->mhp);
+    if (!DEADMONSTER(mdef)) {
+        (void) ex_hit_frenzy(&exotic_hit, mdef,
+            enhancement_physical_type(mattk->adtyp) ? mhm.damage - mhm.nonphysical_damage : 0);
+        if (exotic_hit.death_processed && DEADMONSTER(mdef)) mhm.damage = 0;
+    }
+    (void) ex_resolve_element(&exotic_hit, mdef);
     if (DEADMONSTER(mdef)) {
         /* troll killed by Trollsbane won't auto-revive; FIXME? same when
            Trollsbane is wielded as primary and two-weaponing kills with
@@ -5629,8 +5841,12 @@ damageum(
             killed(mdef); /* regular "you kill <mdef>" message */
         }
         gm.mkcorpstat_norevive = FALSE;
-        return M_ATTK_DEF_DIED;
+        ex_hit_finish(&exotic_hit, mdef, exotic_hit.actual_damage);
+        return DEADMONSTER(mdef) ? M_ATTK_DEF_DIED : M_ATTK_HIT;
     }
+    ex_hit_finish(&exotic_hit, mdef,
+                  max(exotic_hit.actual_damage, max(0, oldhp - mdef->mhp)));
+    if (DEADMONSTER(mdef)) return M_ATTK_DEF_DIED;
     return M_ATTK_HIT;
 }
 
@@ -6190,6 +6406,7 @@ hmonas(struct monst *mon)
        whether silver ring causes successful hit */
     for (i = 0; i < NATTK; i++) {
         sum[i] = M_ATTK_MISS;
+        ex_next_natural_mask = -1L;
         mattk = getmattk(&gy.youmonst, mon, i, sum, &alt_attk);
         if (mith_offhand_attack(gy.youmonst.data, i) && (!u.twoweap || uarms))
             continue;
@@ -6214,6 +6431,7 @@ hmonas(struct monst *mon)
                       || DEADMONSTER(mon)))
             continue;
 
+        ex_next_natural_mask = -1L;
         mattk = getmattk(&gy.youmonst, mon, i, sum, &alt_attk);
         if (gs.skipdrin && mattk->aatyp == AT_TENT && mattk->adtyp == AD_DRIN)
             continue;
@@ -6349,6 +6567,7 @@ hmonas(struct monst *mon)
                 }
                 wakeup(mon, TRUE);
 
+                ex_next_natural_mask = -1L;
                 specialdmg = 0; /* blessed and/or silver bonus */
                 switch (mattk->aatyp) {
                 case AT_CLAW:
@@ -6364,6 +6583,9 @@ hmonas(struct monst *mon)
                        {bite,claw,claw} instead of {claw,claw,bite} doesn't
                        make poly'd hero mysteriously switch handedness */
                     odd_claw = !odd_claw;
+                    ex_next_natural_mask = W_ARMG
+                        | ((odd_claw || !multi_claw) ? W_RINGL : 0L)
+                        | ((!odd_claw || !multi_claw) ? W_RINGR : 0L);
                     specialdmg = special_dmgval(&gy.youmonst, mon,
                                                 W_ARMG
                                                 | ((odd_claw || !multi_claw)
@@ -6658,22 +6880,31 @@ passive(
     uchar aatyp,
     boolean wep_was_destroyed)
 {
-    struct permonst *ptr = mon->data;
-    int i, tmp;
+    struct permonst *ptr = ex_contact_form(mon);
+    int i, tmp, contacted_level = ex_contact_level(mon),
+        cancelled = ex_contact_cancelled(mon), contacted_sight = ex_contact_sight(mon);
     int mhit = mhitb ? M_ATTK_HIT : M_ATTK_MISS;
     int malive = maliveb ? M_ATTK_HIT : M_ATTK_MISS;
+    struct monst contacted_mon = *mon;
+
+    contacted_mon.data = ptr;
+    contacted_mon.mcan = cancelled;
 
     for (i = 0;; i++) {
-        if (i >= NATTK)
+        if (i >= NATTK) {
+            ex_contact_end(mon);
             return (malive | mhit); /* no passive attacks */
+        }
         if (ptr->mattk[i].aatyp == AT_NONE)
             break; /* try this one */
     }
+    if (ex_contact_muted(mon, AT_NONE, ptr->mattk[i].adtyp))
+        return (malive | mhit);
     /* Note: tmp not always used */
     if (ptr->mattk[i].damn)
         tmp = d((int) ptr->mattk[i].damn, (int) ptr->mattk[i].damd);
     else if (ptr->mattk[i].damd)
-        tmp = d(step10b_passive_dice(ptr, (int) mon->m_lev),
+        tmp = d(step10b_passive_dice(ptr, contacted_level),
                 (int) ptr->mattk[i].damd);
     else
         tmp = 0;
@@ -6682,14 +6913,14 @@ passive(
      */
     switch (ptr->mattk[i].adtyp) {
     case AD_FIRE:
-        if (mhitb && !mon->mcan && weapon) {
+        if (mhitb && !cancelled && weapon) {
             if (aatyp == AT_KICK) {
                 if (uarmf && !rn2(6))
                     (void) erode_obj(uarmf, xname(uarmf), ERODE_BURN,
                                      EF_GREASE | EF_VERBOSE);
             } else if (aatyp == AT_WEAP || aatyp == AT_CLAW
                        || aatyp == AT_MAGC || aatyp == AT_TUCH)
-                passive_obj(mon, weapon, &(ptr->mattk[i]));
+                passive_obj(&contacted_mon, weapon, &(ptr->mattk[i]));
         }
         break;
     case AD_ACID:
@@ -6716,7 +6947,7 @@ passive(
                                      EF_GREASE | EF_VERBOSE);
             } else if (aatyp == AT_WEAP || aatyp == AT_CLAW
                        || aatyp == AT_MAGC || aatyp == AT_TUCH)
-                passive_obj(mon, weapon, &(ptr->mattk[i]));
+                passive_obj(&contacted_mon, weapon, &(ptr->mattk[i]));
         }
         exercise(A_STR, FALSE);
         break;
@@ -6745,25 +6976,25 @@ passive(
         }
         break;
     case AD_RUST:
-        if (mhitb && !mon->mcan && weapon) {
+        if (mhitb && !cancelled && weapon) {
             if (aatyp == AT_KICK) {
                 if (uarmf)
                     (void) erode_obj(uarmf, xname(uarmf), ERODE_RUST,
                                      EF_GREASE | EF_VERBOSE);
             } else if (aatyp == AT_WEAP || aatyp == AT_CLAW
                        || aatyp == AT_MAGC || aatyp == AT_TUCH)
-                passive_obj(mon, weapon, &(ptr->mattk[i]));
+                passive_obj(&contacted_mon, weapon, &(ptr->mattk[i]));
         }
         break;
     case AD_CORR:
-        if (mhitb && !mon->mcan && weapon) {
+        if (mhitb && !cancelled && weapon) {
             if (aatyp == AT_KICK) {
                 if (uarmf)
                     (void) erode_obj(uarmf, xname(uarmf), ERODE_CORRODE,
                                      EF_GREASE | EF_VERBOSE);
             } else if (aatyp == AT_WEAP || aatyp == AT_CLAW
                        || aatyp == AT_MAGC || aatyp == AT_TUCH)
-                passive_obj(mon, weapon, &(ptr->mattk[i]));
+                passive_obj(&contacted_mon, weapon, &(ptr->mattk[i]));
         }
         break;
     case AD_MAGM:
@@ -6796,7 +7027,7 @@ passive(
                  */
                 ;
             }
-            passive_obj(mon, weapon, &(ptr->mattk[i]));
+            passive_obj(&contacted_mon, weapon, &(ptr->mattk[i]));
         }
         break;
     default:
@@ -6805,7 +7036,7 @@ passive(
 
     /*  These only affect you if they still live.
      */
-    if (step10b_elemental_passive_ready(ptr, mhitb, malive, mon->mcan)
+    if (step10b_elemental_passive_ready(ptr, mhitb, malive, cancelled)
         && rn2(3)) {
         switch (ptr->mattk[i].adtyp) {
         case AD_PLYS:
@@ -6813,7 +7044,7 @@ passive(
                 if (!canseemon(mon)) {
                     break;
                 }
-                if (mon->mcansee) {
+                if (contacted_sight) {
                     if (ureflects("%s gaze is reflected by your %s.",
                                   s_suffix(Monnam(mon)))) {
                         ;
@@ -6944,6 +7175,7 @@ passive_obj(
                 break; /* try this one */
         }
         mattk = &(ptr->mattk[i]);
+        if (ex_muted(mon, mattk->aatyp, mattk->adtyp)) return;
     }
 
     switch (mattk->adtyp) {

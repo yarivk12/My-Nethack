@@ -484,6 +484,23 @@ getmattk(
         attk->damn *= 2;
     }
 
+    /* Filter the final concrete attack after imported substitutions. Mixed
+     * attacks keep their ordinary physical dice; pure capabilities never
+     * reach a dispatcher which could create hazards or swallow the target. */
+    if (ex_muted(magr, attk->aatyp, attk->adtyp)) {
+        *alt_attk_buf = *attk;
+        attk = alt_attk_buf;
+        if (attk->aatyp == AT_MAGC || attk->aatyp == AT_GAZE
+            || attk->aatyp == AT_BREA || attk->aatyp == AT_SPIT
+            || attk->aatyp == AT_EXPL || attk->aatyp == AT_ARRW) {
+            attk->aatyp = AT_NONE;
+            attk->damn = attk->damd = 0;
+        } else if (attk->aatyp == AT_ENGL) {
+            attk->aatyp = AT_TUCH;
+        }
+        attk->adtyp = AD_PHYS;
+    }
+
     return attk;
 }
 
@@ -531,6 +548,40 @@ mtrapped_in_pit(struct monst *mtmp)
  *              monster which it attacks by mistake, the caller had better
  *              take care of it...
  */
+/* Each native attempted melee subattack owns one defensive event. */
+static int
+ex_native_hitmu(struct monst *m, struct attack *a)
+{
+    struct ex_melee_context e;
+    int result;
+    ex_melee_begin(&e,m);
+    result = hitmu(m,a);
+    ex_melee_end(&e);
+    if (DEADMONSTER(m)) result |= M_ATTK_AGR_DIED;
+    return result;
+}
+static void
+ex_native_missmu(struct monst *m, boolean near, struct attack *a, boolean wild)
+{
+    struct ex_melee_context e;
+    ex_melee_begin(&e,m);
+    if (wild) wildmiss(m,a); else missmu(m,near,a);
+    ex_melee_end(&e);
+}
+
+static int
+ex_native_gulpmu(struct monst *m, struct attack *a)
+{
+    struct ex_melee_context e;
+    int result;
+    if (u.uswallow) return gulpmu(m,a); /* ongoing digestion is not a fresh contact */
+    ex_melee_begin(&e,m);
+    result = gulpmu(m,a);
+    ex_melee_end(&e);
+    if (DEADMONSTER(m)) result |= M_ATTK_AGR_DIED;
+    return result;
+}
+
 int
 mattacku(struct monst *mtmp)
 {
@@ -806,6 +857,7 @@ mattacku(struct monst *mtmp)
         && !clear_path(mtmp->mx, mtmp->my, u.ux, u.uy))
         return 0;
     if (mdat == &mons[PM_DRIDER] && ranged && !mtmp->mcan
+        && !ex_innate_muted(mtmp, EX_INNATE_WEB)
         && lined_up(mtmp)) {
         if (foundyou && tmp > rnd(20))
             (void) step20_web(&gy.youmonst);
@@ -892,7 +944,7 @@ mattacku(struct monst *mtmp)
                             if (mattk->aatyp == AT_KICK
                                 && thick_skinned(gy.youmonst.data))
                                 break;
-                            onehit = hitmu(mtmp, mattk);
+                            onehit = ex_native_hitmu(mtmp, mattk);
                             sum[i] |= onehit;
                             deva_hit = (sum[i] & M_ATTK_HIT) != 0;
                             if (onehit & (M_ATTK_DEF_DIED | M_ATTK_AGR_DIED
@@ -900,7 +952,7 @@ mattacku(struct monst *mtmp)
                                 break;
                         } else {
                             if (!deva_hit)
-                                missmu(mtmp, (tmp - deva_penalty == j), mattk);
+                                ex_native_missmu(mtmp, (tmp - deva_penalty == j), mattk, FALSE);
                             break;
                         }
                         if (mattk->aatyp != AT_DEVA)
@@ -908,7 +960,7 @@ mattacku(struct monst *mtmp)
                         deva_penalty += 4;
                     } while (TRUE);
                 } else {
-                    wildmiss(mtmp, mattk);
+                    ex_native_missmu(mtmp, FALSE, mattk, TRUE);
                     /* skip any remaining non-spell attacks */
                     skipnonmagc = TRUE;
                 }
@@ -920,7 +972,7 @@ mattacku(struct monst *mtmp)
             if ((!range2 && i >= 2 && sum[i - 1] && sum[i - 2])
                 || mtmp == u.ustuck) {
                 if (!failed_grab(mtmp, &gy.youmonst, mattk))
-                    sum[i] = hitmu(mtmp, mattk);
+                    sum[i] = ex_native_hitmu(mtmp, mattk);
             }
             break;
 
@@ -944,9 +996,9 @@ mattacku(struct monst *mtmp)
                         /* force swallowing monster to be displayed
                            even when hero is moving away */
                         flush_screen(1);
-                        sum[i] = gulpmu(mtmp, mattk);
+                        sum[i] = ex_native_gulpmu(mtmp, mattk);
                     } else {
-                        missmu(mtmp, (tmp == j), mattk);
+                        ex_native_missmu(mtmp, (tmp == j), mattk, FALSE);
                     }
                 } else if (digests(mtmp->data)) {
                     pline_mon(mtmp, "%s gulps some air!", Monnam(mtmp));
@@ -1014,14 +1066,14 @@ mattacku(struct monst *mtmp)
                         mswings(mtmp, mon_currwep, bash);
                     }
                     if (tmp > (j = gm.mhitu_dieroll = rnd(20 + i)))
-                        sum[i] = hitmu(mtmp, mattk);
+                        sum[i] = ex_native_hitmu(mtmp, mattk);
                     else
-                        missmu(mtmp, (tmp == j), mattk);
+                        ex_native_missmu(mtmp, (tmp == j), mattk, FALSE);
                     /* KMH -- Don't accumulate to-hit bonuses */
                     if (mon_currwep)
                         tmp -= hittmp;
                 } else {
-                    wildmiss(mtmp, mattk);
+                    ex_native_missmu(mtmp, FALSE, mattk, TRUE);
                     /* skip any remaining non-spell attacks */
                     skipnonmagc = TRUE;
                 }
@@ -1079,7 +1131,7 @@ summonmu(struct monst *mtmp, boolean youseeit)
      * and isn't a shapechanger.
      */
 
-    if (is_demon(mdat)) {
+    if (is_demon(mdat) && !ex_innate_muted(mtmp, EX_INNATE_SUMMON)) {
         if (mdat != &mons[PM_BALROG] && mdat != &mons[PM_AMOROUS_DEMON]) {
             if (!rn2(Inhell ? 10 : 16))
                 (void) msummon(mtmp);
@@ -1092,17 +1144,19 @@ summonmu(struct monst *mtmp, boolean youseeit)
            in the critter-to-human direction but be a no-op the other way;
            we repeat the criteria here for clarity */
         if (is_human(mdat)) { /* maybe switch to animal form */
-            if (!Protection_from_shape_changers && !rn2(5 - (night() * 2)))
+            if (!Protection_from_shape_changers && !ex_innate_muted(mtmp, EX_INNATE_TRANSFORM)
+                && !rn2(5 - (night() * 2)))
                 new_were(mtmp);
         } else { /* maybe switch to back human form */
-            if (Protection_from_shape_changers || !rn2(30))
+            if (!ex_innate_muted(mtmp, EX_INNATE_TRANSFORM)
+                && (Protection_from_shape_changers || !rn2(30)))
                 new_were(mtmp);
         }
         mdat = mtmp->data; /* form change invalidates cached value */
 
         /* maybe summon compatible critters;
            not blocked by Protection_from_shape_changers */
-        if (!rn2(10)) {
+        if (!ex_innate_muted(mtmp, EX_INNATE_SUMMON) && !rn2(10)) {
             int numseen, numhelp;
             char buf[BUFSZ], genericwere[BUFSZ];
 
@@ -1785,7 +1839,7 @@ explmu(
     boolean not_affected;
     int tmp;
 
-    if (mtmp->mcan)
+    if (mtmp->mcan || ex_muted(mtmp, mattk->aatyp, mattk->adtyp))
         return M_ATTK_MISS;
 
     tmp = d((int) mattk->damn, (int) mattk->damd);
@@ -1902,6 +1956,8 @@ gazemu(struct monst *mtmp, struct attack *mattk)
             cancelled = (mtmp->mcan != 0), already = FALSE,
             mcanseeu = (canseemon(mtmp) && couldsee(mtmp->mx, mtmp->my)
                         && mtmp->mcansee);
+
+    if (ex_muted(mtmp, mattk->aatyp, mattk->adtyp)) return M_ATTK_MISS;
 
     /* A fern emits spores; this does not require eyes or a perceived gaze.
      * Parenthesize the donor's intended adult/sprout probability explicitly. */
@@ -2394,6 +2450,7 @@ mdamageu_damage(struct monst *mtmp, int n, int physical)
             done_in_by(mtmp, DIED);
     }
     if (physical != ENH_FATAL) enhancement_reflect(&gy.youmonst, mtmp, min(before, n));
+    ex_melee_damage(mtmp, min(before, n));
 }
 
 /* returns 0 if seduction impossible,
@@ -2488,7 +2545,7 @@ doseduce(struct monst *mon)
 
     for (ring = gi.invent; ring; ring = nring) {
         nring = ring->nobj;
-        if (ring->otyp != RIN_ADORNMENT)
+        if (ring->otyp != RIN_ADORNMENT || (fem && ex_theft_ward()))
             continue;
         if (fem) {
             if (ring->owornmask && uarmg) {
@@ -2629,7 +2686,7 @@ doseduce(struct monst *mon)
             pline_mon(mon, "%s appears to sigh.", Monnam(mon));
         /* else no regret message if can't see or hear seducer */
 
-        if (!tele_restrict(mon))
+        if (!tele_restrict(mon) && !ex_innate_muted(mon, EX_INNATE_TELEPORT))
             (void) rloc(mon, RLOC_MSG);
         return 1;
     }
@@ -2763,13 +2820,13 @@ doseduce(struct monst *mon)
         } else {
             pline_mon(mon, "%s takes %ld %s for services rendered!",
                       noit_Monnam(mon), cost, currency(cost));
-            money2mon(mon, cost);
+            if (!ex_theft_ward()) money2mon(mon, cost);
             disp.botl = TRUE;
         }
     }
     if (!rn2(25))
         mon->mcan = 1; /* monster is worn out */
-    if (!tele_restrict(mon))
+    if (!tele_restrict(mon) && !ex_innate_muted(mon, EX_INNATE_TELEPORT))
         (void) rloc(mon, RLOC_MSG);
     return 1;
 }
@@ -2782,7 +2839,7 @@ mayberem(struct monst *mon,
 {
     char qbuf[QBUFSZ];
 
-    if (!obj || !obj->owornmask)
+    if (!obj || !obj->owornmask || ex_theft_ward())
         return;
     /* removal of a previous item might have sent the hero elsewhere
        (loss of levitation that leads to landing on a transport trap) */

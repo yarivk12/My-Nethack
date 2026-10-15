@@ -3350,6 +3350,24 @@ enhancement_rebill(struct obj *obj)
         }
 }
 
+/* A conserved potion/scroll remains on its original bill, while each actual
+ * committed use incurs the same price as consuming one merchandise unit.
+ * Debit survives returning the retained physical item or later buying it. */
+void
+ex_conserved_use_fee(struct obj *obj)
+{
+    struct monst *shkp;
+    struct bill_x *bp;
+    if (!obj->unpaid)
+        return;
+    for (shkp = next_shkp(fmon, TRUE); shkp;
+         shkp = next_shkp(shkp->nmon, TRUE))
+        if ((bp = onbill(obj, shkp, TRUE)) != 0) {
+            ESHK(shkp)->debit += bp->price;
+            return;
+        }
+}
+
 /* called from doinv(invent.c) for inventory of unpaid objects */
 long
 unpaid_cost(

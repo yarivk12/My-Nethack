@@ -118,6 +118,10 @@ struct monst {
     coord mtrack[MTSZ];   /* monster track */
     int mhp, mhpmax;
     int equipment_hp; /* temporary worn maximum HP already applied */
+    long ex_regen_until, ex_mute_until, ex_guardian_until;
+    unsigned ex_guardian_source;
+    unsigned short ex_mute_ability;
+    short ex_mute_species;
     unsigned mappearance; /* for undetected mimics and the wiz */
     uchar m_ap_type;      /* what mappearance is describing, m_ap_types */
 

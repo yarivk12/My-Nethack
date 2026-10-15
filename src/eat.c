@@ -2761,6 +2761,14 @@ edibility_prompts(struct obj *otmp)
     return 0;
 }
 
+#ifdef STEP15_TEST
+int
+step22_test_edibility(struct obj *obj)
+{
+    return edibility_prompts(obj);
+}
+#endif
+
 staticfn int
 doeat_nonfood(struct obj *otmp)
 {

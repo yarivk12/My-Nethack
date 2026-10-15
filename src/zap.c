@@ -1417,6 +1417,17 @@ cancel_item(struct obj *obj)
 
         if (timout) {
             (void) stop_timer(REVIVE_MON, &a);
+            /* Cancellation replaces revival with ordinary age-related
+             * decay. Preservation scales that newly created decay clock,
+             * while the original revival clock remains unscaled. */
+            if (obj->exotic.preserved) {
+                long remaining = max(1L, timout - svm.moves);
+                (void) ex_corpse_age(obj);
+                obj->exotic.decay_units = obj->exotic.age_units
+                    + remaining * 120L
+                      / ((obj->exotic.frozen & 1) ? 2L : 1L);
+                timout = remaining * max(1, obj->exotic.multiplier);
+            }
             (void) start_timer(timout, TIMER_OBJECT, ROT_CORPSE, &a);
         }
     }

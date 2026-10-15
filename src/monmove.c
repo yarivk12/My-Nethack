@@ -4,6 +4,7 @@
 /* NetHack may be freely redistributed.  See license for details. */
 
 #include "hack.h"
+#include "exotic_combat.h"
 #include "mfndpos.h"
 #include "artifact.h"
 
@@ -310,9 +311,11 @@ onscary(coordxy x, coordxy y, struct monst *mtmp)
 void
 mon_regen(struct monst *mon, boolean digest_meal)
 {
-    if (mith_mon_syllable(mon) == MITH_HOON)
+    if (mon->ex_regen_until <= svm.moves
+        && mith_mon_syllable(mon) == MITH_HOON)
         healmon(mon, 10, 0);
-    if (!(mon->data->mflags3 & M3_NOREGEN)
+    if (mon->ex_regen_until <= svm.moves
+        && !(mon->data->mflags3 & M3_NOREGEN)
         && (svm.moves % 20 == 0 || regenerates(mon->data)
             || enhancement_mon_confers(mon, REGENERATION)
             || ((mon->data->mflags3 & M3_BLINKER) && !mon->mflee)))
@@ -600,6 +603,8 @@ mind_blast(struct monst *mtmp)
 {
     struct monst *m2, *nmon = (struct monst *) 0;
 
+    if (ex_innate_muted(mtmp, EX_INNATE_PSYCHIC)) return;
+
     if (canseemon(mtmp))
         pline_mon(mtmp, "%s concentrates.", Monnam(mtmp));
     if (mdistu(mtmp) > BOLT_LIM * BOLT_LIM) {
@@ -662,6 +667,10 @@ mind_blast(struct monst *mtmp)
     }
 }
 
+#ifdef STEP15_TEST
+void step22_test_mind_blast(struct monst *m) { mind_blast(m); }
+#endif
+
 /* called every turn for each living monster on the map, and the hero;
    caller makes sure that we're not called for DEADMONSTER() */
 void
@@ -671,7 +680,8 @@ m_everyturn_effect(struct monst *mtmp)
     coordxy x = is_u ? u.ux : mtmp->mx,
             y = is_u ? u.uy : mtmp->my;
 
-    if (mtmp->data == &mons[PM_FOG_CLOUD]) {
+    if (mtmp->data == &mons[PM_FOG_CLOUD]
+        && !ex_innate_muted(mtmp, EX_INNATE_STENCH)) {
         /* don't leave a vapor cloud if some other gas cloud is already
            present, or when flowing under closed doors so that visibility
            changes aren't mixed with messages about doing such */
@@ -694,13 +704,16 @@ m_postmove_effect(struct monst *mtmp)
             y = is_u ? u.uy0 : mtmp->my;
 
     /* Hezrous create clouds of stench. This does not cost a move. */
-    if (mtmp->data == &mons[PM_HEZROU]) /* stench */
+    if (mtmp->data == &mons[PM_HEZROU]
+        && !ex_innate_muted(mtmp, EX_INNATE_STENCH)) /* stench */
         create_gas_cloud(x, y, 1, 8);
-    else if (mtmp->data == &mons[PM_STEAM_VORTEX] && !mtmp->mcan)
+    else if (mtmp->data == &mons[PM_STEAM_VORTEX] && !mtmp->mcan
+             && !ex_innate_muted(mtmp, EX_INNATE_STENCH))
         create_gas_cloud(x, y, 1, 0); /* harmless vapor */
 
     /* Donor Shadow darkens the square it leaves, unless cancelled. */
     if (is_shadow(mtmp->data) && !mtmp->mcan
+        && !ex_innate_muted(mtmp, EX_INNATE_DARKEN)
         && !IS_FORGE(levl[x][y].typ))
         levl[x][y].lit = 0;
 }
@@ -920,6 +933,7 @@ dochug(struct monst *mtmp)
     step10b_eldritch_encounter(mtmp);
 
     if (step10b_witch_needs_familiar(mtmp) && !mtmp->mspec_used
+        && !ex_innate_muted(mtmp, EX_INNATE_SUMMON)
         && ((mdat == &mons[PM_COVEN_LEADER] && !rn2(4))
             || (mdat == &mons[PM_WITCH] && !rn2(20)))) {
         struct monst *familiar;
@@ -979,6 +993,7 @@ dochug(struct monst *mtmp)
 
     /* Some monsters teleport. Teleportation costs a turn. */
     if (mtmp->mflee && !rn2(40) && can_teleport(mdat) && !mtmp->iswiz
+        && !ex_innate_muted(mtmp, EX_INNATE_TELEPORT)
         && !noteleport_level(mtmp)) {
         if (rloc(mtmp, RLOC_MSG))
             leppie_stash(mtmp);
@@ -990,7 +1005,8 @@ dochug(struct monst *mtmp)
     if (DEADMONSTER(mtmp))
         return 1; /* m_respond gaze can kill medusa */
 
-    if (mtmp->data->mflags3 & M3_GROUPATTACK) {
+    if ((mtmp->data->mflags3 & M3_GROUPATTACK)
+        && !ex_innate_muted(mtmp, EX_INNATE_GROUP)) {
         sheol_chillbug_turn(mtmp);
         if (!mtmp->mcanmove || mtmp->msleeping)
             return 0;
@@ -1057,7 +1073,8 @@ dochug(struct monst *mtmp)
 
             if (is_demon(gy.youmonst.data)) {
                 /* "Good hunting, brother" */
-                if (!tele_restrict(mtmp))
+                if (!tele_restrict(mtmp)
+                    && !ex_innate_muted(mtmp, EX_INNATE_TELEPORT))
                     (void) rloc(mtmp, RLOC_MSG);
             } else {
                 mtmp->minvis = mtmp->perminvis = 0;
@@ -1078,6 +1095,7 @@ dochug(struct monst *mtmp)
         watch_on_duty(mtmp);
     /* mind flayers can make psychic attacks! */
     } else if (mdat == &mons[PM_GREAT_CTHULHU]
+               && !ex_innate_muted(mtmp, EX_INNATE_PSYCHIC)
                && !u.uinvulnerable && !rn2(20)) {
         step10b_cthulhu_psychic(mtmp);
         set_apparxy(mtmp);
@@ -2110,6 +2128,7 @@ m_move(struct monst *mtmp, int after)
 
     /* teleport if that lies in our nature */
     if (ptr == &mons[PM_TENGU] && !rn2(5) && !mtmp->mcan
+        && !ex_innate_muted(mtmp, EX_INNATE_TELEPORT)
         && !tele_restrict(mtmp)) {
         if (mtmp->mhp < 7 || mtmp->mpeaceful || rn2(2))
             (void) rloc(mtmp, RLOC_MSG);
@@ -2346,7 +2365,8 @@ m_move(struct monst *mtmp, int after)
 
         mon_track_add(mtmp, omx, omy);
     } else {
-        if (is_unicorn(ptr) && rn2(2) && !tele_restrict(mtmp)) {
+        if (is_unicorn(ptr) && rn2(2) && !tele_restrict(mtmp)
+            && !ex_innate_muted(mtmp, EX_INNATE_TELEPORT)) {
             (void) rloc(mtmp, RLOC_MSG);
             return MMOVE_MOVED;
         }
@@ -2652,7 +2672,8 @@ boolean
 can_fog(struct monst *mtmp)
 {
     if (!(svm.mvitals[PM_FOG_CLOUD].mvflags & G_GENOD) && is_vampshifter(mtmp)
-        && !Protection_from_shape_changers && !stuff_prevents_passage(mtmp))
+        && !Protection_from_shape_changers && !stuff_prevents_passage(mtmp)
+        && !ex_innate_muted(mtmp, EX_INNATE_TRANSFORM))
         return TRUE;
     return FALSE;
 }
@@ -2671,7 +2692,8 @@ vamp_shift(
     if (mon->data == ptr) {
         /* already right shape */
         reslt = 1;
-    } else if (is_vampshifter(mon)) {
+    } else if (is_vampshifter(mon)
+               && !ex_innate_muted(mon, EX_INNATE_TRANSFORM)) {
         reslt = newcham(mon, ptr, domsg ? NC_SHOW_MSG : NO_NC_FLAGS);
         /* shape-change message is given when vampshifter turns into a
            fog cloud in order to move under a closed door */

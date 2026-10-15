@@ -4376,6 +4376,8 @@ apply_ok(struct obj *obj)
 {
     if (!obj)
         return GETOBJ_EXCLUDE;
+    if (ex_active(obj, EX_PRESERVE, &gy.youmonst))
+        return GETOBJ_SUGGEST;
 
     /* all tools, all wands (breaking), all spellbooks (flipping through -
        including blank/novel/Book of the Dead) */
@@ -5816,6 +5818,10 @@ doapply(void)
     if (!retouch_object(&obj, FALSE))
         return ECMD_TIME; /* evading your grasp costs a turn; just be
                              grateful that you don't drop it as well */
+
+    res = ex_apply(obj);
+    if (res >= 0) return res ? ECMD_TIME : ECMD_OK;
+    res = ECMD_TIME;
 
     if (obj->oclass == WAND_CLASS)
         return do_break_wand(obj);

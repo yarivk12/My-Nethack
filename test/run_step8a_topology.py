@@ -1,3 +1,8 @@
+# My-NetHack modification notice, added 2026-10-15.
+# Local project integration/modifications; original authorship is retained.
+# Recorded project change dates (Git author dates): 2026-09-07.
+# See doc/public-source-compliance.md and doc/public-source-modifications.json.
+# Existing copyright, attribution, license and warranty notices still apply.
 """Fresh packaged topology; includes the unchanged Step 7 runner gates."""
 from pathlib import Path
 import json

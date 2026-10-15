@@ -1,3 +1,9 @@
+My-NetHack modification notice, added 2026-10-15.
+Local project integration/modifications; original authorship is retained.
+Recorded project change dates (Git author dates): 2026-09-07.
+See doc/public-source-compliance.md and doc/public-source-modifications.json.
+Existing copyright, attribution, license and warranty notices still apply.
+
 # Step 7: classic NerfHack Lost Tomb
 
 Manual validation completed: the user confirmed that testing with the temporary

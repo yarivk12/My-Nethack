@@ -1,3 +1,8 @@
+-- My-NetHack modification notice, added 2026-10-15.
+-- Local project integration/modifications; original authorship is retained.
+-- Recorded project change dates (Git author dates): 2026-09-07.
+-- See doc/public-source-compliance.md and doc/public-source-modifications.json.
+-- Existing copyright, attribution, license and warranty notices still apply.
 -- Read-only level inspection except for test snapshots in the existing Lua
 -- variable store. Run on each generated Moria level, then on the return trip.
 assert(nh.dnum_name(u.dnum)=="The Ruins of Moria")

@@ -1,3 +1,8 @@
+# My-NetHack modification notice, added 2026-10-15.
+# Local project integration/modifications; original authorship is retained.
+# Recorded project change dates (Git author dates): 2026-09-07.
+# See doc/public-source-compliance.md and doc/public-source-modifications.json.
+# Existing copyright, attribution, license and warranty notices still apply.
 """Kill the real bridge boss, check its gear and unique count, save/reload.
 
 Wizard slaying is controlled validation, not a balance/combat simulation.

@@ -1,3 +1,11 @@
+-- My-NetHack modification notice, added 2026-10-15.
+-- Local project integration/modifications; original authorship is retained.
+-- Recorded project change dates (Git author dates): 2026-09-15.
+-- See doc/public-source-compliance.md and doc/public-source-modifications.json.
+-- Existing copyright, attribution, license and warranty notices still apply.
+-- Restored donor notices from dNetHack 17bc64f77ac566e7b90c0c6c6652e2a5f3a995c0
+-- Source: dnethack-3.4.3/dat/neutrality.des
+-- NetHack may be freely redistributed.  See license for details.
 -- Step 10C-A fixed map resource: leth-a-2
 -- Pinned donor: neutrality.des at commit 17bc64f77ac566e7b90c0c6c6652e2a5f3a995c0
 

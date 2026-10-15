@@ -1,3 +1,8 @@
+# My-NetHack modification notice, added 2026-10-15.
+# Local project integration/modifications; original authorship is retained.
+# Recorded project change dates (Git author dates): 2026-09-09.
+# See doc/public-source-compliance.md and doc/public-source-modifications.json.
+# Existing copyright, attribution, license and warranty notices still apply.
 """Check actual imported stock code and arrays against immutable donor data.
 
 VS shell: runner PINNED_DNET_HACK_CLONE OUTPUT_DIRECTORY

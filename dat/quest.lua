@@ -1,3 +1,8 @@
+-- My-NetHack modification notice, added 2026-10-15.
+-- Local project integration/modifications; original authorship is retained.
+-- Recorded project change dates (Git author dates): 2026-09-09.
+-- See doc/public-source-compliance.md and doc/public-source-modifications.json.
+-- Existing copyright, attribution, license and warranty notices still apply.
 -- NetHack quest.lua	$NHDT-Date: 1781994887 2026/06/20 22:34:47 $  $NHDT-Branch: NetHack-5.0 $:$NHDT-Revision: 1.11 $
 -- Copyright (c) 2021 by Pasi Kallinen
 -- NetHack may be freely redistributed.  See license for details.

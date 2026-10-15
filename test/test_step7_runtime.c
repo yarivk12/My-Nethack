@@ -1,3 +1,9 @@
+/* My-NetHack modification notice, added 2026-10-15.
+ * Local project integration/modifications; original authorship is retained.
+ * Recorded project change dates (Git author dates): 2026-09-07, 2026-09-09, 2026-09-10, 2026-09-15, 2026-09-16.
+ * See doc/public-source-compliance.md and doc/public-source-modifications.json.
+ * Existing copyright, attribution, license and warranty notices still apply.
+ */
 /* Production scheduler/light function bodies extracted by run_step7.py.
  * Fixture adapters supply RNG, topology lists and light/timer bookkeeping;
  * no production test hooks. Playable save/traversal is tested separately. */

@@ -1,3 +1,8 @@
+# My-NetHack modification notice, added 2026-10-15.
+# Local project integration/modifications; original authorship is retained.
+# Recorded project change dates (Git author dates): 2026-09-16.
+# See doc/public-source-compliance.md and doc/public-source-modifications.json.
+# Existing copyright, attribution, license and warranty notices still apply.
 """Native Step 11 validation. Run against an explicit diagnostic x64 build.
 
 Probability corpus declared before sampling: game seeds 110001..111000;
